@@ -32,7 +32,7 @@ Options=-lobjc \
 	-mthumb
 
 Sources=L33tTyper.m
-Target=../deb/var/mobile/Library/iKeyEx/Keyboards/L33tTyper.keyboard/L33tTyper
+Target=../deb/Library/iKeyEx/Keyboards/L33tTyper.keyboard/L33tTyper
 
 $(Target):	$(Sources)
 	$(Compiler) $(Options) -o $@ $^

@@ -1,6 +1,0 @@
-{
-	CFBundleExecutable = L33tTyper;
-	"UIKeyboardLayoutClass" = "=en_US";
-	"UIKeyboardInputManagerClass" = L33tTyperManager;
-	CFBundleDisplayName = L33tTyper;
-}
