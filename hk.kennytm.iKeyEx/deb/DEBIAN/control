@@ -8,3 +8,4 @@ Maintainer: KennyTM~ <kennytm+iKeyEx@gmail.com>
 Author: KennyTM~ <kennytm+iKeyEx@gmail.com>
 Section: Keyboard Extension
 Depends: mobilesubstrate (>=0.9-0)
+Instanlled-Size: 193
