@@ -5,6 +5,7 @@ Architecture: iphoneos-arm
 Description: Colemak keyboard layout.
 Homepage: http://code.google.com/p/networkpx/
 Maintainer: KennyTM~ <kennytm+Colemak@gmail.com>
-Author: KennyTM~ <kennytm+ Colemak@gmail.com>
+Author: KennyTM~ <kennytm+Colemak@gmail.com>
 Section: Keyboard Extension
 Depends: hk.kennytm.iKeyEx (>=0.0-1)
+Installed-Size: 2.3818359375
