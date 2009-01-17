@@ -1,0 +1,14 @@
+#!/bin/bash
+
+declare -a cydia
+cydia=($CYDIA)
+
+if [[ $1 == install || $1 == upgrade ]]; then
+	if [[ ${CYDIA+@} ]]; then
+	        eval "echo 'finish:restart' >&${cydia[0]}"
+    	fi
+	if [[ $1 == install ]]; then
+		mkdir /var/mobile/Library/Keyboard/iKeyEx
+		mkdir /var/mobile/Library/Keyboard/iKeyEx/cache
+	fi
+fi

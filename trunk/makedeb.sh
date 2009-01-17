@@ -9,7 +9,9 @@ for PackageName in `ls -d hk.*/`; do
 	./dpkg-deb-nodot ${PackageName%%/}/deb ../../${PackageName%%/}.deb;
 done
 
-dpkg-scanpackages -m ../../ /dev/null > ../../Packages;
+cd ../../;
+	dpkg-scanpackages -m . /dev/null > Packages;
 
-rm ../../Packages.bz2;
-bzip2 ../../Packages;
+	rm Packages.bz2;
+	bzip2 -k Packages;
+cd -;
