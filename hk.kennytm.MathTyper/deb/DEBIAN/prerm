@@ -1,0 +1,5 @@
+#!/bin/bash
+
+if [[ $1 == remove ]]; then
+	iKeyEx-KBMan remove MathTyper
+fi
