@@ -2,7 +2,7 @@ iPhoneDevPath=/Developer/Platforms/iPhoneOS.platform/Developer
 iPhoneSDKPath=$(iPhoneDevPath)/SDKs/iPhoneOS2.2.sdk
 iPhoneGCCIncPath=$(iPhoneSDKPath)/usr/lib/gcc/powerpc-apple-darwin9/4.0.1/include/
 iKeyExIncPath=../../include
-iKeyExLibPath=../deb/var/mobile/Library/iKeyEx/lib
+iKeyExLibPath=../deb/Library/iKeyEx/lib
 
 Compiler=$(iPhoneDevPath)/usr/bin/arm-apple-darwin9-gcc-4.0.1
 CodeSign=ldid -S

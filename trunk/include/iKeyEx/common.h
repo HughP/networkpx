@@ -43,7 +43,7 @@
 
 #define iKeyEx_Prefix @"iKeyEx:"
 #define iKeyEx_Prefix_length 7
-#define iKeyEx_KeyboardsPath @"/var/mobile/Library/iKeyEx/Keyboards/"
+#define iKeyEx_KeyboardsPath @"/Library/iKeyEx/Keyboards/"
 
 // Store all your data in this directory to allow R/W from sandboxes applications.
 #define iKeyEx_DataPath @"/var/mobile/Library/Keyboard/iKeyEx/"

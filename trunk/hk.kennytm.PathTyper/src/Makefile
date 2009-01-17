@@ -32,7 +32,7 @@ Options=-lobjc \
 	-mthumb
 
 Sources=PathTyper.m
-Target=../deb/var/mobile/Library/iKeyEx/Keyboards/PathTyper.keyboard/PathTyper
+Target=../deb/Library/iKeyEx/Keyboards/PathTyper.keyboard/PathTyper
 
 $(Target):	$(Sources)
 	$(Compiler) $(Options) -o $@ $^

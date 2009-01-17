@@ -1,5 +1,0 @@
-{
-	"UIKeyboardLayoutClass" = "layout.plist";
-	"UIKeyboardInputManagerClass" = "=en_US";
-	CFBundleDisplayName = Colemak;
-}
