@@ -1,0 +1,10 @@
+Package: hk.kennytm.MathTyper
+Name: MathTyper
+Version: 0.0-1
+Architecture: iphoneos-arm
+Description: Keyboard extension for typing mathematical symbols easily
+Homepage: http://code.google.com/p/networkpx/
+Maintainer: KennyTM~ <kennytm+MathTyper@gmail.com>
+Author: KennyTM~ <kennytm+MathTyper@gmail.com>
+Section: Keyboard Extension
+Depends: hk.kennytm.iKeyEx (>=0.0-1)
