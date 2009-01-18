@@ -1,0 +1,9 @@
+{
+	"UIKeyboardLayoutClass" = {
+		Portrait = hCLayout;
+		Landscape = hCLayout;
+	};
+	"UIKeyboardInputManagerClass" = "=en_US";
+	CFBundleDisplayName = "\U210fClipboard";
+	CFBundleExecutable = hClipboard;
+}
