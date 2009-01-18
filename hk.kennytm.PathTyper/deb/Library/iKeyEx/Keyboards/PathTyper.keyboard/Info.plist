@@ -1,0 +1,6 @@
+{
+	CFBundleExecutable = PathTyper;
+	"UIKeyboardLayoutClass" = "=en_US";
+	"UIKeyboardInputManagerClass" = PathTyperManager;
+	CFBundleDisplayName = PathTyper;
+}
