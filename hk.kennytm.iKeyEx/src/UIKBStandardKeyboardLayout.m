@@ -79,7 +79,7 @@
 		NSString* modeFilename = [mode substringFromIndex:iKeyEx_Prefix_length];
 		// do caching.
 		
-		NSString* baseFilename = [NSString stringWithFormat:iKeyEx_CachePath@"%@-%@-%d-", modeFilename, sublayoutType, landscape];
+		NSString* baseFilename = [NSString stringWithFormat:iKeyEx_CachePath@"%@-sublayout-%@-%d-", modeFilename, sublayoutType, landscape];
 		
 		cached_keydefPath = [baseFilename stringByAppendingString:@"keyDefinitions.plist"];
 		
