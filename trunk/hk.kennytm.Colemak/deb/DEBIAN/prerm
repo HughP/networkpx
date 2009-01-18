@@ -1,5 +1,6 @@
 #!/bin/bash
 
 if [[ $1 == remove ]]; then
+	iKeyEx-KBMan purge Colemak
 	iKeyEx-KBMan remove Colemak
 fi
