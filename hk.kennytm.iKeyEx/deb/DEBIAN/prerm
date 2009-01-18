@@ -4,9 +4,9 @@ declare -a cydia
 cydia=($CYDIA)
 
 if [[ $1 == remove ]]; then
-	mv /usr/lib/libiKeyEx.dylib /Library/iKeyEx/lib/libiKeyEx.dylib;
-	mv /Library/MobileSubstrate/DynamicLibraries/PrefHooker-iKeyEx.dylib /Library/iKeyEx/lib/PrefHooker-iKeyEx.dylib
-	mv /Library/MobileSubstrate/DynamicLibraries/SBHooker-iKeyEx.dylib /Library/iKeyEx/lib/SBHooker-iKeyEx.dylib
+	rm /usr/lib/libiKeyEx.dylib
+	rm /Library/MobileSubstrate/DynamicLibraries/PrefHooker-iKeyEx.dylib
+	rm /Library/MobileSubstrate/DynamicLibraries/SBHooker-iKeyEx.dylib
 	iKeyEx-KBMan removeall
 	rmdir /var/mobile/Library/Keyboard/iKeyEx/cache
 	rmdir /var/mobile/Library/Keyboard/iKeyEx

@@ -4,8 +4,8 @@ declare -a cydia
 cydia=($CYDIA)
 
 if [[ $1 == configure ]]; then
-	mv /Library/iKeyEx/lib/libiKeyEx.dylib /usr/lib/libiKeyEx.dylib;
-	mv /Library/iKeyEx/lib/PrefHooker-iKeyEx.dylib /Library/MobileSubstrate/DynamicLibraries/PrefHooker-iKeyEx.dylib
-	mv /Library/iKeyEx/lib/SBHooker-iKeyEx.dylib /Library/MobileSubstrate/DynamicLibraries/SBHooker-iKeyEx.dylib
+	ln -s /Library/iKeyEx/lib/libiKeyEx.dylib /usr/lib/libiKeyEx.dylib;
+	ln -s /Library/iKeyEx/lib/PrefHooker-iKeyEx.dylib /Library/MobileSubstrate/DynamicLibraries/PrefHooker-iKeyEx.dylib
+	ln -s /Library/iKeyEx/lib/SBHooker-iKeyEx.dylib /Library/MobileSubstrate/DynamicLibraries/SBHooker-iKeyEx.dylib
 	ldid -S /usr/bin/iKeyEx-KBMan
 fi
