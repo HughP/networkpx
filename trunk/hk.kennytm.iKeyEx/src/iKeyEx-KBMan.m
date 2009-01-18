@@ -62,21 +62,19 @@ int main (int argc, const char* argv[]) {
 					inputModeName = [@"iKeyEx:" stringByAppendingString:inputModeName];
 				}
 				
-				NSDictionary* globalPrefsDict = [NSDictionary dictionaryWithContentsOfFile:GlobalPreferences];
-				NSArray* appleKeyboards = [globalPrefsDict objectForKey:@"AppleKeyboards"];
+				NSMutableDictionary* globalPrefsDict = [NSMutableDictionary dictionaryWithContentsOfFile:GlobalPreferences];
+				NSMutableArray* appleKeyboards = [[globalPrefsDict objectForKey:@"AppleKeyboards"] mutableCopy];
 				
 				NSUInteger specifiedIndex = [appleKeyboards indexOfObject:inputModeName];
 				if (specifiedIndex != NSNotFound) {
-					NSMutableArray* mutableAppleKeyboards = [appleKeyboards mutableCopy];
-					NSMutableDictionary* mutableGlobalPrefsDict = [globalPrefsDict mutableCopy];
-					[mutableAppleKeyboards removeObjectAtIndex:specifiedIndex];
-					if ([mutableAppleKeyboards count] == 0)
-						[mutableAppleKeyboards addObject:@"en_US"];
-					[mutableGlobalPrefsDict setObject:mutableAppleKeyboards forKey:@"AppleKeyboards"];
-					[mutableGlobalPrefsDict writeToFile:GlobalPreferences atomically:YES];
+					[appleKeyboards removeObjectAtIndex:specifiedIndex];
+					if ([appleKeyboards count] == 0)
+						[appleKeyboards addObject:@"en_US"];
+					[globalPrefsDict setObject:appleKeyboards forKey:@"AppleKeyboards"];
+					[globalPrefsDict writeToFile:GlobalPreferences atomically:NO];
 					
 					NSMutableDictionary* prefsPrefsDict = [NSMutableDictionary dictionaryWithContentsOfFile:PreferencesPreferences];
-					NSString* firstKeyboard = [mutableAppleKeyboards objectAtIndex:0];
+					NSString* firstKeyboard = [appleKeyboards objectAtIndex:0];
 					BOOL prefsPrefsModified = NO;
 					if ([inputModeName isEqualToString:[prefsPrefsDict objectForKey:@"KeyboardLastChosen"]]) {
 						[prefsPrefsDict setObject:firstKeyboard forKey:@"KeyboardLastChosen"];
@@ -87,33 +85,33 @@ int main (int argc, const char* argv[]) {
 						prefsPrefsModified = YES;
 					}
 					if (prefsPrefsModified)
-						[prefsPrefsDict writeToFile:PreferencesPreferences atomically:YES];
-					
-					[mutableAppleKeyboards release];
-					[mutableGlobalPrefsDict release];
+						[prefsPrefsDict writeToFile:PreferencesPreferences atomically:NO];
 				}
+				
+				[appleKeyboards release];
+				
 			}
 			
 		} else if (!strcmp("removeall", argv[1])) {
-			NSMutableDictionary* mutableGlobalPrefsDict = [NSMutableDictionary dictionaryWithContentsOfFile:GlobalPreferences];
-			NSMutableArray* mutableAppleKeyboards = [[mutableGlobalPrefsDict objectForKey:@"AppleKeyboards"] mutableCopy];
-			NSUInteger* removableIndices = malloc([mutableAppleKeyboards count]*sizeof(NSUInteger));
-			NSUInteger removableIndicesCount = 0, curIndex = 0;
-			for (NSString* inputMode in mutableAppleKeyboards) {
+			NSMutableDictionary* globalPrefsDict = [NSMutableDictionary dictionaryWithContentsOfFile:GlobalPreferences];
+			NSMutableArray* appleKeyboards = [[globalPrefsDict objectForKey:@"AppleKeyboards"] mutableCopy];
+			NSMutableIndexSet* removableIndices = [NSMutableIndexSet indexSet];
+			NSUInteger curIndex = 0;
+			for (NSString* inputMode in appleKeyboards) {
 				if ([inputMode hasPrefix:@"iKeyEx:"])
-					removableIndices[removableIndicesCount++] = curIndex;
+					[removableIndices addIndex:curIndex];
 				++ curIndex;
 			}
 			
-			if (removableIndicesCount > 0) {
-				[mutableAppleKeyboards removeObjectsFromIndices:removableIndices numIndices:removableIndicesCount];
-				if ([mutableAppleKeyboards count] == 0)
-					[mutableAppleKeyboards addObject:@"en_US"];
-				[mutableGlobalPrefsDict setObject:mutableAppleKeyboards forKey:@"AppleKeyboards"];
-				[mutableGlobalPrefsDict writeToFile:GlobalPreferences atomically:YES];
+			if ([removableIndices count] > 0) {
+				[appleKeyboards removeObjectsAtIndexes:removableIndices];
+				if ([appleKeyboards count] == 0)
+					[appleKeyboards addObject:@"en_US"];
+				[globalPrefsDict setObject:appleKeyboards forKey:@"AppleKeyboards"];
+				[globalPrefsDict writeToFile:GlobalPreferences atomically:NO];
 				
 				NSMutableDictionary* prefsPrefsDict = [NSMutableDictionary dictionaryWithContentsOfFile:PreferencesPreferences];
-				NSString* firstKeyboard = [mutableAppleKeyboards objectAtIndex:0];
+				NSString* firstKeyboard = [appleKeyboards objectAtIndex:0];
 				BOOL prefsPrefsModified = NO;
 				if ([[prefsPrefsDict objectForKey:@"KeyboardLastChosen"] hasPrefix:@"iKeyEx:"]) {
 					[prefsPrefsDict setObject:firstKeyboard forKey:@"KeyboardLastChosen"];
@@ -124,11 +122,10 @@ int main (int argc, const char* argv[]) {
 					prefsPrefsModified = YES;
 				}
 				if (prefsPrefsModified)
-					[prefsPrefsDict writeToFile:PreferencesPreferences atomically:YES];
+					[prefsPrefsDict writeToFile:PreferencesPreferences atomically:NO];
 			}
 			
-			[mutableAppleKeyboards release];
-			free(removableIndices);
+			[appleKeyboards release];
 			
 		} else if (!strcmp("purge", argv[1])) {
 			if (argc == 2)
