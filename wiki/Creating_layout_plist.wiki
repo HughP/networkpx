@@ -1,0 +1,142 @@
+#summary (Developers) How to create a keyboard layout with layout.plist
+#labels Phase-Implementation
+
+= Introduction =
+
+layout.plist is a method to specify a keyboard layout using just simple a property list. This is the preferred method if (1) the layout does not exist already, and (2) you want to imitate the original look as much as possible.
+
+With layout.plist, you only need to decide the arrangement and position of the keys. Then iKeyEx will take care of everything else for you.
+
+You may want to see the source code of Colemak as an example of using layout.plist.
+
+= Fundamentals =
+
+On the iPhoneOS, there are 11 types of sub-layouts:
+ * Alphabet
+ * Numbers
+ * !PhonePad
+ * !PhonePadAlt
+ * !NumberPad
+ * URL
+ * URLAlt
+ * SMSAddressing
+ * SMSAddressingAlt
+ * !EmailAddress
+ * !EmailAddressAlt
+(SMSAddressing is also known as "Name Phone Pad" in the official SDK.)
+
+Except !PhonePad, !PhonePadAlt and !NumberPad layouts, all of the 8 sub-layouts have 4 rows of keys. The layout.plist method is designed to create these kinds of sub-layout (and you shouldn't overload !PhonePad and alike anyway).
+
+In iKeyEx terminology, these 8 sub-layouts are called *standard keyboards*. The 4 rows of keys are named Row 0 to 3 from top to bottom respectively. On the standard keyboard there are ordinary keys (e.g. Q, W, E, etc.) and 5 *special keys*:
+ * Shift key (⇧)
+ * Delete key (⌫)
+ * Plane chooser button (ABC/123) + International button (Globe)
+ * Space bar
+ * Return key
+When you create a standard keyboard using layout.plist, the shift and delete keys must stay on Row 2 and the rest must be on Row 3. The position of the last 3 keys are also fixed. 
+
+
+= Structure of layout.plist =
+
+To create a layout.plist layout, you must fill in the file name of the layout.plist in the UIKeyboardLayout field of `Info.plist`, e.g.
+{{{
+  UIKeyboardLayout = "layout.plist";
+}}}
+The layout.plist file does not have to be named like this, but it must have an extension of `.plist`.
+
+== Overloading Sub-layouts ==
+layout.plist is, of course, a property list. At the root it is a dictionary of dictionaries. The keys are the name of the sub-layouts to be overloaded. Typically a layout.plist will look like this:
+{{{
+{
+  Alphabet        = { ... };
+  URL             = { ... };
+  SMSAddressing   = { ... };
+  EmailAddressing = { ... };
+}
+}}}
+which means these 4 sub-layouts will be customized according to the content of this file. The 7 sub-layouts not mentioned will keyboard the original appearance of the standard QWERTY layout.
+
+The value of each key is a dictionary consists of the following properties:
+|| *Key* || *Value* || *Default* ||
+|| texts || An array specifying the ordinary keys in each row. || nil ||
+|| shiftedTexts || An array specifying the ordinary keys in each row when the shift key is held. || nil ||
+|| arrangement || The number of ordinary keys in each row. || "Default" ||
+|| rowIndentation || The indentation of the row of ordinary keys. || "Default" ||
+|| hasSpaceKey<br />hasInternationalKey<br />hasReturnKey<br />hasShiftKey<br />hasDeleteKey || Whether each of these 5 special keys are present. || YES ||
+|| shiftKeyLeft<br />deleteKeyRight || The location of these 2 special keys || 0 ||
+|| shiftKeyEnabled || Whether the shift key is enabled. || YES ||
+
+== texts, shiftedTexts ==
+
+texts is an array. The elements of texts are using array of strings, which specify the keys in the row in order.
+
+  Example: The Alphabet sub-layout of a standard QWERTY keyboard can be implemented as:
+{{{
+texts = (
+  ("q", "w", "e", "r", "t", "y", "u", "i", "o", "p"),
+  ("a", "s", "d", "f", "g", "h", "j", "k", "l"),
+  ("z", "x", "c", "v", "b", "n", "m")
+);
+}}}
+
+To avoid duplicated declaration, you can refer to texts of other sub-layouts in the same file.
+
+  Example: The URL sub-layout is usually implemented as
+{{{
+texts = (
+  "=Alphabet",
+  "=Alphabet",
+  "=Alphabet",
+  (".", "/", ".com")
+);
+}}}
+  which means the first 3 rows will use the same keys in the Alphabet sub-layout, but Row 3 will use the keys [.], [/] and [.com] instead.
+
+shiftedTexts use the same structure as texts. If shiftedTexts is missing, the shifted value will default to the uppercase string if that's just a single character (e.g. q ↦ Q), or the same string if there's more (e.g. .com ↦ .com).
+
+  _DO NOT_ associate the same value to more than one key in the same sub-layout. iPhoneOS is not designed to handle this. Currently, the composite graphics is associated to keys by the key value, so e.g. if you have a `[Q]` on the far left and another `[Q]` on the far right, the pop up graphics will be misplaced.
+
+== arrangement ==
+arrangement specifies how many keys will be present in each row. It can be an array of 4 numbers, or a string representing the standard values:
+|| *String* || *Row 0* || *Row 1* || *Row 2* || *Row 3* ||
+|| Default || 10 || 9 || 7 || ||
+|| AZERTY || 10 || 10 || 6 || ||
+|| Russian || 11 || 11 || 9 || ||
+|| Alt || 10 || 10 || 5 || ||
+|| URLAlt || 10 || 6 || 4 || ||
+|| JapaneseQWERTY || 10 || 10 || 7 || ||
+|| WithURLRow4 || || || || 3 ||
+
+WithURLRow4 can be combined with the 6 values, e.g.
+{{{
+arrangement = "Default|WithURLRow4";
+}}}
+which is equivalent to
+{{{
+arrangement = (10, 9, 7, 3);
+}}}
+means there are 10 keys in row 0, 9 keys in row 1, 7 keys in row 2 and 3 keys in row 3.
+
+== rowIndentation ==
+
+rowIndentation specifies the spacing in pixels on the left and right of that row _in portrait orientation_. It has the same structure as arrangement, i.e. it can either be an array of 4 numbers or a string of predefined values:
+|| *String* || *Row 0* || *Row 1* || *Row 2* || *Row 3* ||
+|| Default || 0 || 16 || 48 || 80 ||
+|| AZERTY || 0 || 0 || 64 || 80 ||
+|| Russian || 0 || 0 || 29 || 80 ||
+|| Alt || 0 || 0 || 48 || 80 ||
+|| !TightestDefault || 0 || 0 || 42 || 80 ||
+
+  If possible, please _avoid_ Russian rowIndentation. In the Russian keyboard, the shift and delete keys are made smaller to accommodate the 2 extra keys in Row 2. However, iKeyEx only supports one standard size of the shift and delete keys. If you use Russian rowIndentation, these two keys will overlap with ordinary keys.
+
+The indentation in landscape orientation will be automatically converted using the formula:
+  !Landscape_rowIndentation = !Portrait_rowIndentation × (47/32) + 5
+
+= Caching =
+
+Reconstructing the images and parameters for `UIKeyboardSublayout` is expensive. It takes about 1 to 2 seconds to start up. Therefore, when using layout.plist, iKeyEx will automatically cache the computed results in `/var/mobile/Library/Keyboard/iKeyEx/cache/`. 
+
+When you upgrade your layout.plist, you must empty the cache. You can do so by using the program `iKeyEx_KBMan`, e.g.
+{{{
+  iKeyEx_KBMan purge Colemak
+}}}
