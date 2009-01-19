@@ -19,6 +19,9 @@ http://xe2.xanga.com/77885261c2438230124761/w181331352.jpg
 
 You may use the *Move to beginning* (←) and *Move to end* (→) buttons to aid navigation.
 
+== Copying Web Page Content ==
+You have to install a bookmarklet to copy from web page content. See CopyingTextFromSafari for instructions. 
+
 = Pasting =
 
 Just click on any item on the clipboard to paste it.
