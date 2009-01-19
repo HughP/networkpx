@@ -84,10 +84,6 @@
 	cell.selectedTextColor = row ? [UIColor blackColor] : [UIColor whiteColor];
 	
 	NSString* txt = [[clipboard dataAtReversedIndex:row] description];
-	NSUInteger maxLen = (NSUInteger)tbl.frame.size.width;
-	if ([txt length] > tbl.frame.size.width) {
-		txt = [txt substringToIndex:maxLen];
-	}
 	if (usesPrefix) {
 		wchar_t emojiIcon = (wchar_t)row;
 		if (supportsEmoji) {
