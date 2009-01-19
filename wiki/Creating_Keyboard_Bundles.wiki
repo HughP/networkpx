@@ -1,6 +1,8 @@
 #summary (Developers) How to create an iKeyEx keyboard extension.
 #labels Phase-Implementation
 
+(You should be familiar with Objective-C and the official iPhone SDK framework first.)
+
 = Fundamentals =
 
 In the iPhoneOS, the so-called *keyboards* or *input modes* are actually composed of 2 parts: the *layout* and the *input manager*
@@ -11,7 +13,7 @@ The *layout* is a view that interacts with user input and process commands with 
 
 The standard 4-row keyboard layouts you're using are all subclasses of the more specialized `UIKeyboardLayoutRoman`. It has several `UIKeyboardSublayout` members which does the actual rendering. 
 
-There are also layouts not derived from `UIKeyboardLayoutRoman`. The emoji keyboard is a prominant example. 
+There are also layouts not derived from `UIKeyboardLayoutRoman`. The emoji keyboard is a prominent example. 
 
 == Input Manager ==
 An *input manager* is an abstract class that transforms key press commands to actual inputs. The auto-correction prompt is an input manager in action. 
@@ -23,9 +25,7 @@ Input managers are usually subclasses of `UIKeyboardInputManager`. If you're wor
 Handwriting regconition is also the job of an input manager. 
 
 = Keyboard Bundles =
-iKeyEx keyboard extensions are packaged in *keyboard bundles*. Keyboard bundles are simply directories (folders) with a definite structure. All keyboard bundles must have an `Info.plist` file to describe themselves, for example. 
-
-  If you have programming experience with official Apple platforms before, then you should notice that keyboard bundles _are_ bundles.
+iKeyEx keyboard extensions are packaged in *keyboard bundles*. Keyboard bundles are simply directories (folders) with a definite structure, i.e. a [http://en.wikipedia.org/wiki/Bundle_%28NEXTSTEP%29 bundle]. All keyboard bundles must have an `Info.plist` file to describe themselves, for example. 
 
 Keyboard bundles must reside in `/Library/iKeyEx/Keyboards/`, and have an extension of `.keyboard`. 
 
@@ -36,13 +36,13 @@ Together with the “iKeyEx:” prefix, the file name will become the *input mod
   The input mode name is used to uniquely identify a keyboard. For example, the English (US) keyboard’s input mode name is `en_US`, Traditional Chinese Handwriting is `zh_Hant-HWR`, and ℏClipboard is `iKeyEx:hClipboard`. 
 
 == Info.plist ==
-`Info.plist` is the description of the keyboard extension. It is a property list. Currently, iKeyEx regconizes the following keys:
+`Info.plist` is the description of the keyboard extension. It is a [http://developer.apple.com/documentation/Cocoa/Conceptual/PropertyLists/Introduction/chapter_1_section_1.html property list]. Currently, iKeyEx recognizes the following keys:
 
-|| Key || Value ||
-|| `CFBundleDisplayName` || The display name of the keyboard. ||
-|| `CFBundleExecutable` || The binary file that contains all executable code. ||
-|| `UIKeyboardLayout` || The layout class to use. To be described below. ||  
-|| `UIKeyboardInputManager` || The input manager class to use. To be described below. ||
+|| *Key* || *Value* ||
+|| CFBundleDisplayName || The display name of the keyboard. ||
+|| CFBundleExecutable || The binary file that contains all executable code. ||
+|| UIKeyboardLayout || The layout class to use. To be described below. ||  
+|| UIKeyboardInputManager || The input manager class to use. To be described below. ||
 
 The display name will be shown when switching keyboards using the international button, and also in the Settings application. If missing, the file name will be used as the display name. 
 
@@ -79,7 +79,34 @@ Variants are the list of accented characters (e.g. Z Ź Ž Ż) you'll see when y
 
   Note that the variants are _case-sensitive_. You'll have to specify both the variants of a lower and upper case letter separately. 
 
+On Firmware 2.2, the variants for A, C, E, I, L, N, O, S, U, Y and Z will be automatically provided, so you don't need to write a `variants.plist` for it.
+
+  As an example, the `variants.plist` for European languages may be
+
+{{{
+{
+  A = ("A", "À", "Á", "Â", "Ä", "Æ", "Ã", "Å", "Ą");
+  a = ("a", "à", "á", "â", "ä", "æ", "ã", "å", "ą");
+# etc.
+}
+}}}
+
 = Localization =
 Since in essence keyboard bundles are just regular bundles, the resources can be localized like a regular bundle. 
 
-Please refer to Apple documentation on how to localize resources. 
+Please see the source code of ℏClipboard or consult relevant [http://developer.apple.com/DOCUMENTATION/MacOSX/Conceptual/BPInternational/BPInternational.html Apple documents] on how to localize resources.
+
+= Loading Keyboard Bundles =
+
+Keyboard bundles are handled in the `KeyboardLoader` module of iKeyEx. In case you want to refer to resources in the bundle, you can import `<iKeyEx/KeyboardLoader.h>`, and call the class method `[KeyboardBundle activeBundle]` to obtain the current !KeyboardBundle object. 
+
+You can access the following properties in a !KeyboardBundle:
+|| *Type* || *Property name* || *Usage* ||
+|| `UIKeyboardInputManager*` || manager || The current `UIKeyboardInputManager` instance. ||
+|| `Class` || layoutClassPortrait || The current layout class in portrait orientation. ||
+|| `Class` || layoutClassLandscape || The current layout class in landscape orientation. ||
+|| `NSString*` || origLayoutClassPortrait || The referred input for portrait layout. ||
+|| `NSString*` || origLayoutClassLandscape || The referred input for landscape layout. ||
+|| `NSString*` || displayName || The localized display name. ||
+|| `NSDictionary*` || variants || The variants. ||
+|| `NSBundle*` || bundle || The underlying bundle object. ||
