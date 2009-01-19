@@ -3,7 +3,7 @@ Name: L33tTyper
 Version: 0.0-1
 Architecture: iphoneos-arm
 Description: Auto transliterate Latin alphabet to leet
-Homepage: http://code.google.com/p/networkpx/
+Homepage: http://code.google.com/p/networkpx/wiki/Using_L33tTyper
 Maintainer: KennyTM~ <kennytm+L33tTyper@gmail.com>
 Author: KennyTM~ <kennytm+L33tTyper@gmail.com>
 Section: Keyboard Extension
