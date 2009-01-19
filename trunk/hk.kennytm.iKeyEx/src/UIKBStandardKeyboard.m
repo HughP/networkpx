@@ -785,7 +785,6 @@ NSArray* getItem (NSDictionary* majorDict, NSString* kbTypeKey, NSString* textTy
 	if (![layoutName isKindOfClass:[NSString class]])
 		return nil;
 	
-	// TODO: Cache the results!
 	NSString* layoutPath = [bdl pathForResource:layoutName ofType:nil];
 	if (layoutPath == nil)
 		return nil;
@@ -797,7 +796,7 @@ NSArray* getItem (NSDictionary* majorDict, NSString* kbTypeKey, NSString* textTy
 	
 	UIKBStandardKeyboard* retval = [[[UIKBStandardKeyboard alloc] init] autorelease];
 	retval->keyboardAppearance = appr;
-	retval->landscape = landsc;
+	retval->landscape = NO;
 	retval->keyboardSize = [UIKeyboardImpl defaultSizeForOrientation:(landsc ? 90 : 0)];
 	
 	[retval setArrangementWithObject:[layoutDefinitions objectForKey:@"arrangement"]];
@@ -820,28 +819,28 @@ NSArray* getItem (NSDictionary* majorDict, NSString* kbTypeKey, NSString* textTy
 	// obtain other properties.
 	NSNumber* val;
 	val = [layoutDefinitions objectForKey:@"hasSpaceKey"];
-	if ([val isKindOfClass:[NSNumber class]]) retval->hasSpaceKey = [val boolValue];
+	if ([val isKindOfClass:[NSNumber class]] || [val isKindOfClass:[NSString class]]) retval->hasSpaceKey = [val boolValue];
 	
 	val = [layoutDefinitions objectForKey:@"hasInternationalKey"];
-	if ([val isKindOfClass:[NSNumber class]]) retval->hasInternationalKey = [val boolValue];
+	if ([val isKindOfClass:[NSNumber class]] || [val isKindOfClass:[NSString class]]) retval->hasInternationalKey = [val boolValue];
 	
 	val = [layoutDefinitions objectForKey:@"hasReturnKey"];
-	if ([val isKindOfClass:[NSNumber class]]) retval->hasReturnKey = [val boolValue];
+	if ([val isKindOfClass:[NSNumber class]] || [val isKindOfClass:[NSString class]]) retval->hasReturnKey = [val boolValue];
 	
 	val = [layoutDefinitions objectForKey:@"hasShiftKey"];
-	if ([val isKindOfClass:[NSNumber class]]) retval->hasShiftKey = [val boolValue];
+	if ([val isKindOfClass:[NSNumber class]] || [val isKindOfClass:[NSString class]]) retval->hasShiftKey = [val boolValue];
 	
 	val = [layoutDefinitions objectForKey:@"hasDeleteKey"];
-	if ([val isKindOfClass:[NSNumber class]]) retval->hasDeleteKey = [val boolValue];
+	if ([val isKindOfClass:[NSNumber class]] || [val isKindOfClass:[NSString class]]) retval->hasDeleteKey = [val boolValue];
 	
 	val = [layoutDefinitions objectForKey:@"shiftKeyLeft"];
-	if ([val isKindOfClass:[NSNumber class]]) retval->shiftKeyLeft = [val floatValue];
+	if ([val isKindOfClass:[NSNumber class]] || [val isKindOfClass:[NSString class]]) retval->shiftKeyLeft = [val floatValue];
 	
 	val = [layoutDefinitions objectForKey:@"deleteKeyRight"];
-	if ([val isKindOfClass:[NSNumber class]]) retval->deleteKeyRight = [val floatValue];
+	if ([val isKindOfClass:[NSNumber class]] || [val isKindOfClass:[NSString class]]) retval->deleteKeyRight = [val floatValue];
 	
 	val = [layoutDefinitions objectForKey:@"shiftKeyEnabled"];
-	if ([val isKindOfClass:[NSNumber class]]) retval->shiftKeyEnabled = [val boolValue];
+	if ([val isKindOfClass:[NSNumber class]] || [val isKindOfClass:[NSString class]]) retval->shiftKeyEnabled = [val boolValue];
 	
 	NSString* shst = [layoutDefinitions objectForKey:@"shiftStyle"];
 	if ([shst isKindOfClass:[NSString class]]) {
@@ -850,6 +849,8 @@ NSArray* getItem (NSDictionary* majorDict, NSString* kbTypeKey, NSString* textTy
 		else
 			retval->shiftStyle = UIKBShiftStyleDefault;
 	}
+	
+	retval.landscape = landsc;
 	
 	return retval;
 }
