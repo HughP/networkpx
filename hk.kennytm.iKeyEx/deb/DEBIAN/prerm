@@ -8,8 +8,7 @@ if [[ $1 == remove ]]; then
 	rm /Library/MobileSubstrate/DynamicLibraries/PrefHooker-iKeyEx.dylib
 	rm /Library/MobileSubstrate/DynamicLibraries/SBHooker-iKeyEx.dylib
 	iKeyEx-KBMan removeall
-	rmdir /var/mobile/Library/Keyboard/iKeyEx/cache
-	rmdir /var/mobile/Library/Keyboard/iKeyEx
+	rm /var/mobile/Library/Keyboard/iKeyEx/cache/*
 	if [[ ${CYDIA+@} ]]; then
 	        eval "echo 'finish:restart' >&${cydia[0]}"
     	fi
