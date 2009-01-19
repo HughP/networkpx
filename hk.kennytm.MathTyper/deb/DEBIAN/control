@@ -3,7 +3,7 @@ Name: MathTyper
 Version: 0.0-1
 Architecture: iphoneos-arm
 Description: Keyboard extension for typing mathematical symbols easily
-Homepage: http://code.google.com/p/networkpx/
+Homepage: http://code.google.com/p/networkpx/wiki/Using_MathTyper
 Maintainer: KennyTM~ <kennytm+MathTyper@gmail.com>
 Author: KennyTM~ <kennytm+MathTyper@gmail.com>
 Section: Keyboard Extension

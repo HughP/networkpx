@@ -3,7 +3,7 @@ Name: ℏClipboard
 Version: 0.0-1
 Architecture: iphoneos-arm
 Description: Global Copy & Paste for iPhone
-Homepage: http://code.google.com/p/networkpx/
+Homepage: http://code.google.com/p/networkpx/wiki/Using_hClipboard
 Maintainer: KennyTM~ <kennytm+hClipboard@gmail.com>
 Author: KennyTM~ <kennytm+hClipboard@gmail.com>
 Section: Keyboard Extension
