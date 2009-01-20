@@ -45,26 +45,90 @@
 
 static unsigned subclassSequence = 0;
 
+CGSize computeActualSizeToFitRows(NSString* str, CGRect rect, UIFont* defaultFont, CGSize strSize, CGFloat rows) {
+	CGFloat invRows = 1.f/rows;
+	CGFloat predictedWidth = strSize.width * invRows;
+	CGFloat targetHeight = rows*strSize.height;
+	CGFloat widthAmendment = INFINITY;
+	NSUInteger strLen = [str length];
+	for (NSUInteger i = 0; i < strLen; ++ i) {
+		CGFloat curWidth = [[str substringWithRange:NSMakeRange(i, 1)] sizeWithFont:defaultFont].width;
+		if (curWidth < widthAmendment)
+			widthAmendment = curWidth;
+	}
+	widthAmendment *= invRows;
+	
+	do {
+		CGSize experimentalResult = [str sizeWithFont:defaultFont
+									constrainedToSize:CGSizeMake(predictedWidth, FLT_MAX)
+										lineBreakMode:UILineBreakModeWordWrap];
+		CGFloat heightDifference = experimentalResult.height - targetHeight;
+		
+		// the height reaches target. Stop.
+		if (heightDifference <= 0)
+			return experimentalResult;
+		
+		// the height is >=2 rows too large. Enlarge the prediction at least by ((excessRows - 1) / rows)*predictedWidth
+		else if (heightDifference > strSize.height)
+			predictedWidth *= (experimentalResult.height/strSize.height - 1)*invRows;
+		
+		// the height is just 1 row too large.
+		// take away 1 char at a time and see the effect.
+		else
+			predictedWidth += widthAmendment;
+	} while (YES);
+}
+
+#import <UIKit/UIGeometry.h>
 extern void drawInCenter(NSString* str, CGRect rect, UIFont* defaultFont) {
-	// TODO: Rewrite this simple algorithm to utilize the rectangle space better.
+	NSUInteger strLen = [str length];
+	CGSize strSize = [str sizeWithFont:defaultFont];
 	
-	CGSize defSize = [str sizeWithFont:defaultFont];
-	CGFloat paddingX, paddingY;
-	CGFloat ratioX = rect.size.width / defSize.width, ratioY = rect.size.height / defSize.height;
-	CGFloat ratio = ratioX;
-	
-	if (ratioY < ratioX)
-		ratio = ratioY;
-	if ([str length] == 1 || ratio > 1) {
-		paddingX = (rect.size.width - defSize.width)/2;
-		paddingY = (rect.size.height - defSize.height)/2;
-		[str drawInRect:CGRectInset(rect, paddingX, paddingY) withFont:defaultFont];
+	// (1) Try to fit into 1 line.
+	if (strLen == 1 || strSize.width <= rect.size.width) {
+		UIFont* newFont;
+		if (strSize.height >= rect.size.height)
+			newFont = [defaultFont fontWithSize:defaultFont.pointSize*rect.size.height/strSize.height];
+		else
+			newFont = defaultFont;
+		
+		CGPoint p = CGPointMake(rect.origin.x+(rect.size.width-strSize.width)/2, rect.origin.y+(rect.size.height-strSize.height)/2);
+		[str drawAtPoint:p withFont:defaultFont];
+		
+		// (2) Compute the number of rows required to minimize the area wasted.
 	} else {
-		UIFont* newFont = [defaultFont fontWithSize:(ratio*defaultFont.pointSize)];
-		defSize = [str sizeWithFont:newFont];
-		paddingX = (rect.size.width - defSize.width)/2;
-		paddingY = (rect.size.height - defSize.height)/2;
-		[str drawInRect:CGRectInset(rect, paddingX, paddingY) withFont:newFont];
+		// assume  w = strSize.width,    h = strSize.height,
+		//        rw = rect.size.width, rh = rect.size.height
+		//
+		// ratio of area wasted of having N rows is
+		//    = 1 - N^2 * rw/rh * h/w.
+		// so the optimal number of rows is
+		//   N = sqrt(w/h * rh/rw).
+		
+		CGFloat aspectRatioRatio = (strSize.width * rect.size.height) / (strSize.height * rect.size.width);
+		CGFloat sqrtARR = sqrt(aspectRatioRatio);
+		CGFloat rowCount = floor(sqrtARR);
+		if (sqrtARR - rowCount > 0.7)
+			rowCount += 1;
+		
+		CGSize size;
+		
+		if (rowCount == 1)
+			size = strSize;
+		else
+			size = computeActualSizeToFitRows(str, rect, defaultFont, strSize, rowCount);
+		size.width += 4;
+		size.height += 4;
+		
+		CGFloat ratio = fmin(rect.size.width/size.width, rect.size.height/size.height);
+		CGFloat xInset = (rect.size.width - ratio*size.width)/2;
+		CGFloat yInset = (rect.size.height - ratio*size.height)/2;
+		
+		UIFont* newFont = [defaultFont fontWithSize:(ratio * defaultFont.pointSize)];
+		[str drawInRect:CGRectInset(rect, xInset, yInset)
+			   withFont:newFont
+		  lineBreakMode:UILineBreakModeWordWrap
+			  alignment:UITextAlignmentCenter];
 	}
 }
 
