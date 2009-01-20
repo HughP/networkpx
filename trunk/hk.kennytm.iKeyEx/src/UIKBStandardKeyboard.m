@@ -368,14 +368,16 @@ NSArray* getItem (NSDictionary* majorDict, NSString* kbTypeKey, NSString* textTy
 	if (landscape != landsc) {
 		// attempt fix the lefts & widths.
 		if (landsc) {
-			for (NSUInteger i = 0; i < UIKBKey_rows; ++ i)
+			for (NSUInteger i = 0; i < UIKBKey_rows-1; ++ i)
 				lefts[i] = (NSUInteger)round(lefts[i] * UIKBKey_orientationIndentRatio);
+			lefts[UIKBKey_rows-1] = (NSUInteger)round((lefts[UIKBKey_rows-1]-48) * UIKBKey_orientationIndentRatio) + 48;
 			shiftKeyLeft = (NSUInteger)round(shiftKeyLeft * UIKBKey_orientationIndentRatio);
 			deleteKeyRight = (NSUInteger)round(deleteKeyRight * UIKBKey_orientationIndentRatio);
 			keyboardSize = [UIKeyboardImpl defaultSizeForOrientation:90];
 		} else {
-			for (NSUInteger i = 0; i < UIKBKey_rows; ++ i)
+			for (NSUInteger i = 0; i < UIKBKey_rows-1; ++ i)
 				lefts[i] = (NSUInteger)round(lefts[i] / UIKBKey_orientationIndentRatio);
+			lefts[UIKBKey_rows-1] = (NSUInteger)round((lefts[UIKBKey_rows-1]-48) / UIKBKey_orientationIndentRatio) + 48;
 			shiftKeyLeft = (NSUInteger)round(shiftKeyLeft / UIKBKey_orientationIndentRatio);
 			deleteKeyRight = (NSUInteger)round(deleteKeyRight / UIKBKey_orientationIndentRatio);
 			keyboardSize = [UIKeyboardImpl defaultSizeForOrientation:0];
