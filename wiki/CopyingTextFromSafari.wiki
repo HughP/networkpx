@@ -19,6 +19,14 @@ Since ℏClipboard is a keyboard extension, the keyboard must show up for ℏCli
  # Click Cancel to return to the original page. 
 Sometimes you'll see no texts when Mail launches. This is simply because the content is not on screen. Scroll down and you'll start to see something. 
 
+== Advantages ==
+ # Copying from long range of text is possible
+
+== Disadvantages ==
+ # The page style is totally destroyed in Mail.
+ # Memory usage will be doubled since the whole page will need to be rendered again in Mail. This may crash Safari more easily.
+ # You have to find the text again.
+
 = Convert Elements to Text Field =
 == Setup ==
  # <a href="http://code.google.com/p/networkpx/wiki/CopyingTextFromSafari#javascript:d=document;l='length';N='tagName';L='toLowerCase';P='parentNode';r='replaceChild';S='stopPropagation';function y(e){this[P][r](this.hh,this);e[S]();}function x(e){s=e.target;if(s[N][L]()in{textarea:0,input:0,select:0})return;if(s!=this&&(s.href||s.onclick||s.onfocus))return;a=d.createElement('textarea');a.value=this.textContent;a.style.width=this.clientWidth+'px';a.style.height=this.clientHeight+'px';a.hh=this;a.readOnly=true;a.onblur=y;this[P][r](a,this);a.focus();e[S]();}c=d.getElementsByTagName('*');for(i=c[l]-1;i>=0;--i)if(c[i][N][L]()in{p:0,blockquote:0,h1:0,h2:0,h3:0,h4:0,h5:0,h6:0,dt:0,dd:0,li:0,th:0,td:0,caption:0,div:0,pre:0,address:0})c[i].addEventListener('click',x,false);">Click here</a>
@@ -33,3 +41,11 @@ Sometimes you'll see no texts when Mail launches. This is simply because the con
  # Now click on any text you want to copy. It will turn into a textfield and the keyboard will be summoned.
  # Switch to ℏClipboard and do your copying.
  # Click Done above the keyboard and the text will return to normal. 
+
+== Advantages ==
+ # Faster response, less memory consumption.
+ # You don't need to locate the text again.
+
+== Disadvantages ==
+ # The range of text you can copy is more confined; most of the time you have to copy one paragraph at a time.
+ # If the page is dynamic, some effects may be disrupted.
