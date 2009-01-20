@@ -49,12 +49,10 @@
 	enum UIKeyDefinitionDownActionFlag down_flags;
 	enum UIKeyDefinitionUpActionFlag up_flags;
 	enum UIKeyType key_type;
-@protected
 	NSString* pop_type;
 }
 @property(copy) NSString* value;
 @property(copy) NSString* shifted;
-@property(copy) NSString* pop_type;
 
 -(id)initWithKeyDefinition:(UIKeyDefinition)keyDef;
 -(id)initWithCopy:(UIKBKeyDefinition*)keyDef;

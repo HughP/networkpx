@@ -37,6 +37,7 @@
 #import <UIKit/UIImageView.h>
 #import <UIKit/UIGeometry.h>
 #import <UIKit2/Functions.h>
+#import <UIKit2/Constants.h>
 #import <iKeyEx/UIKBKeyDefinition.h>
 #import <stdlib.h>
 
@@ -64,7 +65,7 @@
 	} else \
 		varName = keyboard.varName
 
-+(UIKeyboardSublayout*)sublayoutWithFrame:(CGRect)frame keyboard:(UIKBStandardKeyboard*)keyboard keyDefinitionBuffer:(UIKeyDefinition**)keydef keyCountBuffer:(NSUInteger*)keyCount type:(NSString*)sublayoutType isAlt:(BOOL)isAlt {
++(UIKeyboardSublayout*)sublayoutWithFrame:(CGRect)frame keyboard:(UIKBStandardKeyboard*)keyboard keyDefinitionBuffer:(UIKeyDefinition**)keydef keyCountBuffer:(NSUInteger*)keyCount type:(NSString* const)sublayoutType isAlt:(BOOL)isAlt {	
 	UIKeyboardAppearance appr = keyboard.keyboardAppearance;
 	BOOL landscape = keyboard.landscape;
 	
@@ -131,15 +132,15 @@
 	[sl registerKeyCentroids];
 	[sl setUsesKeyCharges:YES];
 	
-	[sl setCompositeImage:UIKBGetImage(UIKBImagePopupFlexible, appr, landscape) forKey:@"_pop_center2_"];
-	[sl setCompositeImage:UIKBGetImage(UIKBImagePopupCenter, appr, landscape) forKey:@"_pop_center1_"];
-	[sl setCompositeImage:UIKBGetImage(UIKBImagePopupLeft, appr, landscape) forKey:@"_pop_left_"];
-	[sl setCompositeImage:UIKBGetImage(UIKBImagePopupRight, appr, landscape) forKey:@"_pop_right_"];
+	[sl setCompositeImage:UIKBGetImage(UIKBImagePopupFlexible, appr, landscape) forKey:UIKeyboardPopImageCenter2];
+	[sl setCompositeImage:UIKBGetImage(UIKBImagePopupCenter, appr, landscape) forKey:UIKeyboardPopImageCenter1];
+	[sl setCompositeImage:UIKBGetImage(UIKBImagePopupLeft, appr, landscape) forKey:UIKeyboardPopImageLeft];
+	[sl setCompositeImage:UIKBGetImage(UIKBImagePopupRight, appr, landscape) forKey:UIKeyboardPopImageRight];
 	
-	[sl setCompositeImage:fgImage forKey:@"_letters_fg_main_"];
-	[sl setCompositeImage:fgShiftImage forKey:@"_letters_fg_main_shift_"];
-	[sl setCompositeImage:fgImage forKey:@"_letters_fg_alt_"];
-	[sl setCompositeImage:fgShiftImage forKey:@"_letters_fg_alt_shift_"];
+	[sl setCompositeImage:fgImage forKey:UIKeyboardFGLettersMain];
+	[sl setCompositeImage:fgShiftImage forKey:UIKeyboardFGLettersMainShift];
+	[sl setCompositeImage:fgImage forKey:UIKeyboardFGLettersAlt];
+	[sl setCompositeImage:fgShiftImage forKey:UIKeyboardFGLettersAltShift];
 	
 	// actual location of the shift.
 	if (keyboard.hasShiftKey && keyboard.shiftKeyEnabled) {
@@ -165,9 +166,6 @@
 	
 	[sl addInternationalKeyIfNeeded:sublayoutType];
 	
-	// FIXME: Because BOOL IsTransparentKeyboardLayout(NSString*) compares the
-	//        argument by POINTER instead of VALUE, the space bar & return key
-	//        will *always* be opaque.
 	if (keyboard.hasSpaceKey)
 		[sl addSpaceKeyViewIfNeeded:sublayoutType];
 	if (keyboard.hasReturnKey)
@@ -179,7 +177,7 @@
 
 #pragma mark -
 
-#define CreateBuildMethod(sublayoutType, landsc, typeName, isAlt_) \
+#define CreateBuildMethod(sublayoutType, landsc, isAlt_) \
 -(id)buildUIKeyboardLayout##sublayoutType { \
 	UIKBStandardKeyboard* keyboard = [UIKBStandardKeyboard keyboardWithBundle:[KeyboardBundle activeBundle] \
 										name:@#sublayoutType \
@@ -192,13 +190,13 @@
 					keyboard:keyboard \
 					keyDefinitionBuffer:(keyDefs+UIKBSublayout##sublayoutType) \
 					keyCountBuffer:(keyCounts+UIKBSublayout##sublayoutType) \
-					type:typeName \
+					type:UIKeyboardLayout##sublayoutType \
 					isAlt:isAlt_]; \
 	} \
 } \
  
 
-#define CreateBuildMethodTransparent(sublayoutType, landsc, typeName, isAlt_) \
+#define CreateBuildMethodTransparent(sublayoutType, landsc, isAlt_) \
 -(id)buildUIKeyboardLayout##sublayoutType##Transparent { \
 	UIKBStandardKeyboard* keyboard = [UIKBStandardKeyboard keyboardWithBundle:[KeyboardBundle activeBundle] \
 										name:@#sublayoutType \
@@ -211,15 +209,15 @@
 					keyboard:keyboard \
 					keyDefinitionBuffer:(keyDefs+UIKBSublayout##sublayoutType) \
 					keyCountBuffer:(keyCounts+UIKBSublayout##sublayoutType) \
-					type:typeName \
+					type:UIKeyboardLayout##sublayoutType##Transparent \
 					isAlt:isAlt_]; \
 	} \
 } \
  
 
-#define CreateBuildMethods(sublayoutType, landsc, typeName, isAlt) \
-CreateBuildMethod(sublayoutType, landsc, typeName, isAlt); \
-CreateBuildMethodTransparent(sublayoutType, landsc, typeName @"trans_", isAlt);
+#define CreateBuildMethods(sublayoutType, landsc, isAlt) \
+CreateBuildMethod(sublayoutType, landsc, isAlt); \
+CreateBuildMethodTransparent(sublayoutType, landsc, isAlt);
 
 void resizePopupImage (BOOL landscape, UIView* m_activeKeyView, UIKeyDefinition* keydef) {
 	CGSize oldSize = m_activeKeyView.bounds.size;
@@ -262,24 +260,23 @@ void resizePopupImage (BOOL landscape, UIView* m_activeKeyView, UIKeyDefinition*
 	return self;
 }
 
-CreateBuildMethods(Alphabet, NO, @"_abc_", NO);
-CreateBuildMethods(Numbers, NO, @"_123_", YES);
-CreateBuildMethods(PhonePad, NO, @"_phone_", NO);
-CreateBuildMethods(PhonePadAlt, NO, @"_phone_alt_", YES);
-CreateBuildMethods(NumberPad, NO, @"_number_pad_", NO);
-CreateBuildMethods(URL, NO, @"_url_", NO);
-CreateBuildMethods(URLAlt, NO, @"_url_alt_", YES);
-CreateBuildMethods(SMSAddressing, NO, @"_sms_", NO);
-CreateBuildMethods(SMSAddressingAlt, NO, @"_sms_alt_", YES);
-CreateBuildMethods(EmailAddress, NO, @"_email_", NO);
-CreateBuildMethods(EmailAddressAlt, NO, @"_email_alt_", YES);
+CreateBuildMethods(Alphabet, NO, NO);
+CreateBuildMethods(Numbers, NO, YES);
+CreateBuildMethods(PhonePad, NO, NO);
+CreateBuildMethods(PhonePadAlt, NO, YES);
+CreateBuildMethods(NumberPad, NO, NO);
+CreateBuildMethods(URL, NO, NO);
+CreateBuildMethods(URLAlt, NO, YES);
+CreateBuildMethods(SMSAddressing, NO, NO);
+CreateBuildMethods(SMSAddressingAlt, NO, YES);
+CreateBuildMethods(EmailAddress, NO, NO);
+CreateBuildMethods(EmailAddressAlt, NO, YES);
 
 // fix the flexible popup to make it really flexible.
 // Can we hide the frame change?
 -(void)activateCompositeKey:(UIKeyDefinition*)keydef {
-	// can
 	[super activateCompositeKey:keydef];
-	if ([keydef->pop_type isEqualToString:@"_pop_center2_"])
+	if (keydef->pop_type == UIKeyboardPopImageCenter2)
 		resizePopupImage(NO, m_activeKeyView, keydef);
 }
 
@@ -303,22 +300,22 @@ CreateBuildMethods(EmailAddressAlt, NO, @"_email_alt_", YES);
 	return self;
 }
 
-CreateBuildMethods(Alphabet, YES, @"_abc_", NO);
-CreateBuildMethods(Numbers, YES, @"_123_", YES);
-CreateBuildMethods(PhonePad, YES, @"_phone_", NO);
-CreateBuildMethods(PhonePadAlt, YES, @"_phone_alt_", YES);
-CreateBuildMethods(NumberPad, YES, @"_number_pad_", NO);
-CreateBuildMethods(URL, YES, @"_url_", NO);
-CreateBuildMethods(URLAlt, YES, @"_url_alt_", YES);
-CreateBuildMethods(SMSAddressing, YES, @"_sms_", NO);
-CreateBuildMethods(SMSAddressingAlt, YES, @"_sms_alt_", YES);
-CreateBuildMethods(EmailAddress, YES, @"_email_", NO);
-CreateBuildMethods(EmailAddressAlt, YES, @"_email_alt_", YES);
+CreateBuildMethods(Alphabet, YES, NO);
+CreateBuildMethods(Numbers, YES, YES);
+CreateBuildMethods(PhonePad, YES, NO);
+CreateBuildMethods(PhonePadAlt, YES, YES);
+CreateBuildMethods(NumberPad, YES, NO);
+CreateBuildMethods(URL, YES, NO);
+CreateBuildMethods(URLAlt, YES, YES);
+CreateBuildMethods(SMSAddressing, YES, NO);
+CreateBuildMethods(SMSAddressingAlt, YES, YES);
+CreateBuildMethods(EmailAddress, YES, NO);
+CreateBuildMethods(EmailAddressAlt, YES, YES);
 
 // fix the flexible popup to make it really flexible.
 -(void)activateCompositeKey:(UIKeyDefinition*)keydef {
 	[super activateCompositeKey:keydef];
-	if ([keydef->pop_type isEqualToString:@"_pop_center2_"])
+	if (keydef->pop_type == UIKeyboardPopImageCenter2)
 		resizePopupImage(YES, m_activeKeyView, keydef);
 }
 

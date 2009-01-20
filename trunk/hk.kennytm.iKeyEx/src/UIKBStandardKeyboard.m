@@ -35,6 +35,7 @@
 #import <iKeyEx/ImageLoader.h>
 #import <iKeyEx/UIKBKeyDefinition.h>
 #import <UIKit2/UIKeyboardImpl.h>
+#import <UIKit2/Constants.h>
 #import <UIKit/UIGraphics.h>
 
 #pragma mark -
@@ -633,12 +634,12 @@ NSArray* getItem (NSDictionary* majorDict, NSString* kbTypeKey, NSString* textTy
 						
 			if (widths[row] >= UIKBKeyPopupSize.width+UIKBKey_Padding) {
 				keydef->pop_bg_area = CGRectMake(0, 0, widths[row]+36, UIKBKey_PopBgArea_Center2_height);
-				keydef.pop_type = @"_pop_center2_";
+				keydef->pop_type = UIKeyboardPopImageCenter2;
 				keydef->pop_padding = CGRectZero;
 			} else {
 				if (curLeft - leftEdge < UIKBKey_PopBgArea_EdgeTolerance) {
 					keydef->pop_bg_area = landscape ? UIKBKey_Landscape_PopBgArea_Left : UIKBKey_PopBgArea_Left;
-					keydef.pop_type = @"_pop_left_";
+					keydef->pop_type = UIKeyboardPopImageLeft;
 					keydef->pop_padding = CGRectMake(
 													landscape?UIKBKey_PopPadding_LandscapeLeft_x:UIKBKey_PopPadding_PortraitLeft_x,
 													popPadding_y,
@@ -647,7 +648,7 @@ NSArray* getItem (NSDictionary* majorDict, NSString* kbTypeKey, NSString* textTy
 													);
 				} else if (keyboardSize.width - curLeft - widths[row] - leftEdge < UIKBKey_PopBgArea_EdgeTolerance) {
 					keydef->pop_bg_area = landscape ? UIKBKey_Landscape_PopBgArea_Right : UIKBKey_PopBgArea_Right;
-					keydef.pop_type = @"_pop_right_";
+					keydef->pop_type = UIKeyboardPopImageRight;
 					keydef->pop_padding = CGRectMake(
 													landscape?UIKBKey_PopPadding_LandscapeRight_x:UIKBKey_PopPadding_PortraitRight_x,
 													popPadding_y,
@@ -656,7 +657,7 @@ NSArray* getItem (NSDictionary* majorDict, NSString* kbTypeKey, NSString* textTy
 													);
 				} else {
 					keydef->pop_bg_area = landscape ? UIKBKey_Landscape_PopBgArea_Center1 : UIKBKey_PopBgArea_Center1;
-					keydef.pop_type = @"_pop_center1_";
+					keydef->pop_type = UIKeyboardPopImageCenter1;
 					keydef->pop_padding = CGRectMake(0, popPadding_y, 0, UIKBKey_PopPadding_height);
 				}
 			}
@@ -688,7 +689,7 @@ NSArray* getItem (NSDictionary* majorDict, NSString* kbTypeKey, NSString* textTy
 		}
 	}
 	
-	keydef.pop_type = nil;
+	keydef->pop_type = nil;
 	keydef->pop_char_area = keydef->accent_frame = keydef->pop_padding = CGRectZero;
 	
 	if (hasShiftKey && shiftKeyEnabled) {

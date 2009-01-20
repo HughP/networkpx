@@ -32,10 +32,11 @@
 
 #import <iKeyEx/UIKBKeyDefinition.h>
 #import <UIKit/UIGeometry.h>
+#import <UIKit2/Constants.h>
 #include <stdlib.h>
 
 @implementation UIKBKeyDefinition
-@synthesize value, shifted, pop_type;
+@synthesize value, shifted;
 
 -(id)initWithKeyDefinition:(UIKeyDefinition)keyDef {
 	if ((self = [super init])) {
@@ -49,7 +50,6 @@
 		memcpy(&bg_area, &(keyDef->bg_area), sizeof(UIKBKeyDefinition));
 		value = [value copy];
 		shifted = [shifted copy];
-		pop_type = [pop_type copy];
 	}
 	return self;
 }
@@ -57,7 +57,6 @@
 -(void)dealloc {
 	[value release];
 	[shifted release];
-	[pop_type release];
 	[super dealloc];
 }
 
@@ -66,14 +65,12 @@
 	memcpy(&bg_area, &keyDef, sizeof(UIKBKeyDefinition));
 	value = [value copy];
 	shifted = [shifted copy];
-	pop_type = [pop_type copy];
 }
 -(UIKeyDefinition)keyDefinition {
 	UIKeyDefinition retVal;
 	memcpy(&retVal, &bg_area, sizeof(UIKBKeyDefinition));
 	retVal.value = [value copy];
 	retVal.shifted = [shifted copy];
-	retVal.pop_type = [pop_type copy];
 	return retVal;
 }
 
@@ -89,7 +86,7 @@
 		DecodeCGRect(pop_padding);
 		self.value = [decoder decodeObjectForKey:@"value"];
 		self.shifted = [decoder decodeObjectForKey:@"shifted"];
-		self.pop_type = [decoder decodeObjectForKey:@"pop_type"];
+		pop_type = (NSString*)[decoder decodeIntForKey:@"pop_type"];	// we assume the locations of the UIKit constants are.. well, constant.
 		down_flags = [decoder decodeIntForKey:@"down_flags"];
 		up_flags = [decoder decodeIntForKey:@"up_flags"];
 		key_type = [decoder decodeIntForKey:@"key_type"];
@@ -111,7 +108,7 @@
 	EncodeCGRect(pop_padding);
 	[encoder encodeObject:value forKey:@"value"];
 	[encoder encodeObject:shifted forKey:@"shifted"];
-	[encoder encodeObject:pop_type forKey:@"pop_type"];
+	[encoder encodeInt:(int)pop_type forKey:@"pop_type"];
 	[encoder encodeInt:down_flags forKey:@"down_flags"];
 	[encoder encodeInt:up_flags forKey:@"up_flags"];
 	[encoder encodeInt:key_type forKey:@"key_type"];
@@ -158,24 +155,14 @@
 	
 	NSData* bytesData = [[NSData alloc] initWithBytesNoCopy:bytesToSave length:count*(sizeof(UIKBKeyDefinition)) freeWhenDone:NO];
 	
-	NSMutableArray* dataToSave = [[NSMutableArray alloc] initWithCapacity:count*3+1];
+	NSMutableArray* dataToSave = [[NSMutableArray alloc] initWithCapacity:count*2+1];
 	[dataToSave addObject:bytesData];
 	
-	NSNumber* zero = [[NSNumber alloc] initWithBool:NO];
+	id zero = [[NSNumber alloc] initWithBool:NO];
 	
 	for (NSUInteger i = 0; i < count; ++ i) {
-		if (keyDefs[i]->value != nil)
-			[dataToSave addObject:keyDefs[i]->value];
-		else
-			[dataToSave addObject:zero];
-		if (keyDefs[i]->shifted != nil)
-			[dataToSave addObject:keyDefs[i]->shifted];
-		else
-			[dataToSave addObject:zero];
-		if (keyDefs[i]->pop_type != nil)
-			[dataToSave addObject:keyDefs[i]->pop_type];
-		else
-			[dataToSave addObject:zero];
+		[dataToSave addObject:((keyDefs[i]->value != nil) ? keyDefs[i]->value : zero)];
+		[dataToSave addObject:((keyDefs[i]->shifted != nil) ? keyDefs[i]->shifted : zero)];
 	}
 	
 	//[dataToSave writeToFile:filename atomically:YES];
@@ -218,7 +205,7 @@
 		return nil;
 	}
 	
-	NSUInteger count = ([dataToRead count]-1)/3;
+	NSUInteger count = ([dataToRead count]-1)/2;
 	UIKBKeyDefinition** keyDefsArr = malloc(count*sizeof(UIKBKeyDefinition*));
 		
 	int round = 0;
@@ -246,9 +233,6 @@
 				case 1:
 					(*curKeyDef)->shifted = isNSString ? [data copy] : nil;
 					++ round;
-					break;
-				case 2:
-					(*curKeyDef)->pop_type = isNSString ? [data copy] : nil;
 					++ curBytes;
 					++ curKeyDef;
 					round = 0;
@@ -273,7 +257,6 @@
 		memcpy(buf, &(keyDef->bg_area), sizeof(UIKeyDefinition));
 		buf->value = [buf->value copy];
 		buf->shifted = [buf->shifted copy];
-		buf->pop_type = [buf->pop_type copy];
 		++ buf;
 	}
 }
