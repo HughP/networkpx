@@ -48,6 +48,7 @@ Some texts are read-only, so no clipboards will be displayed. You can't copy any
  * Received text in MobileSMS, iRealSMS, etc. 
  * Received mails in !MobileMail -- click Reply to show the keyboard.
  * Web contents -- In a browser (!MobileSafari, myFox, etc.) you may want to use [CopyingTextFromSafari these bookmarklets] to workaround it.
+ * PDF, Word Documents, etc.
 
 
 = Alternative Solutions =
