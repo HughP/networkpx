@@ -1,0 +1,22 @@
+#!/bin/bash
+
+declare -a cydia
+cydia=($CYDIA)
+
+if [[ $1 == configure ]]; then
+	ln -s /Library/iKeyEx/lib/libiKeyEx.dylib /usr/lib/libiKeyEx.dylib;
+	ln -s /Library/iKeyEx/lib/PrefHooker-iKeyEx.dylib /Library/MobileSubstrate/DynamicLibraries/PrefHooker-iKeyEx.dylib
+	ln -s /Library/iKeyEx/lib/SBHooker-iKeyEx.dylib /Library/MobileSubstrate/DynamicLibraries/SBHooker-iKeyEx.dylib
+	ldid -S /usr/bin/iKeyEx-KBMan
+fi
+
+echo ""
+echo ""
+echo "-------------------------------------------------------------"
+echo "-------------------------------------------------------------"
+echo "To enable an installed keyboard, go to"
+echo "  Settings -> General -> Keyboards -> International Keyboards"
+echo "-------------------------------------------------------------"
+echo "-------------------------------------------------------------"
+echo ""
+echo ""

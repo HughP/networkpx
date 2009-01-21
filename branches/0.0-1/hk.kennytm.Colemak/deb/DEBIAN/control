@@ -1,0 +1,11 @@
+Package: hk.kennytm.Colemak
+Name: Colemak
+Version: 0.0-1
+Architecture: iphoneos-arm
+Description: Colemak keyboard layout.
+Homepage: http://code.google.com/p/networkpx/wiki/Using_Colemak
+Maintainer: KennyTM~ <kennytm+Colemak@gmail.com>
+Author: KennyTM~ <kennytm+Colemak@gmail.com>
+Section: Keyboard Extension
+Depends: hk.kennytm.iKeyEx (>=0.0-1)
+Installed-Size: 2.3818359375
