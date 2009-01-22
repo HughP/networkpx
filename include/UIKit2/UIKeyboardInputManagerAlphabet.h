@@ -4,6 +4,7 @@
  *     class-dump is Copyright (C) 1997-1998, 2000-2001, 2004-2007 by Steve Nygard.
  */
 
+#import <CoreFoundation/CoreFoundation.h>
 #import <UIKit2/UIKeyboardInputManager.h>
 
 @interface UIKeyboardInputManagerAlphabet : UIKeyboardInputManager
@@ -38,8 +39,8 @@
 - (id)shadowTyping;
 - (void)setShift:(BOOL)fp8;
 - (void)setAutoShift:(BOOL)fp8;
-- (struct __CFArray *)chargeableKeys;
-- (struct __CFDictionary *)chargedKeyProbabilities;
+- (CFArrayRef)chargeableKeys;
+- (CFDictionaryRef)chargedKeyProbabilities;
 - (id)composedTyping;
 - (id)autocorrection;
 

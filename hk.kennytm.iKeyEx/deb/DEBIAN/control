@@ -2,10 +2,11 @@ Package: hk.kennytm.iKeyEx
 Name: iKeyEx
 Version: 0.0-1
 Architecture: iphoneos-arm
-Description: iKeyEx is a MobileSubstrate-based keyboard extension framework for the iPhoneOS 2.2.
+Description: iKeyEx is a MobileSubstrate-based keyboard extension framework for the iPhoneOS.
 Homepage: http://code.google.com/p/networkpx/
 Maintainer: KennyTM~ <kennytm+iKeyEx@gmail.com>
 Author: KennyTM~ <kennytm+iKeyEx@gmail.com>
 Section: Keyboard Extension
 Depends: mobilesubstrate (>=0.9-0)
 Instanlled-Size: 193
+Pre-Depends: firmware (>=2.2)
