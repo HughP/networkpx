@@ -1,5 +1,0 @@
-#!/bin/bash
-
-if [[ $1 == upgrade ]]; then
-	iKeyEx-KBMan purge Colemak
-fi
