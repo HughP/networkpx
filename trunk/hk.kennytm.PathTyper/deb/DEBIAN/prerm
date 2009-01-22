@@ -2,4 +2,5 @@
 
 if [[ $1 == remove ]]; then
 	iKeyEx-KBMan remove PathTyper
+	exit 0
 fi

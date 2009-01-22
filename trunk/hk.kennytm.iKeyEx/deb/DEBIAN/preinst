@@ -8,3 +8,14 @@ if [[ $1 == install || $1 == upgrade ]]; then
 	        eval "echo 'finish:restart' >&${cydia[0]}"
     	fi
 fi
+
+echo ""
+echo ""
+echo "-------------------------------------------------------------"
+echo "-------------------------------------------------------------"
+echo "Hint: To enable an installed keyboard, go to"
+echo "  Settings -> General -> Keyboards -> International Keyboards"
+echo "-------------------------------------------------------------"
+echo "-------------------------------------------------------------"
+echo ""
+echo ""
