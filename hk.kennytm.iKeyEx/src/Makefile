@@ -2,7 +2,9 @@ iPhoneDevPath=/Developer/Platforms/iPhoneOS.platform/Developer
 iPhoneSDKPath=$(iPhoneDevPath)/SDKs/iPhoneOS2.2.sdk
 iPhoneGCCIncPath=$(iPhoneSDKPath)/usr/lib/gcc/powerpc-apple-darwin9/4.0.1/include/
 iKeyExIncPath=../../include
-iKeyExLibPath=../deb/Library/iKeyEx/lib
+iKeyExLibPath=../deb/usr/lib
+iKeyExBinPath=../deb/usr/bin
+MobileSubstratePath=../deb/Library/MobileSubstrate/DynamicLibraries
 
 Compiler=$(iPhoneDevPath)/usr/bin/arm-apple-darwin9-gcc-4.0.1
 CodeSign=ldid -S
@@ -20,6 +22,7 @@ Options=-lobjc \
 	-framework CoreFoundation \
 	-framework CoreGraphics \
 	-L$(iPhoneSDKPath)/usr/lib \
+	-L/usr/local/lib \
 	-L$(iKeyExLibPath) \
 	-Wall \
 	-lobjc \
@@ -33,15 +36,15 @@ iKeyExTarget=$(iKeyExLibPath)/libiKeyEx.dylib
 iKeyExOptions=-dynamiclib -init _initDylib
 
 PrefHookerSources=PrefHooker-iKeyEx.m
-PrefHookerTarget=$(iKeyExLibPath)/PrefHooker-iKeyEx.dylib
+PrefHookerTarget=$(MobileSubstratePath)/PrefHooker-iKeyEx.dylib
 PrefHookerOptions=-dynamiclib -lsubstrate -liKeyEx -framework Preferences -init _installHook
 
 SBHookerSources= UIAccentedCharacterView-setStringWidth.m SBHooker-iKeyEx.m
-SBHookerTarget=$(iKeyExLibPath)/SBHooker-iKeyEx.dylib
+SBHookerTarget=$(MobileSubstratePath)/SBHooker-iKeyEx.dylib
 SBHookerOptions=-dynamiclib -lsubstrate -liKeyEx -init _installHook
 
 KBManSources=iKeyEx-KBMan.m
-KBManTarget=../deb/usr/bin/iKeyEx-KBMan
+KBManTarget=$(iKeyExBinPath)/iKeyEx-KBMan
 KBManOptions=
 
 all: $(iKeyExTarget) $(PrefHookerTarget) $(SBHookerTarget) $(KBManTarget)
@@ -59,9 +62,8 @@ $(SBHookerTarget):	$(SBHookerSources)
 	$(CodeSign) $@
 
 $(KBManTarget):	$(KBManSources)
-	export CODESIGN_ALLOCATE=$(iPhoneDevPath)/usr/bin/codesign_allocate
 	$(Compiler) $(Options) $(KBManOptions) -o $@ $^
-	#$(CodeSign) $@
+	$(CodeSign) $@
 
 clean:
 	rm $(iKeyExTarget)
