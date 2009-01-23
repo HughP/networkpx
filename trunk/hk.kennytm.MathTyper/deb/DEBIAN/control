@@ -1,11 +1,13 @@
-Package: hk.kennytm.MathTyper
+Package: hk.kennytm.mathtyper
 Name: MathTyper
 Version: 0.0-1
 Architecture: iphoneos-arm
 Description: Keyboard extension for typing mathematical symbols easily
 Homepage: http://code.google.com/p/networkpx/wiki/Using_MathTyper
+Depiction: http://moreinfo.thebigboss.org/moreinfo/mathtyperDp.php
 Maintainer: KennyTM~ <kennytm+MathTyper@gmail.com>
 Author: KennyTM~ <kennytm+MathTyper@gmail.com>
-Section: Keyboard Extension
+Section: Toys
 Depends: hk.kennytm.iKeyEx (>=0.0-1)
-Installed-Size: 5.6279296875
+Installed-Size: 6
+dev: kennytm

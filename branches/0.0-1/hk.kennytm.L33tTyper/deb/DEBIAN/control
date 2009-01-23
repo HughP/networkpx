@@ -1,11 +1,13 @@
-Package: hk.kennytm.L33tTyper
+Package: hk.kennytm.l33ttyper
 Name: L33tTyper
 Version: 0.0-1
 Architecture: iphoneos-arm
 Description: Auto transliterate Latin alphabet to leet
+Depiction: http://moreinfo.thebigboss.org/moreinfo/leettyperDp.php
 Homepage: http://code.google.com/p/networkpx/wiki/Using_L33tTyper
 Maintainer: KennyTM~ <kennytm+L33tTyper@gmail.com>
 Author: KennyTM~ <kennytm+L33tTyper@gmail.com>
-Section: Keyboard Extension
+Section: Toys
 Depends: hk.kennytm.iKeyEx (>=0.0-1)
-Installed-Size: 21.060546875
+Installed-Size: 22
+dev: kennytm

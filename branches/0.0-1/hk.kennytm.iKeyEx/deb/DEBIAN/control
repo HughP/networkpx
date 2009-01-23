@@ -1,4 +1,4 @@
-Package: hk.kennytm.iKeyEx
+Package: hk.kennytm.ikeyex
 Name: iKeyEx
 Version: 0.0-1
 Architecture: iphoneos-arm
@@ -10,3 +10,5 @@ Section: Keyboard Extension
 Depends: mobilesubstrate (>=0.9-0)
 Instanlled-Size: 193
 Pre-Depends: firmware (>=2.2)
+Tag: role::developer purpose::library
+dev: kennytm
