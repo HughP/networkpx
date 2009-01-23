@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [[ $1 == remove ]]; then
+if [[ $1 == remove || $1 == "abort-install" ]]; then
 	iKeyEx-KBMan remove PathTyper
 	exit 0
 fi

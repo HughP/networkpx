@@ -1,6 +1,0 @@
-#!/bin/bash
-
-if [[ $1 == remove ]]; then
-	iKeyEx-KBMan remove hClipboard
-	exit 0
-fi
