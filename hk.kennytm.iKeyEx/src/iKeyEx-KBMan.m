@@ -38,9 +38,10 @@ static const char* Usage = "Usage:\n\
 iKeyEx-KBMan <command> [<kbid>]\n\
 \n\
 Available commands:\n\
-	remove      Remove the specified keyboard from the preferences.\n\
-	removeall   Remove all iKeyEx keyboards from the preferences.\n\
-	purge       Clear automatically generated cache of the specified keyboard.\n\
+\tadd         Add the specified keyboard to the preferences.\n\
+\tremove      Remove the specified keyboard from the preferences.\n\
+\tremoveall   Remove all iKeyEx keyboards from the preferences.\n\
+\tpurge       Clear automatically generated cache of the specified keyboard.\n\
 <kbid> is same as the input mode name without the \"iKeyEx:\" prefix.";
 
 #define GlobalPreferences @"/var/mobile/Library/Preferences/.GlobalPreferences.plist"
@@ -136,15 +137,40 @@ int main (int argc, const char* argv[]) {
 					inputModeName = [inputModeName substringFromIndex:7];
 				}
 				
-				NSString* rmCommand = [NSString stringWithFormat:@"rm /var/mobile/Library/Keyboard/iKeyEx/cache/%@-*", inputModeName];
+				NSString* rmCommand = [NSString stringWithFormat:@"rm -f /var/mobile/Library/Keyboard/iKeyEx/cache/%@-*", inputModeName];
 				system([rmCommand UTF8String]);
+			}
+			
+		} else if (!strcmp("add", argv[1])) {
+			if (argc == 2)
+				printf("Please specify the <kbid> to add.");
+			else {
+				NSString* inputModeName = [NSString stringWithUTF8String:argv[2]];
+				if (![inputModeName hasPrefix:@"iKeyEx:"]) {
+					inputModeName = [@"iKeyEx:" stringByAppendingString:inputModeName];
+				}
+				
+				NSMutableDictionary* globalPrefsDict = [NSMutableDictionary dictionaryWithContentsOfFile:GlobalPreferences];
+				NSMutableArray* appleKeyboards = [[globalPrefsDict objectForKey:@"AppleKeyboards"] mutableCopy];
+				
+				if (![appleKeyboards containsObject:inputModeName]) {
+					// which is impossible
+					if ([appleKeyboards count] == 0)
+						[appleKeyboards addObject:@"en_US"];
+					[appleKeyboards insertObject:inputModeName atIndex:1];
+					
+					[globalPrefsDict setObject:appleKeyboards forKey:@"AppleKeyboards"];
+					[globalPrefsDict writeToFile:GlobalPreferences atomically:NO];
+				}
+				
+				[appleKeyboards release];
 			}
 			
 		} else {
 			printf("Unregconized command: %s", argv[1]);
 		}
 	}
-
+	
 	printf("\n\n");
 	
 	[pool drain];
