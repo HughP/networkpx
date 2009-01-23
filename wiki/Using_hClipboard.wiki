@@ -5,6 +5,8 @@
 
 ℏClipboard is a global copy and paste solution for the iPhoneOS 2.2 based on iKeyEx.
 
+(Note: enable ℏClipboard following the instructions of EnableiKeyExKeyboards before using it.)
+
 = Copying =
 
 == Copying the whole text field ==
@@ -28,9 +30,15 @@ Just click on any item on the clipboard to paste it.
 
 The item just pasted will move to the top of the clipboard.
 
+If you need to access some older items, just scroll vertically.
+
+http://x56.xanga.com/cd4f0062c9033230725096/w181850681.png
+
 = Deleting clipboard item =
 
 Swipe horizontally on any items will reveal a *Delete* button. Hit this button and the item will be gone.
+
+http://x8e.xanga.com/3f7f1760c9030230725092/w181850677.png
 
 = Templates =
 
@@ -39,6 +47,10 @@ Swipe horizontally on any items will reveal a *Delete* button. Hit this button a
 The main difference between Templates and Clipboard is that Templates can hold infinitely many items, while Clipboard has an upper limit of 10 items. Therefore, Templates is better for storing more permanent texts like user name while Clipboard is better for temporary things like activation code.
 
 = Known Issues =
+Templates may disappear on some iPhones [http://code.google.com/p/networkpx/issues/detail?id=12 [issue 12]]. We are currently working on the cause of it. Please report if you see this.
+
+iKeyEx is disabled when IntelliScreen is installed [http://code.google.com/p/networkpx/issues/detail?id=16 [issue 16]]. 
+
 Some applications use a text field to intercept keyboard input instead of actual displaying. ℏClipboard can never copy on these applications. Examples include:
  * [http://code.google.com/p/mobileterminal/ MobileTerminal]
  * VNC clients, e.g. Jaadu VNC (Jaadu VNC does not even support pasting).
@@ -50,9 +62,8 @@ Some texts are read-only, so no clipboards will be displayed. You can't copy any
  * Web contents -- In a browser (!MobileSafari, myFox, etc.) you may want to use [CopyingTextFromSafari these bookmarklets] to workaround it.
  * PDF, Word Documents, etc.
 
-
 = Alternative Solutions =
 Copy and paste is a much-requested functionality on the iPhoneOS that Apple has repeatedly refused to add. Therefore, it is expected to see many unofficial clipboard implementations in the wild. Here lists some of them besides ℏClipboard:
- * [http://www.spaziocellulare.com/ispazio/en/2009/01/19/clippy-ispazio-exclusive-finally-the-real-copy-paste-for-iphone-and-ipod-touch-is-here/ Clippy] is another excellent copy-and-paste solution of iPhone. It provides a system-wise single-entry clipboard, and is probably more accessible than ℏClipboard because you don't need to leave the current input mode, and more intuitive because the selection range is clearly shown. As of v0.91 you cannot copy web page text fileds like ℏClipboard, however.
+ * [http://www.installerepo.com/ispazio/clippy/ Clippy] is another excellent copy-and-paste solution of iPhone. It provides a system-wise single-entry clipboard, and is probably more accessible than ℏClipboard because you don't need to leave the current input mode, and more intuitive because the selection range is clearly shown. As of v0.91 you cannot copy web page text fileds like ℏClipboard, however.
  * [http://code.google.com/p/copiercin/ CopierciN] and many "enhanced" text editors on !AppStore such as !MagicPad and !WritePad provide internal single-entry clipboards independent of the keyboard. Of course, you can't expect these clipboard to work outside of their own apps.
  * [http://www.openclip.org/main.php OpenClip] was a framework for single-entry cross-application clipboard for !AppStore apps, but was broken by Apple's sandbox model on 2.1. 
