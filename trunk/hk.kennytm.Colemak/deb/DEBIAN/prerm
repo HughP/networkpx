@@ -1,9 +1,0 @@
-#!/bin/bash
-
-if [[ $1 == remove || $1 == upgrade ]]; then
-	iKeyEx-KBMan purge Colemak
-	if [[ $1 == remove ]]; then
-		iKeyEx-KBMan remove Colemak
-	fi
-	exit 0
-fi
