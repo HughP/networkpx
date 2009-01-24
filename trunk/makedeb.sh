@@ -6,7 +6,7 @@ for PackageName in `ls -d hk.*/`; do
 		make;
 		cd -;
 	fi
-	./dpkg-deb-nodot ${PackageName%%/}/deb ../../${PackageName%%/}.deb;
+	./dpkg-deb-nodot ${PackageName%%/}/deb ../../${PackageName%%/}-$1.deb;
 done
 
 cd ../../;

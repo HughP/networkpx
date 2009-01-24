@@ -6,7 +6,7 @@ Description: iKeyEx is a MobileSubstrate-based keyboard extension framework for 
 Homepage: http://code.google.com/p/networkpx/
 Maintainer: KennyTM~ <kennytm+iKeyEx@gmail.com>
 Author: KennyTM~ <kennytm+iKeyEx@gmail.com>
-Section: Keyboard Extension
+Section: System
 Depends: mobilesubstrate (>=0.9-0)
 Instanlled-Size: 193
 Pre-Depends: firmware (>=2.2)
