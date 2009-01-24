@@ -10,5 +10,7 @@ It has been reported as [http://code.google.com/p/networkpx/issues/detail?id=12 
 = How do I uninstall iKeyEx? =
 You should be able to find iKeyEx in Cydia -> Manage -> Packages.
 
+If not, try to switch on "Keyboard Extension" in Sections -> Edit.
+
 = Is ℏClipboard compatible with Clippy? =
 Yes. Currently no conflicts were identified. 
