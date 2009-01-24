@@ -1,0 +1,16 @@
+#summary ChangeLog for every projects in networkpx
+#labels Phase-Design
+
+= 0.1-1 =
+
+== iKeyEx ==
+ * Added Italian (thanks sagitt) and Turkish localization (thanks oguz çolakoglu).
+ * Fixed issue 9: Enable iKeyEx keyboards on install.
+
+== ℏClipboard ==
+ * Added Italian (thanks sagitt), Greek (thanks parrr85) and Turkish localization (thanks oguz çolakoglu).
+
+
+= 0.0-1 =
+
+Initial RC version.
