@@ -42,7 +42,7 @@
 -(BOOL)switchClipboard {
 	[clipboard release];
 	if (usesPrefix) {
-		clipboard = [[Clipboard alloc] initWithPath:iKeyEx_DataPath@"templates-hClipboard.plist" defaultCapacity:UINT_MAX];
+		clipboard = [[Clipboard alloc] initWithPath:iKeyEx_DataPath@"hClipboard-templates.plist" defaultCapacity:UINT_MAX];
 	} else {
 		clipboard = [[Clipboard alloc] initDefaultClipboard];
 	}

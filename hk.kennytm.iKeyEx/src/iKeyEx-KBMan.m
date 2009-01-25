@@ -137,7 +137,11 @@ int main (int argc, const char* argv[]) {
 					inputModeName = [inputModeName substringFromIndex:7];
 				}
 				
-				NSString* rmCommand = [NSString stringWithFormat:@"rm -f /var/mobile/Library/Keyboard/iKeyEx/cache/%@-*", inputModeName];
+				NSString* rmCommand = [NSString stringWithFormat:@"rm -f /var/mobile/Library/Keyboard/iKeyEx\\:\\:cache\\:%@-*", inputModeName];
+				system([rmCommand UTF8String]);
+				
+				// just for compatibility.
+				rmCommand = [NSString stringWithFormat:@"rm -f /var/mobile/Library/Keyboard/iKeyEx/cache/%@-*", inputModeName];
 				system([rmCommand UTF8String]);
 			}
 			
