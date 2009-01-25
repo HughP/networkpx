@@ -7,7 +7,10 @@
  * Added Italian (thanks sagitt) and Turkish localization (thanks oguz çolakoglu).
  * Fixed issue 9: Enable iKeyEx keyboards on install.
 
+= 0.0-2 =
+
 == ℏClipboard ==
+ * Fixes issue 12: Templates get wiped out. Especially thanks to Robin helping me finding the cause of bug. 
  * Added Italian (thanks sagitt), Greek (thanks parrr85) and Turkish localization (thanks oguz çolakoglu).
 
 
