@@ -4,9 +4,6 @@
 = I have installed !IntelliScreen and iKeyEx does not work. =
 By default !IntelliScreen disabled any !MobileSubstrate extensions. To enable iKeyEx, please go to the Performance option in !IntelliScreen, then enable !PrefHooker-iKeyEx and SBHooker-iKeyEx. 
 
-= Templates in ℏClipboard can't be saved =
-It has been reported as [http://code.google.com/p/networkpx/issues/detail?id=12 Issue 12] and we're working on a workaround. 
-
 = How do I uninstall iKeyEx? =
 You should be able to find iKeyEx in Cydia -> Manage -> Packages.
 
