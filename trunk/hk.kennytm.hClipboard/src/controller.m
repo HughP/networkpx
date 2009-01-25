@@ -181,7 +181,13 @@
 }
 
 -(void)copyText {
-	[self copyText:[UIKeyboardImpl sharedInstance].delegate.text];
+	// take advantage of any selection made by 3rd party programs, e.g. Clippy and ⌘.
+	NSObject<UIKeyboardInput>* del = [UIKeyboardImpl sharedInstance].delegate;
+	NSRange curSelection = del.selectionRange;
+	if (curSelection.length > 0)
+		[self copyText:[del.text substringWithRange:curSelection]];
+	else
+		[self copyText:del.text];
 }
 
 -(void)paste:(NSString*)txt {
