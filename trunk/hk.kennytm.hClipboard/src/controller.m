@@ -118,6 +118,7 @@
 
 
 -(void)registerButton:(UIButton*)btn withCalloutString:(NSString*)str {
+	if (str == nil) return;
 	WeakReference* p_btn = [[WeakReference alloc] initWithReference:btn];
 	if ([calloutStrings objectForKey:p_btn] == nil) {
 		[btn addTarget:self 
@@ -175,8 +176,11 @@
 
 -(void)copyText:(NSString*)txt {
 	if ([txt length] > 0) {
-		[view->clipboardView.clipboard addData:txt];
-		[view->clipboardView flashFirstRow];
+		[view->clipboardView.clipboard addData:txt secure:[UIKeyboardImpl sharedInstance].textInputTraits.secureTextEntry];
+		[view->clipboardView updateDataCache];
+		[view->clipboardView reloadData];
+
+		[view->clipboardView flashFirstRowAsBlue];
 	}
 }
 

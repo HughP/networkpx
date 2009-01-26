@@ -49,6 +49,7 @@ static NSMutableDictionary* kbcache = nil;	// Contains KeyboardBundle for all iK
 
 -(id)objectForInfoDictionaryKey:(NSString*)key { return [bundle objectForInfoDictionaryKey:key]; }
 -(NSString*)pathForResource:(NSString*)name ofType:(NSString*)extension { return [bundle pathForResource:name ofType:extension]; }
+-(NSString*)localizedStringForKey:(NSString*)key { return [bundle localizedStringForKey:key value:nil table:nil]; }
 
 -(id)initWithModeName:(NSString*)mode {
 	if ((self = [super init])) {

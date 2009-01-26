@@ -50,29 +50,27 @@
 
 @implementation hCClipboardView
 
--(void)flashFirstRowImplicit {
-	// make 0th row visible
-	if (flash0thRow) {
-		[self selectRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:0] animated:NO scrollPosition:UITableViewScrollPositionNone]; 
-		if (self.contentOffset.y > 0) {
-			[self scrollRectToVisible:CGRectMake(0, 0, 1, 1) animated:YES];
-		} else {
-			[self performSelector:@selector(scrollViewDidEndScrollingAnimation:) withObject:self afterDelay:0.15];
-		}
-		[self performSelector:@selector(reloadData) withObject:nil afterDelay:0.075];
-	}
+-(void)restoreCellSelectedStyle:(UITableViewCell*)cell {
+	cell.selectionStyle = UITableViewCellSelectionStyleGray;
+	cell.selectedTextColor = [UIColor blackColor];
 }
 
--(void)flashFirstRow {
-	flash0thRow = YES;
-	[self flashFirstRowImplicit];	
+-(void)flashFirstRowAsBlue {
+	NSIndexPath* firstRowIndexPath = [NSIndexPath indexPathForRow:0 inSection:0];
+	UITableViewCell* cell = [self cellForRowAtIndexPath:firstRowIndexPath];
+	cell.selectionStyle = UITableViewCellSelectionStyleBlue;
+	cell.selectedTextColor = nil;
+	if (self.contentOffset.y > 0) {
+		[self selectRowAtIndexPath:firstRowIndexPath animated:YES scrollPosition:UITableViewScrollPositionTop];
+	} else {
+		[self selectRowAtIndexPath:firstRowIndexPath animated:NO scrollPosition:UITableViewScrollPositionTop];
+		[self deselectRowAtIndexPath:firstRowIndexPath animated:YES]; 
+		[self performSelector:@selector(restoreCellSelectedStyle:) withObject:cell afterDelay:1];
+	}
 }
 
 -(void)scrollViewDidEndScrollingAnimation:(UIScrollView*)tbl {
-	if (flash0thRow) {
-		flash0thRow = NO;
-		[(UITableView*)tbl deselectRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:0] animated:YES]; 
-	}
+	[(hCClipboardView*)tbl flashFirstRowAsBlue];
 }
 
 -(Clipboard*)clipboard { return datasource.clipboard; }
@@ -85,19 +83,13 @@
 }
 
 -(void)tableView:(UITableView*)tbl didSelectRowAtIndexPath:(NSIndexPath*)indexPath {
-	Clipboard* clpbrd = datasource.clipboard;
 	NSUInteger row = indexPath.row;
-	[clpbrd updateEntryAtReversedIndex:row];
 	if (_action != NULL) {
-		[_target performSelector:_action withObject:[clpbrd lastData] withObject:tbl];
+		[_target performSelector:_action withObject:[datasource.dataCache objectAtIndex:row] withObject:tbl];
 	}
 	
 	[UIKBSound play];
-	
-	// If you're expect in Graphics Design, please suggest a better, workable animation sequence :)
 	[tbl deselectRowAtIndexPath:indexPath animated:YES];
-	flash0thRow = (row > 0);
-	[self flashFirstRowImplicit];
 }
 
 -(BOOL)pointInside:(CGPoint)point withEvent:(UIEvent*)event {
@@ -123,6 +115,9 @@
 		_target = nil;
 		_action = NULL;
 		self.scrollsToTop = NO;
+		self.editing = YES;
+		self.allowsSelectionDuringEditing = YES;
+		
 		
 		emptyClipboardIndicator = [[UILabel alloc] initWithFrame:CGRectZero];
 		emptyClipboardIndicator.textColor = [UIColor whiteColor];
@@ -164,6 +159,7 @@
 }
 
 -(BOOL)isDefaultClipboard { return datasource.usesPrefix; }
+-(void)updateDataCache { [datasource updateDataCache]; }
 @end
 
 
@@ -329,10 +325,12 @@
 	spBtnGroup.keyboardAppearance = appr;
 	backgroundView.frame = spBtnGroup.frame;
 	
+	/*
 	BOOL disableCopyKeys = ![impl textInputTraits].secureTextEntry;
 	copyBtn.enabled = disableCopyKeys;
 	markSelBtn.enabled = disableCopyKeys;
-	
+	*/
+	 
 	[self setNeedsLayout];
 }
 

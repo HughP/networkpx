@@ -35,18 +35,17 @@
 
 
 
-
 @interface ClipboardEntry : NSObject<NSCoding,NSCopying> {
 	@package
 		NSObject* data;
-		NSDate* timestamp;
+		BOOL secure;
 }
++(ClipboardEntry*)entryWithData:(NSObject*)data_ secure:(BOOL)security;
 +(ClipboardEntry*)entryWithData:(NSObject*)data_;
-+(ClipboardEntry*)entryWithData:(NSObject*)data_ timestamp:(NSDate*)time;
--(id)initWithData:(NSObject*)data_ timestamp:(NSDate*)time;
--(NSComparisonResult)compare:(ClipboardEntry*)entry;
++(ClipboardEntry*)entryWithSecureData:(NSObject*)data_;
+-(id)initWithData:(NSObject*)data_ secure:(BOOL)security;
 @property(retain) NSObject* data;
-@property(retain) NSDate* timestamp;
+@property(assign,getter=isSecure) BOOL secure;
 
 -(void)encodeWithCoder:(NSCoder*)coder;
 -(id)initWithCoder:(NSCoder*)coder;
@@ -54,12 +53,13 @@
 -(id)copyWithZone:(NSZone*)zone;
 @end
 
+
+
+
 @interface Clipboard : NSObject<NSCoding,NSCopying> {
 	NSMutableArray* entries;		// entries will be sorted by time with lastObject as the newest one.
 	NSUInteger capacity;
 	NSString* path;
-	NSDate* latestDate;				// note: these are weak references.
-	NSDate* oldestDate;
 	NSUInteger count;
 }
 
@@ -94,24 +94,26 @@
 
 // obtain clipboard data & timestamp at index.
 -(NSObject*)dataAtIndex:(NSUInteger)index;
--(NSDate*)timestampAtIndex:(NSUInteger)index;
+-(BOOL)isSecureAtIndex:(NSUInteger)index;
 -(NSObject*)dataAtReversedIndex:(NSUInteger)index;
--(NSDate*)timestampAtReversedIndex:(NSUInteger)index;
+-(BOOL)isSecureAtReversedIndex:(NSUInteger)index;
 
 // remove clipboard entry at index.
 -(void)removeEntryAtIndex:(NSUInteger)index;
 -(void)removeEntryAtReversedIndex:(NSUInteger)index;
 
-// update the timestamp of the entry at index to now.
--(void)updateEntryAtIndex:(NSUInteger)index;
--(void)updateEntryAtReversedIndex:(NSUInteger)index;
-
 // push new data to clipboard.
+-(void)addData:(NSObject*)data secure:(BOOL)secure;
 -(void)addData:(NSObject*)data;
+-(void)addSecureData:(NSObject*)data;
+
+// moving entries
+-(void)moveEntryFromIndex:(NSUInteger)idxFrom toIndex:(NSUInteger)idxTo;
+-(void)moveEntryFromReversedIndex:(NSUInteger)idxFrom toReversedIndex:(NSUInteger)idxTo;
 
 // obtain latest data & timestamp from clipboard.
 -(NSObject*)lastData;
--(NSDate*)lastTimestamp;
+-(BOOL)lastIsSecure;
 
 // obtain the latest data of specified class.
 -(NSObject*)lastDataOfClass:(Class)cls;
@@ -119,8 +121,11 @@
 // obtain all data from clipboard.
 -(NSArray*)allData;
 -(NSArray*)allDataReversed;
--(NSArray*)allDataOfClass:(Class)cls;
--(NSArray*)allDataReversedOfClass:(Class)cls;
+
+// obtain indices that match the specified conditions
+-(NSIndexSet*)allIndices;
+-(NSIndexSet*)indicesWithNonsecureData;
+-(NSIndexSet*)indicesWithDataOfClass:(Class)cls;
 
 // save the clipboard. Does nothing and return YES if path == nil.
 // returns if the process succeed or not.

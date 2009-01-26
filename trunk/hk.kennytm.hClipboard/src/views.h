@@ -53,8 +53,9 @@
 -(void)setTarget:(id)target action:(SEL)action;
 -(void)setPlaceholderText:(NSString*)txt;
 
--(void)flashFirstRow;
+-(void)flashFirstRowAsBlue;
 -(BOOL)switchClipboard;
+-(void)updateDataCache;
 @end
 
 
