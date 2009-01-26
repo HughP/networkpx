@@ -145,4 +145,16 @@ Class createSubclassCopy (Class superclass) {
 }
 
 
-extern NSString* iKeyExVersion () { return @"0.0-1"; }
+extern NSString* iKeyExVersion () { return @"0.1-3"; }
+
+
+#import <UIKit/UIView.h>
+void UILogViewHierarchyWithDots(UIView* v, NSString* dots) {
+	NSLog(@"%@%@\t(frame=%@)", dots, v, NSStringFromCGRect(v.frame));
+	NSString* moreDots = [dots stringByAppendingString:@".."];
+	for (UIView* w in v.subviews) {
+		UILogViewHierarchyWithDots(w, moreDots);
+	}
+}
+
+extern void UILogViewHierarchy (UIView* v) { UILogViewHierarchy(v, @""); }

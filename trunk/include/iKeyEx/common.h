@@ -36,7 +36,7 @@
 #import <objc/runtime.h>
 #import <CoreGraphics/CGGeometry.h>
 
-@class UIFont, NSString;
+@class UIFont, NSString, UIView;
 
 
 #define UIColorWith(x) [UIColor colorWithRed:(x)[0] green:(x)[1] blue:(x)[2] alpha:(x)[3]]
@@ -64,5 +64,9 @@ void playKeyboardSound();
 
 // Get version of this iKeyEx library.
 NSString* iKeyExVersion();
+
+
+// Log UIView Hierarchy with NSLog.
+void UILogViewHierarchy (UIView* v);
 
 #endif

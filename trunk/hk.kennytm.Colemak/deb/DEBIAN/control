@@ -1,6 +1,6 @@
 Package: hk.kennytm.colemak
 Name: Colemak Keyboard
-Version: 0.0-1
+Version: 0.1-3
 Architecture: iphoneos-arm
 Description: Colemak keyboard layout.
 Homepage: http://code.google.com/p/networkpx/wiki/Using_Colemak
@@ -8,6 +8,6 @@ Depiction: http://moreinfo.thebigboss.org/moreinfo/colemakDp.php
 Maintainer: KennyTM~ <kennytm+Colemak@gmail.com>
 Author: KennyTM~ <kennytm+Colemak@gmail.com>
 Section: System
-Depends: hk.kennytm.iKeyEx (>=0.0-1)
+Depends: hk.kennytm.iKeyEx (>=0.1-3)
 Installed-Size: 2.3818359375
 dev: kennytm

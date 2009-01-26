@@ -38,33 +38,35 @@
 @implementation UIAccentedCharacterView (setStringWidth)
 -(CGFloat)stringWidth { return m_stringWidth; }
 -(void)setStringWidth:(CGFloat)newWidth {
+	Ivar tubeRect_ivar = class_getInstanceVariable([UIAccentedCharacterView class], "m_tubeRect");
+	if (tubeRect_ivar == Nil)
+		return;
+	
 	if (newWidth != m_stringWidth) {
 		UIAccentedKeyCapStringView* popupView = nil;
-		object_getInstanceVariable(self, "m_popupView", &popupView);
+		object_getInstanceVariable(self, "m_popupView", (void**)&popupView);
+		if (popupView == nil)
+			popupView = [self.subviews objectAtIndex:0];
 
 		[popupView setStringWidth:newWidth];
 		
 		UIAccentedKeyCapStringView* selectedView = nil;
-		object_getInstanceVariable(self, "m_selectedView", &selectedView);
+		object_getInstanceVariable(self, "m_selectedView", (void**)&selectedView);
 		
 		[selectedView setStringWidth:newWidth];
-		
-		Ivar tubeRect_ivar = class_getInstanceVariable([UIAccentedCharacterView class], "m_tubeRect");
-		CGRect* p_tubeRect = (CGRect*)((char*)self + ivar_getOffset(tubeRect_ivar));
-		//object_getInstanceVariable(self, "m_tubeRect", &tubeRect);
 		
 		m_stringWidth = newWidth;
 		
 		CGFloat totalWidth = 46 + newWidth*m_count;
 		CGFloat excess = 0;
 				
-		if (m_expansion && p_tubeRect != NULL) {
-			excess = totalWidth - p_tubeRect->size.width;
-			if (excess > p_tubeRect->origin.x+23) {
+		if (m_expansion) {
+			excess = totalWidth - m_tubeRect.size.width;
+			if (excess > m_tubeRect.origin.x+23) {
 				// TODO: make it use internal functions.
 				[m_grabberImage release];
 				m_grabberImage = [_UIImageWithName(@"kb-accented-mid-grabber.png") retain];
-				excess = p_tubeRect->origin.x+23;
+				excess = m_tubeRect.origin.x+23;
 			}
 		}
 		
@@ -83,11 +85,8 @@
 			popupView.frame = tmpFrame;
 		}
 		
-		if (p_tubeRect != NULL) {
-			p_tubeRect->size.width = totalWidth;
-			p_tubeRect->origin.x -= excess;
-			object_setInstanceVariable(self, "m_tubeRect", p_tubeRect);
-		}
+		m_tubeRect.size.width = totalWidth;
+		m_tubeRect.origin.x -= excess;
 	}
 }
 @end
