@@ -91,7 +91,7 @@
 		} else {
 			emojiIcon += 0x2460;	// 0x2460 = Circled 1 in Unicode.
 		}
-		cell.text = [NSString stringWithFormat:@"%C. %@", emojiIcon, txt];
+		cell.text = [NSString stringWithFormat:@"%C  %@", emojiIcon, txt];
 	} else {
 		cell.text = txt;
 	}
