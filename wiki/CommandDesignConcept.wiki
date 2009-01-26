@@ -147,6 +147,27 @@ An exec ⌘let *cannot* return or change any arguments. Also, the call can be *n
 
   But we need to check if `system()`, `execl()`, etc. is allowed in sandboxed applications.
 
+== Localization ==
+
+The _title_ can be localized. The trick is to provide a dictionary instead of a string:
+
+{{{
+ # Non-localizable
+   title = "Google";
+
+ # Localizable
+   title = {
+     en = "Copy";
+     es = "Copiar";
+     ja = "コピー";
+     "zh_TW" = "複製";
+     "zh_CN" = "复制";
+     ...
+   }
+}}}
+
+All other keys of the plist cannot be localized.
+
 = libcommandlets.dylib API =
 
 The following API shall be provided with libcommandlet.dylib:
