@@ -57,6 +57,7 @@
 // proxy functions for the NSBundle. (Maybe I should setup an NSProxy instead...)
 -(id)objectForInfoDictionaryKey:(NSString*)key;
 -(NSString*)pathForResource:(NSString*)name ofType:(NSString*)extension;
+-(NSString*)localizedStringForKey:(NSString*)key;
 
 // initializers. modename must include the "iKeyEx:" prefix.
 -(id)initWithModeName:(NSString*)modeName;

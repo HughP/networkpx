@@ -31,65 +31,48 @@
  */
 
 #import "clipboard.h"
-#include <signal.h>
-
-void insertObjectIntoSortedArrayUsingSelector (id obj, NSMutableArray* array, SEL sele) {
-	NSUInteger indexToInsert = [array count];
-	// call the IMP directly for efficiency...
-	IMP comparer = [obj instanceMethodForSelector:sele];
-	for (id curObj in [array reverseObjectEnumerator]) {
-		if ((NSComparisonResult)comparer(obj, sele, curObj) != NSOrderedAscending)
-			break;
-		-- indexToInsert;
-	}
-	[array insertObject:obj atIndex:indexToInsert];
-}
-
-void reverseArray (NSMutableArray* array) {
-	NSUInteger count = [array count];
-	for (NSUInteger i = 0; i < count/2; ++ i) {
-		[array exchangeObjectAtIndex:i withObjectAtIndex:count-1-i]; 
-	}
-}
-
-
 
 
 @implementation ClipboardEntry
-@synthesize data, timestamp;
+@synthesize data, secure;
 
 -(void)dealloc {
 	[data release];
-	[timestamp release];
 	[super dealloc];
 }
 
-+(ClipboardEntry*)entryWithData:(NSObject*)data_ { return [ClipboardEntry entryWithData:data_ timestamp:[NSDate date]]; }
-+(ClipboardEntry*)entryWithData:(NSObject*)data_ timestamp:(NSDate*)time {
-	return [[[ClipboardEntry alloc] initWithData:data_ timestamp:time] autorelease];
++(ClipboardEntry*)entryWithData:(NSObject*)data_ secure:(BOOL)security {
+	return [[[ClipboardEntry alloc] initWithData:data_ secure:security] autorelease];
 }
--(id)initWithData:(NSObject*)data_ timestamp:(NSDate*)time {
++(ClipboardEntry*)entryWithData:(NSObject*)data_ { return [ClipboardEntry entryWithData:data_ secure:NO]; }
++(ClipboardEntry*)entryWithSecureData:(NSObject*)data_ { return [ClipboardEntry entryWithData:data_ secure:YES]; }
+-(id)initWithData:(NSObject*)data_ secure:(BOOL)security {
 	if ((self = [super init])) {
 		data = [data_ retain];
-		timestamp = [time retain];
+		secure = security;
 	}
 	return self;
 }
 
 -(void)encodeWithCoder:(NSCoder*)coder {
-	[coder encodeObject:timestamp forKey:@"timestamp"];
-    [coder encodeObject:data forKey:@"data"];
+	[coder encodeObject:data forKey:@"data"];
+    [coder encodeBool:secure forKey:@"secure"];
 }
 -(id)initWithCoder:(NSCoder*)coder {
 	if ((self = [super init])) {
-		timestamp = [[coder decodeObjectForKey:@"timestamp"] retain];
 		data = [[coder decodeObjectForKey:@"data"] retain];
+		secure = [coder decodeBoolForKey:@"secure"];
 	}
 	return self;
 }
--(NSComparisonResult)compare:(ClipboardEntry*)entry { return [timestamp compare:entry->timestamp]; }
 
--(NSString*)description { return [NSString stringWithFormat:@"%@ (%@)", [data description], [timestamp description]]; }
+-(NSString*)description {
+	NSString* retval = [data description];
+	if (secure)
+		return [NSString stringWithFormat:@"Secure Text with %u characters", [retval length]];
+	else
+		return retval;
+}
 
 -(id)copyWithZone:(NSZone*)zone {
 	ClipboardEntry* newSelf = [[ClipboardEntry allocWithZone:zone] init];
@@ -98,7 +81,7 @@ void reverseArray (NSMutableArray* array) {
 			newSelf->data = [data copy];
 		else
 			newSelf->data = [data retain];
-		newSelf->timestamp = [timestamp copy];
+		newSelf->secure = secure;
 	}
 	return newSelf;
 }
@@ -118,15 +101,6 @@ void reverseArray (NSMutableArray* array) {
 
 @synthesize path;
 
--(void)deriveDates {
-	if (count > 0) {
-		latestDate = ((ClipboardEntry*)[entries lastObject])->timestamp;
-		oldestDate = ((ClipboardEntry*)[entries objectAtIndex:0])->timestamp;
-	} else {
-		latestDate = oldestDate = nil;
-	}
-}
-
 -(void)fixEntriesCount {
 	[entries removeObjectsInRange:NSMakeRange(0, count-capacity)];
 	count = capacity;
@@ -137,7 +111,6 @@ void reverseArray (NSMutableArray* array) {
 	if (capacity < count)
 		[self fixEntriesCount];
 	path = nil;
-	[self deriveDates];
 }
 
 -(void)encodeWithCoder:(NSCoder*)coder {
@@ -187,8 +160,10 @@ void reverseArray (NSMutableArray* array) {
 			// initWithCoder: has done -deriveOtherIVars already.
 			[self release];
 			self = [retval retain];
-		} else
+		} else {
+			NSLog(@"Clipboard file \"%@\" does not exist or cannot be loaded. An empty clipboard is used instead.", path_);
 			self = [self initWithCapacity:capac];
+		}
 	} @catch (NSException * e) {
 		if ([NSInvalidArgumentException isEqualToString:[e name]]) {
 			NSLog(@"The clipboard file \"%@\" is probably corrupted. An empty clipboard is used instead.", path_);
@@ -214,45 +189,17 @@ void reverseArray (NSMutableArray* array) {
 		newSelf->entries = [entries mutableCopy];
 		newSelf->count = count;
 		newSelf->path = [path copy];
-		// dates are weak-ref, so don't copy.
-		[newSelf deriveDates];
 	}
 	return newSelf;
 }
 
 -(void)addEntry:(ClipboardEntry*)entry {
 	// the list of entries is empty. Directly add the entry & set the timestamps.
-	if (count == 0) {
-		[entries addObject:entry];
-		oldestDate = latestDate = entry->timestamp;
-		count = 1;
-		
-	// the list is not yet full. Insert the entry and sort, then recompute the timestamps.
-	} else if (count < capacity) {
-		insertObjectIntoSortedArrayUsingSelector(entry, entries, @selector(compare:));
-		if ([latestDate earlierDate:entry->timestamp])
-			latestDate = entry->timestamp;
-		if ([entry->timestamp earlierDate:oldestDate])
-			oldestDate = entry->timestamp;
+	if (count >= capacity)
+		[entries removeObjectAtIndex:0];
+	else
 		++ count;
-		
-	// the list is full already. Discard old info.
-	} else {
-		// the entry to be added is newest. just discard the oldest and insert the newest.
-		if ([latestDate earlierDate:entry->timestamp]) {
-			[entries removeObjectAtIndex:0];
-			[entries addObject:entry];
-			latestDate = entry->timestamp;
-			oldestDate = ((ClipboardEntry*)[entries objectAtIndex:0])->timestamp;
-		}
-		// the entry to be added is not older than oldest.
-		// discard the oldest and insert with sort.
-		if ([oldestDate earlierDate:entry->timestamp]) {
-			[entries removeObjectAtIndex:0];
-			insertObjectIntoSortedArrayUsingSelector(entry, entries, @selector(compare:));
-			oldestDate = ((ClipboardEntry*)[entries objectAtIndex:0])->timestamp;
-		}
-	}
+	[entries addObject:entry];
 	
 	[self save];
 }
@@ -267,60 +214,24 @@ void reverseArray (NSMutableArray* array) {
 		if (capacity < count) {
 			[entries removeObjectsInRange:NSMakeRange(0, count-capacity)];
 			count = capacity;
-			oldestDate = ((ClipboardEntry*)[entries objectAtIndex:0])->timestamp;
 		}
 		[self save];
 	}
 }
 
 -(void)addEntriesFromClipboard:(Clipboard*)anotherClipboard {
-	NSMutableArray* resultingArray = [[NSMutableArray alloc] init];
-	NSEnumerator* enum1 = [entries reverseObjectEnumerator];
-	NSEnumerator* enum2 = [anotherClipboard->entries reverseObjectEnumerator];
 	
-	// Implemented from C++'s merge().
-	ClipboardEntry* e1 = [enum1 nextObject];
-	ClipboardEntry* e2 = [enum2 nextObject];
-	 
-	count = 0;
-	while (count < capacity) {
-		// we are exhausted. copy all their data to here.
-		if (e1 == nil) {
-			for (; count < capacity && e2 != nil; ++ count) {
-				[resultingArray addObject:e2];
-				e2 = [enum2 nextObject];
-			}
-			break;
-		
-		// they are exhausted. copy all our data to here.
-		} else if (e2 == nil) {
-			for (; count < capacity && e1 != nil; ++ count) {
-				[resultingArray addObject:e1];
-				e1 = [enum1 nextObject];
-			}
-			break;
-
-		// both still have entries left. compare & select the latest one to add.
-		} else {
-			if ([e1->timestamp earlierDate:e2->timestamp])
-				[resultingArray addObject:e2];
-			else
-				[resultingArray addObject:e1];
-			++ count;
-		}
-	}
+	[entries addObjectsFromArray:anotherClipboard->entries];
+	count = [entries count];
+	if (count > capacity)
+		[self fixEntriesCount];
 	
-	reverseArray(resultingArray);
-	[entries release];
-	entries = resultingArray;
-	[self deriveDates];
 	[self save];
 }
 
 -(void)erase {
 	[entries removeAllObjects];
 	count = 0;
-	oldestDate = latestDate = nil;
 	[self save];
 }
 
@@ -328,60 +239,33 @@ void reverseArray (NSMutableArray* array) {
 -(BOOL)saveToPath:(NSString*)path_ { return [NSKeyedArchiver archiveRootObject:self toFile:path_]; }
 
 -(NSObject*)dataAtIndex:(NSUInteger)index { return (index < count) ? ((ClipboardEntry*)[entries objectAtIndex:index]).data : nil; }
--(NSDate*)timestampAtIndex:(NSUInteger)index { return (index < count) ? ((ClipboardEntry*)[entries objectAtIndex:index]).timestamp : nil; }
+-(BOOL)isSecureAtIndex:(NSUInteger)index { return (index < count) ? ((ClipboardEntry*)[entries objectAtIndex:index]).secure : NO; }
 -(NSObject*)dataAtReversedIndex:(NSUInteger)index { return (index < count) ? ((ClipboardEntry*)[entries objectAtIndex:count-1-index]).data : nil; }
--(NSDate*)timestampAtReversedIndex:(NSUInteger)index { return (index < count) ? ((ClipboardEntry*)[entries objectAtIndex:count-1-index]).timestamp : nil; }
+-(BOOL)isSecureAtReversedIndex:(NSUInteger)index { return (index < count) ? ((ClipboardEntry*)[entries objectAtIndex:count-1-index]).secure : NO; }
 
 -(void)removeEntryAtIndex:(NSUInteger)index {
 	if (index < count) {
 		[entries removeObjectAtIndex:index];
 		-- count;
-		if (count > 0) {
-			if (index == count) {
-				latestDate = ((ClipboardEntry*)[entries lastObject])->timestamp;
-			}
-			if (index == 0) {
-				oldestDate = ((ClipboardEntry*)[entries objectAtIndex:0])->timestamp;
-			}
-		} else {
-			latestDate = oldestDate = nil;
-		}
 		[self save];
 	}
 }
 -(void)removeEntryAtReversedIndex:(NSUInteger)index { [self removeEntryAtIndex:count-1-index]; }
 
--(void)updateEntryAtIndex:(NSUInteger)index {
-	if (index < count-1) {
-		ClipboardEntry* entry = [[entries objectAtIndex:index] retain];
-		entry.timestamp = [NSDate date];
-		[entries removeObjectAtIndex:index];
-		[entries addObject:entry];
-		if (index == 0) {
-			oldestDate = ((ClipboardEntry*)[entries objectAtIndex:0])->timestamp;
-		}
-		latestDate = entry->timestamp;
-		[entry release];
-		[self save];
-	}
-}
--(void)updateEntryAtReversedIndex:(NSUInteger)index { [self updateEntryAtIndex:count-1-index]; }
-
--(void)addData:(NSObject*)data {
-	ClipboardEntry* newEntry = [ClipboardEntry entryWithData:data];
-	latestDate = newEntry->timestamp;
+-(void)addData:(NSObject*)data secure:(BOOL)secure {
+	ClipboardEntry* newEntry = [ClipboardEntry entryWithData:data secure:secure];
 	if (count >= capacity) {
 		[entries removeObjectAtIndex:0];
-		if (count > 1)
-			oldestDate = ((ClipboardEntry*)[entries objectAtIndex:0])->timestamp;
 	} else
 		++ count;
 	[entries addObject:newEntry];
 	[self save];
 }
+-(void)addData:(NSObject*)data { [self addData:data secure:NO]; }
+-(void)addSecureData:(NSObject*)data { [self addData:data secure:YES]; }
 
 -(NSObject*)lastData { return ((ClipboardEntry*)[entries lastObject]).data; }
--(NSDate*)lastTimestamp { return ((ClipboardEntry*)[entries lastObject]).timestamp; }
+-(BOOL)lastIsSecure { return ((ClipboardEntry*)[entries lastObject]).secure; }
 
 -(NSObject*)lastDataOfClass:(Class)cls {
 	for (ClipboardEntry* entry in [entries reverseObjectEnumerator])
@@ -404,24 +288,44 @@ void reverseArray (NSMutableArray* array) {
 	return retArr;
 }
 
--(NSArray*)allDataOfClass:(Class)cls {
-	NSMutableArray* retArr = [NSMutableArray array];
+-(NSIndexSet*)allIndices { return [NSIndexSet indexSetWithIndexesInRange:NSMakeRange(0, count)]; }
+
+-(NSIndexSet*)indicesWithNonsecureData {
+	NSMutableIndexSet* indices = [NSMutableIndexSet indexSet];
+	NSUInteger index = 0;
 	for (ClipboardEntry* entry in entries) {
-		if ([entry->data isKindOfClass:cls])
-			[retArr addObject:entry->data];
+		if (!entry->secure)
+			[indices addIndex:index];
+		++ index;
 	}
-	return retArr;
+	return indices;
 }
 
--(NSArray*)allDataReversedOfClass:(Class)cls {
-	NSMutableArray* retArr = [NSMutableArray array];
-	for (ClipboardEntry* entry in [entries reverseObjectEnumerator]) {
+-(NSIndexSet*)indicesWithDataOfClass:(Class)cls {
+	NSMutableIndexSet* indices = [NSMutableIndexSet indexSet];
+	NSUInteger index = 0;
+	for (ClipboardEntry* entry in entries) {
 		if ([entry->data isKindOfClass:cls])
-			[retArr addObject:entry->data];
+			[indices addIndex:index];
+		++ index;
 	}
-	return retArr;
+	return indices;	
 }
 
 -(NSString*)description { return [entries description]; }
+
+-(void)moveEntryFromIndex:(NSUInteger)idxFrom toIndex:(NSUInteger)idxTo {
+	if (idxFrom < count && idxTo < count && idxFrom != idxTo) {
+		ClipboardEntry* entry = [[entries objectAtIndex:idxFrom] retain];
+		[entries removeObjectAtIndex:idxFrom];
+		[entries insertObject:entry atIndex:idxTo];
+		[entry release];
+		[self save];
+	}
+}
+
+-(void)moveEntryFromReversedIndex:(NSUInteger)idxFrom toReversedIndex:(NSUInteger)idxTo {
+	[self moveEntryFromIndex:count-1-idxFrom toIndex:count-1-idxTo];
+}
 
 @end
