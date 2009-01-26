@@ -1,0 +1,172 @@
+#summary Design concept for a new iPhone application, ⌘
+#labels Phase-Design
+
+= Introduction =
+
+⌘ (Command) is a proposed !MobileSubstrate-based application to solve issue 10 and allows copying from static labels. It will be independent of iKeyEx, but I'll provide this app alongside iKeyEx.
+
+Like iKeyEx, ⌘ will be divided into two parts: the framework part "libcommandlets.dylib" and the hooker part "UIHooker-Command.dylib". Users should be allowed to add functionality, called *⌘lets*, to ⌘ like iKeyEx.
+
+= User Interface and Interaction =
+
+For text fields, ⌘ will add !MagicPad-style selection. After the selection there will be a "⌘ button" next to it.
+
+http://xae.xanga.com/76ff375630532230973774/w182066554.png
+
+The "⌘ button" should also show when double tapping on an empty place.
+
+  Alternate gesture to activate ⌘ would be long hold, but I don't like that because I will long hold to ensure I've clicked the right position.
+
+Clicking on it shows an action menu.
+
+http://x04.xanga.com/a78f065038333230974391/w182067085.png
+
+For static labels, selection is difficult to implement, so ⌘ would probably not support it. But a hook will still be installed so that the action menu will be called up when the user double/triple tap on it.
+
+= File Structure =
+
+⌘'s file structure would be like this:
+
+{{{
+/
+ Library/
+  MobileSubstrate/
+   DynamicLibraries/
+    UIHooker-Command.dylib
+    UIHooker-Command.plist
+ usr/
+  lib/
+   libcommandlets.dylib
+
+ <anywhere-that-execl()-is-allowed>/
+  Commandlets/
+   cut.plist
+   copy.plist
+   paste.plist
+   google.plist
+   ...
+   clipboard.bundle
+   google.sh
+   ...
+}}}
+
+== ⌘let plist format ==
+
+⌘lets will be specified through a property list. The content is like this:
+
+{{{
+# for paste.plist
+ {
+   title = "Paste";
+   bin = "clipboard.bundle";
+   type = "lib";
+   call = "pasteEntry";
+   availableWhenEmpty = 1;
+ }
+# for google.plist
+ {
+   title = "Google";
+   bin = "google.sh";
+   type = "exec";
+   app = "com.apple.MobileSafari";
+ }
+}}}
+
+|| *Key* || Meaning || Default value ||
+|| title || The ⌘let's display name || (file name) ||
+|| bin || The library, executable or shell script that will be used when user clicks on the ⌘let's button. || (file name)`.sh` ||
+|| type || Equals `lib` if _bin_ is treated as a library, or `exec` if treated as executable or shell script. || `exec` ||
+|| app ||  The application that the ⌘let will launch. If the current application is different from the specified one, the button shall appear in red, to indicate that the current program will quit. || "" ||
+|| availableWhenEmpty || Whether the ⌘let will be available even if the selection is empty. || 0 ||
+|| call || When _type_ is `lib`, the function name to call. || "run" ||
+
+== ⌘let as a `lib` ==
+
+When the ⌘let is run as a library, the function with symbol specified in _call_ will be called.
+
+That function must have signature
+{{{
+CMLFurtherAction run (NSString** pSelectedContent, NSRange selectedRange, NSObject<UIKeyboardInput>* target, NSDictionary* cmdletParams);
+}}}
+
+You can change the selected string while the program runs. If you do so, you _must_ release the old string and retain the new string, like this:
+{{{
+...
+[*pSelectedContent release];
+*pSelectedContent = [[NSString alloc] initWithString:@"new content"];
+...
+}}}
+
+`CMLFurtherAction` is an enum indicated any further action to do. It has no effect (except for `CMLActionShowMenu`) if the target is static text. Anything resulting in a nonzero range in a DOM element will be invisible.
+|| *value* || *meaning* ||
+|| CMLActionDefault = 0 || Default: Update selection to surround new text ||
+|| CMLActionCollapseToStart || Collapse selection to the beginning. ||
+|| CMLActionCollapseToEnd || Collapse selection to the end. ||
+|| CMLActionCollapseToOldEnd || Collapse selection to the end before text is replaced. ||
+|| CMLActionReuseOldSelection || Reuse the old selection. ||
+|| CMLActionMoveToBeginning || Set the selection to the start of text field. ||
+|| CMLActionMoveToEnding || Set the selection to the end of text field. ||
+|| CMLActionSelectAll || Select the whole text field. ||
+|| CMLActionSelectToBeginningFromStart || Select to beginning from start. ||
+|| CMLActionSelectToBeginningFromEnd || Select to beginning from end. ||
+|| CMLActionSelectToEndingFromStart || Select to ending from start. ||
+|| CMLActionSelectToEndingFromEnd || Select to ending from end. ||
+|| CMLActionAnchorAtStart = 64 || Anchor the selection to the start point of the new selection. Subsequent movements in the text field will be interpreted as changing end point of selection, instead of moving the cursor, until another ⌘let is called. ||
+|| CMLActionAnchorAtEnd = 128 || Anchor the selection to the end point of the new selection. ||
+|| CMLActionShowMenu = 4096 || Show the action menu. ||
+
+`CMLActionShowMenu` and `CMLActionAnchor`_xxx_ can be combined with the rest of the actions.
+
+If the ⌘let is a lib, the calling will be *blocking*, meaning the active application cannot continue until the ⌘let function finishes.
+
+== ⌘let as an `exec` ==
+
+If _run_ is declared as an `exec`, its `main()` will be called with these arguments:
+
+|| `argv[1]` || The selected string ||
+|| `argv[2]` || The starting location of selected range ||
+|| `argv[3]` || The length of selected range ||
+|| `argv[4]` || The whole string in the active text field ||
+
+All of these are converted to a UTF8 string. 
+
+An exec ⌘let *cannot* return or change any arguments. Also, the call can be *non-blocking*, i.e. the program flow can continue without waiting the ⌘let to finish.
+
+= libcommandlet.dylib API =
+
+The following API shall be provided with libcommandlet.dylib:
+
+{{{
+#import <UIKit2/UIKeyboardInput.h>
+
+typdef enum CMLFurtherAction { ... } CMLFurtherAction;
+
+@interface CMLCommandlet
++(void)performFurtherAction:(CMLFurtherAction)theActions onTarget:(NSObject<UIKeyboardInput>*)target;
++(void)callCommandlet:(NSString*)cmdletName withTarget:(NSObject<UIKeyboardInput>*)target;
++(void)callCommandlet:(NNString*)cmdletName withString:(NSString*)selectedString;
++(void)interceptCommandlet:(NSString*)cmdletName toInstance:(NSObject*)interceptor action:(SEL)aSelector;
++(void)uninterceptCommandlet:(NSString*)cmdletName fromInstance:(NSObject*)interceptor action:(SEL)aSelector;
+@end;
+}}}
+
+== ⌘let Interception ==
+
+An application may want to intercept ⌘let calls, e.g. to integrate ⌘ into the application's custom copy and paste environment. 
+
+The selector to parse must have this signature:
+
+{{{
+  -(BOOL)callbackWithCommandlet:(NSString*)cmdletName selectedString:(NSString**)pSelectedString range:(NSRange*)pSelectedRange target:(NSObject<UIKeyboardInput>**)pTarget;
+}}}
+
+You can change any parameters in the interceptor. If you changes the selected string, remember to release the old instance and retain the new one.
+
+The interceptor can return NO to cancel the propagation. The ⌘let and all subsequent interceptors will not be called if this returned NO.
+
+A ⌘let can register multiple interceptors. They will be called in reverse registration order. 
+
+As a good practice, remember to unintercept any interceptor before the program finishes.
+
+= Role of ℏClipboard =
+As ⌘ can do a many similar job as ℏClipboard, after ⌘ is released the back-end of ℏClipboard will be pulled away, and the UI will be converted to a front-end of ⌘. 
