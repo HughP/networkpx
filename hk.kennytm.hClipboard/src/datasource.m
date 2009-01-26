@@ -43,7 +43,7 @@
 -(void)updateDataCache {
 	[dataCache release];
 	[filteredSet release];
-	if (secure) {
+	if (!secure) {
 		filteredSet = [[clipboard indicesWithNonsecureData] retain];
 		NSMutableArray* dataCacheNotReversed = [[[clipboard allData] objectsAtIndexes:filteredSet] mutableCopy];
 		NSUInteger dataCount = [dataCacheNotReversed count];
@@ -105,9 +105,11 @@
 	
 	NSString* txt = [[dataCache objectAtIndex:row] description];
 	if (secure && [clipboard isSecureAtReversedIndex:row]) {
-		txt = [[KeyboardBundle activeBundle] localizedStringForKey:@"<Secure Text with %d characters>"];
+		txt = [NSString stringWithFormat:
+			   [[KeyboardBundle activeBundle] localizedStringForKey:@"<Secure Text %u chars>"],
+			   [txt length]];
 		cell.font = [UIFont italicSystemFontOfSize:[UIFont systemFontSize]];
-		cell.textColor = [UIColor lightGrayColor];
+		cell.textColor = [UIColor colorWithRed:1 green:1 blue:.5f alpha:1];
 	} else {
 		NSUInteger txtLen = [txt length];
 		if (txtLen > 200) {
@@ -134,7 +136,7 @@
 	
 	if (style == UITableViewCellEditingStyleDelete) {
 		NSUInteger row = [indexPath row];
-		if (secure) {
+		if (!secure) {
 			NSUInteger curIndex = [filteredSet firstIndex];
 			for (NSUInteger i = 0; i < row; ++ i)
 				curIndex = [filteredSet indexGreaterThanIndex:curIndex];
@@ -157,7 +159,7 @@
 	
 	NSLog(@"%d -> %d", rowFrom, rowTo);
 	
-	if (secure) {
+	if (!secure) {
 		NSUInteger ciFrom = [filteredSet firstIndex];
 		NSUInteger ciTo;
 		NSUInteger i = 0;

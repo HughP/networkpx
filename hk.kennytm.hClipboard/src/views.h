@@ -56,6 +56,7 @@
 -(void)flashFirstRowAsBlue;
 -(BOOL)switchClipboard;
 -(void)updateDataCache;
+@property(assign,getter=isSecure) BOOL secure;
 @end
 
 

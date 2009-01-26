@@ -160,6 +160,14 @@
 
 -(BOOL)isDefaultClipboard { return datasource.usesPrefix; }
 -(void)updateDataCache { [datasource updateDataCache]; }
+
+@dynamic secure;
+-(BOOL)isSecure { return datasource.secure; }
+-(void)setSecure:(BOOL)secure { 
+	datasource.secure = secure;
+	[datasource updateDataCache];
+	[self reloadData];
+}
 @end
 
 
@@ -325,11 +333,7 @@
 	spBtnGroup.keyboardAppearance = appr;
 	backgroundView.frame = spBtnGroup.frame;
 	
-	/*
-	BOOL disableCopyKeys = ![impl textInputTraits].secureTextEntry;
-	copyBtn.enabled = disableCopyKeys;
-	markSelBtn.enabled = disableCopyKeys;
-	*/
+	clipboardView.secure = impl.textInputTraits.secureTextEntry;
 	 
 	[self setNeedsLayout];
 }
