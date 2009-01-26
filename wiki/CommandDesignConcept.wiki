@@ -23,6 +23,12 @@ http://x04.xanga.com/a78f065038333230974391/w182067085.png
 
 For static labels, selection is difficult to implement, so ⌘ would probably not support it. But a hook will still be installed so that the action menu will be called up when the user double/triple tap on it.
 
+== Preferences ==
+
+Some people may want to full-fledged extension, while some people just need a no-fringe copy & paste. The ⌘lets should be allowed to rearranged and enabled/disabled by users.
+
+In the Preferences, there will be an additional item "⌘ (Command)" that allows rearranging and regrouping ⌘lets.  
+
 = File Structure =
 
 ⌘'s file structure would be like this:
@@ -34,20 +40,27 @@ For static labels, selection is difficult to implement, so ⌘ would probably no
    DynamicLibraries/
     UIHooker-Command.dylib
     UIHooker-Command.plist
+ System/
+  Library/
+   PreferenceBundles/
+    CommandPreferences.bundle/
+     <whatever it should be here>
  usr/
   lib/
    libcommandlets.dylib
-
- <anywhere-that-execl()-is-allowed>/
-  Commandlets/
-   cut.plist
-   copy.plist
-   paste.plist
-   google.plist
-   ...
-   clipboard.bundle
-   google.sh
-   ...
+ var/
+  mobile/
+   Library/
+    Commandlets/
+     .CommandletsPreferences.plist
+     cut.plist
+     copy.plist
+     paste.plist
+     google.plist
+     ...
+     clipboard.bundle
+     google.sh
+     ...
 }}}
 
 == ⌘let plist format ==
@@ -132,7 +145,9 @@ All of these are converted to a UTF8 string.
 
 An exec ⌘let *cannot* return or change any arguments. Also, the call can be *non-blocking*, i.e. the program flow can continue without waiting the ⌘let to finish.
 
-= libcommandlet.dylib API =
+  But we need to check if `system()`, `execl()`, etc. is allowed in sandboxed applications.
+
+= libcommandlets.dylib API =
 
 The following API shall be provided with libcommandlet.dylib:
 
