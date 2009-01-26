@@ -114,6 +114,7 @@
 // obtain latest data & timestamp from clipboard.
 -(NSObject*)lastData;
 -(BOOL)lastIsSecure;
+-(NSObject*)lastNonsecureData;
 
 // obtain the latest data of specified class.
 -(NSObject*)lastDataOfClass:(Class)cls;
