@@ -93,8 +93,6 @@
 	UITableViewCell* cell = [tbl dequeueReusableCellWithIdentifier:@"hCC"];
 	if (cell == nil) {
 		cell = [[[UITableViewCell alloc] initWithFrame:CGRectZero reuseIdentifier:@"hCC"] autorelease]; 
-		cell.font = [UIFont boldSystemFontOfSize:[UIFont systemFontSize]];
-		cell.textColor = [UIColor whiteColor];
 		cell.lineBreakMode = UILineBreakModeMiddleTruncation;
 	}
 	NSUInteger row = indexPath.row;
@@ -115,6 +113,8 @@
 		if (txtLen > 200) {
 			txt = [[txt substringToIndex:100] stringByAppendingString:[txt substringFromIndex:txtLen-100]];
 		}
+		cell.font = [UIFont boldSystemFontOfSize:[UIFont systemFontSize]];
+		cell.textColor = [UIColor whiteColor];
 	}
 		
 	if (usesPrefix) {
@@ -124,7 +124,7 @@
 		} else {
 			emojiIcon += 0x2460;	// 0x2460 = Circled 1 in Unicode.
 		}
-		cell.text = [NSString stringWithFormat:@"%C  %@", emojiIcon, txt];
+		cell.text = [NSString stringWithFormat:@"%C %@", emojiIcon, txt];
 	} else {
 		cell.text = txt;
 	}
