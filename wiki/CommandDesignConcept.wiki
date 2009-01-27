@@ -100,7 +100,7 @@ Besides rearrangement, users should also be allowed to set whether to enable ⌘
 || type || Equals `lib` if _bin_ is treated as a library, or `exec` if treated as executable or shell script. || `exec` ||
 || app ||  The application that the ⌘let will launch. If the current application is different from the specified one, the button shall appear in red, to indicate that the current program will quit. || "" ||
 || availableWhenEmpty || Whether the ⌘let will be available even if the selection is empty. || 0 ||
-|| call || When _type_ is `lib`, the function name to call. || "run" ||
+|| call || When _type_ is `lib`, the function name to call. || (file name) ||
 
 == ⌘let as a `lib` ==
 
