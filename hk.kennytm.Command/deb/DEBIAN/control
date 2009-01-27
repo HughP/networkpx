@@ -1,0 +1,11 @@
+Package: hk.kennytm.command
+Name: Command
+Version: 0.1-3
+Architecture: iphoneos-arm
+Description: Universal copy & paste, even in SMS. Mail, SMS or search with ease. 
+Homepage: http://code.google.com/p/networkpx/Using_Command
+Maintainer: KennyTM~ <kennytm+Command@gmail.com>
+Author: KennyTM~ <kennytm+Command@gmail.com>
+Section: System
+Depends: mobilesubstrate (>=0.9-0)
+dev: kennytm
