@@ -54,7 +54,7 @@ Besides rearrangement, users should also be allowed to set whether to enable ⌘
   mobile/
    Library/
     Commandlets/
-     .CommandletsPreferences.plist
+     CommandletsPreferences.plist
      cut.plist
      copy.plist
      paste.plist
