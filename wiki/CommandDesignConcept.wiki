@@ -3,7 +3,7 @@
 
 = Introduction =
 
-⌘ (Command) is a proposed !MobileSubstrate-based application to solve issue 10 and allows copying from static labels. It will be independent of iKeyEx, but I'll provide this app alongside iKeyEx.
+⌘ (Command) is a proposed !MobileSubstrate-based application to solve issue 10 and allows copying from static labels. It will be independent of iKeyEx, but I'll provide this app alongside ℏClipboard.
 
 Like iKeyEx, ⌘ will be divided into two parts: the framework part "libcommandlets.dylib" and the hooker part "UIHooker-Command.dylib". Users should be allowed to add functionality, called *⌘lets*, to ⌘ like iKeyEx.
 
@@ -60,6 +60,13 @@ In the Preferences, there will be an additional item "⌘ (Command)" that allows
      ...
      clipboard.bundle
      google.sh
+     ...
+     en.lproj/
+      _default.strings
+      cut.strings
+      ...
+     es.lproj/ ...
+     ja.lproj/ ...
      ...
 }}}
 
@@ -149,30 +156,16 @@ An exec ⌘let *cannot* return or change any arguments. Also, the call can be *n
 
 == Localization ==
 
-The _title_ can be localized. The trick is to provide a dictionary instead of a string:
+⌘lets can provide localizations in the `(lang code).lproj` files as usual. The specific localizations should be named as `(file name).strings`
 
-{{{
- # Non-localizable
-   title = "Google";
-
- # Localizable
-   title = {
-     en = "Copy";
-     es = "Copiar";
-     ja = "コピー";
-     "zh_TW" = "複製";
-     "zh_CN" = "复制";
-     ...
-   }
-}}}
-
-All other keys of the plist cannot be localized.
+One particular attribute that should be localized is the _title_ key.
 
 = libcommandlets.dylib API =
 
 The following API shall be provided with libcommandlet.dylib:
 
 {{{
+#import <Foundation/Foundation.h>
 #import <UIKit2/UIKeyboardInput.h>
 
 typdef enum CMLFurtherAction { ... } CMLFurtherAction;
@@ -183,6 +176,7 @@ typdef enum CMLFurtherAction { ... } CMLFurtherAction;
 +(void)callCommandlet:(NNString*)cmdletName withString:(NSString*)selectedString;
 +(void)interceptCommandlet:(NSString*)cmdletName toInstance:(NSObject*)interceptor action:(SEL)aSelector;
 +(void)uninterceptCommandlet:(NSString*)cmdletName fromInstance:(NSObject*)interceptor action:(SEL)aSelector;
++(void)registerUndoManager:(CMLUndoManager*)manager;
 @end;
 }}}
 
@@ -203,6 +197,64 @@ The interceptor can return NO to cancel the propagation. The ⌘let and all subs
 A ⌘let can register multiple interceptors. They will be called in reverse registration order. 
 
 As a good practice, remember to unintercept any interceptor before the program finishes.
+
+
+== Undo/Redo Management ==
+{{{
+@interface CMLUndoManager {
+  NSMutableArray* operations;
+  NSUInteger undoLimit;
+  NSUInteger currentStep;
+  NSObject<UIKeyboardInput>* target;
+  NSDate* lastMicromodTime;
+  NSInterval micromodUpdateInterval;
+}
+@property(assign) NSUInteger undoLimit;
+@property(assign,readonly,getter=isUndoable) BOOL undoable;
+@property(assign,readonly,getter=isRedoable) BOOL redoable;
+@property(assign,readonly) NSObject<UIKeyboardInput>* target;
+@property(assign) NSInterval micromodUpdateInterval;
++(CMLUndoManager*)managerWithTarget:(NSObject<UIKeyboardInput>*)aTarget
++(CMLUndoManager*)managerWithTarget:(NSObject<UIKeyboardInput>*)aTarget undoLimit:(NSUInteger)limit;
++(CMLUndoManager*)managerWithTarget:(NSObject<UIKeyboardInput>*)aTarget undoLimit:(NSUInteger)limit micromodUpdateInterval:(NSInterval)interval;
+-(id)initWithTarget:(NSObject<UIKeyboardInput>*)aTarget undoLimit:(NSUInteger)limit;
+-(void)dealloc;
+-(void)undo;
+-(void)redo;
+-(void)setString:(NSString*)str;
+-(void)appendString:(NSString*)str;
+-(void)deleteCharactersCount:(NSUInteger)charsToDelete;
+@end
+}}}
+
+
+You may use a `CMLUndoManager` to track changes to the text field when you want to provide undo/redo capability in your extension. Note that when using ⌘ alone without interception no undo managers will be used internally, that means ⌘ itself does not provide undo/redo capability.
+
+  Later versions of ⌘ may provide built-in undo/redo by tracking keyboard input as well.
+
+To use the undo manager, you have to first find the subview of the text field that actually sets ranges. Let's say it is stored in the variable _target_. Now call
+
+{{{
+  CMLUndoManager* myManager = [CMLUndoManager managerWithTarget:target];
+  [CMLCommandlet registerUndoManager:target];
+}}}
+
+then any calls to ⌘lets that changes the input will be routed through `myManager` for tracking. Besides, you may want to track *micro-modifications* (micromod) such as entering a word or back-spacing a few characters. You can call
+
+{{{
+  [myManager appendString:@"word"];     // user typed "word".
+  [myManager deleteCharactersCount:4];  // user deleted 4 characters
+}}}
+
+to track these micromods.
+
+Whenever you want to undo 1 step, call
+{{{
+  [myManager undo];
+}}}
+and to redo call {{{[myManager redo]}}}. You should check if it is undoable/redoable with the `undoable` and `redoable` properties.
+
+If an undo manager is registered with a target that is already held by another undo manager, the old one will be immediately disassociated and released. 
 
 = Role of ℏClipboard =
 As ⌘ can do a many similar job as ℏClipboard, after ⌘ is released the back-end of ℏClipboard will be pulled away, and the UI will be converted to a front-end of ⌘. 
