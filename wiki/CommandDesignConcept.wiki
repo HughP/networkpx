@@ -122,7 +122,9 @@ You can change the selected string while the program runs. If you do so, you _mu
 ...
 }}}
 
-_target_ may be nil if the ⌘let is invoked programmatically. 
+_target_ may be nil if the ⌘let is invoked programmatically.
+
+_pSelectedContent_ should never point to nil. If the ⌘let is invoked from an empty selection, _pSelectedContent_ will contain the whole text field. Nevertheless, replacing the content in this situation only inserts text at the cursor, instead of replacing the whole string. You can check `(selectedRange.length == 0)` to see if the selection is actually empty. To force selecting the whole string, set the flag `CMLActionSelectAllNow` in the returned value as discussed below.
 
 `CMLFurtherAction` is an enum indicated any further action to do. It has no effect (except for `CMLActionShowMenu`) if the target is static text. Anything resulting in a nonzero range in a DOM element will be invisible.
 || *value* || *meaning* ||
@@ -141,8 +143,9 @@ _target_ may be nil if the ⌘let is invoked programmatically.
 || CMLActionAnchorAtStart = 64 || Anchor the selection to the start point of the new selection. Subsequent movements in the text field will be interpreted as changing end point of selection, instead of moving the cursor, until another ⌘let is called. ||
 || CMLActionAnchorAtEnd = 128 || Anchor the selection to the end point of the new selection. ||
 || CMLActionShowMenu = 4096 || Show the action menu. ||
+|| CMLActionSelectAllNow = 8192 || Select the whole text field now, before text replacing begins. ||
 
-`CMLActionShowMenu` and `CMLActionAnchor`_xxx_ can be combined with the rest of the actions.
+`CMLActionShowMenu`, `CMLActionSelectAllNow` and `CMLActionAnchor`_xxx_ can be combined with the rest of the actions.
 
 If the ⌘let is a lib, the calling will be *blocking*, meaning the active application cannot continue until the ⌘let function finishes.
 
