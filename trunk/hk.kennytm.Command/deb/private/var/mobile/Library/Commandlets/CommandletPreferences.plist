@@ -1,0 +1,16 @@
+{
+	order = (
+		(
+			Cut,
+			Copy,
+			Paste,
+		),
+		(
+			Mail,
+			Google,
+		),
+	);
+	startSelectionMethod = DoubleTap;
+	"showActionSheetOnTextFieldMethod" = CommandKey;
+	"showActionSheetOnLabelMethod" = DoubleTap;
+}
