@@ -223,7 +223,7 @@ As a good practice, remember to unintercept any interceptor before the program f
   NSUInteger currentStep;
   NSObject<UIKeyboardInput>* target;
   NSDate* lastMicromodTime;
-  NSInterval micromodUpdateInterval;
+  NSTimeInterval micromodUpdateInterval;
 }
 @property(assign) NSUInteger undoLimit;
 @property(assign,readonly,getter=isUndoable) BOOL undoable;
@@ -232,8 +232,8 @@ As a good practice, remember to unintercept any interceptor before the program f
 @property(assign) NSInterval micromodUpdateInterval;
 +(CMLUndoManager*)managerWithTarget:(NSObject<UIKeyboardInput>*)aTarget
 +(CMLUndoManager*)managerWithTarget:(NSObject<UIKeyboardInput>*)aTarget undoLimit:(NSUInteger)limit;
-+(CMLUndoManager*)managerWithTarget:(NSObject<UIKeyboardInput>*)aTarget undoLimit:(NSUInteger)limit micromodUpdateInterval:(NSInterval)interval;
--(id)initWithTarget:(NSObject<UIKeyboardInput>*)aTarget undoLimit:(NSUInteger)limit micromodUpdateInterval:(NSInterval)interval;;
++(CMLUndoManager*)managerWithTarget:(NSObject<UIKeyboardInput>*)aTarget undoLimit:(NSUInteger)limit micromodUpdateInterval:(NSTimeInterval)interval;
+-(id)initWithTarget:(NSObject<UIKeyboardInput>*)aTarget undoLimit:(NSUInteger)limit micromodUpdateInterval:(NSTimeInterval)interval;;
 -(void)dealloc;
 -(void)undo;
 -(void)redo;
@@ -271,6 +271,8 @@ Whenever you want to undo 1 step, call
 and to redo call {{{[myManager redo]}}}. You should check if it is undoable/redoable with the `undoable` and `redoable` properties.
 
 If an undo manager is registered with a target that is already held by another undo manager, the old one will be immediately disassociated and released. 
+
+Note that the `CMLUndoManager` only holds a weak reference of the target, and won't retain it. 
 
 = Role of ℏClipboard =
 As ⌘ can do a many similar job as ℏClipboard, after ⌘ is released the back-end of ℏClipboard will be pulled away, and the UI will be converted to a front-end of ⌘. 
