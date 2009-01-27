@@ -230,7 +230,7 @@ As a good practice, remember to unintercept any interceptor before the program f
 +(CMLUndoManager*)managerWithTarget:(NSObject<UIKeyboardInput>*)aTarget
 +(CMLUndoManager*)managerWithTarget:(NSObject<UIKeyboardInput>*)aTarget undoLimit:(NSUInteger)limit;
 +(CMLUndoManager*)managerWithTarget:(NSObject<UIKeyboardInput>*)aTarget undoLimit:(NSUInteger)limit micromodUpdateInterval:(NSInterval)interval;
--(id)initWithTarget:(NSObject<UIKeyboardInput>*)aTarget undoLimit:(NSUInteger)limit;
+-(id)initWithTarget:(NSObject<UIKeyboardInput>*)aTarget undoLimit:(NSUInteger)limit micromodUpdateInterval:(NSInterval)interval;;
 -(void)dealloc;
 -(void)undo;
 -(void)redo;
