@@ -64,6 +64,6 @@ Some texts are read-only, so no clipboards will be displayed. You can't copy any
 
 = Alternative Solutions =
 Copy and paste is a much-requested functionality on the iPhoneOS that Apple has repeatedly refused to add. Therefore, it is expected to see many unofficial clipboard implementations in the wild. Here lists some of them besides ℏClipboard:
- * [http://www.installerepo.com/ispazio/clippy/ Clippy] is another excellent copy-and-paste solution of iPhone. It provides a system-wise single-entry clipboard, and is probably more accessible than ℏClipboard because you don't need to leave the current input mode, and more intuitive because the selection range is clearly shown. As of v0.91 you cannot copy web page text fileds like ℏClipboard, however.
+ * [http://www.installerepo.com/ispazio/clippy/ Clippy] is another excellent copy-and-paste solution of iPhone. It provides a system-wise multi-entry clipboard, and is probably more accessible than ℏClipboard because you don't need to leave the current input mode, and more intuitive because the selection range is clearly shown. 
  * [http://code.google.com/p/copiercin/ CopierciN] and many "enhanced" text editors on !AppStore such as !MagicPad and !WritePad provide internal single-entry clipboards independent of the keyboard. Of course, you can't expect these clipboard to work outside of their own apps.
  * [http://www.openclip.org/main.php OpenClip] was a framework for single-entry cross-application clipboard for !AppStore apps, but was broken by Apple's sandbox model on 2.1. 
