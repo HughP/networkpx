@@ -29,6 +29,8 @@ Some people may want to full-fledged extension, while some people just need a no
 
 In the Preferences, there will be an additional item "⌘ (Command)" that allows rearranging and regrouping ⌘lets.  
 
+Besides rearrangement, users should also be allowed to set whether to enable ⌘ and the activation method.
+
 = File Structure =
 
 ⌘'s file structure would be like this:
@@ -106,7 +108,10 @@ When the ⌘let is run as a library, the function with symbol specified in _call
 
 That function must have signature
 {{{
-CMLFurtherAction run (NSString** pSelectedContent, NSRange selectedRange, NSObject<UIKeyboardInput>* target, NSDictionary* cmdletParams);
+CMLFurtherAction run (NSString**                 pSelectedContent,
+                      NSRange                    selectedRange,
+                      NSObject<UIKeyboardInput>* target,
+                      NSDictionary*              cmdletParams);
 }}}
 
 You can change the selected string while the program runs. If you do so, you _must_ release the old string and retain the new string, like this:
@@ -116,6 +121,8 @@ You can change the selected string while the program runs. If you do so, you _mu
 *pSelectedContent = [[NSString alloc] initWithString:@"new content"];
 ...
 }}}
+
+_target_ may be nil if the ⌘let is invoked programmatically. 
 
 `CMLFurtherAction` is an enum indicated any further action to do. It has no effect (except for `CMLActionShowMenu`) if the target is static text. Anything resulting in a nonzero range in a DOM element will be invisible.
 || *value* || *meaning* ||
@@ -174,9 +181,12 @@ typdef enum CMLFurtherAction { ... } CMLFurtherAction;
 +(void)performFurtherAction:(CMLFurtherAction)theActions onTarget:(NSObject<UIKeyboardInput>*)target;
 +(void)callCommandlet:(NSString*)cmdletName withTarget:(NSObject<UIKeyboardInput>*)target;
 +(void)callCommandlet:(NNString*)cmdletName withString:(NSString*)selectedString;
+
 +(void)interceptCommandlet:(NSString*)cmdletName toInstance:(NSObject*)interceptor action:(SEL)aSelector;
 +(void)uninterceptCommandlet:(NSString*)cmdletName fromInstance:(NSObject*)interceptor action:(SEL)aSelector;
+
 +(void)registerUndoManager:(CMLUndoManager*)manager;
++(CMLUndoManager*)undoManagerForTarget:(NSObject<UIKeyboardInput>*)target;
 @end;
 }}}
 
@@ -187,7 +197,10 @@ An application may want to intercept ⌘let calls, e.g. to integrate ⌘ into th
 The selector to parse must have this signature:
 
 {{{
-  -(BOOL)callbackWithCommandlet:(NSString*)cmdletName selectedString:(NSString**)pSelectedString range:(NSRange*)pSelectedRange target:(NSObject<UIKeyboardInput>**)pTarget;
+  -(BOOL)callbackWithCommandlet:(NSString*)cmdletName
+                 selectedString:(NSString**)pSelectedString
+                          range:(NSRange*)pSelectedRange
+                         target:(NSObject<UIKeyboardInput>*)pTarget;
 }}}
 
 You can change any parameters in the interceptor. If you changes the selected string, remember to release the old instance and retain the new one.
