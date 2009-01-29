@@ -28,6 +28,11 @@ In the Preferences, there will be an additional item "⌘ (Command)" that allows
 
 Besides rearrangement, users are allowed to set whether to enable ⌘ and the activation gestures.
 
+|| *Action* || *Allowed guestures* ||
+|| Start selection || Double tap / Long hold ||
+|| Call action menu in text field || Immediately / ⌘ Button / Double tap / Long hold ||
+|| Call action menu in label || Double tap / Long hold / Triple tap ||
+
 = File Structure =
 
 ⌘'s file structure would be like this:
