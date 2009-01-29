@@ -14,9 +14,6 @@ For text fields, ⌘ will add !MagicPad-style selection. After the selection the
 http://xae.xanga.com/76ff375630532230973774/w182066554.png
 
 The "⌘ button" should also show when double tapping on an empty place.
-
-  Alternate gesture to activate ⌘ would be long hold, but I don't like that because I will long hold to ensure I've clicked the right position.
-
 Clicking on it shows an action menu.
 
 http://x04.xanga.com/a78f065038333230974391/w182067085.png
@@ -29,7 +26,7 @@ Some people may want to full-fledged extension, while some people just need a no
 
 In the Preferences, there will be an additional item "⌘ (Command)" that allows rearranging and regrouping ⌘lets.  
 
-Besides rearrangement, users should also be allowed to set whether to enable ⌘ and the activation method.
+Besides rearrangement, users are allowed to set whether to enable ⌘ and the activation gestures.
 
 = File Structure =
 
