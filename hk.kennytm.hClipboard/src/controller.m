@@ -36,6 +36,7 @@
 #import <iKeyEx/UIKBSpecialKeyButtons.h>
 #import <UIKit2/UIKeyboardImpl.h>
 #import <UIKit2/UICalloutView.h>
+#import <UIKit2/UIKeyboardInput.h>
 #import <WebCore/PublicDOMInterfaces.h>
 #import <UIKit/UITextView.h>
 #include <objc/runtime.h>
