@@ -1,5 +1,6 @@
 #summary ChangeLog for every projects in networkpx
 #labels Phase-Design
+<wiki:toc max_depth="1" />
 
 = 0.1-3 =
 
@@ -8,6 +9,9 @@
  * Fixed issue 9: Enable iKeyEx keyboards on install.
  * Fixed issue 7. Now iKeyEx can run on 2.0 and 2.1 firmware also.
  * Fixed issue 2 (Probably). The Globe can be used to exclusively switch to iKeyEx keyboards.
+
+== !MultiTap ==
+ * Initial release.
 
 <p align="center">↑↑↑ Future Releases ↑↑↑</p>
 <hr />
@@ -21,5 +25,7 @@
  * Recognizes selections made by Clippy.
 
 = 0.0-1 =
+
+== iKeyEx, ℏClipboard, !MathTyper, !L33tTyper, Colemak ==
 
 Initial RC version.
