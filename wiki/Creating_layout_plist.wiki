@@ -1,5 +1,6 @@
 #summary (Developers) How to create a keyboard layout with layout.plist
 #labels Phase-Implementation
+#sidebar TableOfContents
 
 = Introduction =
 
@@ -116,6 +117,19 @@ which is equivalent to
 arrangement = (10, 9, 7, 3);
 }}}
 means there are 10 keys in row 0, 9 keys in row 1, 7 keys in row 2 and 3 keys in row 3.
+
+  If you are using an XML property list, do it like this:
+{{{
+...
+<key>arrangement</key>
+<array>
+  <integer>10</integer>
+  <integer>9</integer>
+  <integer>7</integer>
+  <integer>3</integer>
+</array>
+...
+}}}
 
 == rowIndentation ==
 
