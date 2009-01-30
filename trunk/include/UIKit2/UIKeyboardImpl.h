@@ -5,13 +5,14 @@
  */
 
 #import <UIKit/UIView.h>
-#import <UIKit/UITextInputTraits.h>
-#import <UIKit2/UIKeyboardInput.h>
-#import <UIKit2/UIKeyboardCandidateList.h>
+#import <UIKit/UIApplication.h>
 #import <UIKit2/CDStructures.h>
+#import <CoreFoundation/CFDictionary.h>
+#import <Foundation/NSDate.h>
+#import <UIKit/UITextInputTraits.h>
 
-@class NSArray, NSMutableDictionary, NSString, NSTimer, UIAutocorrectInlinePrompt, UIDelayedAction, UIKeyboardInputManager, UIKeyboardLanguageIndicator, UIKeyboardLayout, UITextInputTraits;
-
+@class NSArray, NSMutableDictionary, NSString, NSTimer, UIAutocorrectInlinePrompt, UIDelayedAction, UIKeyboardInputManager, UIKeyboardLanguageIndicator, UIKeyboardLayout, UITextInputTraits, CandWord;
+@protocol UIKeyboardInput, UIKeyboardCandidateList;
 
 @interface UIKeyboardImpl : UIView {
 	// +32
@@ -87,95 +88,116 @@
 + (UIKeyboardImpl*)sharedInstance;
 + (UIKeyboardImpl*)activeInstance;
 + (void)releaseSharedInstance;
-+ (struct CGSize)defaultSize;
-+ (struct CGSize)defaultSizeForOrientation:(int)fp8;
-+ (struct CGSize)defaultSizeForInterfaceOrientation:(int)fp8;
-+ (int)orientationForSize:(struct CGSize)fp8;
-- (UIKeyboardImpl*)initWithFrame:(struct CGRect)fp8;
+
++ (CGSize)defaultSize;
++ (CGSize)defaultSizeForOrientation:(int)angle;
++ (CGSize)defaultSizeForInterfaceOrientation:(UIInterfaceOrientation)orientation;
++ (int)orientationForSize:(CGSize)size;
+
+- (id)initWithFrame:(CGRect)frm;
 - (void)delayedInit;
 - (void)dealloc;
 - (void)clearLayouts;
 - (void)removeFromSuperview;
+
 - (void)applicationSuspendedEventsOnly:(id)fp8;
 - (void)applicationResumedEventsOnly:(id)fp8;
+
 - (void)defaultsDidChange;
 - (void)defaultsDidChange:(id)fp8;
+
 - (void)synchronizePreferencesIfNeeded;
 - (void)synchronizePreferences;
 - (void)touchSynchronizePreferencesTimer;
 - (void)clearSynchronizePreferencesTimer;
-- (BOOL)performanceLoggingPreference;
-- (BOOL)autocorrectionPreference;
-- (BOOL)autocapitalizationPreference;
-- (BOOL)doubleSpacePeriodPreference;
-- (id)UILanguagePreference;
-- (BOOL)keyboardsExpandedPreference;
-- (void)setKeyboardsExpandedPreference;
-- (NSArray*)inputModePreference;
-- (id)localePreference;
-- (void)setInputModePreference;
-- (id)inputModeFirstPreference;
-- (id)inputModeLastChosenPreference;
-- (void)setInputModeLastChosenPreference;
-- (id)inputModeLastUsedPreference;
-- (void)setInputModeLastUsedPreference;
+
+-(BOOL)performanceLoggingPreference;
+-(BOOL)autocorrectionPreference;
+-(BOOL)autocapitalizationPreference;
+-(BOOL)doubleSpacePeriodPreference;
+-(NSString*)UILanguagePreference;
+-(BOOL)keyboardsExpandedPreference;
+-(NSArray*)inputModePreference;
+-(NSString*)localePreference;
+
+-(NSString*)inputModeFirstPreference;
+-(NSString*)inputModeLastChosenPreference;
+-(NSString*)inputModeLastUsedPreference;
+
+-(BOOL)shiftLockPreference;
+
+-(void)setKeyboardsExpandedPreference;
+-(void)setInputModePreference;
+-(void)setInputModeLastChosenPreference;
+-(void)setInputModeLastUsedPreference;
+
 - (void)setKeyboardDefault:(id)fp8 forKey:(id)fp12;
 - (id)keyboardDefaultForKey:(id)fp8;
-- (BOOL)shiftLockPreference;
+
 - (void)setInputMode:(NSString*)mode;
 - (void)setInputModeIfDifferentThanCurrent:(NSString*)mode;
 - (void)setInputModeFromPreferences;
-- (void)showInputModeIndicator;
-- (void)fadeAnimationDidStop:(id)fp8 finished:(id)fp12;
 - (void)setInputModeToNextInPreferredList;
 - (void)setInputModeToNextASCIICapableInPreferredList;
+
+- (void)showInputModeIndicator;
+
+- (void)fadeAnimationDidStop:(id)fp8 finished:(id)fp12;
+
 - (NSString*)inputModeLastChosen;
-- (void)setOrientationForSize:(struct CGSize)fp8;
-- (void)setFrame:(struct CGRect)fp8;
-- (void)updateLayoutForInterfaceOrientation:(int)fp8;
+
+- (void)setOrientationForSize:(CGSize)size;
+- (void)setFrame:(CGRect)frm;
+- (void)updateLayoutForInterfaceOrientation:(UIInterfaceOrientation)orientation;
+
 - (void)takeTextInputTraitsFrom:(id)fp8;
+
 @property(retain) id<UIKeyboardInput> delegate;
-- (void)setDelegate:(id)fp8 force:(BOOL)fp12;
+
+- (void)setDelegate:(id<UIKeyboardInput>)del force:(BOOL)force;
+
 - (BOOL)delegateIsSMSTextView;
+
 - (void)textChanged:(id)fp8;
-- (void)setDefaultTextInputTraits:(UITextInputTraits*)fp8;
-- (id<UITextInputTraits>)textInputTraits;
+
+@property(retain) id<UITextInputTraits> textInputTraits;
+
 - (void)enable;
-- (BOOL)callShouldInsertText:(id)fp8;
+
+- (BOOL)callShouldInsertText:(NSString*)txt;
 - (BOOL)callShouldDelete;
 - (void)callChangedSelection;
-- (int)callPositionForAutocorrection:(id)fp8;
+- (int)callPositionForAutocorrection:(NSString*)autocor;
 - (void)callChanged;
 - (void)setChanged;
 - (void)clearChangedDelegate;
 - (void)clearInputManager;
 - (void)handleObserverCallback;
 - (void)prepareForGeometryChange;
-- (void)geometryChangeDone:(BOOL)fp8;
+- (void)geometryChangeDone:(BOOL)done;
 - (void)updateLayout;
-@property(readonly) int orientation;
+@property(assign,readonly) int orientation;
 - (void)prepareForSelectionChange;
-- (void)updateSelectionWithPoint:(struct CGPoint)fp8;
+- (void)updateSelectionWithPoint:(CGPoint)pnt;
 - (void)updateForChangedSelection;
 - (void)updateInputManagerAutoShiftFlag;
 - (void)notifyShiftState;
 - (void)updateShiftState;
 - (void)setShiftOffIfNeeded;
 - (void)toggleShift;
-- (void)setShift:(BOOL)fp8;
-- (void)setShift:(BOOL)fp8 autoshift:(BOOL)fp12;
-- (void)setShiftPreventAutoshift:(BOOL)fp8;
+@property(assign,getter=isShifted) BOOL shift;
+@property(assign,getter=isShiftLocked) BOOL shiftLocked;
+- (void)setShift:(BOOL)shifted autoshift:(BOOL)autoshifted;
+- (void)setShiftPreventAutoshift:(BOOL)aBool;
 - (void)setShiftNeedsUpdate;
-- (void)setShiftLocked;
-- (BOOL)isShifted;
 - (BOOL)isAutoShifted;
-- (BOOL)isShiftLocked;
 - (BOOL)shiftLockedEnabled;
 - (void)clearShiftState;
 - (void)forceShiftUpdate;
 - (void)forceShiftUpdateIfKeyboardStateChanged;
 - (BOOL)shouldSkipCandidateSelection;
 - (void)setShouldSkipCandidateSelection:(BOOL)fp8;
+
 - (void)installCaret;
 - (void)clearCaret;
 - (void)hideCaret:(int)fp8;
@@ -190,34 +212,41 @@
 - (BOOL)caretVisible;
 - (void)updateCaretRect;
 - (void)caretChanged;
+
 - (void)keyActivated;
 - (void)keyDeactivated;
-- (void)setInputPoint:(struct CGPoint)fp8;
-- (void)handleDeleteAsRepeat:(BOOL)fp8;
+
+- (void)setInputPoint:(CGPoint)pnt;
+
+- (void)handleDeleteAsRepeat:(BOOL)rpt;
 - (void)handleDelete;
 - (void)handleStringInput:(NSString*)inp;
-- (BOOL)acceptInputString:(id)fp8;
-- (void)setPreviousInputString:(id)fp8;
-- (void)addInputString:(id)fp8;
-- (void)setInputString:(id)fp8;
-- (BOOL)shouldEnableShiftForDeletedCharacter:(unsigned short)fp8;
+- (BOOL)acceptInputString:(NSString*)str;
+- (void)setPreviousInputString:(NSString*)str;
+- (void)addInputString:(NSString*)str;
+- (void)setInputString:(NSString*)str;
+- (BOOL)shouldEnableShiftForDeletedCharacter:(unichar)chr;
+
 - (void)updateLayoutAndSetShift;
 - (void)handleDeleteWithZeroInputCount;
 - (void)handleDeleteWithNonZeroInputCount;
 - (void)deleteFromInput;
+
 - (void)acceptAutocorrection;
-- (void)acceptCandidate:(id)fp8 atIndex:(unsigned int)fp12;
+- (void)acceptCandidate:(CandWord*)cand atIndex:(NSUInteger)idx;
 - (void)acceptCurrentCandidate;
 - (void)acceptCurrentCandidateIfSelected;
 - (void)showNextCandidates;
-- (void)candidateListAcceptCandidate:(id)fp8;
+- (void)candidateListAcceptCandidate:(CandWord*)cand;
 - (void)candidateListSelectionDidChange:(id)fp8;
-- (id)candidateList;
+- (NSArray*)candidateList;
+
 - (void)clearInput;
-- (void)setInputObject:(id)fp8;
-- (void)addInputObject:(id)fp8;
+- (void)setInputObject:(id)obj;
+- (void)addInputObject:(id)obj;
 - (void)clearTransientState;
 - (void)clearAnimations;
+
 - (void)acceptWord:(id)fp8 firstDelete:(unsigned int)fp12 addString:(id)fp16;
 - (BOOL)_shouldSuggestUserEnteredString:(id)fp8;
 - (BOOL)displaysCandidates;
@@ -234,7 +263,7 @@
 - (id)automaticallySelectedOverlay;
 - (id)inputOverlayContainer;
 - (void)updateTextCandidateView;
-- (struct CGRect)convertRectToAutocorrectRect:(struct CGRect)fp8 delegateView:(id)fp24 container:(id)fp28;
+- (CGRect)convertRectToAutocorrectRect:(CGRect)rect delegateView:(id)fp24 container:(id)fp28;
 - (void)touchAutocorrectPromptTimer;
 - (void)clearAutocorrectPromptTimer;
 - (void)updateAutocorrectPromptAction;
@@ -245,12 +274,12 @@
 - (void)delegateSuggestionsForCurrentInput;
 - (void)generateCandidates:(BOOL)fp8;
 - (BOOL)shouldChargeKeys;
-- (struct __CFDictionary *)chargedKeyProbabilities;
-- (void)touchAutoDeleteTimerWithThreshold:(double)fp8;
+- (CFDictionaryRef)chargedKeyProbabilities;
+- (void)touchAutoDeleteTimerWithThreshold:(NSTimeInterval)fp8;
 - (void)autoDeleteTimerFired:(id)fp8;
 - (void)startAutoDeleteTimer;
 - (void)stopAutoDelete;
-- (void)touchLongPressTimerWithDelay:(double)fp8;
+- (void)touchLongPressTimerWithDelay:(NSTimeInterval)fp8;
 - (void)touchLongPressTimer;
 - (void)clearLongPressTimer;
 - (void)longPressAction;
@@ -266,8 +295,8 @@
 - (void)timeElapsed:(unsigned int)fp8 message:(id)fp12;
 - (BOOL)canHandleKeyHitTest;
 - (void)clearKeyAreas;
-- (void)registerKeyArea:(struct CGPoint)fp8 withRadii:(struct CGPoint)fp16 forKeyCode:(unsigned short)fp24 forLowerKey:(id)fp28 forUpperKey:(id)fp32;
-- (int)keyHitTest:(struct CGPoint)fp8 touchStage:(int)fp16 atTime:(double)fp20 withPathInfo:(PathInfo*)fp28 forceShift:(BOOL)fp32;
+- (void)registerKeyArea:(CGPoint)fp8 withRadii:(CGPoint)fp16 forKeyCode:(unichar)fp24 forLowerKey:(NSString*)fp28 forUpperKey:(NSString*)fp32;
+- (int)keyHitTest:(CGPoint)fp8 touchStage:(int)fp16 atTime:(NSTimeInterval)fp20 withPathInfo:(PathInfo*)fp28 forceShift:(BOOL)fp32;
 - (BOOL)keySlidIntoSwipe;
 
 @end
