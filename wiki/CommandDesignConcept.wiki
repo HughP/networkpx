@@ -3,7 +3,7 @@
 
 = Introduction =
 
-⌘ (Command) is a proposed !MobileSubstrate-based application to solve issue 10 and allows copying from static labels. It will be independent of iKeyEx, but I'll provide this app alongside ℏClipboard.
+⌘ (Command) is a proposed !MobileSubstrate-based application to solve issue 10 and allows copying from static labels. In fact, it is a generalized solution like Mac OS's [http://en.wikipedia.org/wiki/Services_menu services menu]. It will be independent of iKeyEx, but I'll provide this app alongside ℏClipboard.
 
 Like iKeyEx, ⌘ will be divided into two parts: the framework part "libcommandlets.dylib" and the hooker part "UIHooker-Command.dylib". Users should be allowed to add functionality, called *⌘lets*, to ⌘ like iKeyEx.
 
@@ -97,12 +97,14 @@ Besides rearrangement, users are allowed to set whether to enable ⌘ and the ac
 }}}
 
 || *Key* || Meaning || Default value ||
-|| title || The ⌘let's display name || (file name) ||
+|| title / NSMenuItem || The ⌘let's display name || (file name) ||
 || bin || The library, executable or shell script that will be used when user clicks on the ⌘let's button. || (file name)`.sh` ||
-|| type || Equals `lib` if _bin_ is treated as a library, or `exec` if treated as executable or shell script. || `exec` ||
+|| type || Equals:<ul><li>`lib` if _bin_ is treated as a library</li><li>`exec` if treated as executable or shell script</li><li>`service` if treated as a [http://developer.apple.com/documentation/Cocoa/Conceptual/SysServices/Concepts/architecture.html Mac OS X system service]</li></ul> || `exec` ||
 || app ||  The application that the ⌘let will launch. If the current application is different from the specified one, the button shall appear in red, to indicate that the current program will quit. || "" ||
 || availableWhenEmpty || Whether the ⌘let will be available even if the selection is empty. || 0 ||
 || call || When _type_ is `lib`, the function name to call. || (file name) ||
+|| NSMessage || When _type_ is `service`, the message selector name to call. || (file name) ||
+|| NSPortName || When _type_ is `service`, the port name to use. || (file name) ||
 
 == ⌘let as a `lib` ==
 
@@ -165,6 +167,38 @@ All of these are converted to a UTF8 string.
 An exec ⌘let *cannot* return or change any arguments. Also, the call can be *non-blocking*, i.e. the program flow can continue without waiting the ⌘let to finish.
 
   But we need to check if `system()`, `execl()`, etc. is allowed in sandboxed applications.
+
+== ⌘let as a `service` ==
+
+Mac OS X system services is a plug-in system based on the `NSPasteboard` class. The services are located in the Services submenu in the application menu in the Mac OS X. When the user selected some text and clicked on a service, the selected text will be copied to the service, processed, and pasted back to the application. This is exactly like how ⌘let works. You may read http://developer.apple.com/documentation/Cocoa/Conceptual/SysServices/Concepts/architecture.html for the detail of system services.
+
+Therefore, ⌘ also allows ⌘let to exist as system services to reduce porting time. All you have to do is to create a dylib or bundle which provides a message having the signature:
+{{{
+-(void)serviceName:(NSPasteBoard*)pasteboard userData:(NSString*)data error:(NSString**)error;
+}}}
+where _serviceName_ is the string you provided in the the _NSMessage_ key of the plist file.
+
+The class containing this message must be first registered in the dylib/bundle initializer with 
+{{{
+static ServiceProviderClass* serviceProviderObj = nil;
+...
+void init () {
+  serviceProviderObj = [[ServiceProviderClass alloc] init];
+  NSRegisterServicesProvider(serviceProviderObj, @"portName"); // <---- Call this line
+  ...
+}
+}}}
+where _portName_ is the string you provided in the _NSPort_ key of the plist file.
+
+  You _cannot_ call `-[UIApplication setServicesProvider:]`, and it won't be supported neither.
+
+Currently _userData_ will always be passed as `nil`. You can return an autorelease'd NSString to _error_ to tell the user something is wrong. If the user opts in for showing services errors, a UIAlertView will pop up alerting the user about this. In any way, the message will be NSLog-ed.
+
+There is no way to change the selection nor querying the target performing the ⌘let in a service.
+
+To read the text copied to the NSPasteboard, call `[pasteboard stringForType:NSStringPboardType]`, and to return the text call `[pasteboard setString:@"text" forType:NSStringPboardType]`. Due to current limitation, the pasteboard data type will always be ignored and the data copied will always be a string.
+
+Like libs, a service ⌘let is *blocking*. 
 
 == Localization ==
 
