@@ -4,14 +4,14 @@
  *     class-dump is Copyright (C) 1997-1998, 2000-2001, 2004-2007 by Steve Nygard.
  */
 
-#import <Foundation/Foundation.h>
-#import <UIKit/UIView.h>
 #import <UIKit2/UIKeyboardLayout.h>
 #import <UIKit2/CDStructures.h>
-#import <UIKit2/UIKeyboardSublayout.h>
+#import <CoreGraphics/CGGeometry.h>
+#import <UIKit/UITextInputTraits.h>
 
-@interface UIKeyboardLayoutRoman : UIKeyboardLayout
-{
+@class UIKeyboardSublayout, UIView, NSString, NSMutableDictionary, NSSet, UIEvent;
+
+@interface UIKeyboardLayoutRoman : UIKeyboardLayout {
     NSMutableDictionary *m_keyedSublayouts;
     UIKeyboardSublayout *m_activeSublayout;
     UIKeyboardSublayout *m_deactivatingSublayout;
@@ -50,23 +50,23 @@
 
 + (id)inputModesPreferringEuroToDollar;
 + (id)availableTopLevelDomains;
-- (id)initWithFrame:(struct CGRect)fp8;
+- (id)initWithFrame:(CGRect)rect;
 - (void)dealloc;
-- (void)showKeyboardType:(int)fp8 withAppearance:(int)fp12;
+- (void)showKeyboardType:(int)fp8 withAppearance:(UIKeyboardAppearance)fp12;
 - (void)deactivateActiveKeys;
 - (void)updateReturnKey;
 - (void)updateLocalizedKeys;
 - (BOOL)usesAutoShift;
 - (BOOL)isShiftKeyBeingHeld;
 - (BOOL)isShiftKeyPlaneChooser;
-- (void)setShift:(BOOL)fp8;
+- (void)setShift:(BOOL)isShifted;
 - (void)longPressAction;
 - (BOOL)canHandleHandEvent:(struct __GSEvent *)fp8;
-- (unsigned int)typeForKey:(UIKeyDefinition*)fp8;
-- (unsigned int)downActionFlagsForKey:(UIKeyDefinition*)fp8;
-- (unsigned int)upActionFlagsForKey:(UIKeyDefinition*)fp8;
-- (struct CGRect)compositeFGLongPressFrameForKey:(UIKeyDefinition*)fp8 orientation:(int)fp12;
-- (Class)sublayoutClassForKeyboardType:(id)fp8;
+- (UIKeyType)typeForKey:(UIKeyDefinition*)fp8;
+- (UIKeyDefinitionDownActionFlag)downActionFlagsForKey:(UIKeyDefinition*)fp8;
+- (UIKeyDefinitionUpActionFlag)upActionFlagsForKey:(UIKeyDefinition*)fp8;
+- (CGRect)compositeFGLongPressFrameForKey:(UIKeyDefinition*)fp8 orientation:(int)fp12;
+- (Class)sublayoutClassForKeyboardType:(NSString*)fp8;
 - (void)setLabel:(NSString*)fp8 forKey:(NSString*)fp12;
 - (void)setTarget:(id)fp8 forKey:(NSString*)fp12;
 - (void)setAction:(SEL)fp8 forKey:(NSString*)fp12;
@@ -75,51 +75,51 @@
 - (void)restoreDefaultsForAllKeys;
 - (void)nextCandidatesAction;
 - (void)confirmAction;
-- (void)sendStringAction:(id)fp8 forKey:(UIKeyDefinition*)fp12;
+- (void)sendStringAction:(NSString*)fp8 forKey:(UIKeyDefinition*)fp12;
 - (void)deleteAction;
 - (void)handleHardwareKeyDownFromSimulator:(struct __GSEvent *)fp8;
 - (void)addLocalizedCurrencyKeysToSublayout:(id)fp8 keyboardType:(id)fp12;
 - (void)build;
-- (id)buildSublayoutForKey:(id)fp8;
-- (id)buildUIKeyboardLayoutMain;
-- (id)buildUIKeyboardLayoutAlternate;
-- (id)buildUIKeyboardLayoutAlphabet;
-- (id)buildUIKeyboardLayoutNumbers;
-- (id)buildUIKeyboardLayoutAlphabetTransparent;
-- (id)buildUIKeyboardLayoutNumbersTransparent;
-- (id)buildUIKeyboardLayoutPhonePad;
-- (id)buildUIKeyboardLayoutPhonePadAlt;
-- (id)buildUIKeyboardLayoutPhonePadTransparent;
-- (id)buildUIKeyboardLayoutPhonePadAltTransparent;
-- (id)buildUIKeyboardLayoutNumberPad;
-- (id)buildUIKeyboardLayoutNumberPadTransparent;
-- (id)buildUIKeyboardLayoutURL;
-- (id)buildUIKeyboardLayoutURLAlt;
-- (id)buildUIKeyboardLayoutURLTransparent;
-- (id)buildUIKeyboardLayoutURLAltTransparent;
-- (id)buildUIKeyboardLayoutSMSAddressing;
-- (id)buildUIKeyboardLayoutSMSAddressingAlt;
-- (id)buildUIKeyboardLayoutSMSAddressingTransparent;
-- (id)buildUIKeyboardLayoutSMSAddressingAltTransparent;
-- (id)buildUIKeyboardLayoutEmailAddress;
-- (id)buildUIKeyboardLayoutEmailAddressAlt;
-- (id)buildUIKeyboardLayoutEmailAddressTransparent;
-- (id)buildUIKeyboardLayoutEmailAddressAltTransparent;
-- (void)addSublayout:(id)fp8 forKey:(id)fp12;
-- (id)layoutKeyForKeyboardType:(int)fp8 withAppearance:(int)fp12;
-- (void)showKeyboardTypeForKey:(id)fp8;
-- (id)sublayoutForKey:(id)fp8;
-- (id)activeSublayoutKey;
-- (id)activeSublayout;
+- (UIKeyboardSublayout*)buildSublayoutForKey:(NSString*)key;
+- (UIKeyboardSublayout*)buildUIKeyboardLayoutMain;
+- (UIKeyboardSublayout*)buildUIKeyboardLayoutAlternate;
+- (UIKeyboardSublayout*)buildUIKeyboardLayoutAlphabet;
+- (UIKeyboardSublayout*)buildUIKeyboardLayoutNumbers;
+- (UIKeyboardSublayout*)buildUIKeyboardLayoutAlphabetTransparent;
+- (UIKeyboardSublayout*)buildUIKeyboardLayoutNumbersTransparent;
+- (UIKeyboardSublayout*)buildUIKeyboardLayoutPhonePad;
+- (UIKeyboardSublayout*)buildUIKeyboardLayoutPhonePadAlt;
+- (UIKeyboardSublayout*)buildUIKeyboardLayoutPhonePadTransparent;
+- (UIKeyboardSublayout*)buildUIKeyboardLayoutPhonePadAltTransparent;
+- (UIKeyboardSublayout*)buildUIKeyboardLayoutNumberPad;
+- (UIKeyboardSublayout*)buildUIKeyboardLayoutNumberPadTransparent;
+- (UIKeyboardSublayout*)buildUIKeyboardLayoutURL;
+- (UIKeyboardSublayout*)buildUIKeyboardLayoutURLAlt;
+- (UIKeyboardSublayout*)buildUIKeyboardLayoutURLTransparent;
+- (UIKeyboardSublayout*)buildUIKeyboardLayoutURLAltTransparent;
+- (UIKeyboardSublayout*)buildUIKeyboardLayoutSMSAddressing;
+- (UIKeyboardSublayout*)buildUIKeyboardLayoutSMSAddressingAlt;
+- (UIKeyboardSublayout*)buildUIKeyboardLayoutSMSAddressingTransparent;
+- (UIKeyboardSublayout*)buildUIKeyboardLayoutSMSAddressingAltTransparent;
+- (UIKeyboardSublayout*)buildUIKeyboardLayoutEmailAddress;
+- (UIKeyboardSublayout*)buildUIKeyboardLayoutEmailAddressAlt;
+- (UIKeyboardSublayout*)buildUIKeyboardLayoutEmailAddressTransparent;
+- (UIKeyboardSublayout*)buildUIKeyboardLayoutEmailAddressAltTransparent;
+- (void)addSublayout:(UIKeyboardSublayout*)sublayout forKey:(NSString*)key;
+- (NSString*)layoutKeyForKeyboardType:(int)fp8 withAppearance:(UIKeyboardAppearance)fp12;
+- (void)showKeyboardTypeForKey:(NSString*)key;
+- (UIKeyboardSublayout*)sublayoutForKey:(NSString*)key;
+- (NSString*)activeSublayoutKey;
+- (UIKeyboardSublayout*)activeSublayout;
 - (UIKeyDefinition*)activeKey;
 - (id)overlayImageForKey:(UIKeyDefinition*)fp8;
 - (BOOL)shouldCacheViewForKey:(UIKeyDefinition*)fp8;
 - (void)activateCompositeKey:(UIKeyDefinition*)fp8;
-- (void)activateKey:(UIKeyDefinition*)fp8;
-- (void)activateKeyWithIndex:(unsigned int)fp8;
-- (void)activateFirstKeyOfType:(unsigned int)fp8;
-- (unsigned int)keyHitTest:(struct CGPoint)fp8;
-- (UIKeyDefinition*)keyForPoint:(struct CGPoint)fp8;
+- (void)activateKey:(UIKeyDefinition*)keydef;
+- (void)activateKeyWithIndex:(NSUInteger)index;
+- (void)activateFirstKeyOfType:(UIKeyType)type;
+- (unsigned int)keyHitTest:(CGPoint)fp8;
+- (UIKeyDefinition*)keyForPoint:(CGPoint)fp8;
 - (void)showPopupVariantsForKey:(UIKeyDefinition*)fp8;
 - (void)layoutSubview:(id)fp8 selectedString:(id)fp12;
 - (BOOL)isLongPressedKey:(UIKeyDefinition*)fp8;
@@ -135,11 +135,11 @@
 - (void)touchUp:(struct __GSEvent *)fp8 withPathInfo:(UIKeyDefinition*)fp12;
 - (BOOL)cancelTouchTracking;
 - (BOOL)cancelMouseTracking;
-- (void)touchesBegan:(id)fp8 withEvent:(id)fp12;
-- (void)touchesMoved:(id)fp8 withEvent:(id)fp12;
-- (void)touchesEnded:(id)fp8 withEvent:(id)fp12;
-- (void)touchesCancelled:(id)fp8 withEvent:(id)fp12;
-- (id)hitTest:(struct CGPoint)fp8 withEvent:(id)fp16;
+- (void)touchesBegan:(NSSet*)touches withEvent:(UIEvent*)event;
+- (void)touchesMoved:(NSSet*)touches withEvent:(UIEvent*)event;
+- (void)touchesEnded:(NSSet*)touches withEvent:(UIEvent*)event;
+- (void)touchesCancelled:(NSSet*)touches withEvent:(UIEvent*)event;
+- (id)hitTest:(CGPoint)point withEvent:(UIEvent*)event;
 
 @end
 

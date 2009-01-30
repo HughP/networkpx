@@ -1,5 +1,8 @@
 @class NSString;
 
+extern NSString* const UIKeyboardLayoutMain;
+extern NSString* const UIKeyboardLayoutAlternate;
+
 extern NSString* const UIKeyboardLayoutAlphabet;
 extern NSString* const UIKeyboardLayoutNumbers;
 extern NSString* const UIKeyboardLayoutPhonePad;
