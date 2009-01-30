@@ -2,6 +2,6 @@
 
 if [[ $1 == install ]]; then
 	# don't scare the newbies.
-	iKeyEx-KBMan add Colemak > /dev/null
+	iKeyEx-KBMan add MultiTap > /dev/null
 	exit 0
 fi

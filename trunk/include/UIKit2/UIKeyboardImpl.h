@@ -16,7 +16,7 @@
 
 @interface UIKeyboardImpl : UIView {
 	// +32
-    id <UIKeyboardInput> m_delegate;
+	id<UIKeyboardInput> m_delegate;
 	
 	
     UIKeyboardLanguageIndicator *m_languageIndicator;
@@ -152,7 +152,7 @@
 
 - (void)takeTextInputTraitsFrom:(id)fp8;
 
-@property(retain) id<UIKeyboardInput> delegate;
+@property(retain) NSObject<UIKeyboardInput>* delegate;
 
 - (void)setDelegate:(id<UIKeyboardInput>)del force:(BOOL)force;
 

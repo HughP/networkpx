@@ -1,6 +1,6 @@
 #!/bin/bash
 
 if [[ $1 == remove || $1 == "abort-install" ]]; then
-	iKeyEx-KBMan remove Colemak
+	iKeyEx-KBMan remove MultiTap
 	exit 0
 fi
