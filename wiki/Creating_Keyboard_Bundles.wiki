@@ -41,12 +41,12 @@ Together with the “iKeyEx:” prefix, the file name will become the *input mod
 || *Key* || *Value* ||
 || CFBundleDisplayName || The display name of the keyboard. ||
 || CFBundleExecutable || The binary file that contains all executable code. ||
-|| UIKeyboardLayout || The layout class to use. To be described below. ||  
-|| UIKeyboardInputManager || The input manager class to use. To be described below. ||
+|| UIKeyboardLayoutClass || The layout class to use. To be described below. ||  
+|| UIKeyboardInputManagerClass || The input manager class to use. To be described below. ||
 
 The display name will be shown when switching keyboards using the international button, and also in the Settings application. If missing, the file name will be used as the display name. 
 
-=== UIKeyboardLayout ===
+=== UIKeyboardLayoutClass ===
 In iKeyEx the layout class can be specified in 3 ways: _referred_, _layout.plist_ and writing code. 
 
 Referred means the layout of this keyboard will use an existing one. You fill in a string starting with “=”, then the input mode name to inherit the layout. 
@@ -59,7 +59,7 @@ For total customization, you can write code yourself to manage the view. In this
 
   In ℏClipboard, both the Portrait and Landscape layouts are implemented by the same class `hCLayout`. Therefore, this field would be written as
 {{{
-UIKeyboardLayout = {
+UIKeyboardLayoutClass = {
   Portrait = "hCLayout";
   Landscape = "hCLayout";
 };
@@ -67,8 +67,8 @@ UIKeyboardLayout = {
 
 If this field is missing, the standard QWERTY keyboard will be used as layout.  
 
-=== UIKeyboardInputManager ===
-Like UIKeyboardLayout, this field also can be referred using the same “=xxx” syntax. You can also write the class name of your own input manager class here.
+=== UIKeyboardInputManagerClass ===
+Like UIKeyboardLayoutClass, this field also can be referred using the same “=xxx” syntax. You can also write the class name of your own input manager class here.
 
 If this field is missing, no input managers will be used. 
 
