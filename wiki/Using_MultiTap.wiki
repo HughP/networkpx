@@ -1,0 +1,8 @@
+#summary How to use !MultiTap
+#labels Phase-Support
+
+[http://en.wikipedia.org/wiki/Multi-tap MultiTap] is a text entry system for classical phones. !MultiTap only uses the number pad, and by tapping the same key repeatedly you can enter alphabets.
+
+http://x14.xanga.com/6b8c857475d31231612273/z182623395.png
+
+!MultiTap is created for issue 36. The output sequence is based on the Nokia 6030.
