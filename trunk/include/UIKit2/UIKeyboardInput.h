@@ -8,24 +8,23 @@
 #import <UIKit2/UITextInputTraits_Private.h>
 #import <Foundation/NSRange.h>
 
-@class NSString, DOMRange;
-
+@class NSString, DOMRange, UIView;
 
 @protocol UIKeyboardInput <UITextInputTraits, UITextInputTraits_Private>
-- (id)delegate;
-- (id)textInputTraits;
+@property(readonly) id delegate;
+@property(readonly) id<UITextInputTraits> textInputTraits;
 - (BOOL)hasText;
 @property(copy) NSString* text;
 - (void)deleteBackward;
 - (void)insertText:(NSString*)txt;
 - (void)selectAll;
-- (BOOL)isShowingPlaceholder;
-- (id)keyboardInputView;
+@property(readonly,getter=isShowingPlaceholder) BOOL showingPlaceholder;
+@property(readonly) UIView* keyboardInputView;
 - (void)setCaretChangeListener:(id)fp8;
 - (void)setupPlaceholderTextIfNeeded;
 - (BOOL)hasSelection;
-- (CGRect)caretRect;
-- (CGRect)rectContainingCaretSelection;
+@property(readonly) CGRect caretRect;
+@property(readonly) CGRect rectContainingCaretSelection;
 - (CGRect)rectForNSRange:(NSRange)fp8;
 - (id)wordRangeContainingCaretSelection;
 - (id)rangeByMovingCurrentSelection:(int)fp8;
@@ -42,7 +41,7 @@
 - (BOOL)rangeAtSentenceStart:(id)fp8;
 @property(readonly) NSRange selectionRange;
 @property(readonly) DOMRange* selectedDOMRange;
-- (void)setSelectedDOMRange:(id)fp8 affinityDownstream:(BOOL)fp12;
+- (void)setSelectedDOMRange:(DOMRange*)range affinityDownstream:(BOOL)fp12;
 - (BOOL)selectionAtDocumentStart;
 - (BOOL)selectionAtSentenceStart;
 - (BOOL)selectionAtWordStart;
@@ -52,7 +51,7 @@
 - (void)updateSelectionWithPoint:(CGPoint)pt;
 - (CGRect)convertCaretRect:(CGRect)rect;
 - (BOOL)isProxyFor:(id)fp8;
-- (UIColor*)textColorForCaretSelection;
-- (UIFont*)fontForCaretSelection;
+@property(readonly) UIColor* textColorForCaretSelection;
+@property(readonly) UIFont* fontForCaretSelection;
 @end
 

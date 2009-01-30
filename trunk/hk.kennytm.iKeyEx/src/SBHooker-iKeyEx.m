@@ -135,6 +135,14 @@ MSHook(NSString*, UIKeyboardLocalizedInputModeName, NSString* mode) {
 	}
 };
 
+// Avoid the intl keyboard suddenly pop up
+MSHook(BOOL, UIKeyboardLayoutDefaultTypeForInputModeIsASCIICapable, NSString* mode) {
+	if ([mode hasPrefix:iKeyEx_Prefix])
+		return YES;
+	else
+		return _UIKeyboardLayoutDefaultTypeForInputModeIsASCIICapable(mode);
+}
+
 //------------------------------------------------------------------------------
 #pragma mark -
 #pragma mark Hookers for Custom Variants
@@ -249,6 +257,7 @@ void installHook () {
 	MSHookFunc(UIKeyboardLayoutClassForInputModeInOrientation);
 	MSHookFunc(UIKeyboardBundleForInputMode);
 	MSHookFunc(UIKeyboardLocalizedInputModeName);
+	MSHookFunc(UIKeyboardLayoutDefaultTypeForInputModeIsASCIICapable);
 	
 	MSHookMsg(UIKeyboardLayoutRoman, showPopupVariantsForKey:);
 	MSHookMsg(UIKeyboardLayoutRoman, downActionFlagsForKey:);

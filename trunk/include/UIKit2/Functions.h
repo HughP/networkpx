@@ -4,6 +4,8 @@
 #import <Foundation/NSBundle.h>
  */
 
+#import <Foundation/NSObjCRuntime.h>
+
 @class UIImage, NSString, NSBundle;
 
 UIImage* _UIImageWithName(NSString* name);
@@ -14,3 +16,4 @@ NSBundle* UIKeyboardBundleForInputMode(NSString* mode);
 NSString* UIKeyboardLocalizedInputModeName(NSString* mode);
 Class UIKeyboardLayoutClassForInputModeInOrientation(NSString* inputMode, NSString* orientationString);
 NSString* UIKeyboardLocalizedString (NSString* objID, NSString* locale, NSBundle* bundle);
+BOOL UIKeyboardLayoutDefaultTypeForInputModeIsASCIICapable(NSString* mode);

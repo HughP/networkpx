@@ -50,7 +50,7 @@
 @property(assign,readonly,getter=isRedoable) BOOL redoable;
 @property(assign,readonly) NSObject<UIKeyboardInput>* target;
 @property(assign) NSTimeInterval micromodUpdateInterval;
-+(CMLUndoManager*)managerWithTarget:(NSObject<UIKeyboardInput>*)aTarget
++(CMLUndoManager*)managerWithTarget:(NSObject<UIKeyboardInput>*)aTarget;
 +(CMLUndoManager*)managerWithTarget:(NSObject<UIKeyboardInput>*)aTarget undoLimit:(NSUInteger)limit;
 +(CMLUndoManager*)managerWithTarget:(NSObject<UIKeyboardInput>*)aTarget undoLimit:(NSUInteger)limit micromodUpdateInterval:(NSTimeInterval)interval;
 -(id)initWithTarget:(NSObject<UIKeyboardInput>*)aTarget undoLimit:(NSUInteger)limit micromodUpdateInterval:(NSTimeInterval)interval;
