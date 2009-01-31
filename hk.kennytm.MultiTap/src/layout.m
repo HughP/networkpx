@@ -32,21 +32,31 @@
 
 #import "layout.h"
 #import <UIKit2/Constants.h>
+#import <UIKit2/UIKeyboardSublayout.h>
+#import <iKeyEx/common.h>
+#import <UIKit/UIImageView.h>
 
 BOOL layoutWillEnableManager = YES;
 
-#define OverloadedBuildSublayoutMethodWithKeyboardTypeAlert   buildUIKeyboardLayoutPhonePadTransparent
-#define OverloadedBuildSublayoutMethodWithKeyboardTypeDefault buildUIKeyboardLayoutPhonePad
+#define SublayoutTypeAlert   UIKeyboardLayoutPhonePadTransparent
+#define SublayoutTypeDefault UIKeyboardLayoutPhonePad
+#define buildSublayoutTypeAlert   buildUIKeyboardLayoutPhonePadTransparent
+#define buildSublayoutTypeDefault buildUIKeyboardLayoutPhonePad
 
 #define ImplementSublayoutBuilderX(name,keyboardType,isLandscape) \
--(UIKeyboardSublayout*)buildUIKeyboardLayout##name { return [self OverloadedBuildSublayoutMethodWithKeyboardType##keyboardType]; }
+-(UIKeyboardSublayout*)buildUIKeyboardLayout##name { return [self buildSublayoutType##keyboardType]; }
 
 #define ImplementSublayoutBuilder(name,isLandscape) \
 ImplementSublayoutBuilderX(name,Default,isLandscape); \
 ImplementSublayoutBuilderX(name##Transparent,Alert,isLandscape)
 
+#define keyboardHeightLandscapeYES 162
+#define keyboardWidthLandscapeYES  480
+#define keyboardHeightLandscapeNO  320
+#define keyboardWidthLandscapeNO   216
+
 // disable the input manager when the user is in Alt modes. 
-#define ImplementShowKeyboardTypeForKey \
+#define ImplementShowKeyboardTypeForKey(isLandscape) \
 -(void)showKeyboardTypeForKey:(NSString*)key { \
 	[super showKeyboardTypeForKey:key]; \
 	layoutWillEnableManager = ( \
@@ -60,6 +70,11 @@ ImplementSublayoutBuilderX(name##Transparent,Alert,isLandscape)
 		key == UIKeyboardLayoutSMSAddressingTransparent || \
 		key == UIKeyboardLayoutEmailAddressTransparent \
 	); \
+	if (layoutWillEnableManager) { \
+		[[self activeSublayout] addInternationalKeyIfNeeded:UIKeyboardLayoutPhonePadTransparent]; \
+	} else if (key == UIKeyboardLayoutSMSAddressingAlt || key == UIKeyboardLayoutSMSAddressingAltTransparent) { \
+		[[self activeSublayout] addInternationalKeyIfNeeded:UIKeyboardLayoutNumbersTransparent]; \
+	} \
 }
 
 @implementation MultiTapLayout
@@ -67,7 +82,7 @@ ImplementSublayoutBuilder(Alphabet,NO);
 ImplementSublayoutBuilder(URL,NO);
 ImplementSublayoutBuilder(SMSAddressing,NO);
 ImplementSublayoutBuilder(EmailAddress,NO);
-ImplementShowKeyboardTypeForKey;
+ImplementShowKeyboardTypeForKey(NO);
 @end
 
 @implementation MultiTapLayoutLandscape
@@ -75,5 +90,5 @@ ImplementSublayoutBuilder(Alphabet,YES);
 ImplementSublayoutBuilder(URL,YES);
 ImplementSublayoutBuilder(SMSAddressing,YES);
 ImplementSublayoutBuilder(EmailAddress,YES);
-ImplementShowKeyboardTypeForKey;
+ImplementShowKeyboardTypeForKey(YES);
 @end
