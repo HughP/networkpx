@@ -13,6 +13,9 @@
 == !MultiTap ==
  * Initial release.
 
+== L33tTyper ==
+ * No long crash when typing with 2 fingers (r90).
+
 <p align="center">↑↑↑ Future Releases ↑↑↑</p>
 <hr />
 <p align="center">↓↓↓ Current Releases ↓↓↓</p>
