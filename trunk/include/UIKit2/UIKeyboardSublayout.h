@@ -4,6 +4,7 @@
  *     class-dump is Copyright (C) 1997-1998, 2000-2001, 2004-2007 by Steve Nygard.
  */
 
+#import <CoreFoundation/CFDictionary.h>
 #import <Foundation/Foundation.h>
 #import <UIKit/UIView.h>
 #import <UIKit2/CDStructures.h>
@@ -31,9 +32,9 @@
     UIKeyboardSpaceKeyView *m_spaceKeyView;
     UIKeyboardReturnKeyView *m_returnKeyView;
     NSMutableArray *m_extraImageViews;
-    struct UIKeyDefinition* m_keys;
-    unsigned int m_keysCount;
-    struct __CFDictionary *m_replacementKeys;
+    UIKeyDefinition* m_keys;
+    NSUInteger m_keysCount;
+    CFDictionaryRef m_replacementKeys;
     NSMutableDictionary *m_replacementImageViews;
     BOOL m_usesAutoShift;
     BOOL m_isShiftKeyPlaneChooser;
@@ -56,42 +57,39 @@
 - (UIKeyboardSublayout*)initWithFrame:(struct CGRect)frame compositeImagePaths:(NSArray*)imagePaths keys:(const UIKeyDefinition[])keyDefs keysCount:(unsigned int)length;
 
 - (void)dealloc;
-- (void)setUsesAutoShift:(BOOL)fp8;
-- (BOOL)usesAutoShift;
-- (void)setIsShiftKeyPlaneChooser:(BOOL)fp8;
-- (BOOL)isShiftKeyPlaneChooser;
-- (void)registerKeyAreaZephyr:(struct CGPoint)fp8 keyRect:(struct CGRect)fp16 keyCode:(int)fp32 keyString:(id)fp36 keyShiftString:(id)fp40;
+@property(assign) BOOL usesAutoShift;
+@property(assign) BOOL isShiftKeyPlaneChooser;
+@property(assign) BOOL usesKeyCharges;
+- (void)registerKeyAreaZephyr:(CGPoint)fp8 keyRect:(CGRect)fp16 keyCode:(int)fp32 keyString:(NSString*)fp36 keyShiftString:(NSString*)fp40;
 - (void)registerKeyCentroids;
 - (void)setRegistersKeyCentroids:(BOOL)doReg;
-- (BOOL)usesKeyCharges;
-- (void)setUsesKeyCharges:(BOOL)useKeyCharge;
 
-- (void)setShiftButtonImage:(UIImage*)fp8 frame:(struct CGRect)fp12;
-- (void)setShiftInactiveButtonImage:(UIImage*)fp8 frame:(struct CGRect)fp12;
-- (void)setAutoShiftButtonImage:(UIImage*)fp8 frame:(struct CGRect)fp12;
-- (void)setShiftLockedButtonImage:(UIImage*)fp8 frame:(struct CGRect)fp12;
-- (void)setDeleteButtonImage:(UIImage*)fp8 frame:(struct CGRect)fp12;
-- (void)setDeleteActiveButtonImage:(UIImage*)fp8 frame:(struct CGRect)fp12;
+- (void)setShiftButtonImage:(UIImage*)fp8 frame:(CGRect)fp12;
+- (void)setShiftInactiveButtonImage:(UIImage*)fp8 frame:(CGRect)fp12;
+- (void)setAutoShiftButtonImage:(UIImage*)fp8 frame:(CGRect)fp12;
+- (void)setShiftLockedButtonImage:(UIImage*)fp8 frame:(CGRect)fp12;
+- (void)setDeleteButtonImage:(UIImage*)fp8 frame:(CGRect)fp12;
+- (void)setDeleteActiveButtonImage:(UIImage*)fp8 frame:(CGRect)fp12;
 - (void)setCompositeImage:(UIImage*)fp8 forKey:(NSString*)fp12;
 
-- (id)compositeImageForKey:(id)fp8;
-- (void)addReplacementKeyboardKey:(UIKeyDefinition*)fp8 forKey:(id)fp12;
+- (id)compositeImageForKey:(NSString*)fp8;
+- (void)addReplacementKeyboardKey:(UIKeyDefinition*)fp8 forKey:(NSString*)fp12;
 - (void)addReplacementImageView:(id)fp8 inputMode:(id)fp12 shift:(BOOL)fp16;
 - (void)addExtraImageView:(id)fp8;
-- (void)addPartialLayoutViewWithFrame:(struct CGRect)fp8 imageName:(id)fp24 visibleOrigin:(struct CGPoint)fp28;
+- (void)addPartialLayoutViewWithFrame:(CGRect)fp8 imageName:(id)fp24 visibleOrigin:(struct CGPoint)fp28;
 - (void)addSpaceKeyViewIfNeeded;
 - (void)addSpaceKeyViewIfNeeded:(id)fp8;
-- (id)createSpaceKeyViewWithFrame:(struct CGRect)fp8 orientation:(int)fp24 style:(int)fp28;
+- (id)createSpaceKeyViewWithFrame:(CGRect)fp8 orientation:(int)fp24 style:(int)fp28;
 - (void)setSpaceKeyView:(id)fp8;
 - (void)addReturnKeyViewIfNeeded;
-- (void)addReturnKeyViewIfNeeded:(id)fp8;
+- (void)addReturnKeyViewIfNeeded:(NSString*)sublayouttype;
 - (id)createReturnKeyViewWithFrame:(struct CGRect)fp8 orientation:(int)fp24 style:(int)fp28;
 - (void)setReturnKeyView:(id)fp8;
 - (id)internationalImageName:(int)fp8 forKeyboard:(id)fp12 orientation:(int)fp16;
 
-- (void)addInternationalKeyIfNeeded:(NSString*)fp8;
+- (void)addInternationalKeyIfNeeded:(NSString*)sublayouttype;
 
-- (BOOL)hitInternationalKey:(struct CGPoint)fp8;
+- (BOOL)hitInternationalKey:(CGPoint)fp8;
 - (void)activateInternationalKey;
 - (BOOL)internationalKeyIsActivated;
 - (void)deactivateInternationalKey;
