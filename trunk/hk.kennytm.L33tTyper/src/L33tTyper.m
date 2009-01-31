@@ -33,13 +33,13 @@
 // L33tTyper is a demonstration of iKeyEx on how to customize AutoCorrection prompts.
 
 #import <Foundation/Foundation.h>
-#import <UIKit2/UIKeyboardInputManager.h>
+#import <UIKit2/UIKeyboardInputManagerAlphabet.h>
 #include <stdlib.h>
 #include <time.h>
 
 NSString* translateString (NSString* str);
 
-@interface L33tTyperManager : UIKeyboardInputManager {
+@interface L33tTyperManager : UIKeyboardInputManagerAlphabet {
 	NSMutableString* inputString;
 	NSUInteger inputIndex;
 }
