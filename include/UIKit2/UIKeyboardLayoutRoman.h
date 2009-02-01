@@ -8,6 +8,7 @@
 #import <UIKit2/CDStructures.h>
 #import <CoreGraphics/CGGeometry.h>
 #import <UIKit/UITextInputTraits.h>
+#import <GraphicsServices/GSEvent.h>
 
 @class UIKeyboardSublayout, UIView, NSString, NSMutableDictionary, NSSet, UIEvent;
 
@@ -23,9 +24,9 @@
     UIView *m_enabledReturnKeyView;
     UIView *m_disabledReturnKeyView;
     UIView *m_pressedReturnKeyView;
-    struct CGPoint m_dragPoint;
+    CGPoint m_dragPoint;
     unsigned int m_currentPathFlags;
-    PathInfo m_activePathInfo;
+    GSPathInfo m_activePathInfo;
     int m_shiftKeyPathIndex;
     int m_swipePathIndex;
     int m_preferredTrackingChangeCount;
@@ -61,7 +62,7 @@
 - (BOOL)isShiftKeyPlaneChooser;
 - (void)setShift:(BOOL)isShifted;
 - (void)longPressAction;
-- (BOOL)canHandleHandEvent:(struct __GSEvent *)fp8;
+- (BOOL)canHandleHandEvent:(GSEventRef)fp8;
 - (UIKeyType)typeForKey:(UIKeyDefinition*)fp8;
 - (UIKeyDefinitionDownActionFlag)downActionFlagsForKey:(UIKeyDefinition*)fp8;
 - (UIKeyDefinitionUpActionFlag)upActionFlagsForKey:(UIKeyDefinition*)fp8;
@@ -77,8 +78,8 @@
 - (void)confirmAction;
 - (void)sendStringAction:(NSString*)fp8 forKey:(UIKeyDefinition*)fp12;
 - (void)deleteAction;
-- (void)handleHardwareKeyDownFromSimulator:(struct __GSEvent *)fp8;
-- (void)addLocalizedCurrencyKeysToSublayout:(id)fp8 keyboardType:(id)fp12;
+- (void)handleHardwareKeyDownFromSimulator:(GSEventRef)fp8;
+- (void)addLocalizedCurrencyKeysToSublayout:(UIKeyboardSublayout*)fp8 keyboardType:(id)fp12;
 - (void)build;
 - (UIKeyboardSublayout*)buildSublayoutForKey:(NSString*)key;
 - (UIKeyboardSublayout*)buildUIKeyboardLayoutMain;
@@ -127,12 +128,12 @@
 - (id)cacheKeyForKey:(UIKeyDefinition*)fp8;
 - (UIKeyDefinition*)inputKeyboardKeyForKey:(UIKeyDefinition*)fp8;
 - (id)alternateSublayoutKey:(id)fp8;
-- (BOOL)handleHandEvent:(struct __GSEvent *)fp8;
+- (BOOL)handleHandEvent:(GSEventRef)fp8;
 - (void)touchDownWithKey:(UIKeyDefinition*)fp8 atPoint:(struct CGPoint)fp12;
-- (int)keyHitTestUniversal:(struct CGPoint)fp8 touchStage:(int)fp16 atTime:(double)fp20 withPathInfo:(PathInfo *)fp28;
-- (void)touchDown:(struct __GSEvent *)fp8 withPathInfo:(UIKeyDefinition*)fp12;
-- (void)touchDragged:(struct __GSEvent *)fp8 withPathInfo:(UIKeyDefinition*)fp12;
-- (void)touchUp:(struct __GSEvent *)fp8 withPathInfo:(UIKeyDefinition*)fp12;
+- (int)keyHitTestUniversal:(CGPoint)fp8 touchStage:(int)fp16 atTime:(double)fp20 withPathInfo:(GSPathInfo *)fp28;
+- (void)touchDown:(GSEventRef)fp8 withPathInfo:(GSPathInfo*)fp12;
+- (void)touchDragged:(GSEventRef)fp8 withPathInfo:(GSPathInfo*)fp12;
+- (void)touchUp:(GSEventRef)fp8 withPathInfo:(GSPathInfo*)fp12;
 - (BOOL)cancelTouchTracking;
 - (BOOL)cancelMouseTracking;
 - (void)touchesBegan:(NSSet*)touches withEvent:(UIEvent*)event;

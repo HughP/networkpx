@@ -37,25 +37,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #import <iKeyEx/KeyboardLoader.h>
 #import <iKeyEx/common.h>
 #include <dlfcn.h>
-
-
-typedef enum PSTableCellType {
-	PSGroupCell,
-	PSLinkCell,
-	PSLinkListCell,
-	PSListItemCell,
-	PSTitleValueCell,
-	PSSliderCell,
-	PSSwitchCell,
-	PSStaticTextCell,
-	PSEditTextCell,
-	PSSegmentCell,
-	PSGiantIconCell,
-	PSGiantCell,
-	PSSecureEditTextCell,
-	PSButtonCell,
-	PSEditTextViewCell
-} PSSpecifierType;
+#import <Preferences/PSSpecifier.h>
+#import <Preferences/PSListController.h>
 
 //------------------------------------------------------------------------------
 //-- Protocols -----------------------------------------------------------------
@@ -70,76 +53,6 @@ typedef enum PSTableCellType {
 @protocol LanguageSelectorProtocol<NSObject>
 +(id<LanguageSelectorProtocol>)sharedInstance;
 -(NSString*)currentLanguage;
-@end
-
-//------------------------------------------------------------------------------
-//-- Interfaces for External Classes -------------------------------------------
-//------------------------------------------------------------------------------
-
-@interface PSSpecifier : NSObject {
-    id target;
-    SEL getter;
-    SEL setter;
-@package
-    SEL action;
-    Class detailControllerClass;
-    int cellType;
-@protected
-    Class editPaneClass;
-    int keyboardType;
-    int autoCapsType;
-    int autoCorrectionType;
-    int textFieldType;
-    NSString *_name;
-    NSArray *_values;
-    NSDictionary *_titleDict;
-    NSDictionary *_shortTitleDict;
-    id _userInfo;
-    NSMutableDictionary *_properties;
-}
-+(PSSpecifier*)preferenceSpecifierNamed:(NSString*)title target:(id)target set:(SEL)setSel get:(SEL)getSel detail:(Class)detailCls cell:(PSSpecifierType)specType edit:(Class)editCls;
-+(PSSpecifier*)groupSpecifierWithName:(NSString*)groupTitle;
-+(PSSpecifier*)emptyGroupSpecifier;
--(void)setProperty:(void*)prop forKey:(NSString*)key;
-@property(assign,readonly) NSString* identifier;
-@property(nonatomic,retain) NSString* name;
-@end
-
-@interface PSViewController : NSObject {
-    id _parentController;
-    id<PSRootControllerProtocol> _rootController;
-}
-@end
-
-@interface PSListController : PSViewController {
-    NSMutableDictionary *_cells;
-    BOOL _cachesCells;
-    NSString *_title;
-    id _view;
-    id _table;
-    NSArray *_specifiers;
-    id _detailController;
-    id _previousController;
-    NSMutableArray *_controllers;
-    NSMutableDictionary *_specifiersByID;
-    BOOL _keyboardWasVisible;
-    BOOL _showingSetupController;
-    BOOL _selectingRow;
-    NSString *_specifierID;
-    id _specifier;
-    NSMutableArray *_groups;
-    NSMutableArray *_bundleControllers;
-    BOOL _bundlesLoaded;
-    struct CGRect _cellRect;
-    id _alertSheet;
-}
--(void)insertSpecifier:(PSSpecifier*)spec atIndex:(int)index;
--(void)insertContiguousSpecifiers:(NSArray*)specArr atEndOfGroup:(int)grpIndex;
--(void)insertContiguousSpecifiers:(NSArray*)specArr atIndex:(int)index;
--(NSArray*)specifiers;
--(PSSpecifier*)specifierAtIndex:(int)index;
--(void)reloadSpecifier:(PSSpecifier*)spec;
--(PSSpecifier*)specifierForID:(NSString*)iden;
 @end
 
 //------------------------------------------------------------------------------

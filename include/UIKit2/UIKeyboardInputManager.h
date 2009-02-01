@@ -6,6 +6,7 @@
 
 #import <Foundation/NSObject.h>
 #import <UIKit2/CDStructures.h>
+#import <GraphicsServices/GSEvent.h>
 
 @class UIKeyboardCandidateList, UIKeyboardLayout, NSArray, NSString;
 
@@ -131,7 +132,7 @@
 - (BOOL)canHandleKeyHitTest;
 - (void)clearKeyAreas;
 - (void)registerKeyArea:(struct CGPoint)fp8 withRadii:(struct CGPoint)fp16 forKeyCode:(unsigned short)fp24 forLowerKey:(id)fp28 forUpperKey:(id)fp32;
-- (int)keyHitTest:(struct CGPoint)fp8 touchStage:(int)fp16 atTime:(double)fp20 withPathInfo:(PathInfo*)fp28 forceShift:(BOOL)fp32;
+- (int)keyHitTest:(struct CGPoint)fp8 touchStage:(int)fp16 atTime:(double)fp20 withPathInfo:(GSPathInfo*)fp28 forceShift:(BOOL)fp32;
 - (BOOL)keySlidIntoSwipe;
 - (int)keyCancel:(struct CGPoint)fp8 atTime:(double)fp16 fromPath:(int)fp24 withIdentity:(int)fp28 forceShift:(BOOL)fp32;
 - (void)deleteFromStrokeHistory:(BOOL)fp8;
