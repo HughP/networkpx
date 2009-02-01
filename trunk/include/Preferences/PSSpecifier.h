@@ -5,7 +5,26 @@
  */
 
 #import <Foundation/NSObject.h>
-#import <Preferences/Constants.h>
+
+typedef enum PSTableCellType {
+	PSGroupCell,		// 0
+	PSLinkCell,			// 1
+	PSLinkListCell,		// 2
+	PSListItemCell,		// 3
+	PSTitleValueCell,	// 4
+	PSSliderCell,		// 5
+	PSSwitchCell,		// 6
+	PSStaticTextCell,	// 7
+	PSEditTextCell,		// 8
+	PSSegmentCell,		// 9
+	PSGiantIconCell,	// 10
+	PSGiantCell,		// 11
+	PSSecureEditTextCell,//12
+	PSButtonCell,		// 13
+	PSEditTextViewCell	// 14
+} PSSpecifierType;
+
+extern NSString* const PSIDKey;	// @"id"
 
 @class NSArray, NSDictionary, NSMutableDictionary, NSString;
 
@@ -56,7 +75,7 @@
 @property(retain) NSDictionary* titleDictionary;
 @property(retain) NSDictionary* shortTitleDictionary;
 @property(retain) id values;
-@property(assign) id userInfo;
+@property(retain) NSDictionary* userInfo;
 
 - (void)setTarget:(id)fp8;	// IMP=0x31766d90
 - (void)setKeyboardType:(int)fp8 autoCaps:(int)fp12 autoCorrection:(int)fp16;	// IMP=0x31766da4
