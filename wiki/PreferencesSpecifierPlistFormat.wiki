@@ -1,0 +1,233 @@
+#summary (Technical Document) Preferences Specifier .plist Format
+#labels Phase-Implementation
+
+<wiki:toc />
+
+= Introduction =
+
+This document provides the specification of the .plist file that specifies the layout of an iPhone preference pane.
+
+The specification comes from reverse engineering the `SpecifiersFromPlist()` and `+[PSTableCell xxxx:]` functions in the Preferences framework.
+
+= Root level =
+
+The root level of the plist may contain these keys:
+
+|| *key* || *type* || *meaning* ||
+|| title || localizable string || Title of the preference pane. ||
+|| items || array || Array of specifier definitions. ||
+|| id || string || Specifier ID. Usage unknown. ||
+
+== Localization ==
+
+Some strings, e.g. the _title_ is localizable.
+
+Suppose the plist is named `MySettings.plist`, then the corresponding strings file must be named `MySettings.strings`.
+
+= Individual Items =
+
+The keys can also be obtained later by `-[PSSpecifier propertyForKey:]`. You can use anything in your controller for further customization. This table lists the internal ones:
+
+|| *key* || *type* || *meaning* || *depends* ||
+|| requiredCapabilities || array || Required capabilities of the device such that this specifier can be shown. || - ||
+|| bundle || filename (string) || Bundle file name. This bundle will be loaded for additional resources. || - ||
+|| internal || bool || Directory to search for the bundle.<br />If true, search in `/AppleInternal/Library/PreferenceBundles/`.<br />If false, search in `/System/Library/PreferenceBundles/`. || bundle ≠ nil ||
+|| isController || bool || Whether the bundle contains a controller class. || _bundle_ ≠ nil ||
+|| hasIcon || bool || Whether the specifier will have an icon. || _bundle_ ≠ nil ||
+|| icon || filename (string) || File name of the icon to use.<br />Default value is `icon.png`. || _hasIcon_ = ✓ ||
+|| cell || string || Specifier cell type. || - ||
+|| pane || class name (string) || Edit pane class. || - ||
+|| label || localizable string || Label of specifier. || - ||
+|| id || string || Specifier ID. || - ||
+|| autoCaps || string || Autocapitalization type for cells that requires a keyboard.<br />Must be one of: `"sentences"`, `"words"`, `"all"`. || - ||
+|| keyboard || string || Autocapitalization type for cells that requires a keyboard.<br />Must be one of: `"numbers"`, `"phone"`. || - ||
+|| overridePrincipalClass || bool || Overrides the principal class by the detail controller when bundle has a controller. || _isController_ = ✓ ||
+|| detail || class name (string) || Detail controller class. || - ||
+|| get || selector (string) || Getter. || - ||
+|| set || selector (string) || Setter. || - ||
+|| prompt || localizable string || Setup prompt. || _cell_ ∈ (`"PSEditTextCell"`, `"PSSecureEditTextCell"`) ||
+|| okTitle || localizable string || Title for OK button in setup prompt. || _prompt_ ≠ nil ||
+|| cancelTitle || localizable string || Title for Cancel button in setup prompt. || _prompt_ ≠ nil ||
+|| validValues || array of strings || List of values to choose from. || _cell_ ∈ (`"PSLinkListCell"`, `"PSSegmentCell"`) ||
+|| validTitles || array of localizable strings || Titles corresponding to the list of values. || _cell_ ∈ (`"PSLinkListCell"`, `"PSSegmentCell"`) ||
+|| shortTitles || array of localizable strings || Short titles || _cell_ ∈ (`"PSLinkListCell"`, `"PSSegmentCell"`) ||
+|| valuesDataSource || selector (string) || Selector to call to get the list of values dynamically. || _cell_ ∈ (`"PSLinkListCell"`, `"PSSegmentCell"`)<br />*and* _validValues_ = nil ||
+|| titlesDataSource || selector (string) || Selector to call to get the list of titles dynamically. || _cell_ ∈ (`"PSLinkListCell"`, `"PSSegmentCell"`)<br />*and* _validTitles_ = nil ||
+|| staticTextMessage || localizable string || Static text message (?). || _cell_ = `"PSLinkListCell"` ||
+|| confirmation || dictionary || Definitions of the confirmation sheet before action is performed. || _cell_ ∈ (`"PSSwitchCell"`, `"PSButtonCell"`) ||
+|| placeholder || localizable string || Placeholder. || _cell_ ∈ (`"PSEditTextCell"`, `"PSSecureEditTextCell"`) ||
+|| suffix || localizable string || Suffix. || _cell_ ∈ (`"PSEditTextCell"`, `"PSSecureEditTextCell"`) ||
+|| rightImage || file name (string) || Image displayed next to the slider on the right. || _cell_ = `"PSSliderCell"` ||
+|| leftImage || file name (string) || Image displayed next to the slider on the left. || _cell_ = `"PSSliderCell"` ||
+|| isIP || bool || Input field intended for entering IP address<br />(Use Numbers keyboard) || _cell_ = `"PSEditTextCell"` *or* ???? ||
+|| isURL || bool || Input field intended for entering URL<br />(Use URL keyboard) || _cell_ = `"PSEditTextCell"` *or* ???? ||
+|| isNumeric || bool || Input field intended for entering numbers<br />(Use !NumberPad keyboard) || _cell_ = `"PSEditTextCell"` *or* ???? ||
+|| isEmail || bool || Input field intended for entering e-mail<br />(Use !EmailAddress keyboard) || _cell_ = `"PSEditTextCell"` *or* ???? ||
+|| isEmailAdressing || bool || Input field intended for entering e-mail addressing<br />(Use !EmailAddress keyboard) || _cell_ = `"PSEditTextCell"` *or* ???? ||
+|| bestGuess || selector (string) || Initial value of text field. || _cell_ ∈ (`"PSEditTextCell"`, `"PSSecureEditTextCell"`) ||
+|| cellClass || class name (string) || Cell class || - ||
+|| action || selector (string) || Action || - ||
+|| isDestructive || bool || Whether the action to be performed is destructive.<br />The OK button will be in red if true. || _confirmation_ ≠ nil ||
+|| customControllerClass || class name (string) || Custom controller class to use when the view become visible. || - ||
+|| defaults || file name (string) || The user defaults associated with this specifier. || - ||
+|| key || string || Key of the user defaults. || _defaults_ ≠ nil ||
+|| default || any || Default value of control. || - ||
+|| negate || bool || If the key in the user defaults is a boolean, invert the value displayed. || - ||
+|| !PostNotification || string || Darwin Notification to post when the preference is changed || - ||
+|| isStaticText || bool || Whether the group cell is a title or just static text. || _cell_ = `"PSGroupCell"` ||
+|| alignment || integer || Text alignment.<br />2 = center. || _cell_ ∈ (`"PSGroupCell"`, `"PSStaticTextCell"`) ||
+|| alternateColors || bool || Use alternate color of the cell (orange instead of blue) || _cell_ ∈ (`"PSSwitchCell"`) ||
+|| iconImage || ??? || ??? || - ||
+|| enabled || bool || Whether the control is enabled || - ||
+|| control-loading || ??? || ??? || _cell_ = `"PSSwitchCell"` ||
+|| min || float || Minimum value of slider || _cell_ = `"PSSliderCell"` ||
+|| max || float || Minimum value of slider || _cell_ = `"PSSliderCell"` ||
+|| showValue || bool || Show the value || _cell_ = `"PSSliderCell"` ||
+|| noAutoCorrect || bool || Disable auto-correction. || _cell_ ∈ (`"PSEditTextCell"`, `"PSSecureEditTextCell"`) ||
+|| height || float || Height of text view || _cell_ = `"PSTextViewCell"` ||
+|| dontIndentOnRemove || bool || Don't indent on remove (?) || - ||
+
+== requiredCapabilities ==
+
+Capabilities are queried from the function `GSSystemGetCapability(0)`. The capabilities can be found from the file `/System/Library/CoreServices/SpringBoard.app/<model>.plist`. 
+
+|| *Capability* || *iPhone 2G* (M68AP) || *iPod Touch 1G* (N45AP) || *iPod Touch 2G* (N72AP) || *simulator* ||
+|| bluetooth || 1 || || || 0 ||
+|| camera || 1 || || || 0 ||
+|| delaySleepForHeadsetClick || 1 || || || ||
+|| deviceName || `"iPhone"` || `"iPod"` || `"iPod"` || `"iPhone Simulator"` ||
+|| editableUserData || 1 || 1 || 1 || 1 ||
+|| international || 1 || || || 1 ||
+|| ringer-switch || 1 || || || 1 ||
+|| standAloneContacts || 1 || 1 || 1 || 1 ||
+|| telephony || `{ maximumGeneration = 2.5; }` || || || 1 ||
+|| unifiedIPod || 1 || || || 1 ||
+|| volume-buttons || 1 ||  || || 1 ||
+|| piezo-clicker || || 1 || 0 || ||
+|| victoria || || || 1 || ||
+|| activation || || || || 0 ||
+|| wifi || || || || ||
+|| displayIDs || || || || ||
+(this list is incomplete. for some reason there is no M82AP.plist.)
+
+The content of _requiredCapabilities_ can be a string or a dictionary. If the value is declared as an string, the device will pass when all required capabilities are satisfied; if it is a dictionary, there is an additional requirement that the values of the capabilities are equal/findable, e.g.
+{{{
+ requiredCapabilities = (bluetooth, telephony, {unifiedIPod = 0;}, {displayIDs = "com.apple.mobilephone";});
+}}}
+
+== isController ==
+
+If you declare the bundle _isController_, the executable code must have a subclass of `PSBundleController` as the principle (first) class. In the controller, you should overload the message:
+{{{
+ -(NSArray*)specifiersWithSpecifier:(PSSpecifier*)spec;
+}}}
+which returns an array of PSSpecifier, inserted right before the current specifier.
+
+The controller class will be internally called like this:
+{{{
+// callerList & specifier are arguments of SpecifiersFromPlist
+
+  MyControllerClass* controller = [[MyControllerClass alloc] initWithParentListController:callerList];
+  [retval addObjectsFromArray:[controller specifiersWithSpecifier:specifier]];
+}}}
+
+== cell ==
+_cell_ must be one of:
+ * PSGroupCell
+ * PSLinkCell
+ * PSLinkListCell
+ * PSListItemCell
+ * PSTitleValueCell
+ * PSSliderCell
+ * PSSwitchCell
+ * PSStaticTextCell
+ * PSEditTextCell
+ * PSSegmentCell
+ * PSGiantIconCell
+ * PSGiantCell
+ * PSSecureEditTextCell
+ * PSButtonCell
+ * PSEditTextViewCell
+
+The cell type is actually determined from the class method `+[PSTableCell cellTypeFromString:]`.
+
+== valuesDataSource and titlesDataSource ==
+
+_valuesDataSource_ and _titlesDataSource_ are a selectors. They are performed on the _target_ sent from `-[PSListController loadSpecifiersFromPlistName:target:]`. They must return an NSArray containing the values and (localized) titles respectively.
+
+== confirmation ==
+
+_confirmation_ itself is a dictionary containing the following fields:
+|| *key* || *type* || *meaning* ||
+|| prompt || localizable string || Content of confirmation sheet. ||
+|| cancelTitle || localizable string || Title of the cancel button. ||
+|| okTitle || localizable string || Title of the OK button. ||
+|| title || localizable string || Title of confirmation sheet. ||
+
+== get, set, action and bestGuess ==
+
+_get_ and _bestGuess_ should have signature
+{{{
+-(NSObject*)somethingForSpecifier:(PSSpecifier*)spec;
+}}}
+The return value depends on the type of specifier, e.g. for a text field it should return an NSString, while for a switch it should return an NSNumber with boolValue.
+
+_set_ should have signature
+{{{
+-(void)setSomething:(NSObject*)sth forSpecifier:(PSSpecifier*)spec;
+}}}
+
+_action_ should have signature
+{{{
+-(void)speciferPerformedAction:(PSSpecifier*)spec;
+}}}
+
+Of course, you can ignore extra parameters, so `-(void)specifierPerformedAction` is a valid signature too.
+
+= Disassembly =
+
+This disassembly of `-[PSListController loadSpecifiersFromPlistName:target:]` is necessary to understand the signature of `SpecifiersFromPlist()`
+
+{{{
+-(NSArray*)loadSpecifiersFromPlistName:(NSString*)plistName target:(id)target {
+	NSBundle* curBundle = [self bundle];
+	NSDictionary* plist = [[NSDictionary alloc] initWithContentsOfFile:[curBundle pathForResource:plistName ofType:@"plist"]];
+	NSString* specifierID;
+	NSArray* result = SpecifiersFromPlist(
+		plist,
+		self->_specifier,
+		target,
+		plistName,
+		curBundle,
+		&self->_title,
+		&specifierID,
+		self,
+		&self->_bundleControllers
+	);
+	[plist release];
+	self.specifierID = specifierID;
+	[specifierID release];
+	return result;
+}
+}}}
+
+From this we see that the signature is
+{{{
+NSArray* SpecifiersFromPlist (
+	NSDictionary*     plist,      // r0
+	PSSpecifier*      specifier,  // r1
+	id                target,     // r2
+	NSString*         plistName,  // r3
+	NSBundle*         curBundle,           // sp[0x124]
+	NSString**        pTitle,              // sp[0x128]
+	NSString**        pSpecifierID,        // sp[0x12C]
+	PSListController* callerList,          // sp[0x130]
+	NSMutableArray**  pBundleControllers   // sp[0x134]
+);
+}}}
+
+(The 0x124 offset is due to `stmdb` of 8 registers and 0x104 bytes reserved for local variables.)
+
+= References =
+
+ * [http://www.touchrepo.com/guides/preferencebundles/PreferenceBundles.doc iPhone Settings Within Settings.app]
