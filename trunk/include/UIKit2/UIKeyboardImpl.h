@@ -10,6 +10,7 @@
 #import <CoreFoundation/CFDictionary.h>
 #import <Foundation/NSDate.h>
 #import <UIKit/UITextInputTraits.h>
+#import <GraphicsServices/GSEvent.h>
 
 @class NSArray, NSMutableDictionary, NSString, NSTimer, UIAutocorrectInlinePrompt, UIDelayedAction, UIKeyboardInputManager, UIKeyboardLanguageIndicator, UIKeyboardLayout, UITextInputTraits, CandWord;
 @protocol UIKeyboardInput, UIKeyboardCandidateList;
@@ -289,14 +290,14 @@
 - (void)updateChangeTimeAndIncrementCount;
 - (int)changeCount;
 - (void)setAnotherTouchWaiting:(BOOL)fp8;
-- (void)handleHardwareKeyDownFromSimulator:(struct __GSEvent *)fp8;
+- (void)handleHardwareKeyDownFromSimulator:(GSEventRef)fp8;
 - (void)timeMark:(unsigned int)fp8 message:(id)fp12;
 - (void)timeMark:(unsigned int)fp8;
 - (void)timeElapsed:(unsigned int)fp8 message:(id)fp12;
 - (BOOL)canHandleKeyHitTest;
 - (void)clearKeyAreas;
 - (void)registerKeyArea:(CGPoint)fp8 withRadii:(CGPoint)fp16 forKeyCode:(unichar)fp24 forLowerKey:(NSString*)fp28 forUpperKey:(NSString*)fp32;
-- (int)keyHitTest:(CGPoint)fp8 touchStage:(int)fp16 atTime:(NSTimeInterval)fp20 withPathInfo:(PathInfo*)fp28 forceShift:(BOOL)fp32;
+- (int)keyHitTest:(CGPoint)fp8 touchStage:(int)fp16 atTime:(NSTimeInterval)fp20 withPathInfo:(GSPathInfo*)fp28 forceShift:(BOOL)fp32;
 - (BOOL)keySlidIntoSwipe;
 
 @end

@@ -41,16 +41,6 @@ typedef enum UIKeyDefinitionUpActionFlag {
 	UIKeyFlagSkipCandidateList     = 0x10000
 } UIKeyDefinitionUpActionFlag;
 
-typedef struct {
-    unsigned char pathIndex;
-    unsigned char pathIdentity;
-    unsigned char pathProximity;
-    float pathPressure;
-    float pathMajorRadius;
-    struct CGPoint pathLocation;
-    struct __GSWindow *pathWindow;
-} PathInfo;
-
 typedef struct UIKeyDefinition {
 	CGRect bg_area;		// +0,  the area of the key in the background image.
 	CGRect pop_bg_area;	// +16,	the area of the pop up view background in the image map. (The origin may be shifted a bit to the left or right)
