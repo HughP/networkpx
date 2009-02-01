@@ -8,7 +8,7 @@
 #import <CoreGraphics/CGGeometry.h>
 
 @protocol PSBaseView;
-@class NSArray, NSMutableArray, NSMutableDictionary, NSString, PSSpecifier, UIModalView, UIPreferencesTable, UITransitionView, PSSpecifier;
+@class NSArray, NSMutableArray, NSMutableDictionary, NSString, PSSpecifier, UIModalView, UIPreferencesTable, UITransitionView, PSSpecifier, UIView, NSDictionary, NSBundle;
 
 @interface PSListController : PSViewController
 {
@@ -114,8 +114,8 @@
 
 - (void)reload;	
 - (void)reloadSpecifiers;	
-@property(copy) NSString* specifierID;
-@property(copy) NSString* title;
+@property(retain) NSString* specifierID;
+@property(retain) NSString* title;
 
 - (void)viewDidBecomeVisible;	
 - (void)viewWillRedisplay;	
@@ -157,3 +157,14 @@
 
 @end
 
+NSArray* SpecifiersFromPlist (
+							  NSDictionary*     plist,      // r0
+							  PSSpecifier*      specifier,  // r1
+							  id                target,     // r2
+							  NSString*         plistName,  // r3
+							  NSBundle*         curBundle,           // sp[0x124]
+							  NSString**        pTitle,              // sp[0x128]
+							  NSString**        pSpecifierID,        // sp[0x12C]
+							  PSListController* callerList,          // sp[0x130]
+							  NSMutableArray**  pBundleControllers   // sp[0x134]
+);

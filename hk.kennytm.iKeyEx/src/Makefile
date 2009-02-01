@@ -35,7 +35,7 @@ iKeyExSources=cleanup.m common.m ImageLoader.m KeyboardLoader.m UIKBSound.m UIKB
 iKeyExTarget=$(iKeyExLibPath)/libiKeyEx.dylib
 iKeyExOptions=-dynamiclib -init _initDylib
 
-PrefHookerSources=PrefHooker-iKeyEx.m
+PrefHookerSources=PrefHooker-iKeyEx-InternationalKeyboardController.m PrefHooker-iKeyEx-Settings.m PrefHooker-iKeyEx.m
 PrefHookerTarget=$(MobileSubstratePath)/PrefHooker-iKeyEx.dylib
 PrefHookerOptions=-dynamiclib -lsubstrate -liKeyEx -framework Preferences -init _installHook
 
