@@ -1,0 +1,37 @@
+#summary How to compile networkpx projects from the svn trunk
+#labels Phase-Deploy
+
+= Requirement =
+
+The networkpx projects are developed on an 64-bit Intel Mac OS X 10.5.6 with the official iPhone SDK 2.2. Other platforms may be unsupported.
+
+ * Install the official iPhone SDK 2.2 from [http://developer.apple.com/iphone/ [apple]]. You will need a (free) ADC account. 
+ * Download _ldid_ from [http://code.google.com/p/networkpx/downloads/detail?name=ldid.zip [networkpx]], or compile it from source in [http://svn.telesphoreo.org/trunk/data/ldid/ [telesphoreo]]. Put the binary into `/usr/local/bin/`.
+ * Install svn, e.g. from [http://homepage.mac.com/martinott/ [martinott]].
+
+= Compiling =
+
+ # Check out the latest source code by
+   {{{
+svn checkout http://networkpx.googlecode.com/ <directory-save-as>  
+   }}}
+ # Go to the directory you have just checked out, and move into the `svn/trunk/` subdirectory.
+ # Run: `./makedeb.sh`. This will compile all codes and construct the packages.
+ # Move back to `../../`. You should see the Debian packages now. 
+
+In summary,
+{{{
+#!/bin/bash
+
+mkdir ~/networkpx/
+cd ~/networkpx/
+svn co http://networkpx.googlecode.com/ .
+cd svn/trunk/
+./makedeb.sh
+cd ../../
+ls *.deb
+}}}
+
+= Installing on Device =
+
+Like all Debian packages, you just need to ssh into your device and `dpkg -i` on the package you've just compiled.
