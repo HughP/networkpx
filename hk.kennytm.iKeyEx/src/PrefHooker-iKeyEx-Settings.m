@@ -34,20 +34,24 @@
 #import <Foundation/Foundation.h>
 #import <Preferences/PSSpecifier.h>
 
+#import <UIKit2/Functions.h>
+
 #define PHMagic @"KennyTM~:PrefHooker:Settings"
 
 static NSMutableArray* sectionsToInsert = nil;
 
-void PHInsertSection (NSBundle* bundle, NSString* label, BOOL hasIcon) {
+void PHInsertSection (NSString* bundlePath, NSString* xLabel, BOOL hasIcon) {
 	if (!sectionsToInsert) 
 		sectionsToInsert = [[NSMutableArray alloc] init];
-	[sectionsToInsert addObject:[PSSpecifier preferenceSpecifierNamed:label
-															   target:nil
-																  set:Nil
-																  get:Nil
-															   detail:Nil
-																 cell:PSLinkCell
-																 edit:Nil]];
+	[sectionsToInsert addObject:[NSDictionary dictionaryWithObjectsAndKeys:
+								 @"PSLinkCell", @"cell",
+								 // hack?
+								 [@"../../../" stringByAppendingString:bundlePath], @"bundle",
+								 kCFBooleanTrue, @"isController",
+								 [NSNumber numberWithBool:hasIcon], @"hasIcon",
+								 xLabel, @"label",
+								 nil
+								 ]];
 }
 
 @implementation PrefsListControllerHooked
@@ -65,13 +69,16 @@ void PHInsertSection (NSBundle* bundle, NSString* label, BOOL hasIcon) {
 		}
 	}
 	
-	PSSpecifier* separator = [PSSpecifier emptyGroupSpecifier];
-	[separator setProperty:PHMagic forKey:PSIDKey];
 	if (!hasInsertedSomething) {
+		PSSpecifier* separator = [PSSpecifier emptyGroupSpecifier];
+		[separator setProperty:PHMagic forKey:PSIDKey];
 		[self addSpecifier:separator];
 	}
 		
-	[self addSpecifiersFromArray:sectionsToInsert];
+	[self addSpecifiersFromArray:SpecifiersFromPlist(
+													 [NSDictionary dictionaryWithObject:sectionsToInsert forKey:@"items"],
+													 nil, self, nil, [NSBundle mainBundle], NULL, NULL, self, NULL
+													 )];
 	[sectionsToInsert release];
 	sectionsToInsert = nil;
 	

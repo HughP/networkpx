@@ -61,8 +61,14 @@ void installHook() {
 	MSHookMessage(lsCls, @selector(keyboardExistsForLanguage:), [LanguageSelectorHooked instanceMethodForSelector:@selector(keyboardExistsForLanguage:)], "old_");
 	
 	// Install hook for the front page.
+	PHInsertSection(@"iKeyEx", @"iKeyEx", YES);
+	
 	Class plcClass = objc_getClass("PrefsListController");
-	MSHookMessage(plcClass, @selector(specifiers), [PrefsListControllerHooked instanceMethodForSelector:@selector(specifiers)], "old_");
+	@synchronized(plcClass) {
+		// prevent the same method being hooked twice.
+		if (![plcClass instancesRespondToSelector:@selector(old_specifiers)])
+			MSHookMessage(plcClass, @selector(specifiers), [PrefsListControllerHooked instanceMethodForSelector:@selector(specifiers)], "old_");
+	}
 		
 	[pool release];
 }
