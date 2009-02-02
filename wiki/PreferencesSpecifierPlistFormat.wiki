@@ -278,6 +278,30 @@ _cellClass_ allows you to use customized cells. It should be a subclass of PSTab
 
 _customControllerClass_ is only used when a setup controller's view become visible. It replaces the default PSSetupListController.
 
+= Using PSLinkCell =
+
+PSLinkCell is useful for linking to sub-preference-panes. The simplest example just needs 2 keys:
+{{{
+{ cell  = PSLinkCell;
+  label = "Settings-iPhone"; }
+}}}
+The _label_ is the important part. When user clicked on the link cell, iPhoneOS will use the *unlocalized* _label_ as the file name of the plist for the next pane. For example in above, the main settings screen will appear.
+
+If you use just 2 keys, only plists inside Preferences.app can be loaded. In order to load your own plist, you must use a custom subclass of PSListController in detail:
+{{{
+{ cell   = PSLinkCell;
+  label  = "My Awesome Pane";
+  detail = MyListController; }
+}}}
+`MyListController` can simply be an empty subclass of PSListController:
+{{{
+@interface MyListController : PSListController {}
+@end
+@implementation MyListController
+@end
+}}}
+The key thing is when you place `MyListController` inside your bundle, its `bundle` property will return your bundle which `My Awesome Pane.plist` can be found.
+
 = Selector signatures =
 
 == valuesDataSource and titlesDataSource ==
@@ -344,7 +368,7 @@ From this we see that the signature is
 {{{
 NSArray* SpecifiersFromPlist (
 	NSDictionary*     plist,      // r0
-	PSSpecifier*      specifier,  // r1
+	PSSpecifier*      prevSpec,   // r1
 	id                target,     // r2
 	NSString*         plistName,  // r3
 	NSBundle*         curBundle,           // sp[0x124]
