@@ -52,15 +52,20 @@ The following keys are meaningful when _bundle_ is present. It is useful for loa
 
 || *key* || *type* || *meaning* || *depends* ||
 || bundle || filename (string) || Bundle file name. This bundle will be loaded for additional resources. || - ||
-|| internal || bool || Directory to search for the bundle.<br />If true, search in `/AppleInternal/Library/PreferenceBundles/`.<br />If false, search in `/System/Library/PreferenceBundles/`. || bundle ≠ nil ||
+|| internal || bool || Directory to search for the bundle.<br />If true, search in `/AppleInternal/Library/PreferenceBundles/`.<br />If false, search in `/System/Library/PreferenceBundles/`. || _bundle_ ≠ nil ||
 || isController || bool || Whether the bundle contains a controller class. || _bundle_ ≠ nil ||
 || overridePrincipalClass || bool || Overrides the principal class by the detail controller when bundle has a controller. || _isController_ = ✓ ||
 || detail || class name (string) || Detail controller class. || - ||
-|| pane || class name (string) || Edit pane class.<br />If _bundle_ is absent, the edit pane class is obtained from the current bundle.<br />Default value is `"PSEditingPane"`. || - ||
+|| pane || class name (string) || Edit pane class.<br />If _bundle_ is absent, the edit pane class is obtained from the current bundle.<br />Default value is `"PSEditingPane"`. || _detail_ ≠ nil ||
 || hasIcon || bool || Whether the specifier will have an icon. || _bundle_ ≠ nil ||
-|| icon || filename (string) || File name of the icon to use.<br />Default value is `icon.png`. || _hasIcon_ = ✓ ||
+|| icon || filename (string) || File name of the icon to use.<br />Default value is `icon.png`. The height of the icon should be 29 px. || _hasIcon_ = ✓ ||
 || cellClass || class name (string) || Customized cell class || - ||
 || customControllerClass || class name (string) || Custom controller class to use when the view become visible. || - ||
+
+If you just want to use _pane_ without messing up the detail controller, supply the key-value pair
+{{{
+detail = "PSDetailController";
+}}}
 
 == Editing cells ==
 
@@ -93,6 +98,12 @@ These keys are specific to list cells.
 || valuesDataSource || selector (string) || Selector to call to get the list of values dynamically. || _cell_ ∈ (`"PSLinkListCell"`, `"PSSegmentCell"`)<br />*and* _validValues_ = nil ||
 || titlesDataSource || selector (string) || Selector to call to get the list of titles dynamically. || _cell_ ∈ (`"PSLinkListCell"`, `"PSSegmentCell"`)<br />*and* _validTitles_ = nil ||
 || staticTextMessage || localizable string || Static text message (?). || _cell_ = `"PSLinkListCell"` ||
+
+In order to make a PSLinkListCell actually work like a list, supply the key-value pair
+{{{
+detail = "PSListItemsController";
+}}}
+also.
 
 == Slider and switch cells ==
 
