@@ -33,7 +33,9 @@
 #import <Preferences/PSListController.h>
 @class NSBundle, NSString;
 
-void PHInsertSection (NSBundle* bundle, NSString* label, BOOL hasIcon);
+// bundle path is the *full* path to the bundle directory, without the .bundle extension.
+// label should be pre-localized.
+void PHInsertSection (NSString* bundlePath, NSString* label, BOOL hasIcon);
 
 @interface PrefsListControllerHooked : PSListController {}
 -(NSArray*)specifiers;

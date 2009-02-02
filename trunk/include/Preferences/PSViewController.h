@@ -6,6 +6,7 @@
 
 #import <Foundation/NSObject.h>
 #import <Preferences/PSBaseView.h>
+#import <CoreGraphics/CGGeometry.h>
 
 @class PSRootController, NSString, UIView, PSSpecifier;
 

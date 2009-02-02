@@ -57,7 +57,7 @@
 		
 		Class LanguageSelector = objc_getClass("LanguageSelector");
 		
-		NSBundle* localizationBundle = [NSBundle bundleWithPath:@"/Library/iKeyEx/Localizations/"];
+		NSBundle* localizationBundle = [NSBundle bundleWithPath:@"/System/Library/PreferenceBundles/iKeyEx.bundle/"];
 		
 		NSMutableArray* result = [[NSMutableArray alloc] initWithObjects:
 								  [PSSpecifier groupSpecifierWithName:[localizationBundle localizedStringForKey:@"Keyboards for Current Language" value:nil table:nil]],

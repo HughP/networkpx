@@ -61,12 +61,11 @@ extern NSString* const PSIDKey;	// @"id"
 - (id)propertyForKey:(id)fp8;	// IMP=0x3176632c
 - (void)setProperty:(id)fp8 forKey:(NSString*)fp12;	// IMP=0x31766358
 - (void)removePropertyForKey:(NSString*)fp8;	// IMP=0x3176638c
-- (void)setProperties:(id)fp8;	// IMP=0x317663b8
-- (id)properties;	// IMP=0x3176640c
+@property(retain) NSDictionary* properties;
 - (void)loadValuesAndTitlesFromDataSource;	// IMP=0x31766420
-- (void)setValues:(id)fp8 titles:(id)fp12;	// IMP=0x31766528
-- (void)setValues:(id)fp8 titles:(id)fp12 shortTitles:(id)fp16;	// IMP=0x31766554
-- (void)setupIconImageWithPath:(id)fp8;	// IMP=0x3176670c
+- (void)setValues:(NSArray*)fp8 titles:(NSArray*)fp12;	// IMP=0x31766528
+- (void)setValues:(NSArray*)fp8 titles:(NSArray*)fp12 shortTitles:(NSArray*)fp16;	// IMP=0x31766554
+- (void)setupIconImageWithPath:(NSString*)fp8;	// IMP=0x3176670c
 - (void)dealloc;	// IMP=0x317667d4
 - (NSString*)description;	// IMP=0x317668b0
 
