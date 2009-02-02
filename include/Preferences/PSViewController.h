@@ -7,7 +7,7 @@
 #import <Foundation/NSObject.h>
 #import <Preferences/PSBaseView.h>
 
-@class PSRootController;
+@class PSRootController, NSString, UIView, PSSpecifier;
 
 @interface PSViewController : NSObject <PSBaseView>
 {
@@ -16,10 +16,10 @@
 }
 
 + (BOOL)isOverlay;	// IMP=0x31765e6c
-- (id)initForContentSize:(struct CGSize)fp8;	// IMP=0x31765ba8
-- (id)navigationTitle;	// IMP=0x31765be4
-- (id)navigationItem;	// IMP=0x31765bec
-- (void)pushNavigationItemWithTitle:(id)fp8;	// IMP=0x31765c5c
+- (id)initForContentSize:(CGSize)fp8;	// IMP=0x31765ba8
+@property(readonly) NSString* navigationTitle;
+@property(readonly) id navigationItem;
+- (void)pushNavigationItemWithTitle:(NSString*)fp8;	// IMP=0x31765c5c
 - (void)insertNavigationItem:(id)fp8 atIndex:(int)fp12;	// IMP=0x31765c88
 - (void)insertNavigationItem:(id)fp8 atIndexFromEnd:(int)fp12;	// IMP=0x31765cb4
 - (void)pushNavigationItem:(id)fp8;	// IMP=0x31765ce0
@@ -29,14 +29,12 @@
 - (void)showNavigationBarButtons:(id)fp8:(id)fp12;	// IMP=0x31765d94
 - (void)showLeftButton:(id)fp8 withStyle:(int)fp12 rightButton:(id)fp16 withStyle:(int)fp20;	// IMP=0x31765dc0
 - (void)setNavigationBarEnabled:(BOOL)fp8;	// IMP=0x31765e04
-- (void)setPrompt:(id)fp8;	// IMP=0x31765e34
+- (void)setPrompt:(NSString*)fp8;	// IMP=0x31765e34
 - (void)navigationBarButtonClicked:(int)fp8;	// IMP=0x31765e60
-- (id)view;	// IMP=0x31765e64
-- (void)setParentController:(id)fp8;	// IMP=0x31765e74
-- (id)parentController;	// IMP=0x31765e88
-- (void)setRootController:(id)fp8;	// IMP=0x31765e9c
-- (id)rootController;	// IMP=0x31765eb0
-- (void)setPreferenceValue:(id)fp8 specifier:(id)fp12;	// IMP=0x31765ec4
+@property(readonly) UIView* view;
+@property(assign) PSRootController* parentController;
+@property(assign) id<PSBaseView> rootController;
+- (void)setPreferenceValue:(id)fp8 specifier:(PSSpecifier*)fp12;	// IMP=0x31765ec4
 - (id)readPreferenceValue:(id)fp8;	// IMP=0x31765ef0
 - (void)viewDidBecomeVisible;	// IMP=0x31765f1c
 - (void)viewWillBecomeVisible:(void *)fp8;	// IMP=0x31765f20

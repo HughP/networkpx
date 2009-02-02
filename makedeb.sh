@@ -4,9 +4,9 @@ for PackageName in `ls -d hk.*/`; do
 	if [[ -e "${PackageName%%/}/src/Makefile" ]]; then
 		cd "${PackageName%%/}/src/";
 		make;
-		cd -;
+		cd $OLDPWD;
 	fi
-	./dpkg-deb-nodot ${PackageName%%/}/deb ../../${PackageName%%/}-$1.deb;
+	./dpkg-deb-nodot ${PackageName%%/}/deb ../../${PackageName%%/};
 done
 
 cd ../../;
@@ -14,4 +14,4 @@ cd ../../;
 
 	rm Packages.bz2;
 	bzip2 -k Packages;
-cd -;
+cd $OLDPWD;

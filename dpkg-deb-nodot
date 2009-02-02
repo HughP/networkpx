@@ -31,13 +31,14 @@
 
 if [[ $# == 0 ]]; then
 	echo "Construct DEB package while ignoring all hidden (e.g. .svn, ._DS_STORE) files.";
-	echo "Usage: dpkg-deb-nodot <directory> [<deb-file>]";
+	echo "Usage: dpkg-deb-nodot <directory> [<deb-base-name>]";
 else
 	export COPYFILE_DISABLE=true
 	export COPY_EXTENDED_ATTRIBUTES_DISABLE=true
 
 	SrcDir=$1
-	DebFile=$1.deb
+	DebFile=$1
+	DebVersion=0
 	This=$PWD
 	if [[ $# > 1 ]]; then
 		DebFile=$2
@@ -50,23 +51,25 @@ else
 		FirstLine=`head -1 control`;
 		if expr "$FirstLine" : "[^:]*:.*"; then
 			tar --exclude=".*" -czf $TmpDir/control.tar.gz *;
+			# extract version from control.
+			DebVersion=`sed -n -E 's/^Version: *([-.[:alnum:]]+)/\1/p' control`;
 		else
 			# the control file is invalid. just quit.
 			echo "Error: Invalid control file. Quitting.";
-			cd -;
+			cd $OLDPWD;
 			rmdir $TmpDir;
 			exit;
 		fi
-	cd -;
+	cd $OLDPWD;
 
 	cd $SrcDir;
 		tar --exclude=".*" --exclude=DEBIAN -czf $TmpDir/data.tar.gz *;
-	cd -;
+	cd $OLDPWD;
 
 	cd $TmpDir;
 		echo "2.0" > debian-binary;
-		ar r $This/$DebFile debian-binary control.tar.gz data.tar.gz;
-	cd -;
+		ar r $This/$DebFile-$DebVersion.deb debian-binary control.tar.gz data.tar.gz;
+	cd $OLDPWD;
 
 	rm -r $TmpDir;
 fi
