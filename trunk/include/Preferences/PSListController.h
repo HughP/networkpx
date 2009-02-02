@@ -38,9 +38,9 @@
 - (void)setCachesCells:(BOOL)fp8;	
 
 - (NSString*)description;	
-- (id)table;	
-- (id)bundle;	
-- (PSSpecifier*)specifier;	
+- (id)table;
+@property(readonly) NSBundle* bundle;
+@property(readonly) PSSpecifier* specifier;
 @property(retain) NSArray* specifiers;
 - (NSArray*)loadSpecifiersFromPlistName:(NSString*)fp8 target:(id)fp12;	
 
@@ -108,7 +108,7 @@
 
 - (id)initForContentSize:(CGSize)fp8;	
 
-- (NSString*)navigationTitle;	
+@property(readonly) NSString* navigationTitle;
 - (void)createGroupIndices;	
 - (void)loseFocus;	
 
@@ -146,7 +146,9 @@
 - (void)pushController:(id)fp8;	
 - (void)handleURL:(id)fp8;	
 - (void)transitionViewDidComplete:(id)fp8;	
-- (UIView*)view;	
+
+@property(readonly) UIView* view;
+
 - (BOOL)popController;	
 - (void)_clearParentControllerFromChildren;	
 - (void)_removeController;	
