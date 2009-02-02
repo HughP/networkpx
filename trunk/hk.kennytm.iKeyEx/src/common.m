@@ -86,17 +86,12 @@ extern void drawInCenter(NSString* str, CGRect rect, UIFont* defaultFont) {
 	
 	// (1) Try to fit into 1 line.
 	if (strLen == 1 || strSize.width <= rect.size.width) {
-		
-		NSLog(@"%@ = %@", str, NSStringFromCGSize(strSize));
-		
 		UIFont* newFont;
 		if (strSize.height >= rect.size.height) {
 			newFont = [defaultFont fontWithSize:defaultFont.pointSize*rect.size.height/strSize.height];
 			strSize = [str sizeWithFont:newFont];
 		} else
 			newFont = defaultFont;
-		
-		NSLog(@"%@ = %@", str, NSStringFromCGSize(strSize));
 		
 		CGPoint p = CGPointMake(rect.origin.x+(rect.size.width-strSize.width)/2, rect.origin.y+(rect.size.height-strSize.height)/2);
 		[str drawAtPoint:p withFont:defaultFont];
