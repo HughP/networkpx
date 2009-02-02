@@ -28,64 +28,99 @@ Suppose the plist is named `MySettings.plist`, then the corresponding strings fi
 
 The keys can also be obtained later by `-[PSSpecifier propertyForKey:]`. You can use anything in your controller for further customization. This table lists the internal ones:
 
+== General keys ==
+
 || *key* || *type* || *meaning* || *depends* ||
 || requiredCapabilities || array || Required capabilities of the device such that this specifier can be shown. || - ||
 || bundle || filename (string) || Bundle file name. This bundle will be loaded for additional resources. || - ||
-|| internal || bool || Directory to search for the bundle.<br />If true, search in `/AppleInternal/Library/PreferenceBundles/`.<br />If false, search in `/System/Library/PreferenceBundles/`. || bundle ≠ nil ||
-|| isController || bool || Whether the bundle contains a controller class. || _bundle_ ≠ nil ||
-|| hasIcon || bool || Whether the specifier will have an icon. || _bundle_ ≠ nil ||
-|| icon || filename (string) || File name of the icon to use.<br />Default value is `icon.png`. || _hasIcon_ = ✓ ||
 || cell || string || Specifier cell type. || - ||
-|| pane || class name (string) || Edit pane class. || - ||
 || label || localizable string || Label of specifier. || - ||
 || id || string || Specifier ID. || - ||
-|| autoCaps || string || Autocapitalization type for cells that requires a keyboard.<br />Must be one of: `"sentences"`, `"words"`, `"all"`. || - ||
-|| keyboard || string || Autocapitalization type for cells that requires a keyboard.<br />Must be one of: `"numbers"`, `"phone"`. || - ||
-|| overridePrincipalClass || bool || Overrides the principal class by the detail controller when bundle has a controller. || _isController_ = ✓ ||
-|| detail || class name (string) || Detail controller class. || - ||
 || get || selector (string) || Getter. || - ||
 || set || selector (string) || Setter. || - ||
+|| action || selector (string) || Action || - ||
+|| enabled || bool || Whether the control is enabled by default. || - ||
+|| defaults || file name (string) || The user defaults associated with this specifier. || - ||
+|| key || string || Key of the user defaults. || _defaults_ ≠ nil ||
+|| default || any || Default value of control. || - ||
+|| negate || bool || If the key in the user defaults is a boolean, invert the value displayed. || - ||
+|| !PostNotification || string || Darwin Notification to post when the preference is changed || - ||
+
+== bundle-dependent keys ==
+
+The following keys are meaningful when _bundle_ is present. It is useful for loading extra resources and custom code.
+
+|| *key* || *type* || *meaning* || *depends* ||
+|| bundle || filename (string) || Bundle file name. This bundle will be loaded for additional resources. || - ||
+|| internal || bool || Directory to search for the bundle.<br />If true, search in `/AppleInternal/Library/PreferenceBundles/`.<br />If false, search in `/System/Library/PreferenceBundles/`. || bundle ≠ nil ||
+|| isController || bool || Whether the bundle contains a controller class. || _bundle_ ≠ nil ||
+|| overridePrincipalClass || bool || Overrides the principal class by the detail controller when bundle has a controller. || _isController_ = ✓ ||
+|| detail || class name (string) || Detail controller class. || - ||
+|| pane || class name (string) || Edit pane class.<br />If _bundle_ is absent, the edit pane class is obtained from the current bundle.<br />Default value is `"PSEditingPane"`. || - ||
+|| hasIcon || bool || Whether the specifier will have an icon. || _bundle_ ≠ nil ||
+|| icon || filename (string) || File name of the icon to use.<br />Default value is `icon.png`. || _hasIcon_ = ✓ ||
+|| cellClass || class name (string) || Customized cell class || - ||
+|| customControllerClass || class name (string) || Custom controller class to use when the view become visible. || - ||
+
+== Editing cells ==
+
+These keys are specific to editing cells.
+
+|| *key* || *type* || *meaning* || *depends* ||
+|| autoCaps || string || Autocapitalization type for cells that requires a keyboard.<br />Must be one of: `"sentences"`, `"words"`, `"all"`. || - ||
+|| keyboard || string || Autocapitalization type for cells that requires a keyboard.<br />Must be one of: `"numbers"`, `"phone"`. || - ||
 || prompt || localizable string || Setup prompt. || _cell_ ∈ (`"PSEditTextCell"`, `"PSSecureEditTextCell"`) ||
 || okTitle || localizable string || Title for OK button in setup prompt. || _prompt_ ≠ nil ||
 || cancelTitle || localizable string || Title for Cancel button in setup prompt. || _prompt_ ≠ nil ||
-|| validValues || array of strings || List of values to choose from. || _cell_ ∈ (`"PSLinkListCell"`, `"PSSegmentCell"`) ||
-|| validTitles || array of localizable strings || Titles corresponding to the list of values. || _cell_ ∈ (`"PSLinkListCell"`, `"PSSegmentCell"`) ||
-|| shortTitles || array of localizable strings || Short titles || _cell_ ∈ (`"PSLinkListCell"`, `"PSSegmentCell"`) ||
-|| valuesDataSource || selector (string) || Selector to call to get the list of values dynamically. || _cell_ ∈ (`"PSLinkListCell"`, `"PSSegmentCell"`)<br />*and* _validValues_ = nil ||
-|| titlesDataSource || selector (string) || Selector to call to get the list of titles dynamically. || _cell_ ∈ (`"PSLinkListCell"`, `"PSSegmentCell"`)<br />*and* _validTitles_ = nil ||
-|| staticTextMessage || localizable string || Static text message (?). || _cell_ = `"PSLinkListCell"` ||
-|| confirmation || dictionary || Definitions of the confirmation sheet before action is performed. || _cell_ ∈ (`"PSSwitchCell"`, `"PSButtonCell"`) ||
 || placeholder || localizable string || Placeholder. || _cell_ ∈ (`"PSEditTextCell"`, `"PSSecureEditTextCell"`) ||
 || suffix || localizable string || Suffix. || _cell_ ∈ (`"PSEditTextCell"`, `"PSSecureEditTextCell"`) ||
-|| rightImage || file name (string) || Image displayed next to the slider on the right. || _cell_ = `"PSSliderCell"` ||
-|| leftImage || file name (string) || Image displayed next to the slider on the left. || _cell_ = `"PSSliderCell"` ||
 || isIP || bool || Input field intended for entering IP address<br />(Use Numbers keyboard) || _cell_ = `"PSEditTextCell"` *or* ???? ||
 || isURL || bool || Input field intended for entering URL<br />(Use URL keyboard) || _cell_ = `"PSEditTextCell"` *or* ???? ||
 || isNumeric || bool || Input field intended for entering numbers<br />(Use !NumberPad keyboard) || _cell_ = `"PSEditTextCell"` *or* ???? ||
 || isEmail || bool || Input field intended for entering e-mail<br />(Use !EmailAddress keyboard) || _cell_ = `"PSEditTextCell"` *or* ???? ||
 || isEmailAdressing || bool || Input field intended for entering e-mail addressing<br />(Use !EmailAddress keyboard) || _cell_ = `"PSEditTextCell"` *or* ???? ||
 || bestGuess || selector (string) || Initial value of text field. || _cell_ ∈ (`"PSEditTextCell"`, `"PSSecureEditTextCell"`) ||
-|| cellClass || class name (string) || Cell class || - ||
-|| action || selector (string) || Action || - ||
-|| isDestructive || bool || Whether the action to be performed is destructive.<br />The OK button will be in red if true. || _confirmation_ ≠ nil ||
-|| customControllerClass || class name (string) || Custom controller class to use when the view become visible. || - ||
-|| defaults || file name (string) || The user defaults associated with this specifier. || - ||
-|| key || string || Key of the user defaults. || _defaults_ ≠ nil ||
-|| default || any || Default value of control. || - ||
-|| negate || bool || If the key in the user defaults is a boolean, invert the value displayed. || - ||
-|| !PostNotification || string || Darwin Notification to post when the preference is changed || - ||
-|| isStaticText || bool || Whether the group cell is a title or just static text. || _cell_ = `"PSGroupCell"` ||
-|| alignment || integer || Text alignment.<br />2 = center. || _cell_ ∈ (`"PSGroupCell"`, `"PSStaticTextCell"`) ||
-|| alternateColors || bool || Use alternate color of the cell (orange instead of blue) || _cell_ ∈ (`"PSSwitchCell"`) ||
-|| iconImage || ??? || ??? || - ||
-|| enabled || bool || Whether the control is enabled || - ||
-|| control-loading || ??? || ??? || _cell_ = `"PSSwitchCell"` ||
+|| noAutoCorrect || bool || Disable auto-correction. || _cell_ ∈ (`"PSEditTextCell"`, `"PSSecureEditTextCell"`) ||
+
+== List cells ==
+
+These keys are specific to list cells.
+
+|| *key* || *type* || *meaning* || *depends* ||
+|| validValues || array of strings || List of values to choose from. || _cell_ ∈ (`"PSLinkListCell"`, `"PSSegmentCell"`) ||
+|| validTitles || array of localizable strings || Titles corresponding to the list of values. || _cell_ ∈ (`"PSLinkListCell"`, `"PSSegmentCell"`) ||
+|| shortTitles || array of localizable strings || Short titles || _cell_ ∈ (`"PSLinkListCell"`, `"PSSegmentCell"`) ||
+|| valuesDataSource || selector (string) || Selector to call to get the list of values dynamically. || _cell_ ∈ (`"PSLinkListCell"`, `"PSSegmentCell"`)<br />*and* _validValues_ = nil ||
+|| titlesDataSource || selector (string) || Selector to call to get the list of titles dynamically. || _cell_ ∈ (`"PSLinkListCell"`, `"PSSegmentCell"`)<br />*and* _validTitles_ = nil ||
+|| staticTextMessage || localizable string || Static text message (?). || _cell_ = `"PSLinkListCell"` ||
+
+== Slider and switch cells ==
+
+These keys are specific to slider and switch cells.
+
+|| *key* || *type* || *meaning* || *depends* ||
+|| rightImage || file name (string) || Image displayed next to the slider on the right. || _cell_ = `"PSSliderCell"` ||
+|| leftImage || file name (string) || Image displayed next to the slider on the left. || _cell_ = `"PSSliderCell"` ||
 || min || float || Minimum value of slider || _cell_ = `"PSSliderCell"` ||
 || max || float || Minimum value of slider || _cell_ = `"PSSliderCell"` ||
 || showValue || bool || Show the value || _cell_ = `"PSSliderCell"` ||
-|| noAutoCorrect || bool || Disable auto-correction. || _cell_ ∈ (`"PSEditTextCell"`, `"PSSecureEditTextCell"`) ||
+|| alternateColors || bool || Use alternate color of the cell (orange instead of blue) || _cell_ ∈ (`"PSSwitchCell"`) ||
+|| control-loading || ??? || ??? || _cell_ = `"PSSwitchCell"` ||
+
+== Miscellaneous control cells ==
+
+These keys are specific to other control cells.
+
+|| *key* || *type* || *meaning* || *depends* ||
+|| alignment || integer || Text alignment.<br />2 = center. || _cell_ ∈ (`"PSGroupCell"`, `"PSStaticTextCell"`) ||
+|| confirmation || dictionary || Definitions of the confirmation sheet before action is performed. || _cell_ ∈ (`"PSSwitchCell"`, `"PSButtonCell"`) ||
+|| isDestructive || bool || Whether the action to be performed is destructive.<br />The OK button will be in red if true. || _confirmation_ ≠ nil ||
+|| isStaticText || bool || Whether the group cell is a title or just static text. || _cell_ = `"PSGroupCell"` ||
+|| iconImage || ??? || ??? || - ||
 || height || float || Height of text view || _cell_ = `"PSTextViewCell"` ||
 || dontIndentOnRemove || bool || Don't indent on remove (?) || - ||
+
+= Explanation on some special keys ==
 
 == requiredCapabilities ==
 
@@ -115,22 +150,6 @@ The content of _requiredCapabilities_ can be a string or a dictionary. If the va
  requiredCapabilities = (bluetooth, telephony, {unifiedIPod = 0;}, {displayIDs = "com.apple.mobilephone";});
 }}}
 
-== isController ==
-
-If you declare the bundle _isController_, the executable code must have a subclass of `PSBundleController` as the principle (first) class. In the controller, you should overload the message:
-{{{
- -(NSArray*)specifiersWithSpecifier:(PSSpecifier*)spec;
-}}}
-which returns an array of PSSpecifier, inserted right before the current specifier.
-
-The controller class will be internally called like this:
-{{{
-// callerList & specifier are arguments of SpecifiersFromPlist
-
-  MyControllerClass* controller = [[MyControllerClass alloc] initWithParentListController:callerList];
-  [retval addObjectsFromArray:[controller specifiersWithSpecifier:specifier]];
-}}}
-
 == cell ==
 _cell_ must be one of:
  * PSGroupCell
@@ -151,10 +170,6 @@ _cell_ must be one of:
 
 The cell type is actually determined from the class method `+[PSTableCell cellTypeFromString:]`.
 
-== valuesDataSource and titlesDataSource ==
-
-_valuesDataSource_ and _titlesDataSource_ are a selectors. They are performed on the _target_ sent from `-[PSListController loadSpecifiersFromPlistName:target:]`. They must return an NSArray containing the values and (localized) titles respectively.
-
 == confirmation ==
 
 _confirmation_ itself is a dictionary containing the following fields:
@@ -164,7 +179,106 @@ _confirmation_ itself is a dictionary containing the following fields:
 || okTitle || localizable string || Title of the OK button. ||
 || title || localizable string || Title of confirmation sheet. ||
 
-== get, set, action and bestGuess ==
+= Classes =
+
+== isController ==
+
+If you declare the bundle _isController_, the executable code must have a subclass of `PSBundleController` as the principle (first) class. In the controller, you should overload the message:
+{{{
+ -(NSArray*)specifiersWithSpecifier:(PSSpecifier*)spec;
+}}}
+which returns an array of PSSpecifier, inserted right before the current specifier.
+
+The controller class will be internally called like this:
+{{{
+// callerList & specifier are arguments of SpecifiersFromPlist
+  PSBundleController* controller = [[MyControllerClass alloc] initWithParentListController:callerList];
+  [retval addObjectsFromArray:[controller specifiersWithSpecifier:specifier]];
+}}}
+
+You can refer to the member `_parent` to get the parent list controller if you don't want to overload `initWithParentListController:`.
+
+== detail ==
+
+The _detail_ controller class should conform to this protocol:
+{{{
+@protocol PSDetailController <PSViewController>
+-(id)initForContentSize:(CGSize)size;
+-(void)viewWillBecomeVisible:(PSSpecifier*)spec;
+-(void)handleURL:(NSURL*)url;
+@optional
++(void)validateSpecifier:(PSSpecifier*)srcSpecifier;
+@end
+}}}
+There is already a PSDetailController class in the Preferences framework which you should subclass from.
+
+The _detail_ controller class will be sent a `+(void)validateSpecifier:(PSSpecifier*)` message if one exists right after the bundle is lazy-loaded:
+{{{
+@implementation PSRootController
+...
+-(void)lazyLoadBundle:(PSSpecifier*)srcSpecifier {
+	...
+	if ([srcSpecifier->detailControllerClass respondsToSelector:@selector(validateSpecifier:)])
+		[srcSpecifier->detailControllerClass validateSpecifier:srcSpecifier];
+}
+...
+@end
+}}}
+
+Whenever a view becomes visible, a detail controller class instance will be allocated with `-(id)initForContentSize:(CGSize)`, and then call `-(void)viewWillBecomeVisible:(PSSpecifier*)` to notify that the view becomes visibile. There is also some other calls to the controller but you'd better leave them unoverloaded.
+{{{
+...
+id<PSDetailController> detailController = [[[spec->detailControllerClass alloc]
+                                                                         initForContentSize:someListController.view.bounds.size]
+                                                                         autorelease];
+detailController.rootController = _parentController.rootController;
+detailController.parentController = _parentController;
+[detailController viewWillBecomeVisible:spec];
+...
+}}}
+
+== pane ==
+
+The edit pane class is useless unless a PSDetailController subclass is used. The class itself is invoked in `-[PSDetailController viewWillBecomeVisible:]`. 
+
+This class must be a subclass of UIView and conforms to the protocol:
+{{{
+@protocol PSEditingPane
++(CGSize)defaultSize;
++(UIColor*)defaultBackgroundColor;
+-(void)setDelegate:(id)del;		// del usually is of type PSDetailController*
+@property(retain) PSSpecifier* preferenceSpecifier;
+@property(retain) id preferenceValue;
+-(BOOL)handlesDoneButton;	// return NO if you don't want to save changes.
+-(BOOL)requiresKeyboard;
+
+@optional
+-(void)viewWillRedisplay;
+
+@end
+}}}
+There is already a PSEditingPane class in the Preferences framework which you can subclass from.
+
+== cellClass ==
+
+_cellClass_ allows you to use customized cells. It should be a subclass of PSTableCell.
+
+== customControllerClass ==
+
+_customControllerClass_ is only used when a setup controller's view become visible. It replaces the default PSSetupListController.
+
+= Selector signatures =
+
+== valuesDataSource and titlesDataSource ==
+
+_valuesDataSource_ and _titlesDataSource_ are performed on the _target_ sent from `-[PSListController loadSpecifiersFromPlistName:target:]`. They must return an NSArray containing the values and (localized) titles respectively.
+
+The signature should be:
+{{{
+-(NSArray*)dataFromTarget:(id)target;
+}}}
+
+== get and bestGuess ==
 
 _get_ and _bestGuess_ should have signature
 {{{
@@ -172,10 +286,14 @@ _get_ and _bestGuess_ should have signature
 }}}
 The return value depends on the type of specifier, e.g. for a text field it should return an NSString, while for a switch it should return an NSNumber with boolValue.
 
+== set ==
+
 _set_ should have signature
 {{{
 -(void)setSomething:(NSObject*)sth forSpecifier:(PSSpecifier*)spec;
 }}}
+
+== action ==
 
 _action_ should have signature
 {{{
