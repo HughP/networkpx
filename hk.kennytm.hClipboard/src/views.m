@@ -49,6 +49,7 @@
 #pragma mark -
 
 @implementation hCClipboardView
+@synthesize secure;
 
 -(void)restoreCellSelectedStyle:(UITableViewCell*)cell {
 	cell.selectionStyle = UITableViewCellSelectionStyleGray;
@@ -85,7 +86,13 @@
 -(void)tableView:(UITableView*)tbl didSelectRowAtIndexPath:(NSIndexPath*)indexPath {
 	NSUInteger row = indexPath.row;
 	if (_action != NULL) {
-		[_target performSelector:_action withObject:[datasource.dataCache objectAtIndex:row] withObject:tbl];
+		// don't perform any action on security breach; warn the user instead.
+		if ([datasource.insecureIndices containsIndex:row] || secure)
+			[_target performSelector:_action withObject:[datasource.dataCache objectAtIndex:row] withObject:tbl];
+		else {
+			if ([_target respondsToSelector:@selector(showSecurityBreachWarningOnAction:)])
+				[_target showSecurityBreachWarningOnAction:_action];
+		}
 	}
 	
 	[UIKBSound play];
@@ -160,14 +167,6 @@
 
 -(BOOL)isDefaultClipboard { return datasource.usesPrefix; }
 -(void)updateDataCache { [datasource updateDataCache]; }
-
-@dynamic secure;
--(BOOL)isSecure { return datasource.secure; }
--(void)setSecure:(BOOL)secure { 
-	datasource.secure = secure;
-	[datasource updateDataCache];
-	[self reloadData];
-}
 @end
 
 

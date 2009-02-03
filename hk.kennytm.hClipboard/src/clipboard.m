@@ -300,6 +300,16 @@
 	}
 	return indices;
 }
+-(NSIndexSet*)reversedIndicesWithNonsecureData {
+	NSMutableIndexSet* indices = [NSMutableIndexSet indexSet];
+	NSUInteger index = count-1;
+	for (ClipboardEntry* entry in entries) {
+		if (!entry->secure)
+			[indices addIndex:index];
+		-- index;
+	}
+	return indices;
+}
 
 -(NSIndexSet*)indicesWithDataOfClass:(Class)cls {
 	NSMutableIndexSet* indices = [NSMutableIndexSet indexSet];

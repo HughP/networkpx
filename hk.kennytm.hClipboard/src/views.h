@@ -45,6 +45,7 @@
 	id _target;
 	SEL _action;
 	BOOL flash0thRow;
+	BOOL secure;
 	UILabel* emptyClipboardIndicator;
 }
 -(id)initWithFrame:(CGRect)frm;

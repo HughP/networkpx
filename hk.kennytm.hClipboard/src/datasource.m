@@ -38,23 +38,13 @@
 #import <iKeyEx/common.h>
 
 @implementation hCClipboardDataSource
-@synthesize clipboard, usesPrefix, secure, dataCache;
+@synthesize clipboard, usesPrefix, dataCache, insecureIndices;
 
 -(void)updateDataCache {
 	[dataCache release];
-	[filteredSet release];
-	if (!secure) {
-		filteredSet = [[clipboard indicesWithNonsecureData] retain];
-		NSMutableArray* dataCacheNotReversed = [[[clipboard allData] objectsAtIndexes:filteredSet] mutableCopy];
-		NSUInteger dataCount = [dataCacheNotReversed count];
-		for (NSUInteger i = 0; i < dataCount/2; ++ i)
-			[dataCacheNotReversed exchangeObjectAtIndex:i withObjectAtIndex:dataCount-1-i];
-		dataCache = [dataCacheNotReversed copy];
-		[dataCacheNotReversed release];
-	} else {
-		filteredSet = [[clipboard allIndices] retain];
-		dataCache = [[clipboard allDataReversed] retain];
-	}
+	[insecureIndices release];
+	dataCache = [[clipboard allDataReversed] retain];
+	insecureIndices = [[clipboard reversedIndicesWithNonsecureData] retain];
 }
 
 -(BOOL)switchClipboard {
@@ -80,7 +70,7 @@
 -(void)dealloc {
 	[dataCache release];
 	[clipboard release];
-	[filteredSet release];
+	[insecureIndices release];
 	[super dealloc];
 }
 
@@ -102,7 +92,7 @@
 	cell.showsReorderControl = YES;
 	
 	NSString* txt = [[dataCache objectAtIndex:row] description];
-	if (secure && [clipboard isSecureAtReversedIndex:row]) {
+	if (![insecureIndices containsIndex:row]) {
 		txt = [NSString stringWithFormat:
 			   [[KeyboardBundle activeBundle] localizedStringForKey:@"<Secure Text %u chars>"],
 			   [txt length]];
@@ -135,15 +125,7 @@
 	//[super tableView:tbl commitEditingStyle:style forRowAtIndexPath:indexPath];
 	
 	if (style == UITableViewCellEditingStyleDelete) {
-		NSUInteger row = [indexPath row];
-		if (!secure) {
-			NSUInteger curIndex = [filteredSet firstIndex];
-			for (NSUInteger i = 0; i < row; ++ i)
-				curIndex = [filteredSet indexGreaterThanIndex:curIndex];
-			row = curIndex;
-			[clipboard removeEntryAtIndex:row];
-		} else
-			[clipboard removeEntryAtReversedIndex:row];
+		[clipboard removeEntryAtReversedIndex:[indexPath row]];
 		
 		[self updateDataCache];
 		// reloadData so that the indices are properly updated. 
@@ -157,31 +139,7 @@
 	if (rowFrom == rowTo)
 		return;
 	
-	NSLog(@"%d -> %d", rowFrom, rowTo);
-	
-	if (!secure) {
-		NSUInteger ciFrom = [filteredSet firstIndex];
-		NSUInteger ciTo;
-		NSUInteger i = 0;
-		if (rowFrom < rowTo) {
-			for (; i < rowFrom; ++ i)
-				ciFrom = [filteredSet indexGreaterThanIndex:ciFrom];
-			ciTo = ciFrom;
-			for (; i < rowTo; ++i)
-				ciTo = [filteredSet indexGreaterThanIndex:ciTo];	
-		} else {
-			ciTo = ciFrom;
-			for (; i < rowTo; ++ i)
-				ciTo = [filteredSet indexGreaterThanIndex:ciTo];
-			ciFrom = ciTo;
-			for (; i < rowFrom; ++i)
-				ciFrom = [filteredSet indexGreaterThanIndex:ciFrom];
-		}
-		[clipboard moveEntryFromIndex:ciFrom toIndex:ciTo];
-	} else {
-		[clipboard moveEntryFromReversedIndex:rowFrom toReversedIndex:rowTo];
-	}
-	
+	[clipboard moveEntryFromReversedIndex:rowFrom toReversedIndex:rowTo];
 	[self updateDataCache];
 	
 	[tbl performSelector:@selector(reloadData) withObject:nil afterDelay:0.5];

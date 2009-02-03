@@ -303,4 +303,15 @@
 	}
 }
 
+-(void)showSecurityBreachWarningOnAction:(SEL)action {
+	NSString* warningTitle = (action == @selector(paste:)) ? @"Cannot paste" : @"Security breach";
+	UIAlertView* alertView = [[UIAlertView alloc] initWithTitle:LS(warningTitle)
+														message:[bundle localizedStringForKey:@"SECURITY_BREACH_MESSAGE" value:@"Cannot put secure data into non-secure text fields." table:nil]
+													   delegate:nil
+											  cancelButtonTitle:[[NSBundle bundleWithIdentifier:@"com.apple.UIKit"] localizedStringForKey:@"OK" value:nil table:nil]
+											  otherButtonTitles:nil];
+	[alertView show];
+	[alertView release];
+}
+
 @end
