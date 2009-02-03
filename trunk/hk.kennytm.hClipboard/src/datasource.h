@@ -39,13 +39,14 @@
 @interface hCClipboardDataSource : NSObject<UITableViewDataSource> {
 	Clipboard* clipboard;
 	NSArray* dataCache;
-	NSIndexSet* filteredSet;
-	BOOL supportsEmoji, usesPrefix, secure;
+	NSIndexSet* insecureIndices;
+	BOOL supportsEmoji, usesPrefix;//, secure;
 }
 @property(retain) Clipboard* clipboard;
 @property(assign,readonly) NSArray* dataCache;
+@property(assign,readonly) NSIndexSet* insecureIndices;
 @property(assign) BOOL usesPrefix;
-@property(assign,getter=isSecure) BOOL secure;
+//@property(assign,getter=isSecure) BOOL secure;
 -(BOOL)switchClipboard;
 -(void)updateDataCache;
 

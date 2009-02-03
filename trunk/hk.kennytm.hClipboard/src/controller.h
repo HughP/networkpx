@@ -75,4 +75,6 @@
 -(void)markSelection:(UIButton*)sender;
 -(void)switchClipboard:(UIKBSpecialKeyButton*)sender;
 
+-(void)showSecurityBreachWarningOnAction:(SEL)action;
+
 @end

@@ -126,6 +126,7 @@
 // obtain indices that match the specified conditions
 -(NSIndexSet*)allIndices;
 -(NSIndexSet*)indicesWithNonsecureData;
+-(NSIndexSet*)reversedIndicesWithNonsecureData;
 -(NSIndexSet*)indicesWithDataOfClass:(Class)cls;
 
 // save the clipboard. Does nothing and return YES if path == nil.
