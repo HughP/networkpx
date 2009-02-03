@@ -1,6 +1,6 @@
 /*
  
- Settings.h ... Preferences Hooker to dynamically create a new section to be referenced in the main screen.
+ PrefsLinkHooker.h ... Preferences Hooker to dynamically create a new section to be referenced in the main screen.
  
  Copyright (c) 2009, KennyTM~
  All rights reserved.
@@ -30,14 +30,4 @@
  
  */
 
-#import <Preferences/PSListController.h>
-@class NSBundle, NSString;
-
-// bundle path is the *full* path to the bundle directory, without the .bundle extension.
-// label should be pre-localized.
-void PHInsertSection (NSString* bundlePath, NSString* label, BOOL hasIcon);
-
-@interface PrefsListControllerHooked : PSListController {}
--(NSArray*)specifiers;
--(NSArray*)old_specifiers;
-@end
+void PrefsListController_hook();

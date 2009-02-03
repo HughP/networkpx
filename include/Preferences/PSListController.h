@@ -42,7 +42,7 @@
 @property(readonly) NSBundle* bundle;
 @property(readonly) PSSpecifier* specifier;
 @property(retain) NSArray* specifiers;
-- (NSArray*)loadSpecifiersFromPlistName:(NSString*)fp8 target:(id)fp12;	
+- (NSMutableArray*)loadSpecifiersFromPlistName:(NSString*)fp8 target:(id)fp12;	
 
 - (void)reloadSpecifierAtIndex:(int)fp8 animated:(BOOL)fp12;	
 - (void)reloadSpecifierAtIndex:(int)fp8;	
@@ -159,7 +159,7 @@
 
 @end
 
-NSArray* SpecifiersFromPlist (
+NSMutableArray* SpecifiersFromPlist (
 							  NSDictionary*     plist,      // r0
 							  PSSpecifier*      specifier,  // r1
 							  id                target,     // r2
@@ -170,3 +170,6 @@ NSArray* SpecifiersFromPlist (
 							  PSListController* callerList,          // sp[0x130]
 							  NSMutableArray**  pBundleControllers   // sp[0x134]
 );
+
+#define SpecifiersFromPlistOnSelf(plist) SpecifiersFromPlist([NSDictionary dictionaryWithObject:(plist) forKey:@"items"], nil, self, nil, self.bundle, NULL, NULL, self, NULL)
+

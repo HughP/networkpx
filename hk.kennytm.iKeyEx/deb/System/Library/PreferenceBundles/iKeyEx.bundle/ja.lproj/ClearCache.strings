@@ -1,0 +1,4 @@
+{
+"Clear layout cache" = "キー配列のキャッシュを空にする";
+"Clear lookup cache (WordTrie)" = "検索のキャッシュ（WordTrie）を空にする";
+}
