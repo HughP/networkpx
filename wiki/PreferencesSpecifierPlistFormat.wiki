@@ -126,7 +126,7 @@ These keys are specific to other control cells.
 || alignment || integer || Text alignment.<br />2 = center. || _cell_ ∈ (`"PSGroupCell"`, `"PSStaticTextCell"`) ||
 || confirmation || dictionary || Definitions of the confirmation sheet before action is performed. || _cell_ ∈ (`"PSSwitchCell"`, `"PSButtonCell"`) ||
 || isDestructive || bool || Whether the action to be performed is destructive.<br />The OK button will be in red if true. || _confirmation_ ≠ nil ||
-|| isStaticText || bool || Whether the group cell is a title or just static text. || _cell_ = `"PSGroupCell"` ||
+|| isStaticText || bool || Whether the cells in this group has static text.<br />Used in conjunction with PSStaticTextCell. || _cell_ = `"PSGroupCell"` ||
 || iconImage || ??? || ??? || - ||
 || height || float || Height of text view || _cell_ = `"PSTextViewCell"` ||
 || dontIndentOnRemove || bool || Don't indent on remove (?) || - ||
