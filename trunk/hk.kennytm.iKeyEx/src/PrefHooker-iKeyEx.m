@@ -35,7 +35,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #import <substrate.h>
 
 #import <PrefHooker/InternationalKeyboardController.h>
-#import <PrefHooker/Settings.h>
+#import <PrefHooker/PrefsLinkHooker.h>
+
+#define PHAddMethod(cls, clsHooked, sele) class_addMethod( \
+	cls, \
+	@selector(sele), \
+	[clsHooked instanceMethodForSelector:@selector(sele)], \
+	method_getTypeEncoding(class_getInstanceMethod([clsHooked class], @selector(sele))))
 
 void installHook() {
 	NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
@@ -45,30 +51,14 @@ void installHook() {
 	Class ikcCls = objc_getClass("InternationalKeyboardController");
 	MSHookMessage(ikcCls, @selector(specifiers), [InternationalKeyboardControllerHooked instanceMethodForSelector:@selector(specifiers)], "old_");
 	
-	class_addMethod(ikcCls,
-					@selector(valueForIKeyExKeyboard:),
-					[InternationalKeyboardControllerHooked instanceMethodForSelector:@selector(valueForIKeyExKeyboard:)],
-					method_getTypeEncoding(class_getInstanceMethod([InternationalKeyboardControllerHooked class], @selector(valueForIKeyExKeyboard:)))
-					);
-	
-	class_addMethod(ikcCls,
-					@selector(setValueForIKeyExKeyboard:specifier:),
-					[InternationalKeyboardControllerHooked instanceMethodForSelector:@selector(setValueForIKeyExKeyboard:specifier:)],
-					method_getTypeEncoding(class_getInstanceMethod([InternationalKeyboardControllerHooked class], @selector(setValueForIKeyExKeyboard:specifier:)))
-					);
+	PHAddMethod(ikcCls, InternationalKeyboardControllerHooked, valueForIKeyExKeyboard:);
+	PHAddMethod(ikcCls, InternationalKeyboardControllerHooked, setValueForIKeyExKeyboard:specifier:);
 	
 	Class lsCls = objc_getClass("LanguageSelector");
 	MSHookMessage(lsCls, @selector(keyboardExistsForLanguage:), [LanguageSelectorHooked instanceMethodForSelector:@selector(keyboardExistsForLanguage:)], "old_");
 	
 	// Install hook for the front page.
-	PHInsertSection(@"iKeyEx", @"iKeyEx", YES);
-	
-	Class plcClass = objc_getClass("PrefsListController");
-	@synchronized(plcClass) {
-		// prevent the same method being hooked twice.
-		if (![plcClass instancesRespondToSelector:@selector(old_specifiers)])
-			MSHookMessage(plcClass, @selector(specifiers), [PrefsListControllerHooked instanceMethodForSelector:@selector(specifiers)], "old_");
-	}
+	PrefsListController_hook();
 		
 	[pool release];
 }

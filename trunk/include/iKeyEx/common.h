@@ -46,8 +46,11 @@
 #define iKeyEx_KeyboardsPath @"/Library/iKeyEx/Keyboards/"
 
 // Store all your data in this directory to allow R/W from sandboxes applications.
-#define iKeyEx_DataPath @"/var/mobile/Library/Keyboard/iKeyEx:"
-#define iKeyEx_CachePath iKeyEx_DataPath@":cache:"
+#define iKeyEx_DataDirectory @"/var/mobile/Library/Keyboard/"
+#define iKeyEx_DataPrefix iKeyEx_Prefix
+#define iKeyEx_DataPath iKeyEx_DataDirectory iKeyEx_DataPrefix
+#define iKeyEx_CachePrefix iKeyEx_Prefix@":cache:"
+#define iKeyEx_CachePath iKeyEx_DataDirectory iKeyEx_CachePrefix
 
 // draw text in the center of the rectangle.
 // The text size will be rescale to fit inside the rectangle totally.

@@ -5,6 +5,8 @@ iKeyExIncPath=../../include
 iKeyExLibPath=../deb/usr/lib
 iKeyExBinPath=../deb/usr/bin
 MobileSubstratePath=../deb/Library/MobileSubstrate/DynamicLibraries
+iKeyExPrefPath=../deb/System/Library/PreferenceBundles/iKeyEx.bundle
+SharedSrcPath=../../src
 
 Compiler=$(iPhoneDevPath)/usr/bin/arm-apple-darwin9-gcc-4.0.1
 CodeSign=ldid -S
@@ -35,7 +37,7 @@ iKeyExSources=cleanup.m common.m ImageLoader.m KeyboardLoader.m UIKBSound.m UIKB
 iKeyExTarget=$(iKeyExLibPath)/libiKeyEx.dylib
 iKeyExOptions=-dynamiclib -init _initDylib
 
-PrefHookerSources=PrefHooker-iKeyEx-InternationalKeyboardController.m PrefHooker-iKeyEx-Settings.m PrefHooker-iKeyEx.m
+PrefHookerSources=PrefHooker-iKeyEx-InternationalKeyboardController.m $(SharedSrcPath)/PrefsLinkHooker.m PrefHooker-iKeyEx.m
 PrefHookerTarget=$(MobileSubstratePath)/PrefHooker-iKeyEx.dylib
 PrefHookerOptions=-dynamiclib -lsubstrate -liKeyEx -framework Preferences -init _installHook
 
@@ -47,7 +49,11 @@ KBManSources=iKeyEx-KBMan.m
 KBManTarget=$(iKeyExBinPath)/iKeyEx-KBMan
 KBManOptions=
 
-all: $(iKeyExTarget) $(PrefHookerTarget) $(SBHookerTarget) $(KBManTarget)
+PrefPaneSources=PrefPane-iKeyEx.m
+PrefPaneTarget=$(iKeyExPrefPath)/iKeyEx
+PrefPaneOptions=-bundle -framework Preferences
+
+all: $(iKeyExTarget) $(PrefHookerTarget) $(SBHookerTarget) $(KBManTarget) $(PrefPaneTarget)
 
 $(iKeyExTarget):	$(iKeyExSources)
 	$(Compiler) $(Options) $(iKeyExOptions) -o $@ $^
@@ -65,8 +71,13 @@ $(KBManTarget):	$(KBManSources)
 	$(Compiler) $(Options) $(KBManOptions) -o $@ $^
 	$(CodeSign) $@
 
+$(PrefPaneTarget): $(PrefPaneSources)
+	$(Compiler) $(Options) $(PrefPaneOptions) -o $@ $^
+	$(CodeSign) $@
+
 clean:
 	rm $(iKeyExTarget)
 	rm $(PrefHookerTarget)
 	rm $(SBHookerTarget)
 	rm $(KBManTarget)
+	rm $(PrefPaneTarget)
