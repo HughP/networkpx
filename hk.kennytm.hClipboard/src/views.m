@@ -49,7 +49,7 @@
 #pragma mark -
 
 @implementation hCClipboardView
-@synthesize secure;
+@synthesize secure, soundEffect;
 
 -(void)restoreCellSelectedStyle:(UITableViewCell*)cell {
 	cell.selectionStyle = UITableViewCellSelectionStyleGray;
@@ -95,7 +95,8 @@
 		}
 	}
 	
-	[UIKBSound play];
+	if (soundEffect)
+		[UIKBSound play];
 	[tbl deselectRowAtIndexPath:indexPath animated:YES];
 }
 
@@ -122,7 +123,6 @@
 		_target = nil;
 		_action = NULL;
 		self.scrollsToTop = NO;
-		self.editing = YES;
 		self.allowsSelectionDuringEditing = YES;
 		
 		
@@ -229,6 +229,10 @@
 		controller.view = self;
 		controller.bundle = thisBundle;
 		
+		NSDictionary* prefs = controller.preferences;
+		BOOL soundEffect = [[prefs objectForKey:@"soundEffect"] boolValue];
+		BOOL defaultEditingMode = [[prefs objectForKey:@"defaultEditingMode"] boolValue];
+				
 		calloutShower = [[UICalloutViewShower alloc] initWithView:self];
 		
 		backgroundView = [[UIImageView alloc] initWithFrame:frm];
@@ -239,17 +243,19 @@
 		[spBtnGroup addSubviewWithClass:[UIKBInternationalButton class]];
 		[spBtnGroup addSubviewWithClass:[UIKBSpaceBarButton class]];
 		[spBtnGroup addSubviewWithClass:[UIKBReturnKeyButton class]];
-		[spBtnGroup addSubviewWithClass:[UIKBDeleteKeyButton class]];
+		[[spBtnGroup firstSubviewWithClass:[UIKBSpaceBarButton class]] addTarget:controller action:@selector(addMicromod:) forControlEvents:UIControlEventTouchUpInside];
+		[[spBtnGroup firstSubviewWithClass:[UIKBReturnKeyButton class]] addTarget:controller action:@selector(addMicromod:) forControlEvents:UIControlEventTouchUpInside];
 		switchClipboardButton = [[UIKBSpecialKeyButton alloc] init];
 		switchClipboardButton.showsTouchWhenHighlighted = YES;
 		[switchClipboardButton addTarget:controller
-									  action:@selector(switchClipboard:)
-							forControlEvents:UIControlEventTouchUpInside];
+								  action:@selector(switchClipboard:)
+						forControlEvents:UIControlEventTouchUpInside];
 		[switchClipboardButton setImage:[UIImage imageWithContentsOfFile:[thisBundle pathForResource:@"toTemplate" ofType:@"png"]]
-								   forState:UIControlStateNormal];
+							   forState:UIControlStateNormal];
 		[calloutShower registerButton:switchClipboardButton
 					withCalloutString:[thisBundle localizedStringForKey:@"Switch to Templates" value:nil table:nil]];
-		[UIKBSound registerButton:switchClipboardButton];
+		if (soundEffect)
+			[UIKBSound registerButton:switchClipboardButton];
 		[spBtnGroup addSubview:switchClipboardButton];
 		[switchClipboardButton release];
 		[self addSubview:spBtnGroup];
@@ -261,13 +267,15 @@
 									   target:controller
 									   action:@selector(copyText)];
 		[calloutShower registerButton:copyBtn withCalloutString:[thisBundle localizedStringForKey:@"Copy" value:nil table:nil]];
-		[UIKBSound registerButton:copyBtn];
+		if (soundEffect)
+			[UIKBSound registerButton:copyBtn];
 		
 		markSelBtn = [toolbar addButtonWithImage:[UIImage imageWithContentsOfFile:[thisBundle pathForResource:@"selectStart" ofType:@"png"]]
 										  target:controller
 										  action:@selector(markSelection:)];
 		[calloutShower registerButton:markSelBtn withCalloutString:[thisBundle localizedStringForKey:@"Select from here..." value:nil table:nil]];
-		[UIKBSound registerButton:markSelBtn];
+		if (soundEffect)
+			[UIKBSound registerButton:markSelBtn];
 		
 		
 		UIButton* btn = [toolbar addButtonWithImage:_UIImageWithName(@"UIButtonBarPreviousSlide.png")
@@ -280,7 +288,21 @@
 								   target:controller
 								   action:@selector(moveToEnd)];
 		[calloutShower registerButton:btn withCalloutString:[thisBundle localizedStringForKey:@"Move to end" value:nil table:nil]];
-		[UIKBSound registerButton:btn];
+		if (soundEffect)
+			[UIKBSound registerButton:btn];
+		
+		undoBtn = [toolbar addButtonWithImage:_UIImageWithName(@"UIButtonBarReply.png")
+									   target:controller
+									   action:@selector(undo)];
+		[calloutShower registerButton:undoBtn withCalloutString:[thisBundle localizedStringForKey:@"Undo" value:nil table:nil]];
+		[UIKBSound registerButton:undoBtn];
+		
+		btn = [toolbar addButtonWithImage:_UIImageWithName(@"UIButtonBarInfo.png")
+								   target:controller
+								   action:@selector(toggleEditingMode)];
+		[calloutShower registerButton:btn withCalloutString:[thisBundle localizedStringForKey:@"Toggle editing mode" value:nil table:nil]];
+		if (soundEffect)
+			[UIKBSound registerButton:btn];
 		
 		[self addSubview:toolbar];
 		[toolbar release];
@@ -288,6 +310,9 @@
 		clipboardView = [[hCClipboardView alloc] initWithFrame:CGRectZero];
 		[clipboardView setTarget:controller action:@selector(paste:)];
 		[clipboardView setPlaceholderText:[thisBundle localizedStringForKey:@"Clipboard is empty" value:nil table:nil]];
+		if (defaultEditingMode)
+			clipboardView.editing = YES;
+		clipboardView.soundEffect = soundEffect;
 		[self addSubview:clipboardView];
 		[clipboardView release];
 		
@@ -301,11 +326,11 @@
 	BOOL landsc = (ori == 90 || ori == -90);
 	if (!landsc) {
 		toolbar.columns = 1;
-		toolbar.frame = CGRectMake(320-36, 0, 36, 116);
+		toolbar.frame = CGRectMake(320-36, 8, 36, 172-8);
 		clipboardView.frame = CGRectMake(8, 8, 320-36-16, 172-16);
 	} else {
 		toolbar.columns = 2;
-		toolbar.frame = CGRectMake(480-72, 8, 72, 64);
+		toolbar.frame = CGRectMake(480-72, 8, 72, 119-8);
 		clipboardView.frame = CGRectMake(8, 8, 480-72-16, 119-16);
 	}
 	[toolbar setNeedsLayout];
@@ -332,8 +357,17 @@
 	spBtnGroup.keyboardAppearance = appr;
 	backgroundView.frame = spBtnGroup.frame;
 	
-	clipboardView.secure = impl.textInputTraits.secureTextEntry;
-	 
+	BOOL isSecure = impl.textInputTraits.secureTextEntry;
+	clipboardView.secure = isSecure;
+	hCSecurityLevel level = controller.securityLevel;
+	if (level != hCSecurityLevelFree) {
+		markSelBtn.enabled = !isSecure;
+		if (level == hCSecurityLevelNoCopying) {
+			copyBtn.enabled = !isSecure;
+		}
+	}
+	[controller resetUndoManager];
+	
 	[self setNeedsLayout];
 }
 

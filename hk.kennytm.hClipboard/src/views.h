@@ -47,9 +47,11 @@
 	BOOL flash0thRow;
 	BOOL secure;
 	UILabel* emptyClipboardIndicator;
+	BOOL soundEffect;
 }
 -(id)initWithFrame:(CGRect)frm;
 @property(retain) Clipboard* clipboard;
+@property(assign) BOOL soundEffect;
 -(BOOL)isDefaultClipboard;
 -(void)setTarget:(id)target action:(SEL)action;
 -(void)setPlaceholderText:(NSString*)txt;
@@ -81,6 +83,7 @@
 	hCClipboardView* clipboardView;
 	UICalloutViewShower* calloutShower;
 	UIButton* copyBtn;
+	UIButton* undoBtn;
 @protected
 	UIButton* markSelBtn;
 	UIImageView* backgroundView;

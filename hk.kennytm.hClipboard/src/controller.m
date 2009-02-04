@@ -39,6 +39,7 @@
 #import <UIKit2/UIKeyboardInput.h>
 #import <WebCore/PublicDOMInterfaces.h>
 #import <UIKit/UITextView.h>
+#import <iKeyEx/common.h>
 #include <objc/runtime.h>
 #import "clipboard.h"
 #import "views.h"
@@ -153,18 +154,32 @@
 
 #pragma mark -
 @implementation hCLayoutController
-@synthesize view, bundle;
+@synthesize view, bundle, preferences, securityLevel;
+-(void)setBundle:(NSBundle*)bdl {
+	if (bundle != bdl) {
+		[bundle release];
+		bundle = [bdl retain];
+		[preferences release];
+		preferences = [[NSDictionary alloc] initWithContentsOfFile:[bundle pathForResource:@"Preferences" ofType:@"plist"]];
+		securityLevel = [[preferences objectForKey:@"securityLevel"] integerValue];
+	}
+}
+
+-(void)resetUndoManager {
+	if (undoManager == nil)
+		undoManager = [[CMLUndoManager managerWithTarget:[UIKeyboardImpl sharedInstance].delegate] retain];
+	else
+		undoManager.target = [UIKeyboardImpl sharedInstance].delegate;
+	if (view)
+		view->undoBtn.enabled = NO;
+}
 
 -(id)init {
 	if ((self = [super init])) {
-		view = nil;
-		bundle = nil;
-		selectState = NO;
-		selectIndex = 0;
-		
 		// A list of applications that pasting a multi-character string does
 		// not work or even crashes. For these apps, paste char by char instead.
 		multicharBlacklist = [[NSSet alloc] initWithObjects:@"com.googlecode.mobileterminal", nil];
+		[self resetUndoManager];
 	}
 	return self;
 }
@@ -172,6 +187,8 @@
 -(void)dealloc {
 	[bundle release];
 	[multicharBlacklist release];
+	[undoManager release];
+	[preferences release];
 	[super dealloc];
 }
 
@@ -189,7 +206,8 @@
 	// take advantage of any selection made by 3rd party programs, e.g. Clippy and ⌘.
 	NSObject<UIKeyboardInput>* del = [UIKeyboardImpl sharedInstance].delegate;
 	NSRange curSelection = del.selectionRange;
-	if (curSelection.length > 0)
+	// ignore selection when security level says disables selection.
+	if (curSelection.length > 0 && securityLevel == hCSecurityLevelFree)
 		[self copyText:[del.text substringWithRange:curSelection]];
 	else
 		[self copyText:del.text];
@@ -197,6 +215,8 @@
 
 -(void)paste:(NSString*)txt {
 	UIKeyboardImpl* impl = [UIKeyboardImpl sharedInstance];
+	[undoManager setString:txt];
+	view->undoBtn.enabled = YES;
 	if ([multicharBlacklist containsObject:[[NSBundle mainBundle] bundleIdentifier]]) {
 		NSUInteger txtLen = [txt length];
 		for (NSUInteger i = 0; i < txtLen; ++i)
@@ -303,6 +323,15 @@
 	}
 }
 
+-(void)undo {
+	[undoManager undo];
+	view->undoBtn.enabled = undoManager.undoable;
+}
+
+-(void)toggleEditingMode {
+	[view->clipboardView setEditing:!view->clipboardView.editing animated:YES];
+}
+
 -(void)showSecurityBreachWarningOnAction:(SEL)action {
 	NSString* warningTitle = (action == @selector(paste:)) ? @"Cannot paste" : @"Security breach";
 	UIAlertView* alertView = [[UIAlertView alloc] initWithTitle:LS(warningTitle)
@@ -312,6 +341,14 @@
 											  otherButtonTitles:nil];
 	[alertView show];
 	[alertView release];
+}
+
+-(void)addMicromod:(UIButton*)sender {
+	if ([sender isKindOfClass:[UIKBReturnKeyButton class]])
+		[undoManager appendString:@"\n"];
+	else
+		[undoManager appendString:@" "];
+	view->undoBtn.enabled = YES;
 }
 
 @end

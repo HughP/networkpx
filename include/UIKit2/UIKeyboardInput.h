@@ -7,8 +7,9 @@
 #import <UIKit/UITextInputTraits.h>
 #import <UIKit2/UITextInputTraits_Private.h>
 #import <Foundation/NSRange.h>
+#import <CoreGraphics/CGGeometry.h>
 
-@class NSString, DOMRange, UIView;
+@class NSString, DOMRange, UIView, UIColor, UIFont;
 
 @protocol UIKeyboardInput <UITextInputTraits, UITextInputTraits_Private>
 @property(readonly) id delegate;
