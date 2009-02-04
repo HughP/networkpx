@@ -1,0 +1,56 @@
+#summary Guide for localizers on what keys are left untranslated.
+#labels Phase-Design
+
+<wiki:toc/>
+
+All projects of networkpx are designed to be localizable, but I don't know all languages in the world, so the translations must be provided by others. Fortunately, there are quite a number of volunteers helping me out on this. However, the projects here are still growing quite fast, and it is easy that new translation cannot be caught up. 
+
+To avoid localizers from having to dig the svn tree every time something changes, I have created this page as a quick reference on what is not translated.
+
+In all networkpx projects, the *English* (en), *Spanish* (es) and *Chinese* (zh_TW and zh_CN) will always be fully translated. The rest are provided by volunteers and the availability will be listed in the tables below.
+ * ✓ = Translation available.
+ *    = Translation not available.
+
+If you want to fill in the blanks or provide a completely new language, you can simply write a comment in issue 11.
+
+= iKeyEx =
+
+The _lproj_'s are located in `/svn/trunk/hk.kennytm.iKeyEx/deb/System/Library/PreferenceBundles/iKeyEx.bundle/`.
+
+|| *Key*                           || *el* || *fi* || *it* || *ja* || *ru* || *tr* ||
+|| Keyboards for Current Language  ||      || ✓    || ✓    || ✓   || ✓    || ✓    ||
+|| iKeyEx Keyboards                ||      || ✓    || ✓    || ✓   || ✓    || ✓    ||
+|| Other Built-in Keyboards        ||      || ✓    || ✓    || ✓   || ✓    || ✓    ||
+|| Clear layout cache              ||      || ✓    ||      || ✓    ||      ||      ||
+|| Clear lookup cache (!WordTrie)  ||      || ✓    ||      || ✓    ||      ||      ||
+|| Clear image cache               ||      || ✓    ||      || ✓    ||      ||      ||
+|| `CLEAR_IMAGE_CACHE_DESCRIPTION` ||      || ✓    ||      ||      ||      ||      ||
+
+Note: the complete message of `CLEAR_IMAGE_CACHE_DESCRIPTION` is _"iKeyEx caches some generated images for performance. However, if you change theme you must clear the cache to sync with it."_
+
+= ℏClipboard =
+
+The _lproj_'s are located in `/svn/trunk/hk.kennytm.hClipboard/deb/Library/iKeyEx/Keyboards/hClipboard.keyboard/` and `/svn/trunk/hk.kennytm.hClipboard/deb/Library/iKeyEx/Keyboards/hClipboard.keyboard/Preferences.bundle/`.
+
+|| *Key*                               || *el* || *fi* || *it* || *ja* || *ru* || *tr* ||
+|| Copy                                || ✓    || ✓    || ✓   ||      ||      || ✓    ||
+|| Select from here...                 || ✓    || ✓    || ✓   ||      ||      || ✓    ||
+|| Select to here and copy             || ✓    || ✓    || ✓   ||      ||      || ✓    ||
+|| Move to beginning                   || ✓    || ✓    || ✓   ||      ||      || ✓    ||
+|| Move to end                         || ✓    || ✓    || ✓   ||      ||      || ✓    ||
+|| Switch to Clipboard                 || ✓    || ✓    || ✓   ||      ||      || ✓    ||
+|| Switch to Templates                 || ✓    || ✓    || ✓   ||      ||      || ✓    ||
+|| Add to templates                    || ✓    || ✓    || ✓   ||      ||      || ✓    ||
+|| Select to here and add to templates || ✓    || ✓    || ✓   ||      ||      || ✓    ||
+|| Clipboard is empty                  || ✓    || ✓    || ✓   ||      ||      || ✓    ||
+|| No templates                        || ✓    || ✓    || ✓   ||      ||      || ✓    ||
+|| <Secure Text `%u` chars>            ||      || ✓    ||      ||      ||      ||      ||
+|| Cannot paste                        ||      || ✓    ||      ||      ||      ||      ||
+|| `SECURITY_BREACH_MESSAGE`           ||      || ✓    ||      ||      ||      ||      ||
+|| Undo                                ||      ||      ||      ||      ||      ||      ||
+|| Redo                                ||      ||      ||      ||      ||      ||      ||
+|| Toggle editing mode                 ||      ||      ||      ||      ||      ||      ||
+|| Cut                                 ||      ||      ||      ||      ||      ||      ||
+|| Delete                              ||      ||      ||      ||      ||      ||      ||
+
+Note: the complete message of `SECURITY_BREACH_MESSAGE` is _"Cannot put secure data into non-secure text fields."_.
