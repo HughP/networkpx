@@ -1,6 +1,6 @@
 Package: hk.kennytm.hclipboard
 Name: hClipboard
-Version: 0.1-1
+Version: 0.1-3
 Architecture: iphoneos-arm
 Description: Global Copy & Paste for iPhone
 Homepage: http://code.google.com/p/networkpx/wiki/Using_hClipboard

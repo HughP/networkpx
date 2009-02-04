@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Clear layout cache</key>
+	<string>Tyhjennä asettelun välimuisti</string>
+	<key>Clear lookup cache (WordTrie)</key>
+	<string>Tyhjennä haun välimuisti (WordTrie)</string>
+</dict>
+</plist>
