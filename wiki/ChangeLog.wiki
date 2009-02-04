@@ -11,6 +11,10 @@
  * Fixed issue 2 (Probably). The Globe can be used to exclusively switch to iKeyEx keyboards.
  * Fixed issue 42. Thanks Tomi for reporting.
 
+== ℏClipboard ==
+ * Fixed issue 14: The clipboard order can be customized.
+ * Fixed issue 23: The undo key now replaces the delete key.
+
 == !MultiTap ==
  * Initial release.
 
