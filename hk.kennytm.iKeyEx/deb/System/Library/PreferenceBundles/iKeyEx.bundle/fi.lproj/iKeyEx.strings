@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLEAR_IMAGE_CACHE_DESCRIPTION</key>
+	<string>iKeyEx välitallentaa kuvia suorituskyvyn parantamiseksi. Jos vaihdat teemaa sinun täytyy tyhjentää välimuisti vastaamaan uutta.</string>
+	<key>Clear image cache</key>
+	<string>Tyhjennä kuvien välimuisti</string>
+	<key>International Keyboards</key>
+	<string>Kansainväliset näppäimistöt</string>
+</dict>
+</plist>
