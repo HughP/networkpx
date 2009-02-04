@@ -6,4 +6,5 @@
 	"UIKeyboardInputManagerClass" = "=en_US";
 	CFBundleDisplayName = "\U210fClipboard";
 	CFBundleExecutable = hClipboard;
+	PSBundle = Preferences;
 }

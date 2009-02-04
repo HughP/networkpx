@@ -48,7 +48,7 @@
 @property(assign) NSUInteger undoLimit;
 @property(assign,readonly,getter=isUndoable) BOOL undoable;
 @property(assign,readonly,getter=isRedoable) BOOL redoable;
-@property(assign,readonly) NSObject<UIKeyboardInput>* target;
+@property(assign) NSObject<UIKeyboardInput>* target;
 @property(assign) NSTimeInterval micromodUpdateInterval;
 +(CMLUndoManager*)managerWithTarget:(NSObject<UIKeyboardInput>*)aTarget;
 +(CMLUndoManager*)managerWithTarget:(NSObject<UIKeyboardInput>*)aTarget undoLimit:(NSUInteger)limit;
@@ -58,6 +58,7 @@
 -(void)undo;
 -(void)redo;
 -(void)setString:(NSString*)str;
+-(void)reset;
 
 // note: you should call these before the micromod is made.
 -(void)appendString:(NSString*)str;

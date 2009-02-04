@@ -34,6 +34,7 @@
 #import <Foundation/NSObject.h>
 #import <UIKit2/UIKeyboardInput.h>
 #import <UIKit/UIView.h>
+#import <UIKit/UITextView.h>
 #import <WebCore/PublicDOMInterfaces.h>
 
 @interface UIWebDocumentView : UIView<UIKeyboardInput>
@@ -54,10 +55,16 @@ void setSelection(NSObject<UIKeyboardInput>* del, NSRange newRange) {
 			return;
 		}
 	} else if ([del isKindOfClass:[DOMElement class]]) {
-		[del selectAll];
-		DOMRange* range = del.selectedDOMRange;
-		[range setStart:del offset:newRange.location];
-		[range setEnd:del offset:newRange.location+newRange.length];
-		[del setSelectedDOMRange:range affinityDownstream:NO];
+		if ([del respondsToSelector:@selector(setSelectionRange:end:)]) {
+			// <input type="text"/> and <textarea/> support this safer and faster method.
+			[del setSelectionRange:newRange.location end:newRange.location+newRange.length];
+		} else {
+			DOMRange* range = del.selectedDOMRange;
+			// retain to avoid container suddenly disappeared.
+			// rather memory leak than crash.
+			[range setStart:[range.startContainer retain] offset:newRange.location];
+			[range setEnd:[range.endContainer retain] offset:newRange.location+newRange.length];
+			[del setSelectedDOMRange:range affinityDownstream:YES];
+		}
 	}
 }

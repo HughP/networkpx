@@ -30,6 +30,7 @@
  
  */
 
+#import <Command/CMLSetSelection.h>
 #import <Command/CMLUndoManager.h>
 #import <UIKit2/UIKeyboardInput.h>
 #import <UIKit2/UIKeyboardImpl.h>
@@ -65,9 +66,9 @@
 	[super dealloc];
 }
 -(void)appendString:(NSString*)str {
-	previousRange.location += [str count];
+	//previousRange.length += [str length];
 	NSString* oldStr = stringInserted;
-	stringInserted = [[stringInserted stringByAppendingString:str] copy];
+	stringInserted = [[oldStr stringByAppendingString:str] copy];
 	[oldStr release];
 }
 -(void)deleteKeyOnTarget:(NSObject<UIKeyboardInput>*)target {
@@ -78,6 +79,7 @@
 	NSUInteger strLen = [stringInserted length];
 	NSString* oldStr = nil;
 	if (strLen > 0) {
+		
 		oldStr = stringInserted;
 		stringInserted = [[stringInserted substringToIndex:strLen-1] copy];
 	} else {
@@ -109,6 +111,12 @@
 		}
 	}
 	undoLimit = limit;
+}
+-(void)setTarget:(NSObject<UIKeyboardInput>*)aTarget {
+	if (target != aTarget) {
+		target = aTarget;
+		[self reset];
+	}
 }
 
 @dynamic undoable;
@@ -144,10 +152,13 @@
 
 -(void)undo {
 	if (currentStep > 0) {
-		CMLUndoEntry* entryAtCurrentStep = [operations objectAtIndex:currentStep];
+		CMLUndoEntry* entryAtCurrentStep = [operations objectAtIndex:currentStep-1];
 		-- currentStep;
 		setSelection(target, NSMakeRange(entryAtCurrentStep->previousRange.location, [entryAtCurrentStep->stringInserted length]));
-		[impl handleStringInput:entryAtCurrentStep->stringRemoved];
+		if ([@"" isEqualToString:entryAtCurrentStep->stringRemoved])
+			[impl handleDelete];
+		else
+			[impl handleStringInput:entryAtCurrentStep->stringRemoved];
 		setSelection(target, entryAtCurrentStep->previousRange);
 		[lastMicromodTime release];
 		lastMicromodTime = nil;
@@ -159,7 +170,10 @@
 		++ currentStep;
 		CMLUndoEntry* entryAtNextStep = [operations objectAtIndex:currentStep];
 		setSelection(target, entryAtNextStep->previousRange);
-		[impl handleStringInput:entryAtNextStep->stringInserted];
+		if ([@"" isEqualToString:entryAtNextStep->stringInserted])
+			[impl handleDelete];
+		else
+			[impl handleStringInput:entryAtNextStep->stringInserted];
 		[lastMicromodTime release];
 		lastMicromodTime = nil;
 	}
@@ -176,8 +190,9 @@
 			++ currentStep;
 		[operations addObject:entry];
 	} else {
+		[operations removeObjectsInRange:NSMakeRange(currentStep, operCount-currentStep)];
+		[operations addObject:entry];
 		++ currentStep;
-		[operations replaceObjectAtIndex:currentStep withObject:entry];
 	}
 	
 	[lastMicromodTime release];
@@ -188,7 +203,7 @@
 		if (-[lastMicromodTime timeIntervalSinceNow] >= micromodUpdateInterval)
 			goto actuallySetString;
 		else {
-			[[operations objectAtIndex:currentStep] appendString:str];
+			[[operations lastObject] appendString:str];
 		}
 	} else {
 actuallySetString:
@@ -221,6 +236,11 @@ actuallySetString:
 		[self setString:@""];
 		lastMicromodTime = [[NSDate alloc] init];
 	}
+}
+
+-(void)reset {
+	currentStep = 0;
+	[operations removeAllObjects];
 }
 
 

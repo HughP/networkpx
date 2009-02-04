@@ -33,9 +33,16 @@
 
 #import <Foundation/NSObject.h>
 #import <CoreGraphics/CGGeometry.h>
+#import <Command/CMLUndoManager.h>
 
 @class hCLayout, NSBundle, NSString, UIButton, UIKBSpecialKeyButton, UICalloutView, NSMutableDictionary, UIView, NSSet;
 
+
+typedef enum hCSecurityLevel {
+	hCSecurityLevelNoCopying,
+	hCSecurityLevelNoSelection,
+	hCSecurityLevelFree
+} hCSecurityLevel;
 
 
 @interface UICalloutViewShower : NSObject {
@@ -62,9 +69,16 @@
 	BOOL selectState;
 	NSUInteger selectIndex;
 	NSSet* multicharBlacklist;
+	CMLUndoManager* undoManager;
+	NSDictionary* preferences;
+	hCSecurityLevel securityLevel;
 }
 @property(assign) hCLayout* view;
 @property(retain) NSBundle* bundle;
+@property(readonly,assign) NSDictionary* preferences;
+@property(assign) hCSecurityLevel securityLevel;
+
+-(void)resetUndoManager;
 
 -(id)init;
 -(void)copyText:(NSString*)txt;
@@ -74,6 +88,9 @@
 -(void)moveToEnd;
 -(void)markSelection:(UIButton*)sender;
 -(void)switchClipboard:(UIKBSpecialKeyButton*)sender;
+-(void)undo;
+-(void)toggleEditingMode;
+-(void)addMicromod:(UIButton*)sender;
 
 -(void)showSecurityBreachWarningOnAction:(SEL)action;
 

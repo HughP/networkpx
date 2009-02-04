@@ -3,6 +3,7 @@ iPhoneSDKPath=$(iPhoneDevPath)/SDKs/iPhoneOS2.2.sdk
 iPhoneGCCIncPath=$(iPhoneSDKPath)/usr/lib/gcc/powerpc-apple-darwin9/4.0.1/include/
 iKeyExIncPath=../../include
 iKeyExLibPath=../../hk.kennytm.iKeyEx/deb/usr/lib
+CommandSrcPath=../../hk.kennytm.Command/src
 
 Compiler=$(iPhoneDevPath)/usr/bin/arm-apple-darwin9-gcc-4.0.1
 CodeSign=ldid -S
@@ -33,7 +34,7 @@ Options=-lobjc \
 	-O3 \
 	-mthumb
 
-Sources=datasource.m controller.m views.m clipboard.m
+Sources=datasource.m controller.m views.m clipboard.m $(CommandSrcPath)/CMLUndoManager.m $(CommandSrcPath)/CMLSetSelection.m
 Target=../deb/Library/iKeyEx/Keyboards/hClipboard.keyboard/hClipboard
 
 $(Target):	$(Sources)
