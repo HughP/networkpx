@@ -26,9 +26,15 @@ The _lproj_'s are located in `/svn/trunk/hk.kennytm.iKeyEx/deb/System/Library/Pr
 || Clear layout cache              || ✓    ||      || ✓    || ✓    || ✓   || ✓    || ✓    ||      ||
 || Clear lookup cache (!WordTrie)  || ✓    ||      || ✓    || ✓    || ✓   || ✓    ||      ||      ||
 || Clear image cache               || ✓    ||      || ✓    || ✓    || ✓   || ✓    || ✓    ||      ||
+<wiki:comment>
 || `CLEAR_IMAGE_CACHE_DESCRIPTION` || ✓    ||      || ✓    || ✓    ||     || ✓    || ✓    ||      ||
+</wiki:comment>
+|| Troubleshooting                 ||      ||      ||      ||       || ✓   ||      ||      ||      ||
+|| Fix permissions                 ||      ||      ||      ||       || ✓   ||      ||      ||      ||
 
+<wiki:comment>
 Note: the complete message of `CLEAR_IMAGE_CACHE_DESCRIPTION` is _"iKeyEx caches some generated images for performance. However, if you change theme you must clear the cache to sync with it."_
+</wiki:comment>
 
 = ℏClipboard =
 
@@ -56,3 +62,16 @@ The _lproj_'s are located in `/svn/trunk/hk.kennytm.hClipboard/deb/Library/iKeyE
 || Delete                              ||      ||      || ✓    || ✓   ||      ||      ||      ||      ||
 
 Note: the complete message of `SECURITY_BREACH_MESSAGE` is _"Cannot put secure data into non-secure text fields."_.
+
+|| *Key*                                  || *de* || *el* || *fi* || *it* || *ja* || *nl* || *ru* || *tr* ||
+|| Copying Secure Text                    ||      ||      ||      ||      ||      ||      ||      ||      ||
+|| Disabled                               ||      ||      ||      ||      ||      ||      ||      ||      ||
+|| Disable selection                      ||      ||      ||      ||      ||      ||      ||      ||      ||
+|| Enabled                                ||      ||      ||      ||      ||      ||      ||      ||      ||
+|| No sel.                                ||      ||      ||      ||      ||      ||      ||      ||      ||
+|| Default Editing                        ||      ||      ||      ||      ||      ||      ||      ||      ||
+|| Sound Effect                           ||      ||      || ✓    || ✓   ||      ||      ||      || ✓    ||
+|| Clear Clipboard                        ||      ||      ||      ||      ||      ||      ||      ||      ||
+|| Clear Templates                        ||      ||      ||      ||      ||      ||      ||      ||      ||
+|| Cancel                                 ||      ||      || ✓    || ✓   ||      ||      ||      || ✓    ||
+|| This action cannot be undone. Proceed? ||      ||      ||      ||      ||      ||      ||      ||      ||

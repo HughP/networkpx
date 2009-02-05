@@ -145,10 +145,8 @@ MSHook(BOOL, UIKeyboardLayoutDefaultTypeForInputModeIsASCIICapable, NSString* mo
 
 // Take care of the WordTries
 MSHook(NSString*, UIKeyboardStaticUnigramsFilePathForInputModeAndFileExtension, NSString* mode, NSString* ext) {
-	NSLog(@"UIKeyboardStaticUnigramsFilePathForInputModeAndFileExtension==%@.%@", mode, ext);
 	if ([mode hasPrefix:iKeyEx_Prefix]) {
 		NSString* refMode = [KeyboardBundle referedManagerClassForMode:mode];
-		NSLog(@"UIKeyboardStaticUnigramsFilePathForInputModeAndFileExtension:%@", refMode);
 		if (refMode != mode) {
 			return _UIKeyboardStaticUnigramsFilePathForInputModeAndFileExtension(refMode, ext);
 		} else
@@ -157,10 +155,8 @@ MSHook(NSString*, UIKeyboardStaticUnigramsFilePathForInputModeAndFileExtension, 
 		return _UIKeyboardStaticUnigramsFilePathForInputModeAndFileExtension(mode, ext);
 }
 MSHook(NSString*, UIKeyboardDynamicDictionaryFile, NSString* mode) {
-	NSLog(@"UIKeyboardDynamicDictionaryFile==%@", mode);
 	if ([mode hasPrefix:iKeyEx_Prefix]) {
 		NSString* refMode = [KeyboardBundle referedManagerClassForMode:mode];
-		NSLog(@"UIKeyboardDynamicDictionaryFile:%@", refMode);
 		if (refMode != mode) {
 			return _UIKeyboardDynamicDictionaryFile(refMode);
 		} else

@@ -68,8 +68,10 @@ $(SBHookerTarget):	$(SBHookerSources)
 	$(CodeSign) $@
 
 $(KBManTarget):	$(KBManSources)
-	$(Compiler) $(Options) $(KBManOptions) -o $@ $^
-	$(CodeSign) $@
+	echo "iKeyEx-KBMan requires setuid. Please enter root password:"
+	sudo $(Compiler) $(Options) $(KBManOptions) -o $@ $^
+	sudo $(CodeSign) $@
+	sudo chmod ug+s $@
 
 $(PrefPaneTarget): $(PrefPaneSources)
 	$(Compiler) $(Options) $(PrefPaneOptions) -o $@ $^
