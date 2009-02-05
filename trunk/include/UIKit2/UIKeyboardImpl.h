@@ -187,7 +187,8 @@
 - (void)setShiftOffIfNeeded;
 - (void)toggleShift;
 @property(assign,getter=isShifted) BOOL shift;
-@property(assign,getter=isShiftLocked) BOOL shiftLocked;
+@property(assign,getter=isShiftLocked,readonly) BOOL shiftLocked;
+-(void)setShiftLocked;
 - (void)setShift:(BOOL)shifted autoshift:(BOOL)autoshifted;
 - (void)setShiftPreventAutoshift:(BOOL)aBool;
 - (void)setShiftNeedsUpdate;

@@ -39,12 +39,15 @@
 
 static NSMutableDictionary* kbcache = nil;	// Contains KeyboardBundle for all iKeyEx .keyboard's.
 
+static NSMutableDictionary* referedManagerClasses = nil;
+static NSMutableDictionary* referedLayoutClasses = nil;
+
 //------------------------------------------------------------------------------
 //-- Implementations -----------------------------------------------------------
 //------------------------------------------------------------------------------
 
 @implementation KeyboardBundle
-@synthesize manager, layoutClassPortrait, layoutClassLandscape, origLayoutClassPortrait, origLayoutClassLandscape, displayName, variants;
+@synthesize manager, layoutClassPortrait, layoutClassLandscape, displayName, variants;
 @synthesize bundle;
 
 -(id)objectForInfoDictionaryKey:(NSString*)key { return [bundle objectForInfoDictionaryKey:key]; }
@@ -82,7 +85,9 @@ static NSMutableDictionary* kbcache = nil;	// Contains KeyboardBundle for all iK
 					//       (if we do so, make sure only a single instance is allocated...)
 					[self useDefaultManager];
 				} else {
-					manager = [[UIKeyboardInputManager sharedInstanceForInputMode:[managerClass substringFromIndex:1]] retain];
+					NSString* origManagerClass = [managerClass substringFromIndex:1];
+					[referedManagerClasses setObject:origManagerClass forKey:mode];
+					manager = [[UIKeyboardInputManager sharedInstanceForInputMode:origManagerClass] retain];
 				}
 			} else {
 				if ([managerClass hasSuffix:@".cin"]) {
@@ -104,15 +109,12 @@ static NSMutableDictionary* kbcache = nil;	// Contains KeyboardBundle for all iK
 			// refered layout class. fill in the "origLayoutClassXXX" variables for later reference.
 			if ([layoutStr hasPrefix:@"="]) {
 				NSString* origMode = [layoutStr substringFromIndex:1];
-				origLayoutClassPortrait = [origMode retain];
-				origLayoutClassLandscape = [origMode retain];
-				layoutClassPortrait = Nil;	// Nil? NULL? nil?
+				layoutClassPortrait = Nil;
 				layoutClassLandscape = Nil;
+				[referedLayoutClasses setObject:origMode forKey:mode];
 				[UIKeyboardInputManager sharedInstanceForInputMode:origMode];	// force to load .artwork file into memory.
 			// layout class defined on a plist. Create a copy of UIKBStandardKeyboardLayout and let the plist be loaded on runtime.
 			} else {
-				origLayoutClassPortrait = nil;
-				origLayoutClassLandscape = nil;
 				layoutClassPortrait = createSubclassCopy([UIKBStandardKeyboardLayout class]);
 				layoutClassLandscape = createSubclassCopy([UIKBStandardKeyboardLayoutLandscape class]);
 			}
@@ -151,9 +153,13 @@ static NSMutableDictionary* kbcache = nil;	// Contains KeyboardBundle for all iK
 	if (retval == nil) {
 		if (kbcache == nil) {
 			// force loading of necessary .artwork files.
-			[UIKeyboardInputManager sharedInstanceForInputMode:@"en_US"];
+			[UIKeyboardInputManager sharedInstanceForInputMode:@"intl"];
 			kbcache = [[NSMutableDictionary alloc] init];
 		}
+		if (referedManagerClasses == nil)
+			referedManagerClasses = [[NSMutableDictionary alloc] init];
+		if (referedLayoutClasses == nil)
+			referedLayoutClasses = [[NSMutableDictionary alloc] init];
 		retval = [[KeyboardBundle alloc] initWithModeName:mode];
 		[kbcache setObject:retval forKey:mode];
 		[retval release];
@@ -169,25 +175,16 @@ static NSMutableDictionary* kbcache = nil;	// Contains KeyboardBundle for all iK
 -(void)useDefaultLayoutClassWithLandscape:(BOOL)landsc {
 	if (landsc) {
 		layoutClassLandscape = [UIKeyboardLayoutQWERTYLandscape class];
-		if (origLayoutClassLandscape != nil)
-			[origLayoutClassLandscape release];
-		origLayoutClassLandscape = nil;
 	} else {
 		layoutClassPortrait = [UIKeyboardLayoutQWERTY class];
-		if (origLayoutClassPortrait != nil)
-			[origLayoutClassPortrait release];
-		origLayoutClassPortrait = nil;
 	}
 }
 
 -(Class)layoutClassWithLandscape:(BOOL)landsc { return landsc ? layoutClassLandscape : layoutClassPortrait; }
--(NSString*)origLayoutClassWithLandscape:(BOOL)landsc { return landsc ? self.origLayoutClassLandscape : self.origLayoutClassPortrait; }
 -(NSArray*)variantsForString:(NSString*)str { return [variants objectForKey:str]; }
 
 -(void)dealloc {
 	[manager release];
-	[origLayoutClassPortrait release];
-	[origLayoutClassLandscape release];
 	[displayName release];
 	[variants release];
 	[bundle unload];
@@ -200,10 +197,20 @@ static NSMutableDictionary* kbcache = nil;	// Contains KeyboardBundle for all iK
 	return [KeyboardBundle bundleWithModeName:UIKeyboardGetCurrentInputMode()];
 }
 
-// Hook this on memory alert??
 +(void)clearCache {
 	[kbcache release];
 	kbcache = nil;
+	[referedManagerClasses release];
+	[referedLayoutClasses release];
+}
+
++(NSString*)referedManagerClassForMode:(NSString*)mode {
+	NSString* retval = [referedManagerClasses objectForKey:mode];
+	return retval ? retval : mode;
+}
++(NSString*)referedLayoutClassForMode:(NSString*)mode {
+	NSString* retval = [referedLayoutClasses objectForKey:mode];
+	return retval ? retval : mode;
 }
 
 @end
