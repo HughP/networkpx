@@ -13,18 +13,20 @@ In all networkpx projects, the *English* (en), *Spanish* (es) and *Chinese* (zh_
 
 If you want to fill in the blanks or provide a completely new language, you can simply write a comment in issue 11.
 
+*If you create a strings file, make sure its encoding is UTF-16.*
+
 = iKeyEx =
 
 The _lproj_'s are located in `/svn/trunk/hk.kennytm.iKeyEx/deb/System/Library/PreferenceBundles/iKeyEx.bundle/`.
 
 || *Key*                           || *de* || *el* || *fi* || *it* || *ja* || *nl* || *ru* || *tr* ||
-|| Keyboards for Current Language  || ✓    ||      || ✓    || ✓    || ✓   || ✓    || ✓    || ✓    ||
-|| iKeyEx Keyboards                || ✓    ||      || ✓    || ✓    || ✓   || ✓    || ✓    || ✓    ||
-|| Other Built-in Keyboards        || ✓    ||      || ✓    || ✓    || ✓   || ✓    || ✓    || ✓    ||
-|| Clear layout cache              ||      ||      || ✓    || ✓    || ✓    ||      || ✓    ||      ||
-|| Clear lookup cache (!WordTrie)  ||      ||      || ✓    || ✓    || ✓    ||      ||      ||      ||
-|| Clear image cache               ||      ||      || ✓    || ✓    || ✓    ||      || ✓    ||      ||
-|| `CLEAR_IMAGE_CACHE_DESCRIPTION` ||      ||      || ✓    || ✓    ||      ||      || ✓    ||      ||
+|| Keyboards for Current Language  || ✓    ||      || ✓    || ✓    || ✓   || ✓    || ✓    || ✓   ||
+|| iKeyEx Keyboards                || ✓    ||      || ✓    || ✓    || ✓   || ✓    || ✓    || ✓   ||
+|| Other Built-in Keyboards        || ✓    ||      || ✓    || ✓    || ✓   || ✓    || ✓    || ✓   ||
+|| Clear layout cache              || ✓    ||      || ✓    || ✓    || ✓   || ✓    || ✓    ||      ||
+|| Clear lookup cache (!WordTrie)  || ✓    ||      || ✓    || ✓    || ✓   || ✓    ||      ||      ||
+|| Clear image cache               || ✓    ||      || ✓    || ✓    || ✓   || ✓    || ✓    ||      ||
+|| `CLEAR_IMAGE_CACHE_DESCRIPTION` || ✓    ||      || ✓    || ✓    ||     || ✓    || ✓    ||      ||
 
 Note: the complete message of `CLEAR_IMAGE_CACHE_DESCRIPTION` is _"iKeyEx caches some generated images for performance. However, if you change theme you must clear the cache to sync with it."_
 
