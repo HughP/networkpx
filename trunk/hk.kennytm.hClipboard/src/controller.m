@@ -41,6 +41,7 @@
 #import <UIKit/UITextView.h>
 #import <iKeyEx/common.h>
 #include <objc/runtime.h>
+#import <Command/CMLSelection.h>
 #import "clipboard.h"
 #import "views.h"
 
@@ -50,9 +51,6 @@
 
 // Some dummy interfaces 
 @interface UIWebDocumentView : UIView<UIKeyboardInput>
-@end
-@interface UITextViewLegacy : UIView
-@property(assign) NSRange* selectedRange;
 @end
 
 
@@ -206,6 +204,7 @@
 	// take advantage of any selection made by 3rd party programs, e.g. Clippy and ⌘.
 	NSObject<UIKeyboardInput>* del = [UIKeyboardImpl sharedInstance].delegate;
 	NSRange curSelection = del.selectionRange;
+
 	// ignore selection when security level says disables selection.
 	if (curSelection.length > 0 && (!del.textInputTraits.secureTextEntry || securityLevel == hCSecurityLevelFree))
 		[self copyText:[del.text substringWithRange:curSelection]];
@@ -215,6 +214,11 @@
 
 -(void)paste:(NSString*)txt {
 	UIKeyboardImpl* impl = [UIKeyboardImpl sharedInstance];
+	
+	// don't risk pasting on readonly text fiels.
+	if ([impl.delegate respondsToSelector:@selector(readOnly)] && [impl.delegate readOnly])
+		return;
+	
 	[undoManager setString:txt];
 	view->undoBtn.enabled = YES;
 	if ([multicharBlacklist containsObject:[[NSBundle mainBundle] bundleIdentifier]]) {
@@ -226,57 +230,30 @@
 }
 
 -(void)moveToBeginning {
+	setSelectionToCurrentDelegate(NSMakeRange(0, 0));
 	NSObject<UIKeyboardInput>* del = [UIKeyboardImpl sharedInstance].delegate;
-	if ([del isKindOfClass:objc_getClass("UIFieldEditor")]) {
-		[del setSelection:NSMakeRange(0,0)];
-		return;
-	} else if ([del isKindOfClass:[UIWebDocumentView class]]) {
-		UIView* mySuperview = [(UIWebDocumentView*)del superview];
-		if ([mySuperview isKindOfClass:[UITextView class]] || [mySuperview isKindOfClass:[UITextViewLegacy class]]) {
-			((UITextView*)mySuperview).selectedRange = NSMakeRange(0,0);
-			return;
-		}
-	} else if ([del isKindOfClass:[DOMElement class]]) {
+	if ([del isKindOfClass:[DOMElement class]]) {
 		((DOMElement*)del).scrollTop = 0;
 		((DOMElement*)del).scrollLeft = 0;
 		[((DOMElement*)del) focus];
 	}
-	
-	[del selectAll];
-	DOMRange* range = del.selectedDOMRange;
-	[range collapse:YES];
-	[del setSelectedDOMRange:range affinityDownstream:NO];
 }
 
 -(void)moveToEnd {
 	NSObject<UIKeyboardInput>* del = [UIKeyboardImpl sharedInstance].delegate;
-	if ([del isKindOfClass:objc_getClass("UIFieldEditor")]) {
-		NSUInteger txtLen = [del.text length];
-		[del setSelection:NSMakeRange(txtLen,0)];
-		return;
-	} else if ([del isKindOfClass:[UIWebDocumentView class]]) {
-		UIView* mySuperview = [(UIWebDocumentView*)del superview];
-		if ([mySuperview isKindOfClass:[UITextView class]] || [mySuperview isKindOfClass:[UITextViewLegacy class]]) {
-			NSUInteger txtLen = [del.text length];
-			((UITextView*)mySuperview).selectedRange = NSMakeRange(txtLen,0);
-			return;
-		}
-	} else if ([del isKindOfClass:[DOMElement class]]) {
+	NSUInteger txtLen = [del.text length];
+	setSelection(del, NSMakeRange(txtLen, 0));
+	if ([del isKindOfClass:[DOMElement class]]) {
 		((DOMElement*)del).scrollTop = ((DOMElement*)del).scrollHeight;
 		((DOMElement*)del).scrollLeft = ((DOMElement*)del).scrollWidth;
 		[((DOMElement*)del) focus];
 	}
-	
-	[del selectAll];
-	DOMRange* range = del.selectedDOMRange;
-	[range collapse:NO];
-	[del setSelectedDOMRange:range affinityDownstream:NO];
 }
 
 -(void)markSelection:(UIButton*)sender {
 	UIKeyboardImpl* impl = [UIKeyboardImpl sharedInstance];
 	id<UIKeyboardInput> del = impl.delegate;
-	NSUInteger loc = del.selectionRange.location;
+	NSUInteger loc = getSelection(del, NULL).location;
 	if (selectState) {
 		NSString* copyStr = nil;
 		// force selectedIndex <= loc.

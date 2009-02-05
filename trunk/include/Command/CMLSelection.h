@@ -37,3 +37,7 @@
 
 
 void setSelection(NSObject<UIKeyboardInput>* del, NSRange newRange);
+void setSelectionToCurrentDelegate(NSRange newRange);
+
+NSRange getSelection(NSObject<UIKeyboardInput>* del, NSString** selectedText);
+NSRange getSelectionFromCurrentDelegate(NSString** selectedText);

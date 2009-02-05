@@ -30,7 +30,7 @@
  
  */
 
-#import <Command/CMLSetSelection.h>
+#import <Command/CMLSelection.h>
 #import <Command/CMLUndoManager.h>
 #import <UIKit2/UIKeyboardInput.h>
 #import <UIKit2/UIKeyboardImpl.h>
@@ -54,8 +54,8 @@
 }
 -(id)initWithTarget:(NSObject<UIKeyboardInput>*)target setString:(NSString*)str {
 	if ((self = [super init])) {
-		previousRange = target.selectionRange;
-		stringRemoved = [[target.text substringWithRange:previousRange] copy];
+		previousRange = getSelection(target, &stringRemoved);
+		[stringRemoved retain];
 		stringInserted = [str copy];
 	}
 	return self;
@@ -212,7 +212,7 @@ actuallySetString:
 	}
 }
 -(void)deleteKey {
-	NSRange selSelection = target.selectionRange;
+	NSRange selSelection = getSelection(target, NULL);
 	if (selSelection.length != 0) {
 		// selection delete is crucial, not a micromod.
 		goto actuallySetString;
