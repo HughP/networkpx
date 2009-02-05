@@ -30,9 +30,10 @@
  
  */
 
-#import <Command/CMLSetSelection.h>
+#import <Command/CMLSelection.h>
 #import <Foundation/NSObject.h>
 #import <UIKit2/UIKeyboardInput.h>
+#import <UIKit2/UIKeyboardImpl.h>
 #import <UIKit/UIView.h>
 #import <UIKit/UITextView.h>
 #import <WebCore/PublicDOMInterfaces.h>
@@ -68,3 +69,19 @@ void setSelection(NSObject<UIKeyboardInput>* del, NSRange newRange) {
 		}
 	}
 }
+
+void setSelectionToCurrentDelegate(NSRange newRange) { setSelection([UIKeyboardImpl sharedInstance].delegate, newRange); }
+
+NSRange getSelection(NSObject<UIKeyboardInput>* del, NSString** selectedText) {
+	NSRange retval = del.selectionRange;
+	DOMRange* domRange = del.selectedDOMRange;
+	if ([del isKindOfClass:[DOMElement class]] && [del respondsToSelector:@selector(readOnly)] && [del readOnly]) {
+		retval = NSMakeRange(domRange.startOffset, domRange.endOffset - domRange.startOffset);
+	}
+	if (selectedText != NULL) {
+		*selectedText = [domRange toString];
+	}
+	return retval;
+}
+
+NSRange getSelectionFromCurrentDelegate(NSString** selectedText) { return getSelection([UIKeyboardImpl sharedInstance].delegate, selectedText); }
