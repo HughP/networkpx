@@ -9,6 +9,7 @@
  * Fixed issue 9: Enable iKeyEx keyboards on install.
  * Fixed issue 7. Now iKeyEx can run on 2.0 and 2.1 firmware also.
  * Fixed issue 2 (Probably). The Globe can be used to exclusively switch to iKeyEx keyboards.
+ * Fixed issue 31. Auto-correction dictionaries can be recognized properly.
  * Fixed issue 42. Thanks Tomi for reporting.
 
 == ℏClipboard ==
