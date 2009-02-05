@@ -40,16 +40,12 @@
 	UIKeyboardInputManager* manager;
 	Class layoutClassPortrait;
 	Class layoutClassLandscape;
-	NSString* origLayoutClassPortrait;
-	NSString* origLayoutClassLandscape;
 	NSString* displayName;
 	NSDictionary* variants;
 }
 @property(readonly) UIKeyboardInputManager* manager;		// The custom input manager.
 @property(readonly) Class layoutClassPortrait;			// The custom layout class
 @property(readonly) Class layoutClassLandscape;
-@property(readonly) NSString* origLayoutClassPortrait;	// The refered input mode for layout, if any.
-@property(readonly) NSString* origLayoutClassLandscape;
 @property(readonly) NSString* displayName;
 @property(readonly) NSDictionary* variants;
 @property(readonly) NSBundle* bundle;
@@ -69,7 +65,6 @@
 
 // Obtain layout classes and referred input modes for layout classes.
 -(Class)layoutClassWithLandscape:(BOOL)landsc;
--(NSString*)origLayoutClassWithLandscape:(BOOL)landsc;
 
 // Get variants for an input.
 -(NSArray*)variantsForString:(NSString*)str;
@@ -79,4 +74,8 @@
 
 // Clear the bundle cache.
 +(void)clearCache;
+
+// Get the refered input mode names
++(NSString*)referedManagerClassForMode:(NSString*)mode;
++(NSString*)referedLayoutClassForMode:(NSString*)mode;
 @end

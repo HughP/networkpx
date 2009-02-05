@@ -18,3 +18,6 @@ Class UIKeyboardLayoutClassForInputModeInOrientation(NSString* inputMode, NSStri
 NSString* UIKeyboardLocalizedString (NSString* objID, NSString* locale, NSBundle* bundle);
 BOOL UIKeyboardLayoutDefaultTypeForInputModeIsASCIICapable(NSString* mode);
 BOOL UIKeyboardRequiresInternationalKey();
+NSString* UIKeyboardStaticUnigramsFilePathForInputModeAndFileExtension(NSString* mode, NSString* ext);
+NSString* UIKeyboardDynamicDictionaryFile(NSString* mode);
+NSString* UIKeyboardUserDirectory();

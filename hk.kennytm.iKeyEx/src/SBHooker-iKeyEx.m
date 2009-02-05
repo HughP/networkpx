@@ -105,8 +105,8 @@ MSHook(Class, UIKeyboardLayoutClassForInputModeInOrientation, NSString* mode, NS
 	if ([mode hasPrefix:iKeyEx_Prefix]) {
 		KeyboardBundle* cont = [KeyboardBundle bundleWithModeName:mode];
 		BOOL landsc = [orient isEqualToString:@"Landscape"];
-		NSString* origMode = [cont origLayoutClassWithLandscape:landsc];
-		if (origMode != nil) {
+		NSString* origMode = [KeyboardBundle referedLayoutClassForMode:mode];
+		if (origMode != mode) {
 			currentMode = [mode copy];
 			currentOrigMode = [origMode copy];
 			return _UIKeyboardLayoutClassForInputModeInOrientation(origMode, orient);
@@ -141,6 +141,32 @@ MSHook(BOOL, UIKeyboardLayoutDefaultTypeForInputModeIsASCIICapable, NSString* mo
 		return YES;
 	else
 		return _UIKeyboardLayoutDefaultTypeForInputModeIsASCIICapable(mode);
+}
+
+// Take care of the WordTries
+MSHook(NSString*, UIKeyboardStaticUnigramsFilePathForInputModeAndFileExtension, NSString* mode, NSString* ext) {
+	NSLog(@"UIKeyboardStaticUnigramsFilePathForInputModeAndFileExtension==%@.%@", mode, ext);
+	if ([mode hasPrefix:iKeyEx_Prefix]) {
+		NSString* refMode = [KeyboardBundle referedManagerClassForMode:mode];
+		NSLog(@"UIKeyboardStaticUnigramsFilePathForInputModeAndFileExtension:%@", refMode);
+		if (refMode != mode) {
+			return _UIKeyboardStaticUnigramsFilePathForInputModeAndFileExtension(refMode, ext);
+		} else
+			return @"";
+	} else
+		return _UIKeyboardStaticUnigramsFilePathForInputModeAndFileExtension(mode, ext);
+}
+MSHook(NSString*, UIKeyboardDynamicDictionaryFile, NSString* mode) {
+	NSLog(@"UIKeyboardDynamicDictionaryFile==%@", mode);
+	if ([mode hasPrefix:iKeyEx_Prefix]) {
+		NSString* refMode = [KeyboardBundle referedManagerClassForMode:mode];
+		NSLog(@"UIKeyboardDynamicDictionaryFile:%@", refMode);
+		if (refMode != mode) {
+			return _UIKeyboardDynamicDictionaryFile(refMode);
+		} else
+			return [UIKeyboardUserDirectory() stringByAppendingPathComponent:@"dynamic-text.dat"];
+	} else
+		return _UIKeyboardDynamicDictionaryFile(mode);
 }
 
 //------------------------------------------------------------------------------
@@ -258,6 +284,8 @@ void installHook () {
 	MSHookFunc(UIKeyboardBundleForInputMode);
 	MSHookFunc(UIKeyboardLocalizedInputModeName);
 	MSHookFunc(UIKeyboardLayoutDefaultTypeForInputModeIsASCIICapable);
+	MSHookFunc(UIKeyboardStaticUnigramsFilePathForInputModeAndFileExtension);
+	MSHookFunc(UIKeyboardDynamicDictionaryFile);
 	
 	MSHookMsg(UIKeyboardLayoutRoman, showPopupVariantsForKey:);
 	MSHookMsg(UIKeyboardLayoutRoman, downActionFlagsForKey:);
