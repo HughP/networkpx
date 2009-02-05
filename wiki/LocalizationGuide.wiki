@@ -17,14 +17,14 @@ If you want to fill in the blanks or provide a completely new language, you can 
 
 The _lproj_'s are located in `/svn/trunk/hk.kennytm.iKeyEx/deb/System/Library/PreferenceBundles/iKeyEx.bundle/`.
 
-|| *Key*                           || *el* || *fi* || *it* || *ja* || *ru* || *tr* ||
-|| Keyboards for Current Language  ||      || ✓    || ✓    || ✓   || ✓    || ✓    ||
-|| iKeyEx Keyboards                ||      || ✓    || ✓    || ✓   || ✓    || ✓    ||
-|| Other Built-in Keyboards        ||      || ✓    || ✓    || ✓   || ✓    || ✓    ||
-|| Clear layout cache              ||      || ✓    ||      || ✓    ||      ||      ||
-|| Clear lookup cache (!WordTrie)  ||      || ✓    ||      || ✓    ||      ||      ||
-|| Clear image cache               ||      || ✓    ||      || ✓    ||      ||      ||
-|| `CLEAR_IMAGE_CACHE_DESCRIPTION` ||      || ✓    ||      ||      ||      ||      ||
+|| *Key*                           || *de* || *el* || *fi* || *it* || *ja* || *nl* || *ru* || *tr* ||
+|| Keyboards for Current Language  || ✓    ||      || ✓    || ✓    || ✓   || ✓    || ✓    || ✓    ||
+|| iKeyEx Keyboards                || ✓    ||      || ✓    || ✓    || ✓   || ✓    || ✓    || ✓    ||
+|| Other Built-in Keyboards        || ✓    ||      || ✓    || ✓    || ✓   || ✓    || ✓    || ✓    ||
+|| Clear layout cache              ||      ||      || ✓    || ✓    || ✓    ||      || ✓    ||      ||
+|| Clear lookup cache (!WordTrie)  ||      ||      || ✓    || ✓    || ✓    ||      ||      ||      ||
+|| Clear image cache               ||      ||      || ✓    || ✓    || ✓    ||      || ✓    ||      ||
+|| `CLEAR_IMAGE_CACHE_DESCRIPTION` ||      ||      || ✓    || ✓    ||      ||      || ✓    ||      ||
 
 Note: the complete message of `CLEAR_IMAGE_CACHE_DESCRIPTION` is _"iKeyEx caches some generated images for performance. However, if you change theme you must clear the cache to sync with it."_
 
@@ -32,25 +32,25 @@ Note: the complete message of `CLEAR_IMAGE_CACHE_DESCRIPTION` is _"iKeyEx caches
 
 The _lproj_'s are located in `/svn/trunk/hk.kennytm.hClipboard/deb/Library/iKeyEx/Keyboards/hClipboard.keyboard/` and `/svn/trunk/hk.kennytm.hClipboard/deb/Library/iKeyEx/Keyboards/hClipboard.keyboard/Preferences.bundle/`.
 
-|| *Key*                               || *el* || *fi* || *it* || *ja* || *ru* || *tr* ||
-|| Copy                                || ✓    || ✓    || ✓   ||      ||      || ✓    ||
-|| Select from here...                 || ✓    || ✓    || ✓   ||      ||      || ✓    ||
-|| Select to here and copy             || ✓    || ✓    || ✓   ||      ||      || ✓    ||
-|| Move to beginning                   || ✓    || ✓    || ✓   ||      ||      || ✓    ||
-|| Move to end                         || ✓    || ✓    || ✓   ||      ||      || ✓    ||
-|| Switch to Clipboard                 || ✓    || ✓    || ✓   ||      ||      || ✓    ||
-|| Switch to Templates                 || ✓    || ✓    || ✓   ||      ||      || ✓    ||
-|| Add to templates                    || ✓    || ✓    || ✓   ||      ||      || ✓    ||
-|| Select to here and add to templates || ✓    || ✓    || ✓   ||      ||      || ✓    ||
-|| Clipboard is empty                  || ✓    || ✓    || ✓   ||      ||      || ✓    ||
-|| No templates                        || ✓    || ✓    || ✓   ||      ||      || ✓    ||
-|| <Secure Text `%u` chars>            ||      || ✓    ||      ||      ||      ||      ||
-|| Cannot paste                        ||      || ✓    ||      ||      ||      ||      ||
-|| `SECURITY_BREACH_MESSAGE`           ||      || ✓    ||      ||      ||      ||      ||
-|| Undo                                ||      ||      ||      ||      ||      ||      ||
-|| Redo                                ||      ||      ||      ||      ||      ||      ||
-|| Toggle editing mode                 ||      ||      ||      ||      ||      ||      ||
-|| Cut                                 ||      ||      ||      ||      ||      ||      ||
-|| Delete                              ||      ||      ||      ||      ||      ||      ||
+|| *Key*                               || *de* || *el* || *fi* || *it* || *ja* || *nl* || *ru* || *tr* ||
+|| Copy                                ||      || ✓    || ✓    || ✓   ||      ||      ||      || ✓    ||
+|| Select from here...                 ||      || ✓    || ✓    || ✓   ||      ||      ||      || ✓    ||
+|| Select to here and copy             ||      || ✓    || ✓    || ✓   ||      ||      ||      || ✓    ||
+|| Move to beginning                   ||      || ✓    || ✓    || ✓   ||      ||      ||      || ✓    ||
+|| Move to end                         ||      || ✓    || ✓    || ✓   ||      ||      ||      || ✓    ||
+|| Switch to Clipboard                 ||      || ✓    || ✓    || ✓   ||      ||      ||      || ✓    ||
+|| Switch to Templates                 ||      || ✓    || ✓    || ✓   ||      ||      ||      || ✓    ||
+|| Add to templates                    ||      || ✓    || ✓    || ✓   ||      ||      ||      || ✓    ||
+|| Select to here and add to templates ||      || ✓    || ✓    || ✓   ||      ||      ||      || ✓    ||
+|| Clipboard is empty                  ||      || ✓    || ✓    || ✓   ||      ||      ||      || ✓    ||
+|| No templates                        ||      || ✓    || ✓    || ✓   ||      ||      ||      || ✓    ||
+|| <Secure Text `%u` chars>            ||      ||      || ✓    || ✓   ||      ||      ||      ||      ||
+|| Cannot paste                        ||      ||      || ✓    || ✓   ||      ||      ||      ||      ||
+|| `SECURITY_BREACH_MESSAGE`           ||      ||      || ✓    || ✓   ||      ||      ||      ||      ||
+|| Undo                                ||      ||      || ✓    || ✓   ||      ||      ||      ||      ||
+|| Redo                                ||      ||      || ✓    || ✓   ||      ||      ||      ||      ||
+|| Toggle editing mode                 ||      ||      || ✓    || ✓   ||      ||      ||      ||      ||
+|| Cut                                 ||      ||      || ✓    || ✓   ||      ||      ||      ||      ||
+|| Delete                              ||      ||      || ✓    || ✓   ||      ||      ||      ||      ||
 
 Note: the complete message of `SECURITY_BREACH_MESSAGE` is _"Cannot put secure data into non-secure text fields."_.
