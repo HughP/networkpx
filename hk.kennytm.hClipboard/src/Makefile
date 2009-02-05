@@ -37,9 +37,20 @@ Options=-lobjc \
 Sources=datasource.m controller.m views.m clipboard.m $(CommandSrcPath)/CMLUndoManager.m $(CommandSrcPath)/CMLSetSelection.m
 Target=../deb/Library/iKeyEx/Keyboards/hClipboard.keyboard/hClipboard
 
+PrefsSources=prefs.m
+PrefsTarget=../deb/Library/iKeyEx/Keyboards/hClipboard.keyboard/Preferences.bundle/hClipboard
+PrefsOptions=-framework Preferences
+
+all: $(Target) $(PrefsTarget)
+
 $(Target):	$(Sources)
 	$(Compiler) $(Options) -o $@ $^
 	$(CodeSign) $@
 
+$(PrefsTarget):	$(PrefsSources)
+	$(Compiler) $(Options) $(PrefsOptions) -o $@ $^
+	$(CodeSign) $@
+
 clean:
 	rm $(Target)
+	rm $(PrefsTarget)

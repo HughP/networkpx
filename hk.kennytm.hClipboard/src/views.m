@@ -282,7 +282,8 @@
 											 target:controller
 											 action:@selector(moveToBeginning)];
 		[calloutShower registerButton:btn withCalloutString:[thisBundle localizedStringForKey:@"Move to beginning" value:nil table:nil]];
-		[UIKBSound registerButton:btn];
+		if (soundEffect)
+			[UIKBSound registerButton:btn];
 		
 		btn = [toolbar addButtonWithImage:_UIImageWithName(@"UIButtonBarNextSlide.png")
 								   target:controller
@@ -295,7 +296,8 @@
 									   target:controller
 									   action:@selector(undo)];
 		[calloutShower registerButton:undoBtn withCalloutString:[thisBundle localizedStringForKey:@"Undo" value:nil table:nil]];
-		[UIKBSound registerButton:undoBtn];
+		if (soundEffect)
+			[UIKBSound registerButton:undoBtn];
 		
 		btn = [toolbar addButtonWithImage:_UIImageWithName(@"UIButtonBarInfo.png")
 								   target:controller

@@ -1,6 +1,5 @@
 {
 	CFBundleDisplayName = iKeyEx;
 	CFBundleExecutable = iKeyEx;
-	NSPrincipleClass = iKeyExListController;
 	PHAddToSettings = YES;
 }

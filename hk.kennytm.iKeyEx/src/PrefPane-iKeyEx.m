@@ -34,6 +34,9 @@
 #import <Preferences/PSSpecifier.h>
 #import <Foundation/Foundation.h>
 #import <iKeyEx/common.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>	// chown
 
 @interface iKeyExClearCacheListController : PSListController {}
 -(NSArray*)specifiers;
@@ -84,6 +87,7 @@
 @interface iKeyExListController : PSListController {}
 -(NSArray*)specifiers;
 -(NSString*)keyboardsValue:(PSSpecifier*)spec;
+-(void)chmod;
 @end
 
 @implementation iKeyExListController
@@ -118,6 +122,7 @@
 				[curSpec setObject:[[@"../../.."iKeyEx_KeyboardsPath stringByAppendingPathComponent:keyboardBundleName]
 																	 stringByAppendingPathComponent:prefBundleName]
 							forKey:@"bundle"];
+				[curSpec setObject:kCFBooleanTrue forKey:@"isController"];
 				insertCell = YES;
 			} 
 			if ([layoutMethod isKindOfClass:[NSString class]] && ([layoutMethod hasSuffix:@".plist"] || [layoutMethod hasSuffix:@".sublayout"])) {
@@ -150,5 +155,27 @@
 
 -(NSString*)keyboardsValue:(PSSpecifier*)spec {
 	return [NSString stringWithFormat:@"%d", [[[NSUserDefaults standardUserDefaults] arrayForKey:@"AppleKeyboards"] count]];
+}
+
+-(void)chmod {
+	system("/usr/bin/iKeyEx-KBMan fixperm");
+}
+
+-(void)clearImageCache {
+	NSFileManager* man = [NSFileManager defaultManager];
+	NSString* oldPath = [man currentDirectoryPath];
+	[man changeCurrentDirectoryPath:iKeyEx_DataDirectory];
+	NSArray* files = [man contentsOfDirectoryAtPath:@"." error:NULL];
+	NSError* error = nil;
+	// check one by one if the file has the desired prefix. If yes, delete that file.
+	for (NSString* filename in files) {
+		if ([filename hasPrefix:iKeyEx_CachePrefix] && [@"png" isEqualToString:[filename pathExtension]]) {
+			if (![man removeItemAtPath:filename error:&error]) {
+				NSLog(@"Cannot remove %@ when clearing image cache: %@", filename, error);
+				error = nil;
+			}
+		}
+	}
+	[man changeCurrentDirectoryPath:oldPath];
 }
 @end

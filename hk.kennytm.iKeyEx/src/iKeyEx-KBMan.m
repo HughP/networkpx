@@ -42,6 +42,7 @@ Available commands:\n\
 \tremove      Remove the specified keyboard from the preferences.\n\
 \tremoveall   Remove all iKeyEx keyboards from the preferences.\n\
 \tpurge       Clear automatically generated cache of the specified keyboard.\n\
+\tfixperm     Fix the owner and permission in the /var/mobile/Library/Keyboard/ folder.\n\
 <kbid> is same as the input mode name without the \"iKeyEx:\" prefix.";
 
 #define GlobalPreferences @"/var/mobile/Library/Preferences/.GlobalPreferences.plist"
@@ -169,6 +170,38 @@ int main (int argc, const char* argv[]) {
 				
 				[appleKeyboards release];
 			}
+			
+		} else if (!strcmp("fixperm", argv[1])) {
+			
+			NSError* error = nil;
+			NSFileManager* man = [NSFileManager defaultManager];
+			NSString* oldPath = [man currentDirectoryPath];
+			[man changeCurrentDirectoryPath:@"/var/mobile/Library/Keyboard/"];
+			
+			NSDictionary* attr = [NSDictionary dictionaryWithObjectsAndKeys:
+								  @"mobile", NSFileOwnerAccountName,
+								  @"mobile", NSFileGroupOwnerAccountName,
+								  [NSNumber numberWithUnsignedLong:0755], NSFilePosixPermissions,
+								  nil];
+			if (![man setAttributes:attr ofItemAtPath:@"." error:&error]) {
+				NSLog(@"Cannot change owner and permission of \".\": %@", error);
+				error = nil;
+			}
+			
+			attr = [NSDictionary dictionaryWithObjectsAndKeys:
+					@"mobile", NSFileOwnerAccountName,
+					@"mobile", NSFileGroupOwnerAccountName,
+					[NSNumber numberWithUnsignedLong:0644], NSFilePosixPermissions,
+					nil];
+			
+			NSArray* files = [man contentsOfDirectoryAtPath:@"." error:NULL];
+			for (NSString* filename in files) {
+				if (![man setAttributes:attr ofItemAtPath:filename error:&error]) {
+					NSLog(@"Cannot change owner and permission of \"%@\": %@", filename, error);
+					error = nil;
+				}
+			}
+			[man changeCurrentDirectoryPath:oldPath];
 			
 		} else {
 			printf("Unregconized command: %s", argv[1]);

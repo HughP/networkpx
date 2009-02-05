@@ -207,7 +207,7 @@
 	NSObject<UIKeyboardInput>* del = [UIKeyboardImpl sharedInstance].delegate;
 	NSRange curSelection = del.selectionRange;
 	// ignore selection when security level says disables selection.
-	if (curSelection.length > 0 && securityLevel == hCSecurityLevelFree)
+	if (curSelection.length > 0 && (!del.textInputTraits.secureTextEntry || securityLevel == hCSecurityLevelFree))
 		[self copyText:[del.text substringWithRange:curSelection]];
 	else
 		[self copyText:del.text];
