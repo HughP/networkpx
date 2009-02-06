@@ -1,0 +1,67 @@
+#summary (Theme Makers) Creating a theme for iKeyEx
+#labels Phase-Implementation
+
+<wiki:toc/>
+
+= Introduction =
+
+To support custom keyboard layouts, iKeyEx needs to take the original keyboard images apart and reconstruct them. But the metrics are computed using the built-in images, which may look bad when a custom theme is used.
+
+  http://x90.xanga.com/f8082b5376c78232415223/w183323008.jpg
+  
+  A keyboard theme totally disrupted in iKeyEx.
+
+Starting from iKeyEx v0.1-3, !WinterBoard theming is supported, so keyboard themes can look good in iKeyEx too.
+
+= Theming =
+
+You can add these 16 images to support iKeyEx:
+<code>
+/
+ Library/
+  Themes/
+   <Your Awesome Theme>.theme/
+    *Folders*/
+     *UIKit.framework*/
+      *kb-std-background.png* 
+      _kb-std-background-transparent.png
+      kb-std-background-landscape.png
+      kb-std-background-landscape-transparent.png_ 
+      *kb-std-key.png* 
+      _kb-std-key-transparent.png
+      kb-std-key-landscape.png
+      kb-std-key-landscape-transparent.png_ 
+      *kb-std-shift-key.png* 
+      _kb-std-shift-key-transparent.png
+      kb-std-shift-key-landscape.png
+      kb-std-shift-key-landscape-transparent.png_ 
+      *kb-std-delete-key.png* 
+      _kb-std-delete-key-transparent.png
+      kb-std-delete-key-landscape.png
+      kb-std-delete-key-landscape-transparent.png_ 
+</code>
+These images *must* reside in `Folders/UIKit.framework/`. Putting them in `UIImages/` does not work.
+
+You can leave out a few images. If iKeyEx can't find that image, it will return to the original composition approach.
+
+== kb-std-background.png ==
+
+This is the background of the keyboard, without any buttons on it. Just a plain background image. 
+
+The size should be 320×216 for portrait images, and 480×162 for landscape images. iKeyEx will tile the images if the size does not fit.
+
+== kb-std-key.png ==
+
+This is the image for a plain button. The usual sizes are 32×44 for portrait and 47×38 for landscape, but you should make it as small as possible.
+
+The key should be stretchable both horizontally and vertically. The left cap width will be exactly half the image width, and the top cap height will be the image height less 10 px.
+
+== kb-std-shift.png & -delete.png ==
+
+These are the shift and delete keys. Both of them must have size 42×44 for portrait and 62×38 for landscape.
+
+When the size does not match, these images will be rescaled. Therefore, do not rely on the sharpness of these buttons.
+
+== Font colors ==
+
+Font colors of the keyboard will be automatically calculated to maximize the contrast.
