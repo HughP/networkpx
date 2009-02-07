@@ -23,44 +23,44 @@ You can add these 16 images to support iKeyEx:
    <Your Awesome Theme>.theme/
     *Folders*/
      *UIKit.framework*/
-      *kb-std-background.png* 
-      _kb-std-background-transparent.png
-      kb-std-background-landscape.png
-      kb-std-background-landscape-transparent.png_ 
-      *kb-std-key.png* 
-      _kb-std-key-transparent.png
-      kb-std-key-landscape.png
-      kb-std-key-landscape-transparent.png_ 
-      *kb-std-shift-key.png* 
-      _kb-std-shift-key-transparent.png
-      kb-std-shift-key-landscape.png
-      kb-std-shift-key-landscape-transparent.png_ 
-      *kb-std-delete-key.png* 
-      _kb-std-delete-key-transparent.png
-      kb-std-delete-key-landscape.png
-      kb-std-delete-key-landscape-transparent.png_ 
+      *kb-ext-background.png* 
+      _kb-ext-background-transparent.png
+      kb-ext-background-landscape.png
+      kb-ext-background-landscape-transparent.png_ 
+      *kb-ext-key.png* 
+      _kb-ext-key-transparent.png
+      kb-ext-key-landscape.png
+      kb-ext-key-landscape-transparent.png_ 
+      *kb-ext-shift-key.png* 
+      _kb-ext-shift-key-transparent.png
+      kb-ext-shift-key-landscape.png
+      kb-ext-shift-key-landscape-transparent.png_ 
+      *kb-ext-delete-key.png* 
+      _kb-ext-delete-key-transparent.png
+      kb-ext-delete-key-landscape.png
+      kb-ext-delete-key-landscape-transparent.png_ 
 </code>
 These images *must* reside in `Folders/UIKit.framework/`. Putting them in `UIImages/` does not work.
 
 You can leave out a few images. If iKeyEx can't find that image, it will return to the original composition approach.
 
-== kb-std-background.png ==
+== kb-ext-background.png ==
 
 This is the background of the keyboard, without any buttons on it. Just a plain background image. 
 
 The size should be 320×216 for portrait images, and 480×162 for landscape images. iKeyEx will tile the images if the size does not fit.
 
-== kb-std-key.png ==
+== kb-ext-key.png ==
 
 This is the image for a plain button. The usual sizes are 32×44 for portrait and 47×38 for landscape, but you should make it as small as possible.
 
-The key should be stretchable both horizontally and vertically. The left cap width will be exactly half the image width, and the top cap height will be the image height less 10 px.
+The key should be stretchable both horizontally and vertically. The left cap width will be exactly half the image width (w/2), and the top cap height will be the image height less 10 px (h-10).
 
-== kb-std-shift.png & -delete.png ==
+== kb-ext-shift.png & -delete.png ==
 
 These are the shift and delete keys. Both of them must have size 42×44 for portrait and 62×38 for landscape.
 
-When the size does not match, these images will be rescaled. Therefore, do not rely on the sharpness of these buttons.
+When the size does not match, the shift key will be stretched with a right cap of 7 px for portrait and 8 px for landscape, and bottom cap of 6 px in both orientations.
 
 == Font colors ==
 
