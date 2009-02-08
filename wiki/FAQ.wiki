@@ -9,5 +9,9 @@ You should be able to find iKeyEx in Cydia -> Manage -> Packages.
 
 If not, try to switch on "Keyboard Extension" in Sections -> Edit.
 
+= How to enable T9 in !MultiTap? =
+
+T9 is a [http://www.google.com/patents?id=PmgCAAAAEBAJ patented] technology and therefore I won't official include it in !MultiTap (unless all software patents are considered invalid). But there's someone else is working on T9. See issue 36 for detail. 
+
 = Is ℏClipboard compatible with Clippy? =
 Yes. Currently no conflicts were identified. 
