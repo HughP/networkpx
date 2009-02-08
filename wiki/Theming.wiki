@@ -31,14 +31,6 @@ You can add these 16 images to support iKeyEx:
       _kb-ext-key-transparent.png
       kb-ext-key-landscape.png
       kb-ext-key-landscape-transparent.png_ 
-      *kb-ext-shift-key.png* 
-      _kb-ext-shift-key-transparent.png
-      kb-ext-shift-key-landscape.png
-      kb-ext-shift-key-landscape-transparent.png_ 
-      *kb-ext-delete-key.png* 
-      _kb-ext-delete-key-transparent.png
-      kb-ext-delete-key-landscape.png
-      kb-ext-delete-key-landscape-transparent.png_ 
 </code>
 These images *must* reside in `Folders/UIKit.framework/`. Putting them in `UIImages/` does not work.
 
@@ -52,16 +44,72 @@ The size should be 320×216 for portrait images, and 480×162 for landscape imag
 
 == kb-ext-key.png ==
 
-This is the image for a plain button. The usual sizes are 32×44 for portrait and 47×38 for landscape, but you should make it as small as possible.
+This is the image for a plain button (key cap). The usual sizes are 30×43 for portrait and 43×38 for landscape.
 
-The key should be stretchable both horizontally and vertically. The left cap width will be exactly half the image width (w/2), and the top cap height will be the image height less 10 px (h-10).
+These images will be assumed to have a boundary of 7 px. The center part will be stretched or shrunk.
 
-== kb-ext-shift.png & -delete.png ==
+= Default Theme Construction Algorithm =
 
-These are the shift and delete keys. Both of them must have size 42×44 for portrait and 62×38 for landscape.
+If the kb-ext-XXXX.png are not provided, they will be extracted and cached from the standard images. The following images will be used:
+ * `kb-std-azerty.png`
+ * `kb-std-azerty-transparent.png`
+ * `kb-std-landscape-azerty.png`
+ * `kb-std-landscape-transparent-azerty.png`
+ * `kb-std-sms.png`
+ * `kb-std-active-bg-main.png`
+These images will be transformed to ones usable in iKeyEx with the algorithm follows: 
 
-When the size does not match, the shift key will be stretched with a right cap of 7 px for portrait and 8 px for landscape, and bottom cap of 6 px in both orientations.
+== Background ==
+`kb-ext-background.png`:
+  A strip of size 2×172 at origin (159,0) and a strip of size 2×44 at origin (79,172) will be extracted from `kb-std-azerty.png` and stacked to form the final 2×216 image.
 
-== Font colors ==
+`kb-ext-background-transparent.png`:
+  A strip of size 2×216 at origin (159,0) will be extracted from `kb-std-azerty-transparent.png` to form the final 2×216 image.
 
-Font colors of the keyboard will be automatically calculated to maximize the contrast.
+`kb-ext-background-landscape.png` & `kb-ext-background-landscape-transparent.png`:
+  Strips of sizes 4×162 at origins (238,0) will be extracted from `kb-std-landscape-azerty.png` and `kb-std-landscape-transparent-azerty.png` respectively to form the final 4×162 images.
+
+== Key ==
+`kb-ext-key.png` & `kb-ext-key-transparent.png`:
+  The "I" keys at (225,10) with sizes 30×43 will be extracted from `kb-std-azerty.png` and `kb-std-azerty-transparent.png`. Then, within the "I" keys, a rectangle of size 4×17 at (9,13) will be copied to (13,13) to cover the letter "I". Finally the mask at `/Library/iKeyEx/Masks/key.png` will be applied to the image with a boundary inset of 7 px.
+
+`kb-ext-key-landscape.png` & `kb-ext-key-transparent-landscape.png`:
+  Similar to above except the metrics are replaced as: (336,4); 43×38; 4×17; (15,9); (19,9); 7.
+
+== Shift (⇧) ==
+
+`kb-ext-shift.png` & `kb-ext-shift-disabled.png`:
+  The subimages of `kb-std-azerty.png` and `kb-std-sms.png` respectively at (0,118) with size 42×43 will be extracted. The key mask will also be applied.
+`kb-ext-shift-active.png`:
+  The image `kb-std-shift.png` will be expanded to 42×43 with an offset of (1,1) Then the key mask will be applied on it.
+`kb-ext-shift-locked.png`:
+  The image `kb-std-shift-locked.png` will be drawn on top of `kb-ext-shift.png` with an offset of (1,1).
+
+`kb-ext-shift-landscape.png`:
+  The subimage of `kb-std-landscape-azerty.png` at (6,84) with size 58×38 will be extracted. The key mask is then applied.
+`kb-ext-shift-active-landscape.png`:
+  Note that `kb-std-landscape-shift.png` does not have the same size as the shift key we want. Therefore, in addition to cropping we also need to scale.
+  To construct this image, a canvas of size 58×38 will be created. Then `kb-std-landscape-shift.png` will be drawn in the rectangle {(-6, 0), 76 × 42.75}. Finally the key mask will be applied on it to form the final image.
+`kb-ext-shift-locked-landscape.png`:
+  `kb-std-landscape-shift-locked.png` will be drawn over `kb-ext-shift-landscape.png` in the rectangle {(-6, 0), 76 × 42.75}.
+`kb-ext-shift-disabled-landscape.png`:
+  The subimage of `kb-std-landscape-sms-shift.png` of size 58×38 will be extracted at origin (6,0). The key mask is then applied.
+
+The transparent portrait versions will use the standard ones. The landscape ones will be cropped to {(6,0), 58×38}. 
+
+== Delete (⌫) ==
+`kb-ext-delete.png` & `kb-ext-delete-active.png`:
+  The subimages of `kb-std-azerty.png` and `kb-std-active-bg-main.png` respectively at (278,118) with size 42×43 will be extracted. The key mask will also be applied.
+`kb-ext-delete-landscape.png`:
+  The subimage of `kb-std-landscape-azerty.png` at (416,84) with size 57×38 will be extracted and applied with the key mask.
+`kb-ext-delete-active-landscape.png`:
+  The subimage of `kb-std-landscape-shift-active.png` at (2,0) with size 57×38 will be extracted and applied with the key mask.
+
+The transparent portrait versions will use the standard ones. The landscape ones will be cropped to {(2,0), 57×38}.
+
+== Space and Return ==
+For normal versions the original images will be used as if, while for transparent versions an etch from `kb-std(-landscape)-transparent-space-return-etch.png` will be added to the original image.
+
+= Font colors =
+
+Font colors for the text placing exactly on top of the background and generic key will be automatically calculated to maximize the contrast. This will not be done on the Return and Space keys, however, following Apple's routine. 
