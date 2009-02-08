@@ -51,6 +51,9 @@
 #define iKeyEx_DataPath iKeyEx_DataDirectory iKeyEx_DataPrefix
 #define iKeyEx_CachePrefix iKeyEx_Prefix@":cache:"
 #define iKeyEx_CachePath iKeyEx_DataDirectory iKeyEx_CachePrefix
+#define iKeyEx_InternalCachePrefix iKeyEx_CachePrefix@":iKeyEx:"
+#define iKeyEx_InternalCachePath iKeyEx_DataDirectory iKeyEx_InternalCachePrefix
+
 
 // draw text in the center of the rectangle.
 // The text size will be rescale to fit inside the rectangle totally.
@@ -71,5 +74,6 @@ NSString* iKeyExVersion();
 
 // Log UIView Hierarchy with NSLog.
 void UILogViewHierarchy (UIView* v);
+
 
 #endif

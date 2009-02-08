@@ -83,32 +83,37 @@ typedef enum UIKBShiftStyle {
 
 
 @interface UIKBStandardKeyboard : NSObject {
-	NSMutableArray* texts[4];
-	NSMutableArray* shiftedTexts[4];
-	NSUInteger counts[4];
-	NSUInteger lefts[4];
-	NSUInteger widths[4];
+	NSUInteger rows;
+	NSMutableArray** texts;
+	NSMutableArray** shiftedTexts;
+	NSUInteger* counts;
+	NSUInteger* lefts;
+	NSUInteger* widths;
 	BOOL landscape;
 	UIKeyboardAppearance keyboardAppearance;
 	CGFloat fontSize;
+	NSInteger horizontalSpacing, verticalSpacing;
 	
 	CGSize keyboardSize;
 	
 	BOOL hasSpaceKey, hasInternationalKey, hasReturnKey, hasShiftKey, hasDeleteKey;
-	CGFloat shiftKeyLeft, deleteKeyRight;
+	CGFloat shiftKeyLeft, deleteKeyRight, shiftKeyWidth, deleteKeyWidth;
 	BOOL shiftKeyEnabled;
 	UIKBShiftStyle shiftStyle;
 }
 
-@property(assign) BOOL landscape;
+@property(assign,readonly) BOOL landscape;
 @property(assign) UIKeyboardAppearance keyboardAppearance;
+@property(assign) NSUInteger rows;
 
 -(void)setArrangement:(UIKBKeyboardArrangement)arrangement;
--(void)setArrangementWithRow0:(NSUInteger)count0 row1:(NSUInteger)count1 row2:(NSUInteger)count2 row3:(NSUInteger)count3;
 -(void)setArrangementWithObject:(id)obj;
+-(void)setArrangementWithNumbers:(NSUInteger*)n count:(NSUInteger)k;
+
 -(void)setRowIndentation:(UIKBKeyboardRowIndentation)metrics;
--(void)setRowIndentationWithRow0:(NSUInteger)left0 row1:(NSUInteger)left1 row2:(NSUInteger)left2 row3:(NSUInteger)left3;
 -(void)setRowIndentationWithObject:(id)obj;
+-(void)setRowIndentationWithNumbers:(NSUInteger*)n count:(NSUInteger)k;
+
 -(void)setText:(NSString*)txt forRow:(NSUInteger)row column:(NSUInteger)col;
 -(void)setText:(NSString*)txt shifted:(NSString*)shift forRow:(NSUInteger)row column:(NSUInteger)col;
 -(void)setText:(NSString*)txt label:(NSString*)lbl popup:(NSString*)pop forRow:(NSUInteger)row column:(NSUInteger)col;
@@ -121,13 +126,17 @@ typedef enum UIKBShiftStyle {
 @property(assign) BOOL hasReturnKey;
 @property(assign) BOOL hasShiftKey;
 @property(assign) CGFloat shiftKeyLeft;
+@property(assign) CGFloat shiftKeyWidth;
 @property(assign) BOOL hasDeleteKey;
 @property(assign) CGFloat deleteKeyRight;
+@property(assign) CGFloat deleteKeyWidth;
 @property(assign) UIKBShiftStyle shiftStyle;
 @property(assign,readonly) CGSize keyboardSize;
 @property(assign) BOOL shiftKeyEnabled;
+@property(assign) NSInteger horizontalSpacing;
+@property(assign) NSInteger verticalSpacing;
 
-+(UIKBStandardKeyboard*) keyboardWithLandscape:(BOOL)landsc appearance:(UIKeyboardAppearance)appr arrangement:(UIKBKeyboardArrangement)arrangement rowIndentation:(UIKBKeyboardRowIndentation)metrics;
++(UIKBStandardKeyboard*)keyboardWithLandscape:(BOOL)landsc appearance:(UIKeyboardAppearance)appr arrangement:(UIKBKeyboardArrangement)arrangement rowIndentation:(UIKBKeyboardRowIndentation)metrics;
 
 @property(readonly,retain) UIImage* image;
 @property(readonly,retain) UIImage* shiftImage;
@@ -136,4 +145,5 @@ typedef enum UIKBShiftStyle {
 @property(readonly,retain) NSArray* keyDefinitions;
 
 +(UIKBStandardKeyboard*)keyboardWithBundle:(KeyboardBundle*)bdl name:(NSString*)name landscape:(BOOL)landsc appearance:(UIKeyboardAppearance)appr;
++(UIKBStandardKeyboard*)keyboardWithPlist:(NSDictionary*)layoutDict name:(NSString*)name landscape:(BOOL)landsc appearance:(UIKeyboardAppearance)appr;
 @end

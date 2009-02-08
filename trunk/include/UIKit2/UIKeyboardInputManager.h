@@ -5,8 +5,8 @@
  */
 
 #import <Foundation/NSObject.h>
-#import <UIKit2/CDStructures.h>
 #import <GraphicsServices/GSEvent.h>
+#import <UIKit2/UIKeyboardLayoutRoman.h>
 
 @class UIKeyboardCandidateList, UIKeyboardLayout, NSArray, NSString;
 

@@ -38,10 +38,10 @@
 
 typedef enum UIKBImageClassType {
 	UIKBImageBackground,
-	UIKBImageRow0,
-	UIKBImageRow1,
-	UIKBImageRow2,
-	UIKBImageRow3,
+	UIKBImageKey,
+	UIKBImageReserved2,
+	UIKBImageReserved3,
+	UIKBImageReserved4,
 	UIKBImageShift,
 	UIKBImageShiftActive,
 	UIKBImageShiftLocked,
@@ -53,6 +53,7 @@ typedef enum UIKBImageClassType {
 	UIKBImageReturn,
 	UIKBImageReturnActive,
 	UIKBImageReturnBlue,
+	
 	UIKBImageDelete,
 	UIKBImageDeleteActive,
 	UIKBImageABC,
@@ -65,7 +66,10 @@ typedef enum UIKBImageClassType {
 	UIKBImagePopupRight,
 	UIKBImageActiveBackground,
 	
-	UIKBImageTypesCount
+	UIKBImageTypesCount,
+	
+	UIKBImageWithLandscape = 65536,
+	UIKBImageWithTransparent = 65536*2
 } UIKBImageClassType;
 
 void UIKBInitializeImageCache();	// Call this before invoking any UIKBGetImage().

@@ -159,3 +159,5 @@ void UILogViewHierarchyWithDots(UIView* v, NSString* dots) {
 }
 
 extern void UILogViewHierarchy (UIView* v) { UILogViewHierarchyWithDots(v, @""); }
+
+

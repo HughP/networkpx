@@ -6,7 +6,6 @@
 
 #import <UIKit/UIView.h>
 #import <UIKit/UIApplication.h>
-#import <UIKit2/CDStructures.h>
 #import <CoreFoundation/CFDictionary.h>
 #import <Foundation/NSDate.h>
 #import <UIKit/UITextInputTraits.h>
