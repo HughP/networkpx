@@ -10,6 +10,7 @@
  * Fixed issue 2 (Probably). The Globe can be used to exclusively switch to iKeyEx keyboards.
  * Fixed issue 31. Auto-correction dictionaries can be recognized properly.
  * Fixed issue 42. Thanks Tomi for reporting.
+ * iKeyEx gets an preference pane. Individual keyboards can create one too (issue 30). 
  * Added localizations:
    * Italian (thanks sagitt)
    * Finnish (thanks Tomi)
@@ -20,9 +21,14 @@
 == ℏClipboard ==
  * Fixed issue 14: The clipboard order can be customized.
  * Fixed issue 23: The undo key now replaces the delete key.
+ * Fixed issue 8: Selection copy on read-only text area is now possible.
+ * Added localizations:
+   * Italian, Finnish, German and Dutch
+   * Japanese (thanks tokihide).
+ * Minor fixes.
 
 == !MultiTap ==
- * Initial release.
+ * Initial beta.
 
 == !L33tTyper ==
  * No longer crashes when typing with 2 fingers (r90).
