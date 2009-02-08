@@ -37,6 +37,7 @@
 #import <UIKit2/UIKeyboardImpl.h>
 #import <UIKit2/Constants.h>
 #import <UIKit/UIGraphics.h>
+#import <GraphicsUtilities.h>
 
 #pragma mark -
 #pragma mark Constants
@@ -48,18 +49,19 @@ static const CGSize UIKBKeyPopupSize = {44, 50};
 
 #define UIKBKey_Padding 8
 
-#define UIKBKey_height 44
-static const NSUInteger UIKBKey_tops[] = {10, 64, 118, 172, UINT_MAX};
-static const NSUInteger UIKBKey_bgArea_tops[] = {0, 64, 118, 172};
-static const NSUInteger UIKBKey_bgArea_heights[] = {64, 54, 54, 44};
+#define UIKBKey_verticalOffset_Portrait 10
+#define UIKBKey_totalHeight_Portrait 162
+#define UIKBKey_lastRowHeight_Portrait 44
+// default vertical spacing = 11.
 
-#define UIKBKey_landscape_height 38
-static const NSUInteger UIKBKey_landscape_tops[] = {4, 44, 84, 124, UINT_MAX};
-static const NSUInteger UIKBKey_landscape_bgArea_tops[] = {0, 45, 85, 125};
-static const NSUInteger UIKBKey_landscape_bgArea_heights[] = {45, 40, 40, 37};
+#define UIKBKey_verticalOffset_Landscape 5
+#define UIKBKey_totalHeight_Landscape 120
+#define UIKBKey_lastRowHeight_Landscape 37
+// default vertical spacing = 2
 
-#define UIKBKey_rows 4
-#define UIKBKey_leftMargin 5
+#define UIKBKey_rows rows
+#define UIKBKey_horizontalOffset_Portrait 0
+#define UIKBKey_horizontalOffset_Landscape 5
 
 #define UIKBKey_orientationIndentRatio (49.f/32.f)
 
@@ -113,6 +115,8 @@ static const CGPoint UIKBKey_ABC_Portrait_Painter = {0, 173};
 static const CGPoint UIKBKey_ABC_Landscape_Painter = {0, 124};
 static const CGPoint UIKBKey_International_Portrait_Painter = {43, 173};
 static const CGPoint UIKBKey_International_Landscape_Painter = {52, 124};
+
+static const GUCaps KeyCaps = {7,7,7,7};
 
 #pragma mark -
 #pragma mark Auxiliary Classes and Functions
@@ -187,9 +191,11 @@ NSArray* getItem (NSDictionary* majorDict, NSString* kbTypeKey, NSString* textTy
 @implementation UIKBStandardKeyboard
 
 @synthesize hasSpaceKey, hasInternationalKey, hasReturnKey, hasShiftKey, hasDeleteKey;
-@synthesize shiftKeyLeft, deleteKeyRight;
+@synthesize shiftKeyLeft, deleteKeyRight, shiftKeyWidth, deleteKeyWidth;
 @synthesize shiftStyle, shiftKeyEnabled;
 @synthesize keyboardAppearance, keyboardSize;
+@synthesize horizontalSpacing, verticalSpacing;
+@synthesize rows;
 
 //-------------------------------------
 // Obtain the keyboard image of this keyboard.
@@ -198,47 +204,94 @@ NSArray* getItem (NSDictionary* majorDict, NSString* kbTypeKey, NSString* textTy
 -(UIImage*)imageIsShifted:(BOOL)shifted {
 	CGRect frm = CGRectMake(0, 0, keyboardSize.width, keyboardSize.height);
 	
-	UIGraphicsBeginImageContext(keyboardSize);
-	CGContextRef ctx = UIGraphicsGetCurrentContext();
+	// Create 2 contexts, one for drawing the images, and another for text.
+	// These 2 will be combined in the later stage.
+	UIGraphicsBeginImageContext(frm.size);
+	CGContextRef c = UIGraphicsGetCurrentContext();
 	
-    CGContextClearRect(ctx, frm);
-	
-	UIImage* bgImage = UIKBGetImage(UIKBImageBackground, keyboardAppearance, landscape);
-	[bgImage drawInRect:frm];
-	
+	// for some reason drawAsPattern: gives very very very wrong result.
+	CGContextSaveGState(c);
+	CGContextScaleCTM(c, 1, -1);
+	CGContextTranslateCTM(c, 0, -frm.size.height);
+	CGContextDrawTiledImage(c, frm, UIKBGetImage(UIKBImageBackground, keyboardAppearance, landscape).CGImage);
+	CGContextRestoreGState(c);
+
+	// Compute the height of key for each row.
 	NSUInteger height;
-	const NSUInteger* tops;
+	NSUInteger curTop;
 	if (landscape) {
-		tops = UIKBKey_landscape_tops;
-		height = UIKBKey_landscape_height;
+		height = UIKBKey_totalHeight_Landscape / (rows-1) - verticalSpacing;
+		curTop = UIKBKey_verticalOffset_Landscape;
 	} else {
-		tops = UIKBKey_tops;
-		height = UIKBKey_height;
+		height = UIKBKey_totalHeight_Portrait / (rows-1) - verticalSpacing;
+		curTop = UIKBKey_verticalOffset_Portrait;
 	}
 	
 	// TODO: Allow customization of label font.
-	UIFont* labelFont = [UIFont boldSystemFontOfSize:fontSize];
-	
+	UIFont* labelFont = [UIFont boldSystemFontOfSize:(fontSize*3)/(rows-1)];
+	CGImageRef keyImg = UIKBGetImage(UIKBImageKey, keyboardAppearance, landscape).CGImage;
 	NSMutableArray** myTexts = shifted ? shiftedTexts : texts;
 	
-	for (NSUInteger row = 0; row < UIKBKey_rows; ++ row) {
+	
+	
+	// do actual drawing.
+	for (NSUInteger row = 0; row < rows-1; ++ row) {
 		NSUInteger curleft = lefts[row];
 		if (landscape)
-			curleft += UIKBKey_leftMargin;
+			curleft += UIKBKey_horizontalOffset_Landscape;
 		
-		UIImage* keyImg = UIKBGetImage(UIKBImageRow0+row, keyboardAppearance, landscape);
+		if (widths[row] <= 0)
+			continue;
 		
-		CGRect imageFrame = CGRectMake(0, tops[row], widths[row], height);
+		CGRect imageFrame = CGRectMake(horizontalSpacing/2, curTop, widths[row], height);
+		CGImageRef keyImgThisRowX = GUImageCreateWithCaps(keyImg, CGRectMake(0, 0, widths[row], height), KeyCaps);
+		UIImage* keyImgThisRow = GUCreateUIImageAndRelease(keyImgThisRowX);
 		
-		for (NSUInteger i = 0; i < counts[row]; ++i, curleft += widths[row]) {
+		for (NSUInteger i = 0; i < counts[row]; ++i, curleft += widths[row]+horizontalSpacing) {
+			if (keyboardAppearance == UIKeyboardAppearanceAlert)
+				[keyImgThisRow drawAtPoint:CGPointMake(curleft, curTop) blendMode:kCGBlendModeDestinationOut alpha:1];
+			[keyImgThisRow drawAtPoint:CGPointMake(curleft, curTop)];
 			imageFrame.origin.x = curleft;
-			[keyImg drawInRect:imageFrame blendMode:kCGBlendModeCopy alpha:1];
 			
 			NSString* lbl = ((UIKBKeyTexts*)[myTexts[row] objectAtIndex:i]).label;
 			
 			// TODO: Allow customization of label color.
-			[[UIColor blackColor] setFill];
-			drawInCenter(lbl, CGRectInset(imageFrame, UIKBKey_Padding, UIKBKey_Padding), labelFont);
+			//[[UIColor blackColor] setFill];
+			drawInCenter(lbl, imageFrame, labelFont);
+		}
+		
+		curTop += height + verticalSpacing;
+	}
+	curTop -= height + verticalSpacing;
+	
+	// last row is treated differently.
+	{
+		NSInteger curleft = lefts[rows-1]+horizontalSpacing/2;
+		if (landscape)
+			curleft += UIKBKey_horizontalOffset_Landscape;
+		
+		if (widths[rows-1] > 0) {
+			CGRect imageFrame;
+			if (landscape)
+				imageFrame = CGRectMake(curleft, UIKBKey_verticalOffset_Landscape + UIKBKey_totalHeight_Landscape, widths[rows-1], UIKBKey_lastRowHeight_Landscape);
+			else
+				imageFrame = CGRectMake(curleft, UIKBKey_verticalOffset_Portrait + UIKBKey_totalHeight_Portrait, widths[rows-1], UIKBKey_lastRowHeight_Portrait);
+			
+			CGImageRef keyImgThisRowX = GUImageCreateWithCaps(keyImg, CGRectMake(0, 0, widths[rows-1], height), KeyCaps);
+			UIImage* keyImgThisRow = GUCreateUIImageAndRelease(keyImgThisRowX);
+			
+			for (NSUInteger i = 0; i < counts[rows-1]; ++i, curleft += widths[rows-1]+horizontalSpacing) {
+				if (keyboardAppearance == UIKeyboardAppearanceAlert)
+					[keyImgThisRow drawAtPoint:CGPointMake(curleft, imageFrame.origin.y) blendMode:kCGBlendModeDestinationOut alpha:1];
+				[keyImgThisRow drawAtPoint:CGPointMake(curleft, imageFrame.origin.y)];
+				imageFrame.origin.x = curleft;
+							
+				NSString* lbl = ((UIKBKeyTexts*)[myTexts[rows-1] objectAtIndex:i]).label;
+				
+				// TODO: Allow customization of label color.
+				[[UIColor blackColor] setFill];
+				drawInCenter(lbl, CGRectInset(imageFrame, UIKBKey_Padding, UIKBKey_Padding), labelFont);
+			}
 		}
 	}
 	
@@ -252,15 +305,17 @@ NSArray* getItem (NSDictionary* majorDict, NSString* kbTypeKey, NSString* textTy
 		} else {
 			shiftImg = UIKBGetImage(UIKBImageShift, keyboardAppearance, landscape);
 		}
-		CGBlendMode blendMode = shiftKeyEnabled ? kCGBlendModeCopy : kCGBlendModeNormal;
-		[shiftImg drawAtPoint:CGPointMake(shiftKeyLeft + (landscape ? UIKBKey_leftMargin : 0), tops[2]) blendMode:blendMode alpha:1];
+		[GUCreateUIImageAndRelease(GUImageCreateWithCaps(shiftImg.CGImage, CGRectMake(0,0,shiftKeyWidth,height), KeyCaps))
+		 drawAtPoint:CGPointMake(shiftKeyLeft + (landscape ? UIKBKey_horizontalOffset_Landscape : 0), curTop)];
 	}
 	
 	if (hasDeleteKey) {
-		UIImage* deleteImg = UIKBGetImage(UIKBImageDelete, keyboardAppearance, landscape);
-		[deleteImg drawAtPoint:CGPointMake(keyboardSize.width - deleteImg.size.width - deleteKeyRight, tops[2])];
+		[GUCreateUIImageAndRelease(GUImageCreateWithCaps(UIKBGetImage(UIKBImageDelete, keyboardAppearance, landscape).CGImage,
+														 CGRectMake(0,0,deleteKeyWidth,height), KeyCaps))
+		 drawAtPoint:CGPointMake(keyboardSize.width-deleteKeyWidth-deleteKeyRight-(landscape ? UIKBKey_horizontalOffset_Landscape : 0), curTop)];
 	}
 	
+	// these images don't need to be rescaled, so directly draw on the text layer.
 	if (hasInternationalKey) {
 		UIImage* abcImg = UIKBGetImage(UIKBImageABC, keyboardAppearance, landscape);
 		[abcImg drawAtPoint:(landscape ? UIKBKey_ABC_Landscape_Painter : UIKBKey_ABC_Portrait_Painter)];
@@ -272,11 +327,16 @@ NSArray* getItem (NSDictionary* majorDict, NSString* kbTypeKey, NSString* textTy
 		UIImage* spaceImg = UIKBGetImage(UIKBImageSpace, keyboardAppearance, landscape);
 		[spaceImg drawAtPoint:(landscape ? UIKBKey_Space_Landscape_Rect.origin : UIKBKey_Space_Portrait_Rect.origin)];
 	}
-	
+
 	if (hasReturnKey) {
 		UIImage* returnImg = UIKBGetImage(UIKBImageReturn, keyboardAppearance, landscape);
 		[returnImg drawAtPoint:(landscape ? UIKBKey_Return_Landscape_Rect.origin : UIKBKey_Return_Portrait_Rect.origin)];
 	}
+	
+	//CGImageRef img = CGBitmapContextCreateImage(c);
+	//[[UIImage imageWithCGImage:img] drawAtPoint:CGPointZero];
+	//CGImageRelease(img);
+	//CGContextRelease(c);
 	
 	UIImage* retImg = UIGraphicsGetImageFromCurrentImageContext();
 	UIGraphicsEndImageContext();
@@ -298,7 +358,7 @@ NSArray* getItem (NSDictionary* majorDict, NSString* kbTypeKey, NSString* textTy
 		return nil;
 	
 	CGFloat maxWidth = UIKBKeyPopupSize.width;
-	for (NSUInteger row = 0; row < UIKBKey_rows; ++ row)
+	for (NSUInteger row = 0; row < rows; ++ row)
 		if (widths[row] > maxWidth+2*UIKBKey_Padding)
 			maxWidth = widths[row]-2*UIKBKey_Padding;
 	
@@ -333,53 +393,59 @@ NSArray* getItem (NSDictionary* majorDict, NSString* kbTypeKey, NSString* textTy
 // Update the metrics.
 //-------------------------------------
 -(void)updateArrangment {
-	CGFloat fullwidths[UIKBKey_rows];
+	CGFloat* fullwidths = malloc(sizeof(CGFloat)*rows);
 	CGFloat curWidth = keyboardSize.width;
 	if (landscape)
-		curWidth -= 2*UIKBKey_leftMargin;
+		curWidth -= 2*UIKBKey_horizontalOffset_Landscape;
 	
-	for (NSUInteger i = 0; i < UIKBKey_rows; ++ i)
+	for (NSUInteger i = 0; i < rows; ++ i)
 		fullwidths[i] = curWidth;
-	
 	fontSize = UIKBKeyMaxFontSize;
 	
-	for (NSUInteger row = 0; row < UIKBKey_rows; ++ row)
+	for (NSUInteger row = 0; row < rows; ++ row)
 		fullwidths[row] -= 2*lefts[row];
 	
 	// compute required button widths
-	for (NSUInteger row = 0; row < UIKBKey_rows; ++ row) {
+	for (NSUInteger row = 0; row < rows; ++ row) {
 		if (counts[row] == 0)
 			widths[row] = 0;
 		else {
 			// the font size of the label is taken as the minimal from the widths.
-			widths[row] = (NSUInteger)round(fullwidths[row]/counts[row]);
+			widths[row] = (NSUInteger)round(fullwidths[row]/counts[row] - horizontalSpacing);
 			CGFloat candidateFontSize = widths[row] * UIKBKeyFontSizeMultiplier;
 			if (candidateFontSize < fontSize)
 				fontSize = candidateFontSize;
 		}
 	}
+	
+	free(fullwidths);
 }
 
 //-------------------------------------
 // Whether the keyboard is landscape. Updates metric while setting.
 //-------------------------------------
 @synthesize landscape;
--(void)setLandscape:(BOOL)landsc {
+/*
+ -(void)setLandscape:(BOOL)landsc {
 	if (landscape != landsc) {
 		// attempt fix the lefts & widths.
 		if (landsc) {
-			for (NSUInteger i = 0; i < UIKBKey_rows-1; ++ i)
+			for (NSUInteger i = 0; i < rows-1; ++ i)
 				lefts[i] = (NSUInteger)round(lefts[i] * UIKBKey_orientationIndentRatio);
-			lefts[UIKBKey_rows-1] = (NSUInteger)round((lefts[UIKBKey_rows-1]-48) * UIKBKey_orientationIndentRatio) + 48;
+			lefts[rows-1] = (NSUInteger)round((lefts[rows-1]-48) * UIKBKey_orientationIndentRatio) + 48;
 			shiftKeyLeft = (NSUInteger)round(shiftKeyLeft * UIKBKey_orientationIndentRatio);
 			deleteKeyRight = (NSUInteger)round(deleteKeyRight * UIKBKey_orientationIndentRatio);
+			shiftKeyWidth = (NSUInteger)round(shiftKeyWidth * UIKBKey_orientationIndentRatio);
+			deleteKeyWidth = (NSUInteger)round(deleteKeyWidth * UIKBKey_orientationIndentRatio);
 			keyboardSize = [UIKeyboardImpl defaultSizeForOrientation:90];
 		} else {
-			for (NSUInteger i = 0; i < UIKBKey_rows-1; ++ i)
+			for (NSUInteger i = 0; i < rows-1; ++ i)
 				lefts[i] = (NSUInteger)round(lefts[i] / UIKBKey_orientationIndentRatio);
-			lefts[UIKBKey_rows-1] = (NSUInteger)round((lefts[UIKBKey_rows-1]-48) / UIKBKey_orientationIndentRatio) + 48;
+			lefts[rows-1] = (NSUInteger)round((lefts[rows-1]-48) / UIKBKey_orientationIndentRatio) + 48;
 			shiftKeyLeft = (NSUInteger)round(shiftKeyLeft / UIKBKey_orientationIndentRatio);
 			deleteKeyRight = (NSUInteger)round(deleteKeyRight / UIKBKey_orientationIndentRatio);
+			shiftKeyWidth = (NSUInteger)round(shiftKeyWidth / UIKBKey_orientationIndentRatio);
+			deleteKeyWidth = (NSUInteger)round(deleteKeyWidth / UIKBKey_orientationIndentRatio);
 			keyboardSize = [UIKeyboardImpl defaultSizeForOrientation:0];
 		}
 		
@@ -387,44 +453,48 @@ NSArray* getItem (NSDictionary* majorDict, NSString* kbTypeKey, NSString* textTy
 		[self updateArrangment];
 	}
 }
+ */
 
 //-------------------------------------
 // Set keyboard arrangments.
 //-------------------------------------
 -(void)setArrangement:(UIKBKeyboardArrangement)arrangement {
-	[self setArrangementWithRow0:(arrangement&0xFF) row1:((arrangement >> 8)&0xFF) row2:((arrangement>>16) & 0xFF) row3:((arrangement>>24)&0xFF)];
+	NSUInteger numbers[4];
+	numbers[0] = arrangement&0xFF;
+	numbers[1] = ((arrangement >> 8)&0xFF);
+	numbers[2] = ((arrangement>>16) & 0xFF);
+	numbers[3] = ((arrangement>>24)&0xFF);
+	[self setArrangementWithNumbers:numbers count:4];
 }
--(void)setArrangementWithRow0:(NSUInteger)count0 row1:(NSUInteger)count1 row2:(NSUInteger)count2 row3:(NSUInteger)count3 {
-	counts[0] = count0;
-	counts[1] = count1;
-	counts[2] = count2;
-	counts[3] = count3;
+
+-(void)setArrangementWithNumbers:(NSUInteger*)n count:(NSUInteger)k {
+	if (k > rows)
+		k = rows;
+	memset(counts, 0, sizeof(NSUInteger)*rows);
+	memcpy(counts, n, sizeof(NSUInteger)*k);
 	
 	// avoid index out of range by adding placeholder objects.
-	for (NSUInteger row = 0; row < UIKBKey_rows; ++ row) {
+	for (NSUInteger row = 0; row < rows; ++ row) {
 		for (NSUInteger lblcnt = [texts[row] count]; lblcnt < counts[row]; ++lblcnt) {
 			[texts[row] addObject:[UIKBKeyTexts textsEmpty]];
 			[shiftedTexts[row] addObject:[UIKBKeyTexts textsEmpty]]; 
 		}
 	}
-	
-	[self updateArrangment];
 }
 -(void)setArrangementWithObject:(id)obj {
 	UIKBKeyboardArrangement theArrangement = UIKBKeyboardArrangementEmpty;
 	if ([obj isKindOfClass:[NSArray class]]) {
-		NSUInteger objcounts[UIKBKey_rows];
-		NSUInteger i = 0;
-		for (; i < UIKBKey_rows; ++i)
-			objcounts[i] = 0;
-		i = 0;
+		NSUInteger k = [(NSArray*)obj count], i = 0;
+		NSUInteger* objcounts = calloc(k, sizeof(NSUInteger));
 		for (NSNumber* n in (NSArray*)obj) {
 			objcounts[i] = [n unsignedIntegerValue];
 			++ i;
-			if (i >= UIKBKey_rows)
+			if (i >= rows)
 				break;
 		}
-		[self setArrangementWithRow0:objcounts[0] row1:objcounts[1] row2:objcounts[2] row3:objcounts[3]];
+		[self setArrangementWithNumbers:objcounts count:k];
+		free(objcounts);
+		
 	} else if ([obj isKindOfClass:[NSString class]]) {
 		NSString* str = obj;
 		if ([str hasSuffix:@"|WithURLRow4"]) {
@@ -461,29 +531,33 @@ NSArray* getItem (NSDictionary* majorDict, NSString* kbTypeKey, NSString* textTy
 // Set row indentations.
 //-------------------------------------
 -(void)setRowIndentation:(UIKBKeyboardRowIndentation)metrics {
-	[self setRowIndentationWithRow0:(metrics&0xFF) row1:((metrics >> 8)&0xFF) row2:((metrics>>16) & 0xFF) row3:((metrics>>24)&0xFF)];
+	NSUInteger numbers[4];
+	numbers[0] = metrics&0xFF;
+	numbers[1] = ((metrics >> 8)&0xFF);
+	numbers[2] = ((metrics>>16) & 0xFF);
+	numbers[3] = ((metrics>>24)&0xFF);
+	[self setRowIndentationWithNumbers:numbers count:4];
 }
--(void)setRowIndentationWithRow0:(NSUInteger)left0 row1:(NSUInteger)left1 row2:(NSUInteger)left2 row3:(NSUInteger)left3 {
-	lefts[0] = left0;
-	lefts[1] = left1;
-	lefts[2] = left2;
-	lefts[3] = left3;
+-(void)setRowIndentationWithNumbers:(NSUInteger*)n count:(NSUInteger)k {
+	if (k > rows)
+		k = rows;
+	memset(lefts, 0, sizeof(NSUInteger)*rows);
+	memcpy(lefts, n, sizeof(NSUInteger)*k);
 	[self updateArrangment];
 }
+
 -(void)setRowIndentationWithObject:(id)obj {
 	if ([obj isKindOfClass:[NSArray class]]) {
-		NSUInteger objcounts[UIKBKey_rows];
-		NSUInteger i = 0;
-		for (; i < UIKBKey_rows; ++i)
-			objcounts[i] = 0;
-		i = 0;
+		NSUInteger k = [(NSArray*)obj count], i = 0;
+		NSUInteger* objcounts = calloc(k, sizeof(NSUInteger));
 		for (NSNumber* n in (NSArray*)obj) {
 			objcounts[i] = [n unsignedIntegerValue];
 			++ i;
-			if (i >= UIKBKey_rows)
+			if (i >= rows)
 				break;
 		}
-		[self setRowIndentationWithRow0:objcounts[0] row1:objcounts[1] row2:objcounts[2] row3:objcounts[3]];
+		[self setRowIndentationWithNumbers:objcounts count:k];
+		free(objcounts);
 	} else if ([obj isKindOfClass:[NSString class]]) {
 		NSString* str = obj;
 		if ([str isEqualToString:@"TightestDefault"]) {
@@ -527,7 +601,7 @@ NSArray* getItem (NSDictionary* majorDict, NSString* kbTypeKey, NSString* textTy
 	[self setText:txt label:lbl popup:pop shifted:upper shiftedLabel:lbl shiftedPopup:pop forRow:row column:col];
 }
 -(void)setText:(NSString*)txt label:(NSString*)lbl popup:(NSString*)pop shifted:(NSString*)shift shiftedLabel:(NSString*)sfl shiftedPopup:(NSString*)sfp forRow:(NSUInteger)row column:(NSUInteger)col {
-	if (row > UIKBKey_rows || col > counts[row])
+	if (row > rows || col > counts[row])
 		return;
 	[texts[row] replaceObjectAtIndex:col withObject:[UIKBKeyTexts textsWithText:txt label:lbl popup:pop]];
 	[shiftedTexts[row] replaceObjectAtIndex:col withObject:[UIKBKeyTexts textsWithText:shift label:sfl popup:sfp]];
@@ -569,16 +643,28 @@ NSArray* getItem (NSDictionary* majorDict, NSString* kbTypeKey, NSString* textTy
 // Initializers & deallocators.
 //-------------------------------------
 -(void)dealloc {
-	for (NSUInteger i = 0; i < UIKBKey_rows; ++i) {
+	for (NSUInteger i = 0; i < rows; ++i) {
 		[texts[i] release];
 		[shiftedTexts[i] release];
 	}
+	free(texts);
+	free(shiftedTexts);
+	free(counts);
+	free(lefts);
+	free(widths);
 	[super dealloc];
 }
 
--(UIKBStandardKeyboard*)init {
+-(UIKBStandardKeyboard*)initWithLandscape:(BOOL)landsc rows:(NSUInteger)rowCount {
 	if ((self = [super init])) {
-		for (NSUInteger row = 0; row < UIKBKey_rows; ++ row) {
+		landscape = landsc;
+		rows = rowCount;
+		texts = calloc(rows, sizeof(NSMutableArray*));
+		shiftedTexts = calloc(rows, sizeof(NSMutableArray*));
+		counts = calloc(rows, sizeof(NSUInteger));
+		lefts = calloc(rows, sizeof(NSUInteger));
+		widths = calloc(rows, sizeof(NSUInteger));
+		for (NSUInteger row = 0; row < rows; ++ row) {
 			texts[row] = [[NSMutableArray alloc] init];
 			shiftedTexts[row] = [[NSMutableArray alloc] init];
 		}
@@ -586,17 +672,40 @@ NSArray* getItem (NSDictionary* majorDict, NSString* kbTypeKey, NSString* textTy
 		shiftKeyEnabled = YES;
 		shiftKeyLeft = deleteKeyRight = 0;
 		shiftStyle = UIKBShiftStyleDefault;
+		horizontalSpacing = 0;
+		verticalSpacing = landscape ? 2 : 11;
+		shiftKeyWidth = landscape ? 58 : 42;
+		deleteKeyWidth = landscape ? 57 : 42;
 	}
 	return self;
 }
 +(UIKBStandardKeyboard*) keyboardWithLandscape:(BOOL)landsc appearance:(UIKeyboardAppearance)appr arrangement:(UIKBKeyboardArrangement)arrangement rowIndentation:(UIKBKeyboardRowIndentation)metrics {
-	UIKBStandardKeyboard* myKeyboard = [[[UIKBStandardKeyboard alloc] init] autorelease];
+	UIKBStandardKeyboard* myKeyboard = [[[UIKBStandardKeyboard alloc] initWithLandscape:landsc rows:4] autorelease];
 	myKeyboard->keyboardAppearance = appr;
-	myKeyboard->landscape = landsc;
 	myKeyboard->keyboardSize = [UIKeyboardImpl defaultSizeForOrientation:(landsc ? 90 : 0)];
 	[myKeyboard setArrangement:arrangement];
 	[myKeyboard setRowIndentation:metrics];
 	return myKeyboard;
+}
+
+-(void)setRows:(NSUInteger)newRows {
+	if (newRows != rows) {
+		for (NSUInteger row = newRows; row < rows; ++ row) {
+			[texts[row] release];
+			[shiftedTexts[row] release];
+		}
+		texts = realloc(texts, newRows*sizeof(NSMutableArray*));
+		shiftedTexts = realloc(shiftedTexts, newRows*sizeof(NSMutableArray*));
+		counts = realloc(counts, newRows*sizeof(NSUInteger));
+		lefts = realloc(lefts, newRows*sizeof(NSUInteger));
+		widths = realloc(widths, newRows*sizeof(NSUInteger));
+		for (NSUInteger row = rows; row < newRows; ++row) {
+			texts[row] = [[NSMutableArray alloc] init];
+			shiftedTexts[row] = [[NSMutableArray alloc] init];
+		}
+		[self updateArrangment];
+	} 
+	rows = newRows;
 }
 
 //-------------------------------------
@@ -609,7 +718,7 @@ NSArray* getItem (NSDictionary* majorDict, NSString* kbTypeKey, NSString* textTy
 	NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
 	UIKBKeyDefinition* keydef = [[UIKBKeyDefinition alloc] init];
 	
-	CGFloat leftEdge = landscape ? UIKBKey_leftMargin : 0;
+	CGFloat leftEdge = landscape ? UIKBKey_horizontalOffset_Landscape : 0;
 	
 	CGFloat fgTop = 0, fgWidth;
 	CGFloat popPadding_y = landscape ? UIKBKey_PopPadding_Landscape_y : UIKBKey_PopPadding_Portrait_y;
@@ -617,11 +726,12 @@ NSArray* getItem (NSDictionary* majorDict, NSString* kbTypeKey, NSString* textTy
 	CGFloat accentHeight = landscape ? UIKBKey_Accent_Landscape_height : UIKBKey_Accent_Portrait_height;
 	CGFloat accentSpacing = landscape ? UIKBKey_Accent_Landscape_Spacing : UIKBKey_Accent_Portrait_Spacing;
 	
-	for (NSUInteger row = 0; row < UIKBKey_rows; ++ row) {
+	for (NSUInteger row = 0; row < rows; ++ row) {
 		CGFloat curLeft = lefts[row] + leftEdge;
 		CGFloat curTop, curHeight;
 		fgWidth = widths[row]>UIKBKeyPopupSize.width+2*UIKBKey_Padding?widths[row]-2*UIKBKey_Padding:UIKBKeyPopupSize.width;
 		
+		/*
 		if (landscape) {
 			curTop = UIKBKey_landscape_bgArea_tops[row];
 			curHeight = UIKBKey_landscape_bgArea_heights[row];
@@ -629,6 +739,7 @@ NSArray* getItem (NSDictionary* majorDict, NSString* kbTypeKey, NSString* textTy
 			curTop = UIKBKey_bgArea_tops[row];
 			curHeight = UIKBKey_bgArea_heights[row];
 		}
+		 */
 			
 		for (NSUInteger col = 0; col < counts[row]; ++ col) {
 			keydef->bg_area = CGRectMake(curLeft, curTop, widths[row], curHeight);
@@ -782,31 +893,20 @@ NSArray* getItem (NSDictionary* majorDict, NSString* kbTypeKey, NSString* textTy
 //-------------------------------------
 // Create keyboard from bundle.
 //-------------------------------------
-+(UIKBStandardKeyboard*)keyboardWithBundle:(KeyboardBundle*)bdl name:(NSString*)name landscape:(BOOL)landsc appearance:(UIKeyboardAppearance)appr {
-	// obtain layout name from bundle
-	NSString* layoutName = [bdl objectForInfoDictionaryKey:@"UIKeyboardLayoutClass"];
-	if (![layoutName isKindOfClass:[NSString class]])
-		return nil;
-	
-	NSString* layoutPath = [bdl pathForResource:layoutName ofType:nil];
-	if (layoutPath == nil)
-		return nil;
-	
-	NSDictionary* layoutDict = [NSDictionary dictionaryWithContentsOfFile:layoutPath];
++(UIKBStandardKeyboard*)keyboardWithPlist:(NSDictionary*)layoutDict name:(NSString*)name landscape:(BOOL)landsc appearance:(UIKeyboardAppearance)appr {
 	NSDictionary* layoutDefinitions = [layoutDict objectForKey:name];
 	if (layoutDefinitions == nil)
 		return nil;
 	
-	UIKBStandardKeyboard* retval = [[[UIKBStandardKeyboard alloc] init] autorelease];
+	UIKBStandardKeyboard* retval = [[[UIKBStandardKeyboard alloc] initWithLandscape:landsc rows:4] autorelease];
 	retval->keyboardAppearance = appr;
-	retval->landscape = NO;
 	retval->keyboardSize = [UIKeyboardImpl defaultSizeForOrientation:(landsc ? 90 : 0)];
 	
 	[retval setArrangementWithObject:[layoutDefinitions objectForKey:@"arrangement"]];
 	[retval setRowIndentationWithObject:[layoutDefinitions objectForKey:@"rowIndentation"]];
-		
+	
 	// obtain texts & shifts.
-	for (NSUInteger i = 0; i < UIKBKey_rows; ++ i) {
+	for (NSUInteger i = 0; i < 4; ++ i) {
 		// TODO: This "8" recursion limit may be customized.
 		// TODO: Support custom label text & popup character text as well.
 		NSArray* text = getItem(layoutDict, name, @"texts", i, 8);
@@ -853,9 +953,23 @@ NSArray* getItem (NSDictionary* majorDict, NSString* kbTypeKey, NSString* textTy
 			retval->shiftStyle = UIKBShiftStyleDefault;
 	}
 	
-	retval.landscape = landsc;
 	
 	return retval;
+}
+
++(UIKBStandardKeyboard*)keyboardWithBundle:(KeyboardBundle*)bdl name:(NSString*)name landscape:(BOOL)landsc appearance:(UIKeyboardAppearance)appr {
+	// obtain layout name from bundle
+	NSString* layoutName = [bdl objectForInfoDictionaryKey:@"UIKeyboardLayoutClass"];
+	if (![layoutName isKindOfClass:[NSString class]])
+		return nil;
+	
+	NSString* layoutPath = [bdl pathForResource:layoutName ofType:nil];
+	if (layoutPath == nil)
+		return nil;
+	
+	NSDictionary* layoutDict = [NSDictionary dictionaryWithContentsOfFile:layoutPath];
+	
+	return [UIKBStandardKeyboard keyboardWithPlist:layoutDict name:name landscape:landsc appearance:appr];
 }
 
 @end

@@ -6,8 +6,8 @@
 
 #import <CoreFoundation/CFDictionary.h>
 #import <Foundation/Foundation.h>
+#import <UIKit2/UIKeyboardLayoutRoman.h>
 #import <UIKit/UIView.h>
-#import <UIKit2/CDStructures.h>
 
 @class UIClippedImageView, UIImageView, UIKeyboardReturnKeyView, UIKeyboardSpaceKeyView;
 

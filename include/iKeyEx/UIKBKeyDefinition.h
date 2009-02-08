@@ -32,7 +32,7 @@
 
 #import <Foundation/Foundation.h>
 #import <CoreGraphics/CGGeometry.h>
-#import <UIKit2/CDStructures.h>
+#import <UIKit2/UIKeyboardLayoutRoman.h>
 
 // Note: sizeof(UIKBKeyDefinition) == sizeof(NSObject) + sizeof(UIKeyDefinition).
 @interface UIKBKeyDefinition : NSObject<NSCopying, NSCoding> {
