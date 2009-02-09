@@ -1,0 +1,63 @@
+#summary Disassembly of some functions.
+
+= UIKit =
+
+== UIImage ==
+=== ＿UIImageRefAtPath ===
+{{{
+static CFStringRef const trustedPaths[] = {
+	CFSTR("/System/"),
+	CFSTR("/Applications/"),
+	CFSTR("/Widgets/"),			// ???
+	CFSTR("/Accessories/")		// ??? Do these paths exist at all???
+};
+static CGImageRef _UIImageRefAtPath(CFStringRef path, bool shouldCache, int* pOrientation) {
+	CGImageRef retval = NULL;
+
+	if (path != nil) {
+		CFStringRef keys[2];
+		keys[0] = kCGImageSourceShouldCache;
+		keys[1] = CFSTR("kCGImageSourceSkipCRC");
+
+		CFBooleanRef values[2];
+		values[0] = shouldCache ? kCFBooleanTrue : kCFBooleanFalse;
+		values[1] = kCFBooleanFalse;
+
+
+		for (int i = 0; i < sizeof(trustedPaths)/sizeof(CFStringRef const); ++i) {
+			if (CFStringHasPrefix(path, trustedPaths[i])) {
+				values[1] = kCFBooleanTrue;
+				break;
+			}
+		}
+
+		CFDictionaryRef options;
+		if (values[0] == kCFBooleanFalse && values[1] == kCFBooleanFalse) {
+			options = NULL;
+		} else {
+			options = CFDictionaryCreate(
+					kCFAllocatorDefault,
+					keys,
+					values,
+					2,
+					kCFTypeDictionaryKeyCallBacks,
+					kCFTypeDictionaryValueCallBacks);
+		}
+		CGImageSourceRef isrc = CGImageSourceCreateWithFile(path, dict);
+		
+		if (isrc != NULL) {
+			if (CGImageSourceGetCount(isrc) != 0) {
+				retval = CGImageSourceCreateImageAtIndex(isrc, 0, options);
+				if (pOrientation != NULL)
+					*pOrientation = GetImageOrientation(isrc, 0);
+			}
+			CFRelease(isrc);
+		}
+
+		if (options != NULL)
+			CFRelease(options);
+	}
+
+	return retval;
+}
+}}}
