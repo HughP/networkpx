@@ -107,11 +107,12 @@ void GUDrawImageWithCaps(CGContextRef c, CGRect rect, CGImageRef img, GUCaps cap
 	bool scaleDownX = rect.size.width <= caps.left + caps.right + 1,
 		scaleDownY = rect.size.height <= caps.top + caps.bottom + 1;
 	size_t imgWidth = CGImageGetWidth(img), imgHeight = CGImageGetHeight(img);
+	bool matchX = (rect.size.width == imgWidth), matchY = (rect.size.height == imgHeight);
 	
-	if (scaleDownX && scaleDownY) {
+	if (matchX && matchY) {
 		// the caps are bigger than the image: just draw the image.
 		CGContextDrawImage(c, rect, img);
-	} else if (scaleDownX) {
+	} else if (matchX) {
 		// create a 3-part image vertically.
 		CGImageRef top = CGImageCreateWithImageInRect(img,
 													  CGRectMake(0, 0,
@@ -123,17 +124,17 @@ void GUDrawImageWithCaps(CGContextRef c, CGRect rect, CGImageRef img, GUCaps cap
 														 CGRectMake(0, imgHeight-caps.bottom,
 																	imgWidth, caps.bottom));
 		
-		CGContextDrawImage(c, CGRectMake(rect.origin.x, rect.origin.y,
+		CGContextDrawImage(c, CGRectMake(rect.origin.x, rect.origin.y+rect.size.height-caps.top,
 										 rect.size.width, caps.top), top);
-		CGContextDrawImage(c, CGRectMake(rect.origin.x, rect.origin.y+caps.top,
+		CGContextDrawImage(c, CGRectMake(rect.origin.x, rect.origin.y+caps.bottom,
 										 rect.size.width, rect.size.height-caps.top-caps.bottom), middle);
-		CGContextDrawImage(c, CGRectMake(rect.origin.x, rect.origin.y+rect.size.height-caps.bottom,
+		CGContextDrawImage(c, CGRectMake(rect.origin.x, rect.origin.y,
 										 rect.size.width, caps.bottom), bottom);
 		
 		CGImageRelease(top);
 		CGImageRelease(middle);
 		CGImageRelease(bottom);
-	} else if (scaleDownY) {
+	} else if (matchY) {
 		// create a 3-part image horizontally.
 		CGImageRef left = CGImageCreateWithImageInRect(img, CGRectMake(0, 0,
 																	   caps.left, imgHeight));

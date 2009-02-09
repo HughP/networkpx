@@ -244,14 +244,14 @@ NSArray* getItem (NSDictionary* majorDict, NSString* kbTypeKey, NSString* textTy
 			continue;
 		
 		CGRect imageFrame = CGRectMake(horizontalSpacing/2, curTop, widths[row], height);
-		CGImageRef keyImgThisRowX = GUImageCreateWithCaps(keyImg, CGRectMake(0, 0, widths[row], height), KeyCaps);
+		CGImageRef keyImgThisRowX = GUImageCreateWithCaps(keyImg, CGRectMake(0, 0, widths[row]-1, height), KeyCaps);
 		UIImage* keyImgThisRow = GUCreateUIImageAndRelease(keyImgThisRowX);
 		
 		for (NSUInteger i = 0; i < counts[row]; ++i, curleft += widths[row]+horizontalSpacing) {
-			if (keyboardAppearance == UIKeyboardAppearanceAlert)
-				[keyImgThisRow drawAtPoint:CGPointMake(curleft, curTop) blendMode:kCGBlendModeDestinationOut alpha:1];
-			[keyImgThisRow drawAtPoint:CGPointMake(curleft, curTop)];
 			imageFrame.origin.x = curleft;
+			if (keyboardAppearance == UIKeyboardAppearanceAlert)
+				[keyImgThisRow drawInRect:imageFrame blendMode:kCGBlendModeDestinationOut alpha:1];
+			[keyImgThisRow drawInRect:imageFrame];
 			
 			NSString* lbl = ((UIKBKeyTexts*)[myTexts[row] objectAtIndex:i]).label;
 			
@@ -277,14 +277,15 @@ NSArray* getItem (NSDictionary* majorDict, NSString* kbTypeKey, NSString* textTy
 			else
 				imageFrame = CGRectMake(curleft, UIKBKey_verticalOffset_Portrait + UIKBKey_totalHeight_Portrait, widths[rows-1], UIKBKey_lastRowHeight_Portrait);
 			
-			CGImageRef keyImgThisRowX = GUImageCreateWithCaps(keyImg, CGRectMake(0, 0, widths[rows-1], height), KeyCaps);
+			CGImageRef keyImgThisRowX = GUImageCreateWithCaps(keyImg, CGRectMake(0, 0, widths[rows-1]-1, height), KeyCaps);
 			UIImage* keyImgThisRow = GUCreateUIImageAndRelease(keyImgThisRowX);
 			
 			for (NSUInteger i = 0; i < counts[rows-1]; ++i, curleft += widths[rows-1]+horizontalSpacing) {
-				if (keyboardAppearance == UIKeyboardAppearanceAlert)
-					[keyImgThisRow drawAtPoint:CGPointMake(curleft, imageFrame.origin.y) blendMode:kCGBlendModeDestinationOut alpha:1];
-				[keyImgThisRow drawAtPoint:CGPointMake(curleft, imageFrame.origin.y)];
 				imageFrame.origin.x = curleft;
+				if (keyboardAppearance == UIKeyboardAppearanceAlert)
+					[keyImgThisRow drawInRect:imageFrame blendMode:kCGBlendModeDestinationOut alpha:1];
+				[keyImgThisRow drawInRect:imageFrame];
+				
 							
 				NSString* lbl = ((UIKBKeyTexts*)[myTexts[rows-1] objectAtIndex:i]).label;
 				
@@ -305,16 +306,18 @@ NSArray* getItem (NSDictionary* majorDict, NSString* kbTypeKey, NSString* textTy
 		} else {
 			shiftImg = UIKBGetImage(UIKBImageShift, keyboardAppearance, landscape);
 		}
-		[GUCreateUIImageAndRelease(GUImageCreateWithCaps(shiftImg.CGImage, CGRectMake(0,0,shiftKeyWidth,height), KeyCaps))
-		 drawAtPoint:CGPointMake(shiftKeyLeft + (landscape ? UIKBKey_horizontalOffset_Landscape : 0), curTop)];
+		[GUCreateUIImageAndRelease(GUImageCreateWithCaps(shiftImg.CGImage, CGRectMake(0,0,shiftKeyWidth-1,height), KeyCaps))
+		 drawInRect:CGRectMake(shiftKeyLeft + (landscape ? UIKBKey_horizontalOffset_Landscape : 0), curTop,
+							   shiftKeyWidth, height)];
 	}
 	
 	if (hasDeleteKey) {
 		[GUCreateUIImageAndRelease(GUImageCreateWithCaps(UIKBGetImage(UIKBImageDelete, keyboardAppearance, landscape).CGImage,
-														 CGRectMake(0,0,deleteKeyWidth,height), KeyCaps))
-		 drawAtPoint:CGPointMake(keyboardSize.width-deleteKeyWidth-deleteKeyRight-(landscape ? UIKBKey_horizontalOffset_Landscape : 0), curTop)];
-	}
-	
+														 CGRectMake(0,0,deleteKeyWidth-1,height), KeyCaps))
+		 drawInRect:CGRectMake(keyboardSize.width-deleteKeyWidth-deleteKeyRight-(landscape ? UIKBKey_horizontalOffset_Landscape : 0), curTop,
+							   shiftKeyWidth, height)];
+	}	
+
 	// these images don't need to be rescaled, so directly draw on the text layer.
 	if (hasInternationalKey) {
 		UIImage* abcImg = UIKBGetImage(UIKBImageABC, keyboardAppearance, landscape);
