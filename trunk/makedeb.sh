@@ -3,6 +3,9 @@
 for PackageName in `ls -d hk.*/`; do
 	if [[ -e "${PackageName%%/}/src/Makefile" ]]; then
 		cd "${PackageName%%/}/src/";
+		if [[ $1 == "--clean" ]]; then
+			make clean;
+		fi;
 		make;
 		cd $OLDPWD;
 	fi

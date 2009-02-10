@@ -54,7 +54,7 @@ static const CGSize UIKBKeyPopupSize = {44, 50};
 #define UIKBKey_lastRowHeight_Portrait 44
 // default vertical spacing = 11.
 
-#define UIKBKey_verticalOffset_Landscape 5
+#define UIKBKey_verticalOffset_Landscape 4
 #define UIKBKey_totalHeight_Landscape 120
 #define UIKBKey_lastRowHeight_Landscape 37
 // default vertical spacing = 2
@@ -227,23 +227,21 @@ NSArray* getItem (NSDictionary* majorDict, NSString* kbTypeKey, NSString* textTy
 		curTop = UIKBKey_verticalOffset_Portrait;
 	}
 	
-	// TODO: Allow customization of label font.
+	// TODO (Not needed?): Allow customization of label font.
 	UIFont* labelFont = [UIFont boldSystemFontOfSize:(fontSize*3)/(rows-1)];
 	CGImageRef keyImg = UIKBGetImage(UIKBImageKey, keyboardAppearance, landscape).CGImage;
 	NSMutableArray** myTexts = shifted ? shiftedTexts : texts;
 	
-	
-	
 	// do actual drawing.
 	for (NSUInteger row = 0; row < rows-1; ++ row) {
-		NSUInteger curleft = lefts[row];
+		NSUInteger curleft = lefts[row] + horizontalSpacing/2;
 		if (landscape)
 			curleft += UIKBKey_horizontalOffset_Landscape;
 		
 		if (widths[row] <= 0)
 			continue;
 		
-		CGRect imageFrame = CGRectMake(horizontalSpacing/2, curTop, widths[row], height);
+		CGRect imageFrame = CGRectMake(0, curTop, widths[row], height);
 		CGImageRef keyImgThisRowX = GUImageCreateWithCaps(keyImg, CGRectMake(0, 0, widths[row]-1, height), KeyCaps);
 		UIImage* keyImgThisRow = GUCreateUIImageAndRelease(keyImgThisRowX);
 		
@@ -675,7 +673,7 @@ NSArray* getItem (NSDictionary* majorDict, NSString* kbTypeKey, NSString* textTy
 		shiftKeyEnabled = YES;
 		shiftKeyLeft = deleteKeyRight = 0;
 		shiftStyle = UIKBShiftStyleDefault;
-		horizontalSpacing = 0;
+		horizontalSpacing = landscape ? 4 : 2;
 		verticalSpacing = landscape ? 2 : 11;
 		shiftKeyWidth = landscape ? 58 : 42;
 		deleteKeyWidth = landscape ? 57 : 42;
@@ -729,9 +727,13 @@ NSArray* getItem (NSDictionary* majorDict, NSString* kbTypeKey, NSString* textTy
 	CGFloat accentHeight = landscape ? UIKBKey_Accent_Landscape_height : UIKBKey_Accent_Portrait_height;
 	CGFloat accentSpacing = landscape ? UIKBKey_Accent_Landscape_Spacing : UIKBKey_Accent_Portrait_Spacing;
 	
-	for (NSUInteger row = 0; row < rows; ++ row) {
+	CGFloat curTop = landscape ? UIKBKey_verticalOffset_Landscape : UIKBKey_verticalOffset_Portrait;
+	NSUInteger logicalHeight = (landscape ? UIKBKey_totalHeight_Landscape : UIKBKey_totalHeight_Portrait) / (rows-1);
+	NSUInteger lastRowHeight = landscape ? UIKBKey_lastRowHeight_Landscape : UIKBKey_lastRowHeight_Portrait;
+	
+	for (NSUInteger row = 0; row < rows; ++ row, curTop += logicalHeight) {
 		CGFloat curLeft = lefts[row] + leftEdge;
-		CGFloat curTop, curHeight;
+		CGFloat curWidth = widths[row] + horizontalSpacing;
 		fgWidth = widths[row]>UIKBKeyPopupSize.width+2*UIKBKey_Padding?widths[row]-2*UIKBKey_Padding:UIKBKeyPopupSize.width;
 		
 		/*
@@ -745,11 +747,12 @@ NSArray* getItem (NSDictionary* majorDict, NSString* kbTypeKey, NSString* textTy
 		 */
 			
 		for (NSUInteger col = 0; col < counts[row]; ++ col) {
-			keydef->bg_area = CGRectMake(curLeft, curTop, widths[row], curHeight);
+			keydef->bg_area = CGRectMake(curLeft, curTop, curWidth, row < rows-1 ? logicalHeight : lastRowHeight);
 			keydef->pop_char_area = CGRectMake(0, fgTop, fgWidth, UIKBKeyPopupSize.height);
 						
 			if (widths[row] >= UIKBKeyPopupSize.width+UIKBKey_Padding) {
 				keydef->pop_bg_area = CGRectMake(0, 0, widths[row]+36, UIKBKey_PopBgArea_Center2_height);
+				switch (widths[row])
 				keydef->pop_type = UIKeyboardPopImageCenter2;
 				keydef->pop_padding = CGRectZero;
 			} else {
@@ -778,7 +781,7 @@ NSArray* getItem (NSDictionary* majorDict, NSString* kbTypeKey, NSString* textTy
 				}
 			}
 			
-			keydef->accent_frame = CGRectMake(curLeft, row*accentSpacing+accentDelta, widths[row], accentHeight);
+			keydef->accent_frame = CGRectMake(curLeft, row*accentSpacing+accentDelta, curWidth, accentHeight);
 			
 			NSString* kvalue = ((UIKBKeyTexts*)[texts[row] objectAtIndex:col]).text;
 			
@@ -796,7 +799,7 @@ NSArray* getItem (NSDictionary* majorDict, NSString* kbTypeKey, NSString* textTy
 				keydef->up_flags |= UIKeyFlagSwitchPlane;
 			}
 			
-			curLeft += widths[row];
+			curLeft += curWidth;
 			fgTop += UIKBKeyPopupSize.height;
 						
 			UIKBKeyDefinition* newKey = [keydef copy];
@@ -805,12 +808,13 @@ NSArray* getItem (NSDictionary* majorDict, NSString* kbTypeKey, NSString* textTy
 		}
 	}
 	
+	curTop -= 2 * logicalHeight;
+	
 	keydef->pop_type = nil;
 	keydef->pop_char_area = keydef->accent_frame = keydef->pop_padding = CGRectZero;
 	
 	if (hasShiftKey && shiftKeyEnabled) {
-		keydef->bg_area = landscape ? UIKBKey_Shift_Landscape_Rect : UIKBKey_Shift_Portrait_Rect;
-		keydef->bg_area.origin.x = shiftKeyLeft;
+		keydef->bg_area = CGRectMake(shiftKeyLeft+leftEdge, curTop, shiftKeyWidth, logicalHeight);
 		keydef->pop_bg_area = CGRectZero;
 		keydef.value = @"shift";
 		keydef.shifted = @"shift";
@@ -821,13 +825,7 @@ NSArray* getItem (NSDictionary* majorDict, NSString* kbTypeKey, NSString* textTy
 	}
 	
 	if (hasDeleteKey) {
-		if (landscape) {
-			keydef->bg_area = UIKBKey_Delete_Landscape_Rect;			
-			keydef->pop_bg_area = UIKBKey_Delete_Landscape_PopBgRect;
-		} else {
-			keydef->bg_area = UIKBKey_Delete_Portrait_Rect;
-			keydef->pop_bg_area = UIKBKey_Delete_Portrait_PopBgRect;			// the composite is - holy gosh - kb-std-active-bg-main.png
-		}
+		keydef->bg_area = CGRectMake(keyboardSize.width-deleteKeyRight-leftEdge-deleteKeyWidth, curTop, deleteKeyWidth, logicalHeight);
 		keydef->bg_area.origin.x = keyboardSize.width - deleteKeyRight - keydef->bg_area.size.width;
 		if (!landscape) {
 			keydef->pop_padding.origin.y = UIKBKey_Delete_Portrait_PopPaddingY;
