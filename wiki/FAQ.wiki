@@ -1,5 +1,5 @@
 #summary Frequently asked questions
-#labels Phase-Support
+#labels Phase-Support,Featured
 
 = I have installed !IntelliScreen and iKeyEx does not work. =
 By default !IntelliScreen disabled any !MobileSubstrate extensions. To enable iKeyEx, please go to the Performance option in !IntelliScreen, then enable !PrefHooker-iKeyEx and SBHooker-iKeyEx. 
