@@ -444,7 +444,7 @@ returnEtch_namesComputed:
 		case UIKBImageDeleteActive:
 			cacheName = (actualType == UIKBImageDeleteActive) ? @"kb-ext-delete.png" : @"kb-ext-delete-active.png";
 			TryLoadCacheBegin;
-			img = CGImageCreateWithImageInRect(_UIImageWithName((actualType == UIKBImageDeleteActive) ? @"kb-std-azerty.png" : @"kb-std-active-bg-main.png").CGImage,
+			img = CGImageCreateWithImageInRect(_UIImageWithName((actualType != UIKBImageDeleteActive) ? @"kb-std-azerty.png" : @"kb-std-active-bg-main.png").CGImage,
 											   DeleteRect_Portrait);
 			retimg = GUCreateUIImageAndRelease(img);
 			TryLoadCacheEnd;
