@@ -63,6 +63,9 @@ float GUAverageLuminance (CGImageRef img);
 // Create image from PNG file.
 CGImageRef GUImageCreateWithPNG(const char* filename);
 
+// Create an image with reduced brightness
+CGImageRef GUImageCreateByReducingBrightness(CGImageRef img, CGFloat reductionRatio);
+
 // Create a UIImage and release the original CGImage.
 UIImage* GUCreateUIImageAndRelease(CGImageRef img);
 

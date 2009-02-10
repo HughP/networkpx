@@ -132,6 +132,10 @@
 	[sl registerKeyCentroids];
 	[sl setUsesKeyCharges:YES];
 	
+	NSString* baseName = landscape ? @"kb-std-landscape-active-bg-pop-center-url%d.png" : @"kb-std-active-bg-pop-center-url%d.png";
+	
+	[sl setCompositeImage:_UIImageWithName([NSString stringWithFormat:baseName, 4]) forKey:UIKeyboardPopImageCenter4];
+	[sl setCompositeImage:_UIImageWithName([NSString stringWithFormat:baseName, 3]) forKey:UIKeyboardPopImageCenter3];
 	[sl setCompositeImage:UIKBGetImage(UIKBImagePopupFlexible, appr, landscape) forKey:UIKeyboardPopImageCenter2];
 	[sl setCompositeImage:UIKBGetImage(UIKBImagePopupCenter, appr, landscape) forKey:UIKeyboardPopImageCenter1];
 	[sl setCompositeImage:UIKBGetImage(UIKBImagePopupLeft, appr, landscape) forKey:UIKeyboardPopImageLeft];
@@ -229,7 +233,6 @@ void resizePopupImage (BOOL landscape, UIView* m_activeKeyView, UIKeyDefinition*
 				tempBounds2.origin = CGPointZero;
 				v.image = UIKBGetImage(UIKBImagePopupFlexible, UIKeyboardAppearanceDefault, landscape);
 				v.frame = tempBounds2;
-				v.backgroundColor = [UIColor colorWithRed:0 green:0 blue:0.5 alpha:0.5];
 				break;
 			}
 		}
@@ -276,7 +279,7 @@ CreateBuildMethods(EmailAddressAlt, NO, YES);
 // Can we hide the frame change?
 -(void)activateCompositeKey:(UIKeyDefinition*)keydef {
 	[super activateCompositeKey:keydef];
-	if (keydef->pop_type == UIKeyboardPopImageCenter2)
+	if ([UIKeyboardPopImageCenter3 isEqualToString:keydef->pop_type])
 		resizePopupImage(NO, m_activeKeyView, keydef);
 }
 
@@ -315,7 +318,7 @@ CreateBuildMethods(EmailAddressAlt, YES, YES);
 // fix the flexible popup to make it really flexible.
 -(void)activateCompositeKey:(UIKeyDefinition*)keydef {
 	[super activateCompositeKey:keydef];
-	if (keydef->pop_type == UIKeyboardPopImageCenter2)
+	if ([UIKeyboardPopImageCenter3 isEqualToString:keydef->pop_type])
 		resizePopupImage(YES, m_activeKeyView, keydef);
 }
 

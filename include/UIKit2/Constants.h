@@ -35,3 +35,5 @@ extern NSString* const UIKeyboardPopImageLeft;
 extern NSString* const UIKeyboardPopImageRight;
 extern NSString* const UIKeyboardPopImageCenter1;
 extern NSString* const UIKeyboardPopImageCenter2;
+extern NSString* const UIKeyboardPopImageCenter3;
+extern NSString* const UIKeyboardPopImageCenter4;
