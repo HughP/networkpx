@@ -47,7 +47,7 @@
 #define UIKBKeyPopupMaxFontSize 45
 static const CGSize UIKBKeyPopupSize = {44, 50};
 
-#define UIKBKey_Padding 8
+#define UIKBKey_Padding 7
 
 #define UIKBKey_verticalOffset_Portrait 10
 #define UIKBKey_totalHeight_Portrait 162
@@ -255,7 +255,7 @@ NSArray* getItem (NSDictionary* majorDict, NSString* kbTypeKey, NSString* textTy
 			
 			// TODO: Allow customization of label color.
 			//[[UIColor blackColor] setFill];
-			drawInCenter(lbl, imageFrame, labelFont);
+			drawInCenter(lbl, CGRectInset(imageFrame, UIKBKey_Padding/2, UIKBKey_Padding/2), labelFont);
 		}
 		
 		curTop += height + verticalSpacing;
@@ -276,7 +276,9 @@ NSArray* getItem (NSDictionary* majorDict, NSString* kbTypeKey, NSString* textTy
 				imageFrame = CGRectMake(curleft, UIKBKey_verticalOffset_Portrait + UIKBKey_totalHeight_Portrait, widths[rows-1], UIKBKey_lastRowHeight_Portrait);
 			
 			CGImageRef keyImgThisRowX = GUImageCreateWithCaps(keyImg, CGRectMake(0, 0, widths[rows-1]-1, height), KeyCaps);
-			UIImage* keyImgThisRow = GUCreateUIImageAndRelease(keyImgThisRowX);
+			CGImageRef keyImgThisRowDarkened = GUImageCreateByReducingBrightness(keyImgThisRowX, 0.8);
+			CGImageRelease(keyImgThisRowX);
+			UIImage* keyImgThisRow = GUCreateUIImageAndRelease(keyImgThisRowDarkened);
 			
 			for (NSUInteger i = 0; i < counts[rows-1]; ++i, curleft += widths[rows-1]+horizontalSpacing) {
 				imageFrame.origin.x = curleft;
@@ -289,7 +291,7 @@ NSArray* getItem (NSDictionary* majorDict, NSString* kbTypeKey, NSString* textTy
 				
 				// TODO: Allow customization of label color.
 				[[UIColor blackColor] setFill];
-				drawInCenter(lbl, CGRectInset(imageFrame, UIKBKey_Padding, UIKBKey_Padding), labelFont);
+				drawInCenter(lbl, CGRectInset(imageFrame, UIKBKey_Padding/2, UIKBKey_Padding/2), labelFont);
 			}
 		}
 	}
@@ -310,10 +312,12 @@ NSArray* getItem (NSDictionary* majorDict, NSString* kbTypeKey, NSString* textTy
 	}
 	
 	if (hasDeleteKey) {
+		NSLog(@"%g, %g", keyboardSize.width-deleteKeyWidth-deleteKeyRight-(landscape ? 2*UIKBKey_horizontalOffset_Landscape : 0),
+			  keyboardSize.width-deleteKeyWidth-deleteKeyRight-(landscape ? UIKBKey_horizontalOffset_Landscape : 0));
 		[GUCreateUIImageAndRelease(GUImageCreateWithCaps(UIKBGetImage(UIKBImageDelete, keyboardAppearance, landscape).CGImage,
 														 CGRectMake(0,0,deleteKeyWidth-1,height), KeyCaps))
-		 drawInRect:CGRectMake(keyboardSize.width-deleteKeyWidth-deleteKeyRight-(landscape ? UIKBKey_horizontalOffset_Landscape : 0), curTop,
-							   shiftKeyWidth, height)];
+		 drawInRect:CGRectMake(keyboardSize.width-deleteKeyWidth-deleteKeyRight-(landscape ? 2*UIKBKey_horizontalOffset_Landscape : 0), curTop,
+							   deleteKeyWidth, height)];
 	}	
 
 	// these images don't need to be rescaled, so directly draw on the text layer.
@@ -674,7 +678,7 @@ NSArray* getItem (NSDictionary* majorDict, NSString* kbTypeKey, NSString* textTy
 		shiftKeyLeft = deleteKeyRight = 0;
 		shiftStyle = UIKBShiftStyleDefault;
 		horizontalSpacing = landscape ? 4 : 2;
-		verticalSpacing = landscape ? 2 : 11;
+		verticalSpacing = landscape ? 4 : 11;
 		shiftKeyWidth = landscape ? 58 : 42;
 		deleteKeyWidth = landscape ? 57 : 42;
 	}
@@ -749,11 +753,15 @@ NSArray* getItem (NSDictionary* majorDict, NSString* kbTypeKey, NSString* textTy
 		for (NSUInteger col = 0; col < counts[row]; ++ col) {
 			keydef->bg_area = CGRectMake(curLeft, curTop, curWidth, row < rows-1 ? logicalHeight : lastRowHeight);
 			keydef->pop_char_area = CGRectMake(0, fgTop, fgWidth, UIKBKeyPopupSize.height);
-						
+
+			NSLog(@"%d --> %f", widths[row], UIKBKeyPopupSize.width+UIKBKey_Padding);
+			
 			if (widths[row] >= UIKBKeyPopupSize.width+UIKBKey_Padding) {
 				keydef->pop_bg_area = CGRectMake(0, 0, widths[row]+36, UIKBKey_PopBgArea_Center2_height);
-				switch (widths[row])
-				keydef->pop_type = UIKeyboardPopImageCenter2;
+				if ((widths[row] == 51 && !landscape) || (widths[row] == 89 && landscape))
+					keydef->pop_type = UIKeyboardPopImageCenter4;
+				else
+					keydef->pop_type = UIKeyboardPopImageCenter3;
 				keydef->pop_padding = CGRectZero;
 			} else {
 				if (curLeft - leftEdge < UIKBKey_PopBgArea_EdgeTolerance) {

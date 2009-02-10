@@ -269,3 +269,25 @@ UIImage* GUCreateUIImageAndRelease(CGImageRef img) {
 	CGImageRelease(img);
 	return retval;
 }
+
+CGImageRef GUImageCreateByReducingBrightness(CGImageRef img, CGFloat reductionRatio) {
+	CGRect imgRect = CGRectZero;
+	imgRect.size = CGSizeMake(CGImageGetWidth(img), CGImageGetHeight(img));
+	GUCreateContext(c, imgRect.size.width, imgRect.size.height);
+	CGContextDrawImage(c, imgRect, img);
+	CGContextSetBlendMode(c, kCGBlendModeDestinationIn);
+	
+	/*CGColorSpaceRef graySpace = CGColorSpaceCreateDeviceGray();
+	CGFloat components[2] = {0, reductionRatio};
+	CGColorRef gray = CGColorCreate(graySpace, components);
+	CGContextSetFillColorWithColor(c, gray);*/
+	
+	CGContextSetAlpha(c, reductionRatio);
+	CGContextFillRect(c, imgRect);
+	//CGColorRelease(gray);
+	//CGColorSpaceRelease(graySpace);
+	
+	CGImageRef finalImg = CGBitmapContextCreateImage(c);
+	CGContextRelease(c);
+	return finalImg;
+}
