@@ -15,7 +15,7 @@ Starting from iKeyEx v0.1-3, !WinterBoard theming is supported, so keyboard them
 
 = Theming =
 
-You can add these 16 images to support iKeyEx:
+You can add these 8 images to support iKeyEx:
 <code>
 /
  Library/
@@ -50,7 +50,7 @@ These images will be assumed to have a boundary of 7 px. The center part will be
 
 = Default Theme Construction Algorithm =
 
-If the kb-ext-XXXX.png are not provided, they will be extracted and cached from the standard images. The following images will be used:
+If the kb-ext-XXXX.png are not provided, they will be extracted and cached from the standard images. The following images will be analyzed by subimage extraction:
  * `kb-std-azerty.png`
  * `kb-std-azerty-transparent.png`
  * `kb-std-landscape-azerty.png`
@@ -66,15 +66,24 @@ These images will be transformed to ones usable in iKeyEx with the algorithm fol
 `kb-ext-background-transparent.png`:
   A strip of size 2×216 at origin (159,0) will be extracted from `kb-std-azerty-transparent.png` to form the final 2×216 image.
 
-`kb-ext-background-landscape.png` & `kb-ext-background-landscape-transparent.png`:
+`kb-ext-background-landscape{-transparent}.png`:
   Strips of sizes 4×162 at origins (238,0) will be extracted from `kb-std-landscape-azerty.png` and `kb-std-landscape-transparent-azerty.png` respectively to form the final 4×162 images.
 
 == Key ==
-`kb-ext-key.png` & `kb-ext-key-transparent.png`:
-  The "I" keys at (225,10) with sizes 30×43 will be extracted from `kb-std-azerty.png` and `kb-std-azerty-transparent.png`. Then, within the "I" keys, a rectangle of size 4×17 at (9,13) will be copied to (13,13) to cover the letter "I". Finally the mask at `/Library/iKeyEx/Masks/key.png` will be applied to the image with a boundary inset of 7 px.
+`kb-ext-key-rowY{-transparent}.png` where _Y_ = 0, 1, 2:
+  Keys at (255, 10 + 54 _Y_) of size 30×43 are extracted from `kb-std-azerty.png` and `kb-std-azerty-transparent.png`.
+  Then, within the keys, the 1×17 strip at (7, 13) is copied and tiled in the rectangle {(8,13), 15×17} to cover up the letter.
+  Finally the mask at `/Library/iKeyEx/Masks/key{-transparent}.png` will be applied to the image with a boundary inset of 7 px.
 
-`kb-ext-key-landscape.png` & `kb-ext-key-transparent-landscape.png`:
-  Similar to above except the metrics are replaced as: (336,4); 43×38; 4×17; (15,9); (19,9); 7.
+`kb-ext-key-rowY-landscape{-transparent}.png`:
+  Similar to above except the metrics are replaced as:
+   * Origin of key extraction = (336, 4 + 40 _Y_).
+   * Key dimensions = 43×38.
+   * Origin of covering strip extraction = (13, 10)
+   * Covering rectangle = {(14,10), 15×17}.
+<wiki:comment>
+`kb-ext-key-row3{-landscape}{-transparent}.png`
+  The `kb-std{-portrait|-landscape}-space-small{-steel-blue|-gray}-light-enabled.png` will be used.
 
 == Shift (⇧) ==
 
@@ -109,6 +118,7 @@ The transparent portrait versions will use the standard ones. The landscape ones
 
 == Space and Return ==
 For normal versions the original images will be used as if, while for transparent versions an etch from `kb-std(-landscape)-transparent-space-return-etch.png` will be added to the original image.
+</wiki:comment>
 
 = Font colors =
 
