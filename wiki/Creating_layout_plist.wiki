@@ -10,6 +10,8 @@ With layout.plist, you only need to decide the arrangement and position of the k
 
 You may want to see the source code of Colemak as an example of using layout.plist.
 
+  Please refer to PlistSpec for how to use a property list and the specification notation used here.
+
 = Fundamentals =
 
 On the iPhoneOS, there are 11 types of sub-layouts:
@@ -36,7 +38,6 @@ In iKeyEx terminology, these 8 sub-layouts are called *standard keyboards*. The 
  * Return key
 When you create a standard keyboard using layout.plist, the shift and delete keys must stay on Row 2 and the rest must be on Row 3. The position of the last 3 keys are also fixed. 
 
-
 = Structure of layout.plist =
 
 To create a layout.plist layout, you must fill in the file name of the layout.plist in the UIKeyboardLayout field of `Info.plist`, e.g.
@@ -58,16 +59,190 @@ layout.plist is, of course, a property list. At the root it is a dictionary of d
 which means these 4 sub-layouts will be customized according to the content of this file. The 7 sub-layouts not mentioned will keyboard the original appearance of the standard QWERTY layout.
 
 The value of each key is a dictionary consists of the following properties:
-|| *Key* || *Value* || *Default* ||
-|| texts || An array specifying the ordinary keys in each row. || nil ||
-|| shiftedTexts || An array specifying the ordinary keys in each row when the shift key is held. || nil ||
-|| arrangement || The number of ordinary keys in each row. || "Default" ||
-|| rowIndentation || The indentation of the row of ordinary keys. || "Default" ||
-|| hasSpaceKey<br />hasInternationalKey<br />hasReturnKey<br />hasShiftKey<br />hasDeleteKey || Whether each of these 5 special keys are present. || YES ||
-|| shiftKeyLeft<br />deleteKeyRight || The location of these 2 special keys || 0 ||
-|| shiftKeyEnabled || Whether the shift key is enabled. || YES ||
 
-== texts, shiftedTexts ==
+  _struct_ `<sublayout>` ::
+<table border="1" bordercolor="#AAAAAA" cellpadding="5">
+<tr>
+	<th>key</th>
+	<th colspan="2">type</th>
+	<th>meaning</th>
+	<th>default</th>
+	<th>depends</th>
+</tr>
+<tr>
+	<td>rows</td>
+	<td>integer</td>
+	<td>_value_ ≥ 2</td>
+	<td>How many rows of keys are there in this sublayout.</td>
+	<td>4</td>
+	<td>--</td>
+</tr>
+<tr>
+	<td>texts</td>
+	<td>array</td>
+	<td>...of `<text row>`s</td>
+	<td>Text typed for each key in each row. </td>
+	<td>nil</td>
+	<td>--</td>
+</tr>
+<tr>
+	<td>shiftedTexts</td>
+	<td>array</td>
+	<td>...of `<text row>`s</td>
+	<td>Text typed for each key in each row when the shift key is held.</td>
+	<td>_texts_</td>
+	<td>--</td>
+</tr>
+<tr>
+	<td>labels</td>
+	<td>array</td>
+	<td>...of `<text row>`s</td>
+	<td>Label displayed on each key in each row.</td>
+	<td>_texts_</td>
+	<td>--</td>
+</tr>
+<tr>
+	<td>shiftedLabels</td>
+	<td>array</td>
+	<td>...of `<text row>`s</td>
+	<td>Label displayed on each key in each row when the shift key is held.</td>
+	<td>_shiftedTexts_</td>
+	<td>--</td>
+</tr>
+<tr>
+	<td>popups</td>
+	<td>array</td>
+	<td>...of `<text row>`s</td>
+	<td>Popup character shown when each key is pressed for each row.</td>
+	<td>_texts_</td>
+	<td>--</td>
+</tr>
+<tr>
+	<td>shiftedPopups</td>
+	<td>array</td>
+	<td>...of `<text row>`s</td>
+	<td>Popup character shown when each key is pressed for each row when the shift key is held.</td>
+	<td>_shiftedTexts_</td>
+	<td>--</td>
+</tr>
+<tr>
+	<td rowspan="2">arrangement</td>
+	<td>array</td>
+	<td>...of integers</td>
+	<td rowspan="2">Number of keys in each row.</td>
+	<td rowspan="2">"Default"</td>
+	<td rowspan="2">--</td>
+</tr>
+<tr>
+	<td>string</td>
+	<td>`<preset arrangements>`</td>
+</tr>
+<tr>
+	<td rowspan="2">rowIndentation</td>
+	<td>array</td>
+	<td>...of `<row indentation>`s</td>
+	<td rowspan="2">Free space on either sides in each row.</td>
+	<td rowspan="2">"Default"</td>
+	<td rowspan="2">--</td>
+</tr>
+<tr>
+	<td>string</td>
+	<td>`<preset row identations>`</td>
+</tr>
+<tr>
+	<td rowspan="2">horizontalSpacing</td>
+	<td>array</td>
+	<td>...of integers</td>
+	<td rowspan="2">Free space between 2 keys in that row. Specify a negative number if you want keys to be closer than default spacing.</td>
+	<td rowspan="2">0</td>
+	<td rowspan="2">--</td>
+</tr>
+<tr>
+	<td colspan="2">integer</td>
+</tr>
+<tr>
+	<td>hasSpaceKey</td>
+	<td colspan="2">boolean</td>
+	<td>Whether the default space key is present. You should set this to 0 (✗) if you are implementing the URL or email sublayouts.</td>
+	<td>✓</td>
+	<td>--</td>
+</tr>
+<tr>
+	<td>hasInternationalKey</td>
+	<td colspan="2">boolean</td>
+	<td>Whether the plane switcher and international key are present.</td>
+	<td>✓</td>
+	<td>--</td>
+</tr>
+<tr>
+	<td>hasReturnKey</td>
+	<td colspan="2">boolean</td>
+	<td>Whether the return key is present.</td>
+	<td>✓</td>
+	<td>--</td>
+</tr>
+<tr>
+	<td>hasShiftKey</td>
+	<td colspan="2">boolean</td>
+	<td>Whether the shift key is present.</td>
+	<td>✓</td>
+	<td>--</td>
+</tr>
+<tr>
+	<td>shiftKeyEnabled</td>
+	<td colspan="2">boolean</td>
+	<td>Whether the shift key is enabled. You should set this to 0 (✗) if you are implementing the SMS sublayout.</td>
+	<td>✓</td>
+	<td>_hasShiftKey_ = ✓</td>
+</tr>
+<tr>
+	<td>shiftKeyLeft</td>
+	<td colspan="2">integer</td>
+	<td>The position of the shift key from the left.</td>
+	<td>0</td>
+	<td>_hasShiftKey_ = ✓</td>
+</tr>
+<tr>
+	<td>shiftKeyWidth</td>
+	<td colspan="2">integer</td>
+	<td>The width of the shift key button.</td>
+	<td>42</td>
+	<td>_hasShiftKey_ = ✓</td>
+</tr>
+<tr>
+	<td>shiftKeyStyle</td>
+	<td>string</td>
+	<td>{"`Default`", "`To123`", "`ToSymbol`"}</td>
+	<td>Shift key style. Default = `[⇧]`; To123 = `[#+=]`; !ToSymbol = `[123]`.</td>
+	<td>"Default"</td>
+	<td>_hasShiftKey_ = ✓</td>
+</tr>
+<tr>
+	<td>hasDeleteKey</td>
+	<td colspan="2">boolean</td>
+	<td>Whether the delete key is present.</td>
+	<td>✓</td>
+	<td>--</td>
+</tr>
+<tr>
+	<td>deleteKeyRight</td>
+	<td colspan="2">integer</td>
+	<td>The position of the delete key from the right.</td>
+	<td>0</td>
+	<td>_hasDeleteKey_ = ✓</td>
+</tr>
+<tr>
+	<td>deleteKeyWidth</td>
+	<td colspan="2">integer</td>
+	<td>The width of the delete key button.</td>
+	<td>42</td>
+	<td>_hasDeleteKey_ = ✓</td>
+</tr>
+</table>
+
+Please be aware that all horizontal metrics (widths and _x_-position) are measured in *multiples of key width on that row* instead of pixels.
+
+== texts, shiftedTexts, etc. ==
 
 texts is an array. The elements of texts are using array of strings, which specify the keys in the row in order.
 
@@ -85,21 +260,62 @@ To avoid duplicated declaration, you can refer to texts of other sub-layouts in 
   Example: The URL sub-layout is usually implemented as
 {{{
 texts = (
-  "=Alphabet",
-  "=Alphabet",
-  "=Alphabet",
+  "=Alphabet[0]",
+  "=Alphabet[1]",
+  "=Alphabet[2]",
   (".", "/", ".com")
 );
 }}}
-  which means the first 3 rows will use the same keys in the Alphabet sub-layout, but Row 3 will use the keys [.], [/] and [.com] instead.
+  which means the first 3 rows will use the same keys in the Alphabet sub-layout in rows 0, 1 and 2 respectively, but Row 3 will use the keys `[.]`, `[/]` and `[.com]` instead.
 
-shiftedTexts use the same structure as texts. If shiftedTexts is missing, the shifted value will default to the uppercase string if that's just a single character (e.g. q ↦ Q), or the same string if there's more (e.g. .com ↦ .com).
+_shiftedTexts_ use the same structure as texts. If _shiftedTexts_ is missing, the shifted value will default to the uppercase string if that's just a single character (e.g. q ↦ Q), or the same string if there's more (e.g. .com ↦ .com).
 
   _DO NOT_ associate the same value to more than one key in the same sub-layout. iPhoneOS is not designed to handle this. Currently, the composite graphics is associated to keys by the key value, so e.g. if you have a `[Q]` on the far left and another `[Q]` on the far right, the pop up graphics will be misplaced.
 
+There are cases you may want the label not to show exactly what you will type, e.g. when the text is too long to fit into the small key, or the text is a combining character. `labels`, `shiftedLabels`, `popups` and `shiftedPopups` are entries you would go after for these fine details.
+
+ Example: If we replace the "q" key of the Alphabet sublayout to "Hello world!", the key will definitely be too small. So you may want to create a placeholder like "☺". So you specify the entry as
+{{{
+texts = (
+  ("Hello world!", "w", "e", "r", "t", "y", "u", "i", "o", "p"),
+  ("a", "s", "d", "f", "g", "h", "j", "k", "l"),
+  ("z", "x", "c", "v", "b", "n", "m")
+);
+labels = (
+  ("☺", "w", "e", "r", "t", "y", "u", "i", "o", "p"),
+  "=Alphabets[1]",
+  "=Alphabets[2]"
+);
+}}}
+ note how the labels refer unchanged row back to itself.
+
+The complete spec:
+  _union_ `<text row>` ::
+<table border="1" bordercolor="#AAAAAA" cellpadding="5">
+<tr>
+	<th colspan="2">type</th>
+	<th>meaning</th>
+</tr>
+<tr>
+	<td>array</td>
+	<td>...of strings</td>
+	<td>The string to assign to each key in that row.</td>
+</tr>
+<tr>
+	<td>string</td>
+	<td>`/^=(?<key>\w+)(?<row>\[\d+\])?$/`</td>
+	<td>This row will be refered. The format must be "`=key[row]`", where _key_ is one of the keys defined in the root level dictionary. If _row_ is missing, it will be taken as the current row. If the refered row does not exist or breaks the recursion limit (8 recursions), nil will be used. The destination is always _texts_ or _shiftedTexts_, depending on the supposed default value of the entry</td>
+</tr>
+</table>
+
 == arrangement ==
-arrangement specifies how many keys will be present in each row. It can be an array of 4 numbers, or a string representing the standard values:
-|| *String* || *Row 0* || *Row 1* || *Row 2* || *Row 3* ||
+arrangement specifies how many keys will be present in each row, e.g.
+{{{
+ arrangement = (10, 9, 7, 0);
+}}}
+
+It can be an array of _rows_ numbers, or a string representing the standard values:
+|| *String* || *Row 0* || *Row 1* || *Row 2* || *Last row* ||
 || Default || 10 || 9 || 7 || ||
 || AZERTY || 10 || 10 || 6 || ||
 || Russian || 11 || 11 || 9 || ||
@@ -112,11 +328,10 @@ WithURLRow4 can be combined with the 6 values, e.g.
 {{{
 arrangement = "Default|WithURLRow4";
 }}}
-which is equivalent to
+is equivalent to
 {{{
-arrangement = (10, 9, 7, 3);
+arrangement = (10, 9, 7, ..., 3);
 }}}
-means there are 10 keys in row 0, 9 keys in row 1, 7 keys in row 2 and 3 keys in row 3.
 
   If you are using an XML property list, do it like this:
 {{{
@@ -126,6 +341,7 @@ means there are 10 keys in row 0, 9 keys in row 1, 7 keys in row 2 and 3 keys in
   <integer>10</integer>
   <integer>9</integer>
   <integer>7</integer>
+  ...
   <integer>3</integer>
 </array>
 ...
@@ -133,7 +349,25 @@ means there are 10 keys in row 0, 9 keys in row 1, 7 keys in row 2 and 3 keys in
 
 == rowIndentation ==
 
-rowIndentation specifies the spacing in pixels on the left and right of that row _in portrait orientation_. It has the same structure as arrangement, i.e. it can either be an array of 4 numbers or a string of predefined values:
+rowIndentation specifies the spacing in pixels on the left and right of that row _in portrait orientation_. The content of the array are:
+  _union_ `<row indentation>` ::
+<table border="1" bordercolor="#AAAAAA" cellpadding="5">
+<tr>
+	<th colspan="2">type</th>
+	<th>meaning</th>
+</tr>
+<tr>
+	<td>array</td>
+	<td>...of integers</td>
+	<td>An array of 2 integers defining the left and right padding respectively.</td>
+</tr>
+<tr>
+	<td colspan="2">integer</td>
+	<td>Left and right padding will be the same.</td>
+</tr>
+</table>
+
+It can also use a string of predefined values:
 || *String* || *Row 0* || *Row 1* || *Row 2* || *Row 3* ||
 || Default || 0 || 16 || 48 || 80 ||
 || AZERTY || 0 || 0 || 64 || 80 ||
@@ -141,14 +375,12 @@ rowIndentation specifies the spacing in pixels on the left and right of that row
 || Alt || 0 || 0 || 48 || 80 ||
 || !TightestDefault || 0 || 0 || 42 || 80 ||
 
-  If possible, please _avoid_ Russian rowIndentation. In the Russian keyboard, the shift and delete keys are made smaller to accommodate the 2 extra keys in Row 2. However, iKeyEx only supports one standard size of the shift and delete keys. If you use Russian rowIndentation, these two keys will overlap with ordinary keys.
-
 The indentation in landscape orientation will be automatically converted using the formula:
   !Landscape_rowIndentation = !Portrait_rowIndentation × (47/32) + 5
 
 = Caching =
 
-Reconstructing the images and parameters for `UIKeyboardSublayout` is expensive. It takes about 1 to 2 seconds to start up. Therefore, when using layout.plist, iKeyEx will automatically cache the computed results in `/var/mobile/Library/Keyboard/iKeyEx/cache/`. 
+Reconstructing the images and parameters for `UIKeyboardSublayout` is expensive. It takes about 1 to 2 seconds to start up. Therefore, when using layout.plist, iKeyEx will automatically cache the computed results in `/var/mobile/Library/Keyboard/`. 
 
 When you upgrade your layout.plist, you must empty the cache. You can do so by using the program `iKeyEx_KBMan`, e.g.
 {{{
