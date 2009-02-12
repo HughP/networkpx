@@ -74,8 +74,7 @@ CGImageRef GUImageCreateWithPatching(CGImageRef img, CGRect src, CGRect target) 
 }
 
 CGImageRef GUImageCreateWithMask(CGImageRef src, CGImageRef mask) {
-	CGRect imgRect = CGRectMake(0, 0, CGImageGetWidth(src), CGImageGetHeight(src));
-	GUCreateContext(c, imgRect.size.width, imgRect.size.height);
+	GUCreateContextWithImageAuto(src);
 	CGContextClipToMask(c, imgRect, mask);
 	CGContextDrawImage(c, imgRect, src);
 	CGImageRef finalImg = CGBitmapContextCreateImage(c);
@@ -84,8 +83,7 @@ CGImageRef GUImageCreateWithMask(CGImageRef src, CGImageRef mask) {
 }
 
 CGImageRef GUImageCreateWithCappedMask(CGImageRef src, CGImageRef mask, GUCaps caps) {
-	CGRect imgRect = CGRectMake(0, 0, CGImageGetWidth(src), CGImageGetHeight(src));
-	GUCreateContext(c, imgRect.size.width, imgRect.size.height);
+	GUCreateContextWithImageAuto(src);
 	GUDrawImageWithCaps(c, imgRect, mask, caps);
 	CGContextSetBlendMode(c, kCGBlendModeSourceIn);
 	CGContextDrawImage(c, imgRect, src);
@@ -104,8 +102,6 @@ CGImageRef GUImageCreateWithCaps(CGImageRef img, CGRect rect, GUCaps caps) {
 
 void GUDrawImageWithCaps(CGContextRef c, CGRect rect, CGImageRef img, GUCaps caps) {
 	// assert: img.width > caps.left+caps.right && img.height > caps.top+caps.bottom.
-	bool scaleDownX = rect.size.width <= caps.left + caps.right + 1,
-		scaleDownY = rect.size.height <= caps.top + caps.bottom + 1;
 	size_t imgWidth = CGImageGetWidth(img), imgHeight = CGImageGetHeight(img);
 	bool matchX = (rect.size.width == imgWidth), matchY = (rect.size.height == imgHeight);
 	
@@ -231,15 +227,15 @@ float GUAverageLuminance (CGImageRef image) {
 	
 	// the total RGBA components
 	UInt32 A = 0, R = 0, G = 0, B = 0;
-	struct{char a,r,g,b; }* data = CGBitmapContextGetData(c);
+	struct{char r,g,b,a; }* data = CGBitmapContextGetData(c);
 	size_t area = imgWidth * imgHeight;
 	
 	if (data != NULL) {
 		for (ptrdiff_t i = 0; i < area; ++ i) {
-			A += data[i].a;
 			R += data[i].r;
 			G += data[i].g;
 			B += data[i].b;
+			A += data[i].a;
 		}
 		
 		free(data);
@@ -271,23 +267,44 @@ UIImage* GUCreateUIImageAndRelease(CGImageRef img) {
 }
 
 CGImageRef GUImageCreateByReducingBrightness(CGImageRef img, CGFloat reductionRatio) {
-	CGRect imgRect = CGRectZero;
-	imgRect.size = CGSizeMake(CGImageGetWidth(img), CGImageGetHeight(img));
-	GUCreateContext(c, imgRect.size.width, imgRect.size.height);
+	GUCreateContextWithImageAuto(img);
 	CGContextDrawImage(c, imgRect, img);
 	CGContextSetBlendMode(c, kCGBlendModeDestinationIn);
-	
-	/*CGColorSpaceRef graySpace = CGColorSpaceCreateDeviceGray();
-	CGFloat components[2] = {0, reductionRatio};
-	CGColorRef gray = CGColorCreate(graySpace, components);
-	CGContextSetFillColorWithColor(c, gray);*/
-	
 	CGContextSetAlpha(c, reductionRatio);
 	CGContextFillRect(c, imgRect);
-	//CGColorRelease(gray);
-	//CGColorSpaceRelease(graySpace);
-	
 	CGImageRef finalImg = CGBitmapContextCreateImage(c);
 	CGContextRelease(c);
+	return finalImg;
+}
+
+
+CGPathRef GUPathCreateRoundRect(CGRect rect, CGFloat radius) {
+	CGFloat right = rect.origin.x + rect.size.width, top = rect.origin.y + rect.size.height;
+
+	CGPoint centers[4];
+	centers[0] = CGPointMake(rect.origin.x + radius, top - radius);
+	centers[1] = CGPointMake(right - radius, top - radius);
+	centers[2] = CGPointMake(right - radius, rect.origin.y + radius);
+	centers[3] = CGPointMake(rect.origin.x + radius, rect.origin.y + radius);
+	
+	CGMutablePathRef path = CGPathCreateMutable();
+	CGPathAddArc(path, NULL, centers[0].x, centers[0].y, radius, M_PI, M_PI/2, true);
+	CGPathAddArc(path, NULL, centers[1].x, centers[1].y, radius, M_PI/2, 0, true);
+	CGPathAddArc(path, NULL, centers[2].x, centers[2].y, radius, 0, -M_PI/2, true);
+	CGPathAddArc(path, NULL, centers[3].x, centers[3].y, radius, -M_PI/2, -M_PI, true);
+	CGPathCloseSubpath(path);
+	
+	return path;	
+}
+
+CGImageRef GUImageCreateByClippingToRoundRect(CGImageRef img, CGRect rect, CGFloat radius) {
+	GUCreateContextWithImageAuto(img);
+	CGPathRef roundRect = GUPathCreateRoundRect(rect, radius);
+	CGContextAddPath(c, roundRect);
+	CGContextClip(c);
+	CGContextDrawImage(c, imgRect, img);
+	CGImageRef finalImg = CGBitmapContextCreateImage(c);
+	CGContextRelease(c);
+	CGPathRelease(roundRect);
 	return finalImg;
 }

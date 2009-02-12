@@ -62,7 +62,24 @@ NSString* referedKeyOf(NSString* key) {
 		return @"texts";
 }
 
+NSArray* tryUppercase(NSString* key, NSArray* srcArr) {
+	if (![key isEqualToString:@"texts"] && (![key hasPrefix:@"shifted"] || [key isEqualToString:@"shiftedTexts"])) {
+		NSMutableArray* retArr = [[NSMutableArray alloc] init];
+		for (NSString* s in srcArr) {
+			if ([s length] == 1)
+				[retArr addObject:[s uppercaseString]];
+			else
+				[retArr addObject:s];
+		}
+		[srcArr release];
+		return retArr;
+	} else
+		return srcArr;
+}
+
 #define RecursionLimit 8
+// Warning: This function does not follow Foundation's memory management convention.
+//          The returned value is *retained* instead of autoreleased.
 NSArray* fetchTextRow(NSString* curKey, NSUInteger row, NSDictionary* restrict sublayout, NSDictionary* restrict layoutDict, NSUInteger depth) {
 	// too deep. break out by returning nothing.
 	if (depth >= RecursionLimit)
@@ -70,9 +87,9 @@ NSArray* fetchTextRow(NSString* curKey, NSUInteger row, NSDictionary* restrict s
 	
 	NSArray* allRows = [sublayout objectForKey:curKey];
 	if ([allRows count] <= row) {
-		if (![curKey isEqualToString:@"text"])
-			return fetchTextRow(referedKeyOf(curKey), row, sublayout, layoutDict, depth+1);
-		else
+		if (![curKey isEqualToString:@"text"]) {
+			return tryUppercase(curKey, fetchTextRow(referedKeyOf(curKey), row, sublayout, layoutDict, depth+1));
+		} else
 			return nil;
 	}
 	NSArray* rowContent = [allRows objectAtIndex:row];
@@ -99,8 +116,10 @@ NSArray* fetchTextRow(NSString* curKey, NSUInteger row, NSDictionary* restrict s
 					refSublayoutKey = [rest substringToIndex:leftBrac.location];
 				}
 				NSDictionary* refSublayout = [layoutDict objectForKey:refSublayoutKey];
-				return fetchTextRow((refSublayout == sublayout ? referedKeyOf(curKey) : curKey),
-									specificRow, refSublayout, layoutDict, depth+1);
+				if (refSublayout == sublayout) {
+					return tryUppercase(curKey, fetchTextRow(referedKeyOf(curKey), specificRow, refSublayout, layoutDict, depth+1));
+				} else
+					return fetchTextRow(curKey, specificRow, refSublayout, layoutDict, depth+1);
 			}
 		}
 	}
