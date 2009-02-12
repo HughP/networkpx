@@ -66,8 +66,8 @@
 		varName = keyboard.varName
 
 +(UIKeyboardSublayout*)sublayoutWithFrame:(CGRect)frame keyboard:(UIKBStandardKeyboard*)keyboard keyDefinitionBuffer:(UIKeyDefinition**)keydef keyCountBuffer:(NSUInteger*)keyCount type:(NSString* const)sublayoutType isAlt:(BOOL)isAlt {	
-	UIKeyboardAppearance appr = keyboard.keyboardAppearance;
-	BOOL landscape = keyboard.landscape;
+	UIKeyboardAppearance appr = keyboard->keyboardAppearance;
+	BOOL landscape = keyboard->landscape;
 	
 	NSString* cached_keydefPath = nil;
 	NSString* cached_imagePath = nil;
@@ -147,10 +147,10 @@
 	[sl setCompositeImage:fgShiftImage forKey:UIKeyboardFGLettersAltShift];
 	
 	// actual location of the shift.
-	if (keyboard.hasShiftKey && keyboard.shiftKeyEnabled) {
-		NSUInteger skl = keyboard.shiftKeyLeft;
+	if (keyboard->hasShiftKey && keyboard->shiftKeyEnabled) {
+		NSUInteger skl = keyboard->shiftKeyLeft;
 		UIImage* shiftImg, *shiftLockImg;
-		if (keyboard.shiftStyle == UIKBShiftStyle123) {
+		if (keyboard->shiftStyle == UIKBShiftStyle123) {
 			shiftLockImg = shiftImg = UIKBGetImage(UIKBImageShift123, appr, landscape);
 		} else {
 			shiftImg = UIKBGetImage(UIKBImageShiftActive, appr, landscape);
@@ -161,18 +161,18 @@
 		[sl setAutoShiftButtonImage:shiftImg frame:shiftRect];
 		[sl setShiftLockedButtonImage:shiftLockImg frame:shiftRect];
 	}
-	if (keyboard.hasDeleteKey) {
-		NSUInteger dlr = keyboard.deleteKeyRight;
-		CGRect delRect = landscape ? CGRectMake(keyboard.keyboardSize.width-66-dlr, 84, 66, 38) : CGRectMake(keyboard.keyboardSize.width-42-dlr, 118, 42, 43);
+	if (keyboard->hasDeleteKey) {
+		NSUInteger dlr = keyboard->deleteKeyRight;
+		CGRect delRect = landscape ? CGRectMake(keyboard->keyboardSize.width-66-dlr, 84, 66, 38) : CGRectMake(keyboard->keyboardSize.width-42-dlr, 118, 42, 43);
 		[sl setDeleteButtonImage:UIKBGetImage(UIKBImageDelete, appr, landscape) frame:delRect];
 		[sl setDeleteActiveButtonImage:UIKBGetImage(UIKBImageDeleteActive, appr, landscape) frame:delRect];
 	}
 	
 	[sl addInternationalKeyIfNeeded:sublayoutType];
 	
-	if (keyboard.hasSpaceKey)
+	if (keyboard->hasSpaceKey)
 		[sl addSpaceKeyViewIfNeeded:sublayoutType];
-	if (keyboard.hasReturnKey)
+	if (keyboard->hasReturnKey)
 		[sl addReturnKeyViewIfNeeded:sublayoutType];
 	
 	return sl;
