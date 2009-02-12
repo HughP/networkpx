@@ -42,7 +42,6 @@
 #include <GraphicsUtilities.h>
 
 static NSMutableDictionary* cache;
-static CGImageRef masks[2];
 static NSMutableDictionary* brightnesses = nil;
 
 //------------------------------------------------------------------------------
@@ -55,26 +54,39 @@ static const CGRect BackgroundRect2_Portrait = {{79, 172}, {2, 44}};
 static const CGRect BackgroundRectT_Portrait = {{159, 0}, {2, 216}};
 static const CGRect BackgroundRect_Landscape = {{238, 0}, {4, 162}};
 
-static const GUCaps KeyCaps = {7, 7, 7, 7};
+static const GUCaps KeyCaps = {8,8,8,8};
 
 static const CGRect KeyRect_Key_Portrait = {{225, 10}, {30, 43}};
-static const CGRect KeyRect_ISrc_Portrait = {{ 9, 13}, {4, 17}};
-static const CGRect KeyRect_ITrg_Portrait = {{13, 13}, {4, 17}};
+static const CGRect KeyRect_ISrc_Portrait = {{7, 13}, { 1, 17}};
+static const CGRect KeyRect_ITrg_Portrait = {{8, 13}, {15, 17}};
+#define KeyRect_Key_Portrait_DeltaY 54
+static const CGRect KeyRect_Mask_Portrait = {{1, 1}, {28, 41}};
+#define KeyRect_Mask_Radius 5.5f
 
-static const CGRect KeyRect_Key_Landscape = {{336, 4}, {43, 36}};
-static const CGRect KeyRect_ISrc_Landscape = {{15, 9}, {4, 17}};
-static const CGRect KeyRect_ITrg_Landscape = {{19, 9}, {4, 17}};
+static const CGRect KeyRect_Key_Landscape = {{336, 4}, {43, 38}};
+static const CGRect KeyRect_ISrc_Landscape = {{13, 11}, { 1, 17}};
+static const CGRect KeyRect_ITrg_Landscape = {{14, 11}, {15, 17}};
+#define KeyRect_Key_Landscape_DeltaY 40
+static const CGRect KeyRect_Mask_Landscape = {{1, 2}, {41, 35}};
+
 
 static const CGRect KeyRect1_Portrait = {{224, 10}, {8, 44}};
 static const CGRect KeyRect2_Portrait = {{249, 10}, {7, 44}};
 static const CGRect KeyRect1_Ladnscape = {{334, 4}, {9, 38}};
 static const CGRect KeyRect2_Ladnscape = {{373, 4}, {8, 38}};
 
-static const CGRect ShiftRect_Portrait = {{0, 118}, {42, 43}};
+static const CGRect ShiftRect_Portrait = {{0, 118}, {42, 44}};
+static const CGRect ShiftSubrect_Portrait = {{1, 1}, {40, 41}};
+static const CGRect ShiftRect_Mask_Portrait = {{1.5, 1.5}, {39, 40}};
+
+static const CGRect ShiftRect_Landscape = {{5, 84}, {62, 38}};
+static const CGRect ShiftSubRect_Landscape = {{5, 0}, {62, 40}};
+
 static const CGRect ShiftDrawRect_Portrait = {{1, 1}, {40, 41}};
-static const CGRect ShiftRect_Landscape = {{6, 84}, {58, 38}};
+
+static const CGRect ShiftRect_Mask_Landscape = {{2, 1}, {56, 36}};
 static const CGRect ShiftDrawRect_Landscape = {{-6, -5}, {76, 42.75}};	// -5 counted from bottom, not top. 
-static const CGRect ShiftSubRect_Landscape = {{6, 0}, {58, 38}};
+
 
 static const CGSize InternationalSize_Portrait = {37, 43};
 static const CGSize InternationalSize_Landscape = {47, 38};
@@ -82,16 +94,16 @@ static const CGSize InternationalSize_Landscape = {47, 38};
 static const CGRect SpaceRect_Portrait = {{0, 0}, {160, 44}};
 static const CGRect SpaceRect_Landscape = {{0, 0}, {283, 38}};
 static const CGRect SpaceEtchRect_Portrait = {{-2, 0}, {246, 9}};
-static const CGRect SpaceEtchRect_Landscape = {{0, 0}, {381, 8}};
+static const CGRect SpaceEtchRect_Landscape = {{0, 1}, {381, 8}};
 
 static const CGRect ReturnRect_Portrait = {{0, 0}, {80, 44}};
 static const CGRect ReturnRect_Landscape = {{0, 0}, {98, 38}};
 static const CGRect ReturnEtchRect_Portrait = {{-162, 0}, {246, 9}};
-static const CGRect ReturnEtchRect_Landscape = {{-283, 0}, {381, 8}};
+static const CGRect ReturnEtchRect_Landscape = {{-283, 1}, {381, 8}};
 
-static const CGRect DeleteRect_Portrait = {{278, 118}, {42, 43}};
-static const CGRect DeleteRect_Landscape = {{416, 84}, {57, 38}};
-static const CGRect DeleteSubRect_Landscape = {{2, 0}, {57, 38}};
+static const CGRect DeleteRect_Portrait = {{278, 118}, {42, 44}};
+static const CGRect DeleteRect_Landscape = {{415, 84}, {62, 38}};
+static const CGRect DeleteSubRect_Landscape = {{-1, 0}, {62, 38}};
 
 //------------------------------------------------------------------------------
 #pragma mark -
@@ -100,13 +112,6 @@ static const CGRect DeleteSubRect_Landscape = {{2, 0}, {57, 38}};
 
 // Call these functions once in a lifetime only.
 void UIKBInitializeImageCache () {
-#if TARGET_IPHONE_SIMULATOR
-	masks[0] = CGImageRetain([UIImage imageNamed:@"key.png"].CGImage);
-	masks[1] = CGImageRetain([UIImage imageNamed:@"key-transparent.png"].CGImage);
-#else
-	masks[0] = GUImageCreateWithPNG("/Library/iKeyEx/Masks/key.png");
-	masks[1] = GUImageCreateWithPNG("/Library/iKeyEx/Masks/key-transparent.png");
-#endif
 	brightnesses = [[NSMutableDictionary alloc] initWithContentsOfFile:iKeyEx_InternalCachePath@"brightnesses.plist"];
 	cache = [[NSMutableDictionary alloc] initWithCapacity:4*UIKBImageTypesCount];
 }
@@ -114,8 +119,6 @@ void UIKBInitializeImageCache () {
 void UIKBClearImageCache() {
 	[brightnesses writeToFile:iKeyEx_InternalCachePath@"brightnesses.plist" atomically:NO];
 	[brightnesses release];
-	CGImageRelease(masks[0]);
-	CGImageRelease(masks[1]);
 	[cache release];
 }
 
@@ -134,7 +137,6 @@ void UIKBReleaseImageCache() {
 
 #define TryLoadCacheBegin {
 #define TryLoadCacheEnd }
-#define TrySetBrightness
 
 #else
 
@@ -148,12 +150,6 @@ if (retimg == nil) {
 
 #define TryLoadCacheEnd [UIImagePNGRepresentation(retimg) writeToFile:(cachePath) atomically:NO]; }
 
-#define TrySetBrightness \
-if (![brightnesses objectForKey:keyNum]) { \
-	[brightnesses setObject:[NSNumber numberWithFloat:GUAverageLuminance(retimg.CGImage)] forKey:keyNum]; \
-	[brightnesses writeToFile:iKeyEx_InternalCachePath@"brightnesses.plist" atomically:NO]; \
-}
-
 #endif
 
 // really really long function.
@@ -165,6 +161,7 @@ UIImage* constructImage(UIKBImageClassType actualType) {
 	NSString* srcName;
 	NSString* cachePath;
 	BOOL isLandscape, isTransparent, isActive;
+	NSUInteger whichRow;
 	
 	switch (actualType) {
 		default:
@@ -179,7 +176,6 @@ UIImage* constructImage(UIKBImageClassType actualType) {
 												 YES);
 			retimg = GUCreateUIImageAndRelease(img);
 			TryLoadCacheEnd;
-			TrySetBrightness;
 			return retimg;
 			
 		case UIKBImageBackground|UIKBImageWithTransparent: 
@@ -189,7 +185,6 @@ UIImage* constructImage(UIKBImageClassType actualType) {
 											   BackgroundRectT_Portrait);
 			retimg = GUCreateUIImageAndRelease(img);
 			TryLoadCacheEnd;
-			TrySetBrightness;
 			return retimg;
 			
 		case UIKBImageBackground|UIKBImageWithLandscape:
@@ -204,43 +199,65 @@ UIImage* constructImage(UIKBImageClassType actualType) {
 			img = CGImageCreateWithImageInRect(_UIImageWithName(srcName).CGImage, BackgroundRect_Landscape);
 			retimg = GUCreateUIImageAndRelease(img);
 			TryLoadCacheEnd;
-			TrySetBrightness;
 			return retimg;
 			
-		case UIKBImageKey:
+		case UIKBImageKeyRow0:
+		case UIKBImageKeyRow1:
+		case UIKBImageKeyRow2:
 			// whoever creates these inconsistent naming schemes should be banned from software designing immediately.
 			cacheName = @"kb-ext-key.png";
 			srcName = @"kb-std-azerty.png";
 			goto key_namesComputed;
-		case UIKBImageKey|UIKBImageWithTransparent:
+		case UIKBImageKeyRow0|UIKBImageWithTransparent:
+		case UIKBImageKeyRow1|UIKBImageWithTransparent:
+		case UIKBImageKeyRow2|UIKBImageWithTransparent:
 			cacheName = @"kb-ext-key-transparent.png";
 			srcName = @"kb-std-azerty-transparent.png";
 			goto key_namesComputed;
-		case UIKBImageKey|UIKBImageWithLandscape:
+		case UIKBImageKeyRow0|UIKBImageWithLandscape:
+		case UIKBImageKeyRow1|UIKBImageWithLandscape:
+		case UIKBImageKeyRow2|UIKBImageWithLandscape:
 			cacheName = @"kb-ext-key-landscape.png";
 			srcName = @"kb-std-landscape-azerty.png";
 			goto key_namesComputed;
-		case UIKBImageKey|UIKBImageWithLandscape|UIKBImageWithTransparent:
+		case UIKBImageKeyRow0|UIKBImageWithLandscape|UIKBImageWithTransparent:
+		case UIKBImageKeyRow1|UIKBImageWithLandscape|UIKBImageWithTransparent:
+		case UIKBImageKeyRow2|UIKBImageWithLandscape|UIKBImageWithTransparent:
 			cacheName = @"kb-ext-key-landscape-transparent.png";
 			srcName = @"kb-std-landscape-transparent-azerty.png";
 key_namesComputed:
-			TryLoadCacheBegin;
-			isLandscape = (actualType & UIKBImageWithLandscape) != 0;			
-			// Get the "I" key.
-			CGImageRef ikey = CGImageCreateWithImageInRect(_UIImageWithName(srcName).CGImage, 
-														   isLandscape ? KeyRect_Key_Landscape : KeyRect_Key_Portrait);
-			// Cover the "I" letter.
-			CGImageRef premask = GUImageCreateWithPatching(ikey,
-														   isLandscape ? KeyRect_ISrc_Landscape : KeyRect_ISrc_Portrait,
-														   isLandscape ? KeyRect_ITrg_Landscape : KeyRect_ITrg_Portrait);
-			img = GUImageCreateWithCappedMask(premask, masks[(actualType&UIKBImageWithTransparent)?1:0], KeyCaps);
-			
-			retimg = GUCreateUIImageAndRelease(img);
-			CGImageRelease(premask);
-			CGImageRelease(ikey);
-			TryLoadCacheEnd;
-			TrySetBrightness;
+			if (!(retimg = _UIImageWithName(cacheName))) {
+				whichRow = (actualType & ~(UIKBImageWithLandscape|UIKBImageWithTransparent)) - UIKBImageKeyRow0;
+				cacheName = [cacheName stringByReplacingOccurrencesOfString:@"-key" withString:[NSString stringWithFormat:@"-key-row%d",whichRow]];
+				TryLoadCacheBegin;
+				isLandscape = (actualType & UIKBImageWithLandscape) != 0;			
+				CGRect imgRect = isLandscape ? KeyRect_Key_Landscape : KeyRect_Key_Portrait;
+				imgRect.origin.y += whichRow * (isLandscape ? KeyRect_Key_Landscape_DeltaY : KeyRect_Key_Portrait_DeltaY);
+				// Get the key
+				CGImageRef ikey = CGImageCreateWithImageInRect(_UIImageWithName(srcName).CGImage, imgRect);
+				// Cover the letter.
+				CGImageRef premask = GUImageCreateWithPatching(ikey,
+															   isLandscape ? KeyRect_ISrc_Landscape : KeyRect_ISrc_Portrait,
+															   isLandscape ? KeyRect_ITrg_Landscape : KeyRect_ITrg_Portrait);
+				img = GUImageCreateByClippingToRoundRect(premask,
+														 isLandscape ? KeyRect_Mask_Landscape : KeyRect_Mask_Portrait,
+														 KeyRect_Mask_Radius);
+				
+				retimg = GUCreateUIImageAndRelease(img);
+				CGImageRelease(premask);
+				CGImageRelease(ikey);
+				TryLoadCacheEnd;
+			}
 			return retimg;
+			
+		case UIKBImageKeyRow3:
+		case UIKBImageKeyRow3|UIKBImageWithLandscape:
+		case UIKBImageKeyRow3|UIKBImageWithTransparent:
+		case UIKBImageKeyRow3|UIKBImageWithTransparent|UIKBImageWithLandscape:
+			retimg = _UIImageWithName([NSString stringWithFormat:@"kb-key%@-space-small%@-light-enabled.png",
+									   (actualType & UIKBImageWithLandscape) ? @"-landscape" : @"-portrait",
+									   (actualType & UIKBImageWithTransparent) ? @"-gray" : @"-steel-blue"]);
+			return [retimg stretchableImageWithLeftCapWidth:(NSUInteger)(retimg.size.width/2) topCapHeight:0];
 			
 		case UIKBImageShift:
 		case UIKBImageShiftDisabled:
@@ -254,40 +271,54 @@ key_namesComputed:
 			TryLoadCacheBegin;
 			CGImageRef premask = CGImageCreateWithImageInRect(_UIImageWithName(srcName).CGImage,
 															  (actualType & UIKBImageWithLandscape) ? ShiftRect_Landscape : ShiftRect_Portrait);
-			img = GUImageCreateWithCappedMask(premask, masks[0], KeyCaps);
+			img = GUImageCreateByClippingToRoundRect(premask, 
+													 (actualType & UIKBImageWithLandscape) ? ShiftRect_Mask_Landscape : ShiftRect_Mask_Portrait,
+													 KeyRect_Mask_Radius);
 			retimg = GUCreateUIImageAndRelease(img);
 			CGImageRelease(premask);
 			TryLoadCacheEnd;
 			return retimg;
 			
 		case UIKBImageShiftActive:
-		case UIKBImageShiftActive|UIKBImageWithLandscape:
-			isLandscape = (actualType & UIKBImageWithLandscape) != 0;
-			cacheName = isLandscape ? @"kb-ext-shift-active-landscape.png" : @"kb-ext-shift-active.png";
+			cacheName = @"kb-ext-shift-active.png";
+			srcName = @"kb-std-shift.png";
+			goto shiftPortrait_namesComputed;
+		case UIKBImageShiftLocked:
+			cacheName = @"kb-ext-shift-locked.png";
+			srcName = @"kb-std-shift-locked.png";
+shiftPortrait_namesComputed:
 			TryLoadCacheBegin;
-			CGRect imgRect = isLandscape ? ShiftRect_Landscape : ShiftRect_Portrait;
-			GUCreateContext(c, imgRect.size.width, imgRect.size.height);
-			GUDrawImageWithCaps(c, CGRectMake(0, 0, imgRect.size.width, imgRect.size.height), masks[0], KeyCaps);
-			CGContextSetBlendMode(c, kCGBlendModeSourceIn);
-			CGContextDrawImage(c, isLandscape ? ShiftDrawRect_Landscape : ShiftDrawRect_Portrait,
-							   _UIImageWithName(isLandscape ? @"kb-std-landscape-shift.png" : @"kb-std-shift.png").CGImage);
-			img = CGBitmapContextCreateImage(c);
-			retimg = GUCreateUIImageAndRelease(img);
+			CGImageRef src = _UIImageWithName(srcName).CGImage;
+			GUCreateContext(c, ShiftRect_Portrait.size.width, ShiftRect_Portrait.size.height);
+			CGContextDrawImage(c, ShiftSubrect_Portrait, _UIImageWithName(@"kb-std-shift.png").CGImage);
+			CGContextDrawImage(c, ShiftSubrect_Portrait, src);
+			CGImageRef combinedImg = CGBitmapContextCreateImage(c);
+			retimg = GUCreateUIImageAndRelease(GUImageCreateByClippingToRoundRect(combinedImg,
+																				  ShiftRect_Mask_Portrait,
+																				  KeyRect_Mask_Radius));
+			CGImageRelease(combinedImg);
 			CGContextRelease(c);
 			TryLoadCacheEnd;
 			return retimg;
 			
-		case UIKBImageShiftLocked:
+		case UIKBImageShiftActive|UIKBImageWithLandscape:
+			cacheName = @"kb-ext-shift-active-landscape.png";
+			srcName = @"kb-std-landscape-shift.png";
+			goto shiftLandscape_namesComputed;
 		case UIKBImageShiftLocked|UIKBImageWithLandscape:
-			isLandscape = (actualType & UIKBImageWithLandscape) != 0;
-			cacheName = isLandscape ? @"kb-ext-shift-locked-landscape.png" : @"kb-ext-shift-locked.png";
+			cacheName = @"kb-ext-shift-locked-landscape.png";
+			srcName = @"kb-std-landscape-shift-locked.png";
+shiftLandscape_namesComputed:
 			TryLoadCacheBegin;
-			CGSize imgSize = isLandscape ? ShiftRect_Landscape.size : ShiftRect_Portrait.size;
-			img = GUImageCreateByComposition(_UIImageWithName(isLandscape ? @"kb-std-landscape-shift-locked.png" : @"kb-std-shift-locked.png").CGImage,
-											 UIKBGetImage(UIKBImageShift, UIKeyboardAppearanceDefault, isLandscape).CGImage,
-											 isLandscape ? ShiftDrawRect_Landscape : ShiftDrawRect_Portrait,
-											 CGRectMake(0, 0, imgSize.width, imgSize.height));
-			retimg = GUCreateUIImageAndRelease(img);
+			// well, we could make it without creating the subimage, but for maintainence let's just do it...
+			CGImageRef subsrc = CGImageCreateWithImageInRect(_UIImageWithName(srcName).CGImage, ShiftSubRect_Landscape);
+			CGImageRef combined = GUImageCreateByComposition(subsrc,
+															 UIKBGetImage(UIKBImageShift, UIKeyboardAppearanceDefault, YES).CGImage,
+															 CGRectMake(0, 0, ShiftRect_Landscape.size.width, ShiftRect_Landscape.size.height),
+															 CGRectMake(0, 0, ShiftRect_Landscape.size.width, ShiftRect_Landscape.size.height));
+			retimg = GUCreateUIImageAndRelease(GUImageCreateByClippingToRoundRect(combined, ShiftRect_Mask_Landscape, KeyRect_Mask_Radius));
+			CGImageRelease(subsrc);
+			CGImageRelease(combined);
 			TryLoadCacheEnd;
 			return retimg;
 			
@@ -304,8 +335,7 @@ key_namesComputed:
 			cacheName = @"kb-ext-shift-disabled-landscape.png";
 			TryLoadCacheBegin;
 			CGImageRef premask = CGImageCreateWithImageInRect(_UIImageWithName(@"kb-std-landscape-sms-shift.png").CGImage, ShiftSubRect_Landscape);
-			img = GUImageCreateWithCappedMask(premask, masks[0], KeyCaps);
-			retimg = GUCreateUIImageAndRelease(img);
+			retimg = GUCreateUIImageAndRelease(GUImageCreateByClippingToRoundRect(premask, ShiftRect_Mask_Landscape, KeyRect_Mask_Radius));
 			CGImageRelease(premask);
 			TryLoadCacheEnd;
 			return retimg;
@@ -345,10 +375,9 @@ shiftLandscapeTransparent_namesComputed:
 			TryLoadCacheBegin;
 			CGRect imgRect = CGRectZero;
 			imgRect.size = isLandscape ? InternationalSize_Landscape : InternationalSize_Portrait;
-			img = GUImageCreateByComposition(_UIImageWithName(isLandscape ? @"kb-std-landscape-transparent-intl-globe-active.png" :  @"kb-std-transparent-intl-globe-active.png").CGImage,
-											 UIKBGetImage(UIKBImageInternationalActive, UIKBImageWithTransparent, isLandscape).CGImage,
-											 imgRect, imgRect);
-			retimg = GUCreateUIImageAndRelease(img);
+			retimg = GUCreateUIImageAndRelease(GUImageCreateByComposition(_UIImageWithName(isLandscape ? @"kb-std-landscape-transparent-intl-globe-active.png" :  @"kb-std-transparent-intl-globe-active.png").CGImage,
+																		  UIKBGetImage(UIKBImageInternationalActive, UIKBImageWithTransparent, isLandscape).CGImage,
+																		  imgRect, imgRect));
 			TryLoadCacheEnd;
 			return retimg;
 		case UIKBImageInternational|UIKBImageWithLandscape:
@@ -381,11 +410,10 @@ shiftLandscapeTransparent_namesComputed:
 spaceEtch_namesComputed:
 			TryLoadCacheBegin;
 			isLandscape = (actualType & UIKBImageWithLandscape) != 0;
-			img = GUImageCreateByComposition(_UIImageWithName(isLandscape ? @"kb-std-landscape-transparent-space-return-etch.png" : @"kb-std-transparent-space-return-etch.png").CGImage,
-											 _UIImageWithName(srcName).CGImage,
-											 isLandscape ? SpaceEtchRect_Landscape : SpaceEtchRect_Portrait,
-											 isLandscape ? SpaceRect_Landscape : SpaceRect_Portrait);
-			retimg = GUCreateUIImageAndRelease(img);
+			retimg = GUCreateUIImageAndRelease(GUImageCreateByComposition(_UIImageWithName(isLandscape ? @"kb-std-landscape-transparent-space-return-etch.png" : @"kb-std-transparent-space-return-etch.png").CGImage,
+																		  _UIImageWithName(srcName).CGImage,
+																		  isLandscape ? SpaceEtchRect_Landscape : SpaceEtchRect_Portrait,
+																		  isLandscape ? SpaceRect_Landscape : SpaceRect_Portrait));
 			TryLoadCacheEnd;
 			return retimg;
 		case UIKBImageSpace|UIKBImageWithLandscape:
@@ -432,11 +460,10 @@ spaceEtch_namesComputed:
 returnEtch_namesComputed:
 			TryLoadCacheBegin;
 			isLandscape = (actualType & UIKBImageWithLandscape) != 0;
-			img = GUImageCreateByComposition(_UIImageWithName(isLandscape ? @"kb-std-landscape-transparent-space-return-etch.png" : @"kb-std-transparent-space-return-etch.png").CGImage,
-											 _UIImageWithName(srcName).CGImage,
-											 isLandscape ? ReturnEtchRect_Landscape : ReturnEtchRect_Portrait,
-											 isLandscape ? ReturnRect_Landscape : ReturnRect_Portrait);
-			retimg = GUCreateUIImageAndRelease(img);
+			retimg = GUCreateUIImageAndRelease(GUImageCreateByComposition(_UIImageWithName(isLandscape ? @"kb-std-landscape-transparent-space-return-etch.png" : @"kb-std-transparent-space-return-etch.png").CGImage,
+																		  _UIImageWithName(srcName).CGImage,
+																		  isLandscape ? ReturnEtchRect_Landscape : ReturnEtchRect_Portrait,
+																		  isLandscape ? ReturnRect_Landscape : ReturnRect_Portrait));
 			TryLoadCacheEnd;
 			return retimg;
 			
@@ -446,7 +473,8 @@ returnEtch_namesComputed:
 			TryLoadCacheBegin;
 			img = CGImageCreateWithImageInRect(_UIImageWithName((actualType != UIKBImageDeleteActive) ? @"kb-std-azerty.png" : @"kb-std-active-bg-main.png").CGImage,
 											   DeleteRect_Portrait);
-			retimg = GUCreateUIImageAndRelease(img);
+			retimg = GUCreateUIImageAndRelease(GUImageCreateByClippingToRoundRect(img, ShiftRect_Mask_Portrait, KeyRect_Mask_Radius));
+			CGImageRelease(img);
 			TryLoadCacheEnd;
 			return retimg;
 			
@@ -459,7 +487,8 @@ returnEtch_namesComputed:
 			cacheName = @"kb-ext-delete-landscape.png";
 			TryLoadCacheBegin;
 			img = CGImageCreateWithImageInRect(_UIImageWithName(@"kb-std-landscape-azerty.png").CGImage, DeleteRect_Landscape);
-			retimg = GUCreateUIImageAndRelease(img);
+			retimg = GUCreateUIImageAndRelease(GUImageCreateByClippingToRoundRect(img, ShiftRect_Mask_Landscape, KeyRect_Mask_Radius));
+			CGImageRelease(img);
 			TryLoadCacheEnd;
 			return retimg;
 			
@@ -478,7 +507,7 @@ returnEtch_namesComputed:
 			img = CGImageCreateWithImageInRect(_UIImageWithName(srcName).CGImage, DeleteSubRect_Landscape);
 			if (!isTransparent) {
 				CGImageRef premask = img;
-				img = GUImageCreateWithCappedMask(premask, masks[(actualType&UIKBImageWithTransparent)?1:0], KeyCaps);
+				img = GUImageCreateByClippingToRoundRect(img, ShiftRect_Mask_Landscape, KeyRect_Mask_Radius);;// GUImageCreateWithCappedMask(premask, masks[(actualType&UIKBImageWithTransparent)?1:0], KeyCaps);
 				CGImageRelease(premask);
 			}
 			retimg = GUCreateUIImageAndRelease(img);
@@ -494,43 +523,44 @@ returnEtch_namesComputed:
 		case UIKBImageABC|UIKBImageWithLandscape|UIKBImageWithTransparent: return _UIImageWithName(@"kb-std-landscape-transparent-intl-abc.png");
 		case UIKBImage123|UIKBImageWithLandscape|UIKBImageWithTransparent: return _UIImageWithName(@"kb-std-landscape-transparent-intl-123.png");
 			
-		case UIKBImageShiftSymbol:
-			cacheName = @"kb-ext-shift-symbol.png";
-			srcName = @"kb-std-alt.png";
-			goto shiftSymbol_namesComputed;
 		case UIKBImageShift123:
 			cacheName = @"kb-ext-shift-123.png";
 			srcName = @"kb-std-alt-shift.png";
 			goto shiftSymbol_namesComputed;
-		case UIKBImageShiftSymbol|UIKBImageWithTransparent:	
-			cacheName = @"kb-ext-shift-symbol-transparent.png";
-			srcName = @"kb-std-alt-transparent.png";
+		case UIKBImageShiftSymbol:
+			cacheName = @"kb-ext-shift-symbol.png";
+			srcName = @"kb-std-alt.png";
 			goto shiftSymbol_namesComputed;
 		case UIKBImageShift123|UIKBImageWithTransparent:	
 			cacheName = @"kb-ext-shift-123-transparent.png";
 			srcName = @"kb-std-alt-shift-transparent.png";
 			goto shiftSymbol_namesComputed;
-		case UIKBImageShiftSymbol|UIKBImageWithLandscape:
-			cacheName = @"kb-ext-shift-symbol-landscape.png";
-			srcName = @"kb-std-alt-landscape.png";
+		case UIKBImageShiftSymbol|UIKBImageWithTransparent:	
+			cacheName = @"kb-ext-shift-symbol-transparent.png";
+			srcName = @"kb-std-alt-transparent.png";
 			goto shiftSymbol_namesComputed;
 		case UIKBImageShift123|UIKBImageWithLandscape:
 			cacheName = @"kb-ext-shift-123-landscape.png";
 			srcName = @"kb-std-alt-landscape-shift.png";
 			goto shiftSymbol_namesComputed;
-		case UIKBImageShiftSymbol|UIKBImageWithLandscape|UIKBImageWithTransparent:
-			cacheName = @"kb-ext-shift-symbol-landscape-transparent.png";
-			srcName = @"kb-std-alt-landscape-shift-transparent.png";
+		case UIKBImageShiftSymbol|UIKBImageWithLandscape:
+			cacheName = @"kb-ext-shift-symbol-landscape.png";
+			srcName = @"kb-std-alt-landscape.png";
 			goto shiftSymbol_namesComputed;
-		case UIKBImageShift123|UIKBImageWithLandscape|UIKBImageWithTransparent:	
+		case UIKBImageShift123|UIKBImageWithLandscape|UIKBImageWithTransparent:
 			cacheName = @"kb-ext-shift-123-landscape-transparent.png";
 			srcName = @"kb-std-alt-shift-landscape-transparent.png";
+			goto shiftSymbol_namesComputed;
+		case UIKBImageShiftSymbol|UIKBImageWithLandscape|UIKBImageWithTransparent:	
+			cacheName = @"kb-ext-shift-symbol-landscape-transparent.png";
+			srcName = @"kb-std-alt-landscape-transparent.png";
 shiftSymbol_namesComputed:
 			TryLoadCacheBegin;
 			isLandscape = (actualType & UIKBImageWithLandscape) != 0;
 			CGImageRef premask = CGImageCreateWithImageInRect(_UIImageWithName(srcName).CGImage, isLandscape ? ShiftRect_Landscape : ShiftRect_Portrait);
-			img = GUImageCreateWithCappedMask(premask, masks[(actualType&UIKBImageWithTransparent)?1:0], KeyCaps);
-			retimg = GUCreateUIImageAndRelease(img);
+			retimg = GUCreateUIImageAndRelease(GUImageCreateByClippingToRoundRect(premask,
+																				  isLandscape ? ShiftRect_Mask_Landscape : ShiftRect_Mask_Portrait,
+																				  KeyRect_Mask_Radius));
 			CGImageRelease(premask);
 			TryLoadCacheEnd;
 			return retimg;
@@ -573,10 +603,13 @@ extern
 float UIKBGetBrightness(UIKBImageClassType type, UIKeyboardAppearance appearance, BOOL landscape) {
 	NSNumber* keyInt = [NSNumber numberWithInt:type|(appearance?UIKBImageWithTransparent:0)|(landscape?UIKBImageWithLandscape:0)];
 	NSNumber* obj = [brightnesses objectForKey:keyInt];
-	if ([obj respondsToSelector:@selector(floatValue)])
+	if (obj != nil)
 		return [obj floatValue];
-	else
-		return NAN;
+	else {
+		float b = GUAverageLuminance(UIKBGetImage(type, appearance, landscape).CGImage);
+		[brightnesses setObject:[NSNumber numberWithFloat:b] forKey:keyInt];
+		return b;
+	}
 }
 
 extern 
