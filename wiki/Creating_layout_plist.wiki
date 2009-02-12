@@ -152,13 +152,13 @@ The value of each key is a dictionary consists of the following properties:
 <tr>
 	<td rowspan="2">horizontalSpacing</td>
 	<td>array</td>
-	<td>...of integers</td>
+	<td>...of reals</td>
 	<td rowspan="2">Free space between 2 keys in that row. Specify a negative number if you want keys to be closer than default spacing.</td>
 	<td rowspan="2">0</td>
 	<td rowspan="2">--</td>
 </tr>
 <tr>
-	<td colspan="2">integer</td>
+	<td colspan="2">real</td>
 </tr>
 <tr>
 	<td>hasSpaceKey</td>
@@ -197,23 +197,30 @@ The value of each key is a dictionary consists of the following properties:
 </tr>
 <tr>
 	<td>shiftKeyLeft</td>
-	<td colspan="2">integer</td>
+	<td colspan="2">real</td>
 	<td>The position of the shift key from the left.</td>
 	<td>0</td>
 	<td>_hasShiftKey_ = ✓</td>
 </tr>
 <tr>
 	<td>shiftKeyWidth</td>
-	<td colspan="2">integer</td>
+	<td colspan="2">real</td>
 	<td>The width of the shift key button.</td>
 	<td>42</td>
 	<td>_hasShiftKey_ = ✓</td>
 </tr>
 <tr>
-	<td>shiftKeyStyle</td>
+	<td>shiftKeyRow</td>
+	<td colspan="2">integer</td>
+	<td>Which row the shift key should reside in.</td>
+	<td>_rows_ − 2</td>
+	<td>_hasShiftKey_ = ✓</td>
+</tr>
+<tr>
+	<td>shiftStyle</td>
 	<td>string</td>
-	<td>{"`Default`", "`To123`", "`ToSymbol`"}</td>
-	<td>Shift key style. Default = `[⇧]`; To123 = `[#+=]`; !ToSymbol = `[123]`.</td>
+	<td>{"`Default`", "`Symbol`", "`123`"}</td>
+	<td>Shift key style. Default = `[⇧]`; Symbol = `[#+=]`; 123 = `[123]`.</td>
 	<td>"Default"</td>
 	<td>_hasShiftKey_ = ✓</td>
 </tr>
@@ -226,16 +233,23 @@ The value of each key is a dictionary consists of the following properties:
 </tr>
 <tr>
 	<td>deleteKeyRight</td>
-	<td colspan="2">integer</td>
+	<td colspan="2">real</td>
 	<td>The position of the delete key from the right.</td>
 	<td>0</td>
 	<td>_hasDeleteKey_ = ✓</td>
 </tr>
 <tr>
 	<td>deleteKeyWidth</td>
-	<td colspan="2">integer</td>
+	<td colspan="2">real</td>
 	<td>The width of the delete key button.</td>
 	<td>42</td>
+	<td>_hasDeleteKey_ = ✓</td>
+</tr>
+<tr>
+	<td>deleteKeyRow</td>
+	<td colspan="2">integer</td>
+	<td>Which row the delete key should reside in.</td>
+	<td>_rows_ − 2</td>
 	<td>_hasDeleteKey_ = ✓</td>
 </tr>
 </table>
@@ -304,7 +318,12 @@ The complete spec:
 <tr>
 	<td>string</td>
 	<td>`/^=(?<key>\w+)(?<row>\[\d+\])?$/`</td>
-	<td>This row will be refered. The format must be "`=key[row]`", where _key_ is one of the keys defined in the root level dictionary. If _row_ is missing, it will be taken as the current row. If the refered row does not exist or breaks the recursion limit (8 recursions), nil will be used. The destination is always _texts_ or _shiftedTexts_, depending on the supposed default value of the entry</td>
+	<td>This row will be refered. The format must be "`=key[row]`", where _key_ is one of the keys defined in the root level dictionary. If _row_ is missing, it will be taken as the current row. If the refered row does not exist or breaks the recursion limit (8 recursions), nil will be used. The destination is always _texts_ or _shiftedTexts_ if it refers back to itself, and is the corresponding key if to others.</td>
+</tr>
+<tr>
+	<td>string</td>
+	<td>_length_ ≥ 2 && _str_`[`0`]` ≠ "="</td>
+	<td>A concatenated string. The first character is the separator. For example, ",q,w,e,r,t,y,u,i,o,p".</td>
 </tr>
 </table>
 
@@ -315,7 +334,7 @@ arrangement specifies how many keys will be present in each row, e.g.
 }}}
 
 It can be an array of _rows_ numbers, or a string representing the standard values:
-|| *String* || *Row 0* || *Row 1* || *Row 2* || *Last row* ||
+|| *String* || *Rows 0 to N-3* || *Row N-2* || *Row N-1* || *Row N* ||
 || Default || 10 || 9 || 7 || ||
 || AZERTY || 10 || 10 || 6 || ||
 || Russian || 11 || 11 || 9 || ||
@@ -347,6 +366,8 @@ arrangement = (10, 9, 7, ..., 3);
 ...
 }}}
 
+*Unless you are creating a standard 4-row layout, you should use the numeric array format instead of preset strings.*
+
 == rowIndentation ==
 
 rowIndentation specifies the spacing in pixels on the left and right of that row _in portrait orientation_. The content of the array are:
@@ -358,17 +379,17 @@ rowIndentation specifies the spacing in pixels on the left and right of that row
 </tr>
 <tr>
 	<td>array</td>
-	<td>...of integers</td>
+	<td>...of reals</td>
 	<td>An array of 2 integers defining the left and right padding respectively.</td>
 </tr>
 <tr>
-	<td colspan="2">integer</td>
+	<td colspan="2">real</td>
 	<td>Left and right padding will be the same.</td>
 </tr>
 </table>
 
 It can also use a string of predefined values:
-|| *String* || *Row 0* || *Row 1* || *Row 2* || *Row 3* ||
+|| *String* || *Rows 0 to N-3* || *Row N-2* || *Row N-1* || *Row N* ||
 || Default || 0 || 16 || 48 || 80 ||
 || AZERTY || 0 || 0 || 64 || 80 ||
 || Russian || 0 || 0 || 29 || 80 ||
@@ -377,6 +398,8 @@ It can also use a string of predefined values:
 
 The indentation in landscape orientation will be automatically converted using the formula:
   !Landscape_rowIndentation = !Portrait_rowIndentation × (47/32) + 5
+
+*Unless you are creating a standard 4-row layout, you should use the numeric array format instead of preset strings.*
 
 = Caching =
 

@@ -21,10 +21,19 @@ GUCaps GUCapsMake(CGFloat left, CGFloat right, CGFloat top, CGFloat bottom) {
 
 #define GUCreateContextAgain(c, width, height) \
 rgbColorSpace = CGColorSpaceCreateDeviceRGB(); \
-CGContextRef c = CGBitmapContextCreate(NULL, (width), (height), 8, 4*(width), rgbColorSpace, kCGImageAlphaPremultipliedFirst); \
+CGContextRef c = CGBitmapContextCreate(NULL, (width), (height), 8, 4*(width), rgbColorSpace, kCGImageAlphaPremultipliedLast); \
 CGColorSpaceRelease(rgbColorSpace)
 
 #define GUCreateContext(c, width, height) CGColorSpaceRef GUCreateContextAgain(c, width, height)
+
+CG_INLINE
+CGContextRef GUCreateContextWithImage(CGImageRef img, CGRect* rect) {
+	size_t w = CGImageGetWidth(img), h = CGImageGetHeight(img);
+	*rect = CGRectMake(0, 0, w, h);
+	GUCreateContext(c, w, h);
+	return c;
+}
+#define GUCreateContextWithImageAuto(img) CGRect imgRect; CGContextRef c = GUCreateContextWithImage(img, &imgRect)
 
 // The return values of all CGImageRef's must be CGImageRelease'd in the caller side.
 
@@ -68,5 +77,9 @@ CGImageRef GUImageCreateByReducingBrightness(CGImageRef img, CGFloat reductionRa
 
 // Create a UIImage and release the original CGImage.
 UIImage* GUCreateUIImageAndRelease(CGImageRef img);
+
+// Create a rounded rectangle path
+CGPathRef GUPathCreateRoundRect(CGRect rect, CGFloat radius);
+CGImageRef GUImageCreateByClippingToRoundRect(CGImageRef img, CGRect rect, CGFloat radius);
 
 #endif

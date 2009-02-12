@@ -41,67 +41,47 @@
 #import <UIKit/UIImage.h>
 #import <iKeyEx/KeyboardLoader.h>
 
-typedef enum UIKBKeyboardArrangement {
-	// the constants are in the format DDBBCCAA (in hexadecimal)
-	// where AA is the number of buttons in 1st row, BB in 2nd, etc.
-	UIKBKeyboardArrangementDefault        = 7 << 16 |  9 << 8 | 10,
-	UIKBKeyboardArrangementAZERTY         = 6 << 16 | 10 << 8 | 10,
-	UIKBKeyboardArrangementRussian        = 9 << 16 | 11 << 8 | 11,
-	UIKBKeyboardArrangementAlt            = 5 << 16 | 10 << 8 | 10,
-	UIKBKeyboardArrangementURLAlt         = 4 << 16 |  6 << 8 | 10,
-	UIKBKeyboardArrangementJapaneseQWERTY = 7 << 16 | 10 << 8 | 10,
-	UIKBKeyboardArrangementEmpty          = 0,
-	
-	UIKBKeyboardArrangementWithURLRow4 = 3 << 24
-} UIKBKeyboardArrangement;
-
-typedef enum UIKBKeyboardRowIndentation {
-	// the constants are in the format DDBBCCAA (in hexadecimal)
-	// where AA is the indentation for optimal widths from one side in 1st row, BB in 2nd, etc.
-	UIKBKeyboardRowIndentationDefault         = 80 << 24 | 48 << 16 | 16 << 8,
-	UIKBKeyboardRowIndentationTightestDefault = 80 << 24 | 42 << 16,
-	UIKBKeyboardRowIndentationAZERTY          = 80 << 24 | 64 << 16,
-	UIKBKeyboardRowIndentationAlt             = 80 << 24 | 48 << 16,
-	UIKBKeyboardRowIndentationRussian         = 80 << 24 | 29 << 16,
-	
-	// in landscape mode there's a 5px margin by default.
-	UIKBKeyboardRowIndentationLandscapeDefault         = 95 << 24 | 71 << 16 | 24 << 8,
-	UIKBKeyboardRowIndentationLandscapeTightestDefault = 95 << 24 | 61 << 16,
-	UIKBKeyboardRowIndentationLandscapeAZERTY          = 95 << 24 | 94 << 16,
-	UIKBKeyboardRowIndentationLandscapeAlt             = 95 << 24 | 71 << 16,
-	UIKBKeyboardRowIndentationLandscapeRussian         = 95 << 24 | 61 << 16	// same as tightest default.
-} UIKBKeyboardRowIndentation;
-
-
 
 typedef enum UIKBShiftStyle {
 	UIKBShiftStyleDefault,
+	UIKBShiftStyleSymbol,
 	UIKBShiftStyle123
 } UIKBShiftStyle;
 
 
 
-
 @interface UIKBStandardKeyboard : NSObject {
 	NSUInteger rows;
-	NSMutableArray** texts;
-	NSMutableArray** shiftedTexts;
+	NSArray** texts;
+	NSArray** shiftedTexts;
+	NSArray** labels;
+	NSArray** shiftedLabels;
+	NSArray** popups;
+	NSArray** shiftedPopups;
 	NSUInteger* counts;
-	NSUInteger* lefts;
-	NSUInteger* widths;
+	CGFloat* lefts;
+	CGFloat* rights;
+	CGFloat* widths;
+	CGFloat* horizontalSpacings;
+	
+	CGFloat verticalSpacing, verticalOffset, keyHeight, defaultHeight;
+	NSUInteger minWidthForPopupChar, totalCount;
+	
+@package
 	BOOL landscape;
 	UIKeyboardAppearance keyboardAppearance;
 	CGFloat fontSize;
-	NSInteger horizontalSpacing, verticalSpacing;
 	
 	CGSize keyboardSize;
 	
 	BOOL hasSpaceKey, hasInternationalKey, hasReturnKey, hasShiftKey, hasDeleteKey;
 	CGFloat shiftKeyLeft, deleteKeyRight, shiftKeyWidth, deleteKeyWidth;
 	BOOL shiftKeyEnabled;
+	NSUInteger shiftKeyRow, deleteKeyRow;
 	UIKBShiftStyle shiftStyle;
 }
 
+/*
 @property(assign,readonly) BOOL landscape;
 @property(assign) UIKeyboardAppearance keyboardAppearance;
 @property(assign) NSUInteger rows;
@@ -135,14 +115,18 @@ typedef enum UIKBShiftStyle {
 @property(assign) BOOL shiftKeyEnabled;
 @property(assign) NSInteger horizontalSpacing;
 @property(assign) NSInteger verticalSpacing;
+*/
 
-+(UIKBStandardKeyboard*)keyboardWithLandscape:(BOOL)landsc appearance:(UIKeyboardAppearance)appr arrangement:(UIKBKeyboardArrangement)arrangement rowIndentation:(UIKBKeyboardRowIndentation)metrics;
+-(id)initWithPlist:(NSDictionary*)layoutDict name:(NSString*)name landscape:(BOOL)landsc appearance:(UIKeyboardAppearance)appr;
+-(void)dealloc;
 
-@property(readonly,retain) UIImage* image;
-@property(readonly,retain) UIImage* shiftImage;
-@property(readonly,retain) UIImage* fgImage;
-@property(readonly,retain) UIImage* fgShiftImage;
-@property(readonly,retain) NSArray* keyDefinitions;
+//+(UIKBStandardKeyboard*)keyboardWithLandscape:(BOOL)landsc appearance:(UIKeyboardAppearance)appr arrangement:(UIKBKeyboardArrangement)arrangement rowIndentation:(UIKBKeyboardRowIndentation)metrics;
+
+@property(readonly,retain,nonatomic) UIImage* image;
+@property(readonly,retain,nonatomic) UIImage* shiftImage;
+@property(readonly,retain,nonatomic) UIImage* fgImage;
+@property(readonly,retain,nonatomic) UIImage* fgShiftImage;
+@property(readonly,retain,nonatomic) NSArray* keyDefinitions;
 
 +(UIKBStandardKeyboard*)keyboardWithBundle:(KeyboardBundle*)bdl name:(NSString*)name landscape:(BOOL)landsc appearance:(UIKeyboardAppearance)appr;
 +(UIKBStandardKeyboard*)keyboardWithPlist:(NSDictionary*)layoutDict name:(NSString*)name landscape:(BOOL)landsc appearance:(UIKeyboardAppearance)appr;

@@ -38,10 +38,10 @@
 
 typedef enum UIKBImageClassType {
 	UIKBImageBackground,
-	UIKBImageKey,
-	UIKBImageReserved2,
-	UIKBImageReserved3,
-	UIKBImageReserved4,
+	UIKBImageKeyRow0,
+	UIKBImageKeyRow1,
+	UIKBImageKeyRow2,
+	UIKBImageKeyRow3,
 	UIKBImageShift,
 	UIKBImageShiftActive,
 	UIKBImageShiftLocked,
