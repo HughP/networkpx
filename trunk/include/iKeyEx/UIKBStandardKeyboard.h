@@ -65,7 +65,7 @@ typedef enum UIKBShiftStyle {
 	CGFloat* horizontalSpacings;
 	
 	CGFloat verticalSpacing, verticalOffset, keyHeight, defaultHeight;
-	NSUInteger minWidthForPopupChar, totalCount;
+	NSUInteger maxWidthForPopupChar, totalCount;
 	
 @package
 	BOOL landscape;
@@ -130,4 +130,8 @@ typedef enum UIKBShiftStyle {
 
 +(UIKBStandardKeyboard*)keyboardWithBundle:(KeyboardBundle*)bdl name:(NSString*)name landscape:(BOOL)landsc appearance:(UIKeyboardAppearance)appr;
 +(UIKBStandardKeyboard*)keyboardWithPlist:(NSDictionary*)layoutDict name:(NSString*)name landscape:(BOOL)landsc appearance:(UIKeyboardAppearance)appr;
+
+@property(assign,readonly,nonatomic) CGRect shiftRect;
+@property(assign,readonly,nonatomic) CGRect deleteRect;
+
 @end

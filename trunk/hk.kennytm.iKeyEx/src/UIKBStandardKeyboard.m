@@ -45,7 +45,7 @@
 #define KeyboardHeight(l) ((l)?162:216)
 #define KeyboardWidth(l)  ((l)?480:320)
 #define DefaultVerticalOffset 2
-#define MaximumVerticalSpacing 10
+#define MaximumVerticalSpacing 10.f
 #define Ratio 47.f/32.f
 #define LastRowHorizontalOffset 48
 #define LandscapeMargin 5
@@ -63,6 +63,8 @@ NSString* referedKeyOf(NSString* key) {
 }
 
 NSArray* tryUppercase(NSString* key, NSArray* srcArr) {
+	if (srcArr == nil)
+		return nil;
 	if (![key isEqualToString:@"texts"] && (![key hasPrefix:@"shifted"] || [key isEqualToString:@"shiftedTexts"])) {
 		NSMutableArray* retArr = [[NSMutableArray alloc] init];
 		for (NSString* s in srcArr) {
@@ -159,9 +161,11 @@ NSArray* fetchTextRow(NSString* curKey, NSUInteger row, NSDictionary* restrict s
 }
 
 -(id)initWithPlist:(NSDictionary*)layoutDict name:(NSString*)name landscape:(BOOL)landsc appearance:(UIKeyboardAppearance)appr {
+	NSDictionary* sublayout = [layoutDict objectForKey:name];
+	if (sublayout == nil)
+		return nil;
+	
 	if ((self = [super init])) {
-		NSDictionary* sublayout = [layoutDict objectForKey:name];
-		
 		// get number of rows
 		NSNumber* rowCount = [sublayout objectForKey:@"rows"];
 		if (rowCount != nil) {
@@ -195,12 +199,13 @@ NSArray* fetchTextRow(NSString* curKey, NSUInteger row, NSDictionary* restrict s
 		// compute height & vertical spacings of each key.
 		defaultHeight = DefaultHeight(landscape);
 		CGFloat availableHeight = KeyboardHeight(landscape) - defaultHeight - DefaultVerticalOffset;
+		NSLog(@"%f , %f, %f", availableHeight, defaultHeight, MaximumVerticalSpacing);
 		if (availableHeight >= defaultHeight*(rows-1)) {
 			if (availableHeight >= MaximumVerticalSpacing*rows + defaultHeight*(rows-1)) {
 				verticalSpacing = MaximumVerticalSpacing;
-				keyHeight = (availableHeight - MaximumVerticalSpacing*rows)/(rows-1);
+				keyHeight = roundf((availableHeight - MaximumVerticalSpacing*rows)/(rows-1));
 			} else {
-				verticalSpacing = (availableHeight-defaultHeight*(rows-1))/rows;
+				verticalSpacing = roundf((availableHeight - defaultHeight*(rows-1))/rows);
 				keyHeight = defaultHeight;
 			}
 		} else {
@@ -321,7 +326,7 @@ NSArray* fetchTextRow(NSString* curKey, NSUInteger row, NSDictionary* restrict s
 		}
 		
 		// compute width and perform portrait-to-landscape transformation if needed.
-		minWidthForPopupChar = UIKBKeyPopupSize.width;
+		maxWidthForPopupChar = UIKBKeyPopupSize.width;
 		for (NSUInteger i = 0; i < rows; ++ i) {
 			if (landscape) {
 				if (i == rows-1) {
@@ -335,11 +340,11 @@ NSArray* fetchTextRow(NSString* curKey, NSUInteger row, NSDictionary* restrict s
 			}
 			if (counts[i] != 0) {
 				widths[i] = (keyboardWidth - lefts[i] - rights[i] - horizontalSpacings[i]*(counts[i]-1))/counts[i];
-				if (widths[i] > minWidthForPopupChar)
-					minWidthForPopupChar = widths[i];
+				if (widths[i] > maxWidthForPopupChar)
+					maxWidthForPopupChar = widths[i];
 			}
 		}
-		minWidthForPopupChar -= 2*Padding;
+		maxWidthForPopupChar += 2*Padding;
 		
 		// fetch texts & stuff.
 #define DoFetch(var) for(NSUInteger i = 0; i < rows; ++ i) \
@@ -417,6 +422,20 @@ else \
 												   name:name landscape:landsc appearance:appr] autorelease];
 }
 
+
+@dynamic shiftRect, deleteRect;
+-(CGRect)shiftRect {
+	return CGRectIntegral(CGRectMake(shiftKeyLeft, verticalOffset+shiftKeyRow*(keyHeight+verticalSpacing),
+									 shiftKeyWidth, keyHeight));
+}
+-(CGRect)deleteRect {
+	return CGRectIntegral(CGRectMake(keyboardSize.width-deleteKeyWidth-deleteKeyRight,
+									 verticalOffset+deleteKeyRow*(keyHeight+verticalSpacing),
+									 deleteKeyWidth, keyHeight));
+}
+
+
+
 @dynamic image, shiftImage;
 -(UIImage*)image { return [self imageWithShift:NO]; }
 -(UIImage*)shiftImage { return [self imageWithShift:YES]; }
@@ -427,7 +446,7 @@ else \
 @dynamic keyDefinitions;
 
 
-#define PopupMaxFontSize 45
+#define PopupMaxFontSize 44
 #define LocationABC(l)           (l?CGPointMake(  0,124):CGPointMake(  0,173))
 #define LocationInternational(l) (l?CGPointMake( 52,124):CGPointMake( 43,173))
 #define LocationSpace(l)         (l?CGPointMake( 99,125):CGPointMake( 80,172))
@@ -436,7 +455,7 @@ else \
 #define UIKBKeyMaxFontSize 22.5f
 
 -(UIImage*)fgImageWithShift:(BOOL)shift {
-	UIGraphicsBeginImageContext(CGSizeMake(minWidthForPopupChar, UIKBKeyPopupSize.height*totalCount));
+	UIGraphicsBeginImageContext(CGSizeMake(maxWidthForPopupChar, UIKBKeyPopupSize.height*totalCount));
 	
 	float keyB = GUAverageLuminance(UIKBGetImage(UIKBImagePopupCenter, keyboardAppearance, landscape).CGImage);
 	if (keyB <= 0.5)
@@ -449,8 +468,11 @@ else \
 	CGFloat h = 0;
 	for (NSUInteger i = 0; i < rows; ++ i) {
 		NSUInteger j = 0;
+		CGFloat w = widths[i];
+		if (w < UIKBKeyPopupSize.width)
+			w = UIKBKeyPopupSize.width;
 		for (NSString* pop in myTexts[i]) {
-			drawInCenter(pop, CGRectMake(0, h, widths[i], UIKBKeyPopupSize.height), defaultFont);
+			drawInCenter(pop, CGRectMake(Padding, h, w-2*Padding, UIKBKeyPopupSize.height), defaultFont);
 			++ j;
 			h += UIKBKeyPopupSize.height;
 			if (j >= counts[i])
@@ -466,6 +488,7 @@ else \
 
 -(UIImage*)imageWithShift:(BOOL)shift {	
 	UIGraphicsBeginImageContext(keyboardSize);
+	CGContextRef c = UIGraphicsGetCurrentContext();
 	
 	// draw the background image.
 	UIImage* bgImage = UIKBGetImage(UIKBImageBackground, keyboardAppearance, landscape);
@@ -484,7 +507,7 @@ else \
 	if (hasReturnKey)
 		[UIKBGetImage(UIKBImageReturn, keyboardAppearance, landscape) drawAtPoint:LocationReturn(landscape)];
 	
-	// draw rows of keys except last
+	// draw rows of keys
 	NSArray** myTexts = shift ? shiftedLabels : labels;
 	CGFloat top = verticalOffset;
 	UIFont* defaultFont = [UIFont boldSystemFontOfSize:UIKBKeyMaxFontSize*keyHeight/DefaultHeight(landscape)];
@@ -496,6 +519,8 @@ else \
 		if (i == rows-1) {
 			xheight = DefaultHeight(landscape);
 			top = keyboardSize.height - xheight;
+			if (landscape)
+				top += 1;
 		}
 		
 		CGImageRef keyImg = UIKBGetImage(UIKBImageKeyRow0+((NSUInteger)top/RowDivider(landscape)), keyboardAppearance, landscape).CGImage;
@@ -506,17 +531,27 @@ else \
 																				GUCapsMake(Padding, Padding, Padding, Padding)));
 		NSUInteger j = 0;
 		
-		if (imgLuma <= 0.5)
+		CGColorRef shadowColor;
+		CGSize shadowOffset = CGSizeZero;
+		if (imgLuma <= 0.5) {
 			[[UIColor whiteColor] setFill];
-		else
+			shadowColor = [UIColor blackColor].CGColor;
+			shadowOffset.height = 1;
+		} else {
 			[[UIColor blackColor] setFill];
+			shadowColor = [UIColor whiteColor].CGColor;
+			shadowOffset.height = -1;
+		}
 		
 		CGFloat left = lefts[i];
 		for (NSString* lbl in myTexts[i]) {
 			if (keyboardAppearance == UIKeyboardAppearanceAlert)
 				[resizedImage drawInRect:imgRect blendMode:kCGBlendModeDestinationOut alpha:1];
 			[resizedImage drawInRect:imgRect];
-			drawInCenter(lbl, imgRect, defaultFont);
+			
+			CGContextSetShadowWithColor(c, shadowOffset, 0, shadowColor);
+			drawInCenter(lbl, CGRectInset(imgRect, Padding/2, 0), defaultFont);
+			CGContextSetShadowWithColor(c, shadowOffset, 0, NULL);
 			
 			left += widths[i]+horizontalSpacings[i];
 			imgRect.origin.x = roundf(left);
@@ -528,8 +563,7 @@ else \
 	
 	// draw the shift key.
 	if (hasShiftKey) {
-		CGRect shiftRect = CGRectIntegral(CGRectMake(shiftKeyLeft, verticalOffset+shiftKeyRow*(keyHeight+verticalSpacing),
-													 shiftKeyWidth, keyHeight));
+		CGRect shiftRect = self.shiftRect;
 		UIKBImageClassType img = UIKBImageShift;
 		if (!shiftKeyEnabled)
 			img = UIKBImageShiftDisabled;
@@ -549,9 +583,7 @@ else \
 	
 	// draw the delete key
 	if (hasDeleteKey) {
-		CGRect deleteRect = CGRectIntegral(CGRectMake(keyboardSize.width-deleteKeyWidth-deleteKeyRight,
-													  verticalOffset+deleteKeyRow*(keyHeight+verticalSpacing),
-													  deleteKeyWidth, keyHeight));
+		CGRect deleteRect = self.deleteRect;
 		[GUCreateUIImageAndRelease(GUImageCreateWithCaps(UIKBGetImage(UIKBImageDelete, keyboardAppearance, landscape).CGImage,
 														 CGRectMake(0, 0, deleteRect.size.width, deleteRect.size.height),
 														 GUCapsMake(Padding, Padding, Padding, Padding))) drawInRect:deleteRect];
@@ -560,7 +592,215 @@ else \
 	UIImage* retImg = UIGraphicsGetImageFromCurrentImageContext();
 	UIGraphicsEndImageContext();
 	return retImg;
+}
+
+-(NSArray*)keyDefinitions {
+	NSMutableArray* retarr = [[[NSMutableArray alloc] initWithCapacity:totalCount+5] autorelease];
 	
+	UIKBKeyDefinition* keydef = [[UIKBKeyDefinition alloc] init];
+	
+	// define the keydef for the special keys first.
+	keydef->pop_type = nil;
+	keydef->pop_char_area = keydef->accent_frame = keydef->pop_padding = CGRectZero;
+	
+	if (hasInternationalKey) {
+		if (landscape) {
+			keydef->bg_area = CGRectMake(0, 125, 99, 37);
+			keydef->pop_bg_area = CGRectZero;
+		} else {
+			keydef->bg_area = keydef->pop_bg_area = CGRectMake(0, 172, 80, 44);		
+		}
+		keydef.value = @"more";
+		keydef.shifted = @"more";
+		keydef->down_flags = UIKeyFlagInternationalKey | UIKeyFlagPlaySound;
+		keydef->up_flags = UIKeyFlagChangeInputMode;
+		keydef->key_type = UIKeyTypeInternational;
+		[retarr addObject:[[keydef copy] autorelease]];
+	}
+	
+	if (hasSpaceKey) {
+		if (landscape) {
+			keydef->bg_area = CGRectMake(99, 125, 283, 37);
+			keydef->pop_bg_area = CGRectZero;
+		} else {
+			keydef->pop_bg_area = keydef->bg_area = CGRectMake(80, 172, 160, 44);
+		}
+		keydef.value = @" ";
+		keydef.shifted = @" ";
+		keydef->down_flags = UIKeyFlagActivateKey | UIKeyFlagPlaySound;
+		keydef->up_flags = UIKeyFlagOutputValue | UIKeyFlagDeactivateKey | UIKeyFlagSwitchPlane;
+		keydef->key_type = UIKeyTypeSpace;
+		[retarr addObject:[[keydef copy] autorelease]];
+	}
+	
+	if (hasReturnKey) {
+		if (landscape) {
+			keydef->bg_area = CGRectMake(382, 125, 98, 37);
+			keydef->pop_bg_area = CGRectZero;
+		} else {
+			keydef->pop_bg_area = keydef->bg_area = CGRectMake(240, 172, 80, 44);
+		}
+		keydef.value = @"\n";
+		keydef.shifted = @"\n";
+		keydef->down_flags = UIKeyFlagActivateKey | UIKeyFlagPlaySound;
+		keydef->up_flags = UIKeyFlagOutputValue | UIKeyFlagDeactivateKey | UIKeyFlagSwitchPlane;
+		keydef->key_type = UIKeyTypeReturn;
+		[retarr addObject:[[keydef copy] autorelease]];
+	}
+	
+	if (hasShiftKey && shiftKeyEnabled) {
+		keydef->bg_area = self.shiftRect;
+		keydef->pop_bg_area = CGRectZero;
+		keydef.value = @"shift";
+		keydef.shifted = @"shift";
+		keydef->down_flags = UIKeyFlagShiftKey | UIKeyFlagPlaySound;
+		keydef->up_flags = 0;
+		keydef->key_type = UIKeyTypeShift;
+		[retarr addObject:[[keydef copy] autorelease]];
+	}
+										 
+	if (hasDeleteKey) {
+		keydef->bg_area = self.deleteRect;
+		keydef.value = @"delete";
+		keydef.shifted = @"delete";
+		keydef->down_flags = UIKeyFlagDeleteKey | UIKeyFlagPlaySound | UIKeyFlagActivateKey;
+		keydef->up_flags = UIKeyFlagStopAutoDelete | UIKeyFlagDeactivateKey;
+		keydef->key_type = UIKeyTypeDelete;
+		[retarr addObject:[[keydef copy] autorelease]];
+	}
+		
+	// now for the actual ordinary keys
+	CGFloat top = verticalOffset-verticalSpacing/2;
+	NSUInteger xheight = keyHeight+verticalSpacing;
+	CGRect fgRect = CGRectMake(0, 0, 0, UIKBKeyPopupSize.height);
+	CGFloat popPadding_y = 0; // landscape ? -1 : -8;
+#define UIKBKey_PopPadding_height (-8)
+#define UIKBKey_PopBgArea_EdgeTolerance 12
+	
+	CGFloat accentDelta, accentHeight, accentSpacing;
+	if (landscape) {
+		accentDelta = -74;
+		accentHeight = 114;
+		accentSpacing = 40;
+	} else {
+		accentDelta = -61;
+		accentHeight = 122;
+		accentSpacing = 54;
+	}
+		
+	for (NSUInteger i = 0; i < rows; ++ i, top += xheight) {
+		if (counts[i] == 0)
+			continue;
+		
+		if (i == rows-1) {
+			xheight = DefaultHeight(landscape);
+			top = keyboardSize.height - xheight;
+		}
+		
+		CGRect imgRect = CGRectMake(lefts[i]-horizontalSpacings[i]/2, top,
+									widths[i]+horizontalSpacings[i], xheight);
+		fgRect.size.width = widths[i] < UIKBKeyPopupSize.width ? UIKBKeyPopupSize.width : widths[i];
+		
+		NSUInteger count = [texts[i] count];
+		
+		for (NSUInteger j = 0; j < counts[i]; ++ j, imgRect.origin.x += imgRect.size.width, fgRect.origin.y += fgRect.size.height) {
+			if (j >= count)
+				continue;
+			
+			keydef->bg_area = imgRect;
+			keydef->pop_char_area = fgRect;
+			
+			// compute pop-up type.
+			keydef->pop_bg_area = CGRectMake(0, 0, widths[i]+36, 120);
+			keydef->pop_padding = CGRectZero;
+			if (landscape) {
+				// 47 -> pop_center
+				// 66 -> pop_center_url_wide
+				// 70 -> pop_center_url_2
+				// 82 -> pop_center_url_3
+				// 93 -> pop_center_url_4
+				// else -> pop_center_url_wide being flexible.
+				if (widths[i] < 57) {
+					keydef->pop_type = UIKeyboardPopImageCenter1;
+					keydef->pop_bg_area.size = CGSizeMake(114, 125);
+					keydef->pop_padding = CGRectMake(0, popPadding_y, 0, UIKBKey_PopPadding_height);
+					if (imgRect.origin.x-LandscapeMargin < UIKBKey_PopBgArea_EdgeTolerance) {
+						keydef->pop_type = UIKeyboardPopImageLeft;
+						keydef->pop_bg_area = CGRectMake(-14, 0, 85, 126);
+						keydef->pop_padding.size.width = 2;
+					} else if (keyboardSize.width-imgRect.origin.x-imgRect.size.width-LandscapeMargin < UIKBKey_PopBgArea_EdgeTolerance) {
+						keydef->pop_type = UIKeyboardPopImageRight;
+						keydef->pop_bg_area = CGRectMake(9, 0, 85, 125);
+						keydef->pop_padding.origin.x = -4;
+						keydef->pop_padding.size.width = 3;
+					}
+				} else if (widths[i] < 68) {
+					keydef->pop_type = UIKeyboardPopImageCenter5;
+				} else if (widths[i] < 76) {
+					keydef->pop_type = UIKeyboardPopImageCenter2;
+				} else if (widths[i] < 88) {
+					keydef->pop_type = UIKeyboardPopImageCenter3;
+				} else if (widths[i] < 100) {
+					keydef->pop_type = UIKeyboardPopImageCenter4;
+				} else {
+					// well, I just want to randomly pick a string constant here.
+					keydef->pop_type = NSFileAppendOnly;
+				}
+			} else {
+				// 32 -> pop_center
+				// 45 -> pop_center_url_wide
+				// 48 -> pop_center_url_2
+				// 53 -> pop_center_url_4
+				// 56 -> pop_center_url_3
+				// else -> pop_center_url_wide being flexible.
+				if (widths[i] < 39) {
+					keydef->pop_type = UIKeyboardPopImageCenter1;
+					keydef->pop_bg_area.size = CGSizeMake(114, 125);
+					keydef->pop_padding = CGRectMake(0, popPadding_y, 0, UIKBKey_PopPadding_height);
+					if (imgRect.origin.x < UIKBKey_PopBgArea_EdgeTolerance) {
+						keydef->pop_type = UIKeyboardPopImageLeft;
+						keydef->pop_bg_area = CGRectMake(-14, 0, 79, 126);
+						keydef->pop_padding.origin.x = 10;
+					} else if (keyboardSize.width-imgRect.origin.x-imgRect.size.width < UIKBKey_PopBgArea_EdgeTolerance) {
+						keydef->pop_type = UIKeyboardPopImageRight;
+						keydef->pop_bg_area = CGRectMake(9, 0, 79, 126);
+						keydef->pop_padding.origin.x = -13;
+						keydef->pop_padding.size.width = 4;
+					}
+				} else if (widths[i] < 46) {
+					keydef->pop_type = UIKeyboardPopImageCenter5;
+				} else if (widths[i] < 51) {
+					keydef->pop_type = UIKeyboardPopImageCenter2;
+				} else if (widths[i] < 54) {
+					keydef->pop_type = UIKeyboardPopImageCenter4;
+				} else if (widths[i] < 68) {
+					keydef->pop_type = UIKeyboardPopImageCenter3;
+				} else {
+					keydef->pop_type = NSFileAppendOnly;
+				}				
+			}
+			
+			keydef->accent_frame = CGRectMake(imgRect.origin.x, imgRect.origin.y + accentDelta,
+											  imgRect.size.width, accentHeight);
+			NSString* kvalue = [texts[i] objectAtIndex:j];
+			keydef.value = kvalue;
+			keydef.shifted = [shiftedTexts[i] objectAtIndex:j];
+			keydef->down_flags = UIKeyFlagActivateKey | UIKeyFlagPlaySound;
+			keydef->up_flags = UIKeyFlagOutputValue | UIKeyFlagDeactivateKey;
+			keydef->key_type = UIKeyTypeNormal;
+			if ([kvalue isEqualToString:@" "]) {
+				keydef->key_type = UIKeyTypeSpace;
+				keydef->up_flags |= UIKeyFlagSwitchPlane;
+			} else if ([kvalue isEqualToString:@"\n"]) {
+				keydef->key_type = UIKeyTypeReturn;
+				keydef->up_flags |= UIKeyFlagSwitchPlane;
+			}
+			[retarr addObject:[[keydef copy] autorelease]];
+		}
+	}
+	
+	[keydef release];
+	return retarr;
 }
 
 

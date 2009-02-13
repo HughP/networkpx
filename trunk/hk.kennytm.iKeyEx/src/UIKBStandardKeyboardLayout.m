@@ -133,13 +133,16 @@
 	[sl setUsesKeyCharges:YES];
 	
 	NSString* baseName = landscape ? @"kb-std-landscape-active-bg-pop-center-url%d.png" : @"kb-std-active-bg-pop-center-url%d.png";
+	UIImage* flexibleImage = UIKBGetImage(UIKBImagePopupFlexible, appr, landscape);
 	
 	[sl setCompositeImage:_UIImageWithName([NSString stringWithFormat:baseName, 4]) forKey:UIKeyboardPopImageCenter4];
 	[sl setCompositeImage:_UIImageWithName([NSString stringWithFormat:baseName, 3]) forKey:UIKeyboardPopImageCenter3];
-	[sl setCompositeImage:UIKBGetImage(UIKBImagePopupFlexible, appr, landscape) forKey:UIKeyboardPopImageCenter2];
+	[sl setCompositeImage:_UIImageWithName([NSString stringWithFormat:baseName, 2]) forKey:UIKeyboardPopImageCenter2];
+	[sl setCompositeImage:flexibleImage forKey:UIKeyboardPopImageCenter5];
 	[sl setCompositeImage:UIKBGetImage(UIKBImagePopupCenter, appr, landscape) forKey:UIKeyboardPopImageCenter1];
 	[sl setCompositeImage:UIKBGetImage(UIKBImagePopupLeft, appr, landscape) forKey:UIKeyboardPopImageLeft];
 	[sl setCompositeImage:UIKBGetImage(UIKBImagePopupRight, appr, landscape) forKey:UIKeyboardPopImageRight];
+	[sl setCompositeImage:flexibleImage forKey:NSFileAppendOnly];
 	
 	[sl setCompositeImage:fgImage forKey:UIKeyboardFGLettersMain];
 	[sl setCompositeImage:fgShiftImage forKey:UIKeyboardFGLettersMainShift];
@@ -148,7 +151,6 @@
 	
 	// actual location of the shift.
 	if (keyboard->hasShiftKey && keyboard->shiftKeyEnabled) {
-		NSUInteger skl = keyboard->shiftKeyLeft;
 		UIImage* shiftImg, *shiftLockImg;
 		if (keyboard->shiftStyle == UIKBShiftStyle123) {
 			shiftLockImg = shiftImg = UIKBGetImage(UIKBImageShift123, appr, landscape);
@@ -156,14 +158,13 @@
 			shiftImg = UIKBGetImage(UIKBImageShiftActive, appr, landscape);
 			shiftLockImg = UIKBGetImage(UIKBImageShiftLocked, appr, landscape);
 		}
-		CGRect shiftRect = landscape ? CGRectMake(5+skl, 84, 62, 38) : CGRectMake(skl, 118, 42, 44);
+		CGRect shiftRect = keyboard.shiftRect;
 		[sl setShiftButtonImage:shiftImg frame:shiftRect];
 		[sl setAutoShiftButtonImage:shiftImg frame:shiftRect];
 		[sl setShiftLockedButtonImage:shiftLockImg frame:shiftRect];
 	}
 	if (keyboard->hasDeleteKey) {
-		NSUInteger dlr = keyboard->deleteKeyRight;
-		CGRect delRect = landscape ? CGRectMake(keyboard->keyboardSize.width-66-dlr, 84, 66, 38) : CGRectMake(keyboard->keyboardSize.width-42-dlr, 118, 42, 43);
+		CGRect delRect = keyboard.deleteRect;
 		[sl setDeleteButtonImage:UIKBGetImage(UIKBImageDelete, appr, landscape) frame:delRect];
 		[sl setDeleteActiveButtonImage:UIKBGetImage(UIKBImageDeleteActive, appr, landscape) frame:delRect];
 	}
@@ -247,7 +248,6 @@ void resizePopupImage (BOOL landscape, UIView* m_activeKeyView, UIKeyDefinition*
 		for (NSUInteger j = 0; j < keyCounts[i]; ++ j) {
 			[keyDefs[i][j].value release];
 			[keyDefs[i][j].shifted release];
-			[keyDefs[i][j].pop_type release];
 		}
 		free(keyDefs[i]);
 	}
@@ -278,8 +278,10 @@ CreateBuildMethods(EmailAddressAlt, NO, YES);
 // fix the flexible popup to make it really flexible.
 // Can we hide the frame change?
 -(void)activateCompositeKey:(UIKeyDefinition*)keydef {
+	if (keydef->value == nil)
+		return;	
 	[super activateCompositeKey:keydef];
-	if ([UIKeyboardPopImageCenter3 isEqualToString:keydef->pop_type])
+	if (keydef->pop_type == NSFileAppendOnly)
 		resizePopupImage(NO, m_activeKeyView, keydef);
 }
 
@@ -317,9 +319,10 @@ CreateBuildMethods(EmailAddressAlt, YES, YES);
 
 // fix the flexible popup to make it really flexible.
 -(void)activateCompositeKey:(UIKeyDefinition*)keydef {
+	if (keydef->value == nil)
+		return;
 	[super activateCompositeKey:keydef];
-	if ([UIKeyboardPopImageCenter3 isEqualToString:keydef->pop_type])
-		resizePopupImage(YES, m_activeKeyView, keydef);
-}
+	if (keydef->pop_type == NSFileAppendOnly)
+		resizePopupImage(YES, m_activeKeyView, keydef);}
 
 @end

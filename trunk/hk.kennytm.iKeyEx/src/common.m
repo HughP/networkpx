@@ -93,7 +93,8 @@ extern void drawInCenter(NSString* str, CGRect rect, UIFont* defaultFont) {
 		} else
 			newFont = defaultFont;
 		
-		CGPoint p = CGPointMake(rect.origin.x+(rect.size.width-strSize.width)/2, rect.origin.y+(rect.size.height-strSize.height)/2);
+		CGPoint p = CGPointMake(roundf(rect.origin.x+(rect.size.width-strSize.width)/2),
+								roundf(rect.origin.y+(rect.size.height-strSize.height)/2));
 		[str drawAtPoint:p withFont:defaultFont];
 		
 		// (2) Compute the number of rows required to minimize the area wasted.
@@ -126,7 +127,7 @@ extern void drawInCenter(NSString* str, CGRect rect, UIFont* defaultFont) {
 		CGFloat yInset = (rect.size.height - ratio*size.height)/2;
 		
 		UIFont* newFont = [defaultFont fontWithSize:(ratio * defaultFont.pointSize)];
-		[str drawInRect:CGRectInset(rect, xInset, yInset)
+		[str drawInRect:CGRectIntegral(CGRectInset(rect, xInset, yInset))
 			   withFont:newFont
 		  lineBreakMode:UILineBreakModeWordWrap
 			  alignment:UITextAlignmentCenter];
