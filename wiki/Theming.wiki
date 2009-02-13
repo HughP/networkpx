@@ -44,9 +44,9 @@ The size should be 320×216 for portrait images, and 480×162 for landscape imag
 
 == kb-ext-key.png ==
 
-This is the image for a plain button (key cap). The usual sizes are 30×43 for portrait and 43×38 for landscape.
+This is the image for a plain button (key cap). The usual sizes are 32×44 for portrait and 47×38 for landscape. Be sure to leave some space in the border.
 
-These images will be assumed to have a boundary of 7 px. The center part will be stretched or shrunk.
+These images will be assumed to have a boundary of 8 px. The center part will be stretched or shrunk.
 
 = Default Theme Construction Algorithm =
 
@@ -71,16 +71,16 @@ These images will be transformed to ones usable in iKeyEx with the algorithm fol
 
 == Key ==
 `kb-ext-key-rowY{-transparent}.png` where _Y_ = 0, 1, 2:
-  Keys at (255, 10 + 54 _Y_) of size 30×43 are extracted from `kb-std-azerty.png` and `kb-std-azerty-transparent.png`.
-  Then, within the keys, the 1×17 strip at (7, 13) is copied and tiled in the rectangle {(8,13), 15×17} to cover up the letter.
-  Finally the mask at `/Library/iKeyEx/Masks/key{-transparent}.png` will be applied to the image with a boundary inset of 7 px.
+  Keys at (224, 10 + 54 _Y_) of size 32×44 are extracted from `kb-std-azerty.png` and `kb-std-azerty-transparent.png`.
+  Then, within the keys, the 1×28 strip at (8, 8) is copied and filled in the rectangle {(9,28), 15×28} to cover up the letter.
+  Finally a rounded rectangle region {(2,2), 28×41} with corner radius 5.5 px is clipped out.
 
 `kb-ext-key-rowY-landscape{-transparent}.png`:
   Similar to above except the metrics are replaced as:
-   * Origin of key extraction = (336, 4 + 40 _Y_).
-   * Key dimensions = 43×38.
-   * Origin of covering strip extraction = (13, 10)
-   * Covering rectangle = {(14,10), 15×17}.
+   * Origin of key extraction = (334, 4 + 40 _Y_).
+   * Key dimensions = 47×38.
+   * Origin of covering strip extraction = (10, 10)
+   * Covering rectangle = {(11,10), 26×18}.
 <wiki:comment>
 `kb-ext-key-row3{-landscape}{-transparent}.png`
   The `kb-std{-portrait|-landscape}-space-small{-steel-blue|-gray}-light-enabled.png` will be used.
