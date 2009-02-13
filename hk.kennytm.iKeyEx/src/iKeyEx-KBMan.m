@@ -33,6 +33,7 @@
 #import <Foundation/Foundation.h>
 #include <stdio.h>
 #include <string.h>
+#import <iKeyEx/common.h>
 
 static const char* Usage = "Usage:\n\
 iKeyEx-KBMan <command> [<kbid>]\n\
@@ -42,11 +43,32 @@ Available commands:\n\
 \tremove      Remove the specified keyboard from the preferences.\n\
 \tremoveall   Remove all iKeyEx keyboards from the preferences.\n\
 \tpurge       Clear automatically generated cache of the specified keyboard.\n\
+\tpurgeall    Clear all generated cache from iKeyEx.\n\
 \tfixperm     Fix the owner and permission in the /var/mobile/Library/Keyboard/ folder.\n\
-<kbid> is same as the input mode name without the \"iKeyEx:\" prefix.";
+<kbid> is same as the input mode name without the \"iKeyEx:\" prefix.\n\n";
 
 #define GlobalPreferences @"/var/mobile/Library/Preferences/.GlobalPreferences.plist"
 #define PreferencesPreferences @"/var/mobile/Library/Preferences/com.apple.Preferences.plist"
+
+// copied from PrefPane-iKeyEx.m
+void clearCache(NSString* removingNamePrefix) {
+	// collect all files having the in the target directory.
+	NSFileManager* man = [NSFileManager defaultManager];
+	NSString* oldPath = [man currentDirectoryPath];
+	[man changeCurrentDirectoryPath:iKeyEx_DataDirectory];
+	NSArray* files = [man contentsOfDirectoryAtPath:@"." error:NULL];
+	NSError* error = nil;
+	// check one by one if the file has the desired prefix. If yes, delete that file.
+	for (NSString* filename in files) {
+		if ([filename hasPrefix:removingNamePrefix]) {
+			if (![man removeItemAtPath:filename error:&error]) {
+				NSLog(@"Cannot remove %@ when clearing \"%@\": %@", filename, removingNamePrefix, error);
+				error = nil;
+			}
+		}
+	}
+	[man changeCurrentDirectoryPath:oldPath];
+}
 
 // TODO: Lock the preference files during read/write. (Use CFPreferences API?)
 int main (int argc, const char* argv[]) {
@@ -57,7 +79,7 @@ int main (int argc, const char* argv[]) {
 	else {
 		if (!strcmp("remove", argv[1])) {
 			if (argc == 2)
-				printf("Please specify the <kbid> for remove. If you want to remove all iKeyEx keyboards, use the \"removeall\" command instead.");
+				printf("Please specify the <kbid> for remove. If you want to remove all iKeyEx keyboards, use the \"removeall\" command instead.\n\n");
 			else {
 				NSString* inputModeName = [NSString stringWithUTF8String:argv[2]];
 				if (![inputModeName hasPrefix:@"iKeyEx:"]) {
@@ -131,24 +153,22 @@ int main (int argc, const char* argv[]) {
 			
 		} else if (!strcmp("purge", argv[1])) {
 			if (argc == 2)
-				printf("Please specify the <kbid> for purge.");
+				printf("Please specify the <kbid> for purge. If you want to purge everything, use the \"purgeall\" command instead.\n\n");
 			else {
 				NSString* inputModeName = [NSString stringWithUTF8String:argv[2]];
 				if ([inputModeName hasPrefix:@"iKeyEx:"]) {
 					inputModeName = [inputModeName substringFromIndex:7];
 				}
-				
-				NSString* rmCommand = [NSString stringWithFormat:@"rm -f /var/mobile/Library/Keyboard/iKeyEx\\:\\:cache\\:%@-*", inputModeName];
-				system([rmCommand UTF8String]);
-				
-				// just for compatibility.
-				rmCommand = [NSString stringWithFormat:@"rm -f /var/mobile/Library/Keyboard/iKeyEx/cache/%@-*", inputModeName];
-				system([rmCommand UTF8String]);
+				clearCache([NSString stringWithFormat:iKeyEx_CachePrefix@"%@-", inputModeName]);
 			}
+			
+		} else if (!strcmp("purgeall", argv[1])) {
+
+			clearCache(iKeyEx_CachePrefix);
 			
 		} else if (!strcmp("add", argv[1])) {
 			if (argc == 2)
-				printf("Please specify the <kbid> to add.");
+				printf("Please specify the <kbid> to add.\n\n");
 			else {
 				NSString* inputModeName = [NSString stringWithUTF8String:argv[2]];
 				if (![inputModeName hasPrefix:@"iKeyEx:"]) {
@@ -204,11 +224,9 @@ int main (int argc, const char* argv[]) {
 			[man changeCurrentDirectoryPath:oldPath];
 			
 		} else {
-			printf("Unregconized command: %s", argv[1]);
+			printf("Unregconized command: %s\n\n", argv[1]);
 		}
 	}
-	
-	printf("\n\n");
 	
 	[pool drain];
 	return 0;

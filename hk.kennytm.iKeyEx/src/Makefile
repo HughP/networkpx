@@ -30,8 +30,7 @@ Options=-lobjc \
 	-lobjc \
 	-march=armv6 \
 	-mcpu=arm1176jzf-s \
-	-O3 \
-	-mthumb
+	-O3
 
 iKeyExSources=$(SharedSrcPath)/GraphicsUtilities.m cleanup.m common.m ImageLoader.m KeyboardLoader.m UIKBSound.m UIKBKeyDefinition.m UIKBStandardKeyboard.m UIKBStandardKeyboardLayout.m UIKBSpecialKeyButtons.m
 iKeyExTarget=$(iKeyExLibPath)/libiKeyEx.dylib
@@ -68,7 +67,7 @@ $(SBHookerTarget):	$(SBHookerSources)
 	$(CodeSign) $@
 
 $(KBManTarget):	$(KBManSources)
-	echo "iKeyEx-KBMan requires setuid. Please enter root password:"
+	@echo "iKeyEx-KBMan requires setuid. Please enter root password:"
 	sudo $(Compiler) $(Options) $(KBManOptions) -o $@ $^
 	sudo $(CodeSign) $@
 	sudo chmod ug+s $@

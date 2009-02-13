@@ -56,18 +56,18 @@ static const CGRect BackgroundRect_Landscape = {{238, 0}, {4, 162}};
 
 static const GUCaps KeyCaps = {8,8,8,8};
 
-static const CGRect KeyRect_Key_Portrait = {{225, 10}, {30, 43}};
-static const CGRect KeyRect_ISrc_Portrait = {{7, 13}, { 1, 17}};
-static const CGRect KeyRect_ITrg_Portrait = {{8, 13}, {15, 17}};
+static const CGRect KeyRect_Key_Portrait = {{224, 10}, {32, 44}};
+static const CGRect KeyRect_ISrc_Portrait = {{8, 8}, { 1, 28}};
+static const CGRect KeyRect_ITrg_Portrait = {{9, 8}, {15, 28}};
 #define KeyRect_Key_Portrait_DeltaY 54
-static const CGRect KeyRect_Mask_Portrait = {{1, 1}, {28, 41}};
+static const CGRect KeyRect_Mask_Portrait = {{2, 2}, {28, 41}};
 #define KeyRect_Mask_Radius 5.5f
 
-static const CGRect KeyRect_Key_Landscape = {{336, 4}, {43, 38}};
-static const CGRect KeyRect_ISrc_Landscape = {{13, 11}, { 1, 17}};
-static const CGRect KeyRect_ITrg_Landscape = {{14, 11}, {15, 17}};
+static const CGRect KeyRect_Key_Landscape = {{334, 4}, {47, 38}};
+static const CGRect KeyRect_ISrc_Landscape = {{10, 10}, { 1, 18}};
+static const CGRect KeyRect_ITrg_Landscape = {{11, 10}, {26, 18}};
 #define KeyRect_Key_Landscape_DeltaY 40
-static const CGRect KeyRect_Mask_Landscape = {{1, 2}, {41, 35}};
+static const CGRect KeyRect_Mask_Landscape = {{3, 2}, {41, 35}};
 
 
 static const CGRect KeyRect1_Portrait = {{224, 10}, {8, 44}};
@@ -75,7 +75,7 @@ static const CGRect KeyRect2_Portrait = {{249, 10}, {7, 44}};
 static const CGRect KeyRect1_Ladnscape = {{334, 4}, {9, 38}};
 static const CGRect KeyRect2_Ladnscape = {{373, 4}, {8, 38}};
 
-static const CGRect ShiftRect_Portrait = {{0, 118}, {42, 44}};
+static const CGRect ShiftRect_Portrait = {{0, 117}, {42, 44}};
 static const CGRect ShiftSubrect_Portrait = {{1, 1}, {40, 41}};
 static const CGRect ShiftRect_Mask_Portrait = {{1.5, 1.5}, {39, 40}};
 
@@ -155,7 +155,6 @@ if (retimg == nil) {
 // really really long function.
 UIImage* constructImage(UIKBImageClassType actualType) {
 	UIImage* retimg = nil;
-	NSNumber* keyNum = [NSNumber numberWithUnsignedInteger:actualType];
 	CGImageRef img = NULL;
 	NSString* cacheName;
 	NSString* srcName;
@@ -371,7 +370,7 @@ shiftLandscapeTransparent_namesComputed:
 		case UIKBImageInternationalActive|UIKBImageWithTransparent:
 		case UIKBImageInternationalActive|UIKBImageWithLandscape|UIKBImageWithTransparent:
 			isLandscape = (actualType & UIKBImageWithLandscape) != 0;
-			cacheName = isLandscape ? @"kb-ext-international-landscape-transparent" : @"kb-ext-international-transparent";
+			cacheName = isLandscape ? @"kb-ext-international-landscape-transparent.png" : @"kb-ext-international-transparent.png";
 			TryLoadCacheBegin;
 			CGRect imgRect = CGRectZero;
 			imgRect.size = isLandscape ? InternationalSize_Landscape : InternationalSize_Portrait;
@@ -567,7 +566,8 @@ shiftSymbol_namesComputed:
 			
 		case UIKBImagePopupFlexible:
 		case UIKBImagePopupFlexible|UIKBImageWithTransparent:
-			return _UIImageWithName(@"kb-std-active-bg-pop-center-wide.png");
+			retimg = _UIImageWithName(@"kb-std-active-bg-pop-center-wide.png");
+			return [retimg stretchableImageWithLeftCapWidth:retimg.size.width/2 topCapHeight:0];
 		case UIKBImagePopupCenter:
 		case UIKBImagePopupCenter|UIKBImageWithTransparent:
 			return _UIImageWithName(@"kb-std-active-bg-pop-center.png");
@@ -580,7 +580,8 @@ shiftSymbol_namesComputed:
 			
 		case UIKBImagePopupFlexible|UIKBImageWithLandscape:
 		case UIKBImagePopupFlexible|UIKBImageWithLandscape|UIKBImageWithTransparent:
-			return _UIImageWithName(@"kb-std-landscape-active-bg-pop-center-wide.png");
+			retimg = _UIImageWithName(@"kb-std-landscape-active-bg-pop-center-wide.png");
+			return [retimg stretchableImageWithLeftCapWidth:retimg.size.width/2 topCapHeight:0];
 		case UIKBImagePopupCenter|UIKBImageWithLandscape:
 		case UIKBImagePopupCenter|UIKBImageWithLandscape|UIKBImageWithTransparent:
 			return _UIImageWithName(@"kb-std-landscape-active-bg-pop-center.png");
