@@ -40,6 +40,9 @@
 #import <UIKit2/Constants.h>
 #import <iKeyEx/UIKBKeyDefinition.h>
 #import <stdlib.h>
+#include <GraphicsUtilities.h>
+
+static const GUCaps KeyCaps = {8,8,8,8};
 
 #pragma mark -
 
@@ -152,21 +155,25 @@
 	// actual location of the shift.
 	if (keyboard->hasShiftKey && keyboard->shiftKeyEnabled) {
 		UIImage* shiftImg, *shiftLockImg;
-		if (keyboard->shiftStyle == UIKBShiftStyle123) {
-			shiftLockImg = shiftImg = UIKBGetImage(UIKBImageShift123, appr, landscape);
-		} else {
-			shiftImg = UIKBGetImage(UIKBImageShiftActive, appr, landscape);
-			shiftLockImg = UIKBGetImage(UIKBImageShiftLocked, appr, landscape);
-		}
 		CGRect shiftRect = keyboard.shiftRect;
+		CGRect shiftRect2 = shiftRect;
+		shiftRect2.origin = CGPointZero;
+		if (keyboard->shiftStyle == UIKBShiftStyle123) {
+			shiftLockImg = shiftImg = GUResizeImageWithCaps(UIKBGetImage(UIKBImageShift123, appr, landscape), shiftRect2, KeyCaps);
+		} else {
+			shiftImg = GUResizeImageWithCaps(UIKBGetImage(UIKBImageShiftActive, appr, landscape), shiftRect2, KeyCaps);
+			shiftLockImg = GUResizeImageWithCaps(UIKBGetImage(UIKBImageShiftLocked, appr, landscape), shiftRect2, KeyCaps);
+		}
 		[sl setShiftButtonImage:shiftImg frame:shiftRect];
 		[sl setAutoShiftButtonImage:shiftImg frame:shiftRect];
 		[sl setShiftLockedButtonImage:shiftLockImg frame:shiftRect];
 	}
 	if (keyboard->hasDeleteKey) {
 		CGRect delRect = keyboard.deleteRect;
-		[sl setDeleteButtonImage:UIKBGetImage(UIKBImageDelete, appr, landscape) frame:delRect];
-		[sl setDeleteActiveButtonImage:UIKBGetImage(UIKBImageDeleteActive, appr, landscape) frame:delRect];
+		CGRect delRect2 = delRect;
+		delRect2.origin = CGPointZero;
+		[sl setDeleteButtonImage:GUResizeImageWithCaps(UIKBGetImage(UIKBImageDelete, appr, landscape), delRect2, KeyCaps) frame:delRect];
+		[sl setDeleteActiveButtonImage:GUResizeImageWithCaps(UIKBGetImage(UIKBImageDeleteActive, appr, landscape), delRect2, KeyCaps) frame:delRect];
 	}
 	
 	[sl addInternationalKeyIfNeeded:sublayoutType];

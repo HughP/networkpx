@@ -65,6 +65,7 @@ CGImageRef GUImageCreateWithCappedMask(CGImageRef src, CGImageRef mask, GUCaps c
 // Draw CGImage with stretching.
 void GUDrawImageWithCaps(CGContextRef c, CGRect rect, CGImageRef img, GUCaps caps);
 CGImageRef GUImageCreateWithCaps(CGImageRef img, CGRect rect, GUCaps caps);
+#define GUResizeImageWithCaps(img, rect, caps) GUCreateUIImageAndRelease(GUImageCreateWithCaps((img).CGImage, (rect), (caps)))
 
 // Get the mean luminance of the image, weighted by opacity (alpha channel).
 float GUAverageLuminance (CGImageRef img);
