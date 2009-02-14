@@ -9,5 +9,5 @@ Maintainer: KennyTM~ <kennytm+L33tTyper@gmail.com>
 Author: KennyTM~ <kennytm+L33tTyper@gmail.com>
 Section: Toys
 Depends: hk.kennytm.iKeyEx (>=0.1-3)
-Installed-Size: 22
+Installed-Size: 28
 dev: kennytm

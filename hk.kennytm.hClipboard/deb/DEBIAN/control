@@ -9,5 +9,5 @@ Maintainer: KennyTM~ <kennytm+hClipboard@gmail.com>
 Author: KennyTM~ <kennytm+hClipboard@gmail.com>
 Section: Keyboard Extension
 Depends: hk.kennytm.iKeyEx (>=0.0-1)
-Installed-Size: 72
+Installed-Size: 268
 dev: kennytm
