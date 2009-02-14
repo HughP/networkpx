@@ -10,7 +10,8 @@
  * Fixed issue 2 (Probably). The Globe can be used to exclusively switch to iKeyEx keyboards.
  * Fixed issue 31. Auto-correction dictionaries can be recognized properly.
  * Fixed issue 42. Thanks Tomi for reporting.
- * Rewritten Graphics generation engine for flexibility (issue 5, issue 41), allowing more flexible layout.plist (issue 20, issue 21, issue 32). See [Creating_layout_plist] for the newest spec. 
+ * Rewritten Graphics generation engine for flexibility (issue 5, issue 41)
+ * layout.plist gets more options (issue 20, issue 21, issue 32). See [Creating_layout_plist] for the newest spec. 
  * iKeyEx gets an preference pane. Individual keyboards can create one too (issue 30). 
  * Added localizations:
    * Italian (thanks sagitt)
@@ -30,6 +31,9 @@
    * Italian, Finnish, German and Dutch
    * Japanese (thanks tokihide).
  * Minor fixes.
+
+== MathTyper ==
+ * Added x̄, x̂, ȳ and ŷ to the list. (Thanks Danstan Bagenda for suggestion.)
 
 = 0.1-3 =
 
