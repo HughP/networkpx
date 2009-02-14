@@ -8,6 +8,6 @@ Maintainer: KennyTM~ <kennytm+iKeyEx@gmail.com>
 Author: KennyTM~ <kennytm+iKeyEx@gmail.com>
 Section: System
 Depends: mobilesubstrate (>=0.9-0)
-Instanlled-Size: 193
+Instanlled-Size: 456
 Tag: role::developer purpose::library
 dev: kennytm
