@@ -65,7 +65,8 @@ typedef enum UIKBShiftStyle {
 	CGFloat* horizontalSpacings;
 	
 	CGFloat verticalSpacing, verticalOffset, keyHeight, defaultHeight;
-	NSUInteger maxWidthForPopupChar, totalCount;
+	NSUInteger maxCount;
+	CGFloat totalWidthForPopupChar;
 	
 @package
 	BOOL landscape;

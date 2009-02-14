@@ -51,21 +51,25 @@
 #define LandscapeMargin 5
 #define Padding 8
 #define ShiftDeleteDefaultWidth 42
-static const CGSize UIKBKeyPopupSize = {44, 50};
+static const CGSize UIKBKeyPopupSize = {45, 50};
 
-NSString* referedKeyOf(NSString* key) {
-	if ([key isEqualToString:@"shiftedTexts"])
-		return @"texts";
-	else if ([key hasPrefix:@"shifted"])
-		return @"shiftedTexts";
-	else
-		return @"texts";
+static NSString* translators[] =     {@"texts", @"shiftedTexts", @"labels", @"shiftedLabels", @"popups", @"shiftedPopups"};
+static NSString* referedKey[] =      {@"texts", @"texts",        @"texts",  @"shiftedTexts",  @"labels", @"shiftedLabels"};
+static BOOL keyRequiresUppercase[] = {NO,       YES,             YES,       NO,               NO,        NO              };
+
+static int translateString (NSString* key) {
+	for (int i = 0; i < sizeof(translators)/sizeof(NSString*); ++ i)
+		if (translators[i] == key || [translators[i] isEqualToString:key])
+			return i;
+	return 0;
 }
 
-NSArray* tryUppercase(NSString* key, NSArray* srcArr) {
+static NSString* referedKeyOf(NSString* key) { return referedKey[translateString(key)]; }
+
+static NSArray* tryUppercase(NSString* key, NSArray* srcArr) {
 	if (srcArr == nil)
 		return nil;
-	if (![key isEqualToString:@"texts"] && (![key hasPrefix:@"shifted"] || [key isEqualToString:@"shiftedTexts"])) {
+	if (keyRequiresUppercase[translateString(key)]) {
 		NSMutableArray* retArr = [[NSMutableArray alloc] init];
 		for (NSString* s in srcArr) {
 			if ([s length] == 1)
@@ -89,7 +93,7 @@ NSArray* fetchTextRow(NSString* curKey, NSUInteger row, NSDictionary* restrict s
 	
 	NSArray* allRows = [sublayout objectForKey:curKey];
 	if ([allRows count] <= row) {
-		if (![curKey isEqualToString:@"text"]) {
+		if (![curKey isEqualToString:@"texts"]) {
 			return tryUppercase(curKey, fetchTextRow(referedKeyOf(curKey), row, sublayout, layoutDict, depth+1));
 		} else
 			return nil;
@@ -263,8 +267,10 @@ NSArray* fetchTextRow(NSString* curKey, NSUInteger row, NSDictionary* restrict s
 			for (NSUInteger i = 1; i <= rows-4; ++i)
 				counts[i] = r0;
 		}
+		maxCount = 0;
 		for (NSUInteger i = 0; i < rows; ++ i)
-			totalCount += counts[i];
+			if (maxCount < counts[i])
+				maxCount = counts[i];
 		
 		// fetch indentation.
 		NSObject* indentation = [sublayout objectForKey:@"rowIndentation"];
@@ -326,7 +332,7 @@ NSArray* fetchTextRow(NSString* curKey, NSUInteger row, NSDictionary* restrict s
 		}
 		
 		// compute width and perform portrait-to-landscape transformation if needed.
-		maxWidthForPopupChar = UIKBKeyPopupSize.width;
+		totalWidthForPopupChar = UIKBKeyPopupSize.width;
 		for (NSUInteger i = 0; i < rows; ++ i) {
 			if (landscape) {
 				if (i == rows-1) {
@@ -340,11 +346,9 @@ NSArray* fetchTextRow(NSString* curKey, NSUInteger row, NSDictionary* restrict s
 			}
 			if (counts[i] != 0) {
 				widths[i] = (keyboardWidth - lefts[i] - rights[i] - horizontalSpacings[i]*(counts[i]-1))/counts[i];
-				if (widths[i] > maxWidthForPopupChar)
-					maxWidthForPopupChar = widths[i];
+				totalWidthForPopupChar += widths[i];
 			}
 		}
-		maxWidthForPopupChar += 2*Padding;
 		
 		// fetch texts & stuff.
 #define DoFetch(var) for(NSUInteger i = 0; i < rows; ++ i) \
@@ -455,7 +459,7 @@ else \
 #define UIKBKeyMaxFontSize 22.5f
 
 -(UIImage*)fgImageWithShift:(BOOL)shift {
-	UIGraphicsBeginImageContext(CGSizeMake(maxWidthForPopupChar, UIKBKeyPopupSize.height*totalCount));
+	UIGraphicsBeginImageContext(CGSizeMake(totalWidthForPopupChar, UIKBKeyPopupSize.height*maxCount));
 	
 	float keyB = GUAverageLuminance(UIKBGetImage(UIKBImagePopupCenter, keyboardAppearance, landscape).CGImage);
 	if (keyB <= 0.5)
@@ -465,20 +469,24 @@ else \
 	
 	NSArray** myTexts = shift ? shiftedPopups : popups;
 	UIFont* defaultFont = [UIFont boldSystemFontOfSize:PopupMaxFontSize];
-	CGFloat h = 0;
+	CGRect drawRect = CGRectMake(Padding, 0, 0, UIKBKeyPopupSize.height);
 	for (NSUInteger i = 0; i < rows; ++ i) {
 		NSUInteger j = 0;
-		CGFloat w = widths[i];
-		if (w < UIKBKeyPopupSize.width)
-			w = UIKBKeyPopupSize.width;
+		drawRect.size.width = widths[i];
+		if (drawRect.size.width < UIKBKeyPopupSize.width)
+			drawRect.size.width = UIKBKeyPopupSize.width;
+		drawRect.size.width -= 2*Padding;
+		drawRect.origin.y = 0;
+		
 		for (NSString* pop in myTexts[i]) {
-			drawInCenter(pop, CGRectMake(Padding, h, w-2*Padding, UIKBKeyPopupSize.height), defaultFont);
+			drawInCenter(pop, drawRect, defaultFont);
 			++ j;
-			h += UIKBKeyPopupSize.height;
+			drawRect.origin.y += UIKBKeyPopupSize.height;
 			if (j >= counts[i])
 				break;
 		}
-		h += UIKBKeyPopupSize.height * (counts[i] - j);
+		
+		drawRect.origin.x += drawRect.size.width + 2*Padding;
 	}
 	
 	UIImage* retImg = UIGraphicsGetImageFromCurrentImageContext();
@@ -595,7 +603,7 @@ else \
 }
 
 -(NSArray*)keyDefinitions {
-	NSMutableArray* retarr = [[[NSMutableArray alloc] initWithCapacity:totalCount+5] autorelease];
+	NSMutableArray* retarr = [[[NSMutableArray alloc] init] autorelease];
 	
 	UIKBKeyDefinition* keydef = [[UIKBKeyDefinition alloc] init];
 	
@@ -679,11 +687,11 @@ else \
 	
 	CGFloat accentDelta, accentHeight, accentSpacing;
 	if (landscape) {
-		accentDelta = -74;
+		accentDelta = -74-40;
 		accentHeight = 114;
 		accentSpacing = 40;
 	} else {
-		accentDelta = -61;
+		accentDelta = -61-54;
 		accentHeight = 122;
 		accentSpacing = 54;
 	}
@@ -700,6 +708,7 @@ else \
 		CGRect imgRect = CGRectMake(lefts[i]-horizontalSpacings[i]/2, top,
 									widths[i]+horizontalSpacings[i], xheight);
 		fgRect.size.width = widths[i] < UIKBKeyPopupSize.width ? UIKBKeyPopupSize.width : widths[i];
+		fgRect.origin.y = 0;
 		
 		NSUInteger count = [texts[i] count];
 		
@@ -780,8 +789,8 @@ else \
 				}				
 			}
 			
-			keydef->accent_frame = CGRectMake(imgRect.origin.x, imgRect.origin.y + accentDelta,
-											  imgRect.size.width, accentHeight);
+			keydef->accent_frame = CGRectIntegral(CGRectMake(imgRect.origin.x, imgRect.origin.y + imgRect.size.height + accentDelta,
+															 imgRect.size.width, accentHeight));
 			NSString* kvalue = [texts[i] objectAtIndex:j];
 			keydef.value = kvalue;
 			keydef.shifted = [shiftedTexts[i] objectAtIndex:j];
@@ -797,6 +806,8 @@ else \
 			}
 			[retarr addObject:[[keydef copy] autorelease]];
 		}
+		
+		fgRect.origin.x += fgRect.size.width;
 	}
 	
 	[keydef release];
