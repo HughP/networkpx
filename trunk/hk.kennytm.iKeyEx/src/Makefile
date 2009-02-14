@@ -30,7 +30,8 @@ Options=-lobjc \
 	-lobjc \
 	-march=armv6 \
 	-mcpu=arm1176jzf-s \
-	-O3
+	-O3 \
+	-mthumb
 
 iKeyExSources=$(SharedSrcPath)/GraphicsUtilities.m cleanup.m common.m ImageLoader.m KeyboardLoader.m UIKBSound.m UIKBKeyDefinition.m UIKBStandardKeyboard.m UIKBStandardKeyboardLayout.m UIKBSpecialKeyButtons.m
 iKeyExTarget=$(iKeyExLibPath)/libiKeyEx.dylib

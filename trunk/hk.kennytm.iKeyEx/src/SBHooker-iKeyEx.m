@@ -197,7 +197,9 @@ static NSString* lastLongPressedKey = nil;	// Record last long-pressed key.
 	int isExp = exp;
 	NSArray* actualArr = array;
 	NSUInteger halfCount = [actualArr count]/2;
-	CGFloat newWidth = (ori == 90 || ori == -90) ? 47 : 32;
+	BOOL isLandscape = (ori == 90 || ori == -90);
+	CGFloat newWidth = isLandscape ? 47 : 32;
+	CGFloat mismatchCompensation = isLandscape ? 32 : 9;
 	
 	NSString* mode = UIKeyboardGetCurrentInputMode();
 	if ([mode hasPrefix:iKeyEx_Prefix]) {
@@ -233,8 +235,15 @@ static NSString* lastLongPressedKey = nil;	// Record last long-pressed key.
 				actualArr = newArray;
 			}
 		}
+		
+		BOOL newFrameShouldBeLong = [actualArr count] > 0 && [[actualArr objectAtIndex:0] hasPrefix:@"."];
+		
+		if (newFrameShouldBeLong) {
+			frame.origin.x += mismatchCompensation;
+		}		
 	}
 	
+		
 	UIAccentedCharacterView* newSelf = [self old_initWithFrame:frame variants:actualArr expansion:isExp orientation:ori];
 	
 	// 

@@ -1,6 +1,8 @@
 #summary (Technical) The format of the WordTrie binary files and the API to access them.
 #labels Phase-Implementation
 
+<wiki:toc/>
+
 = Format =
 
 The !WordTrie consist of 2 files, the index file (.idx) and word file (.dat).
@@ -11,7 +13,13 @@ All numbers in a !WordTrie are in *big endian*.
 
 The first 4 bytes of each file must be `00-00-00-01`. This is checked in `KB::WordTrie::magic_number_ok`.
 
-== Word Entry ==
+== Word file (.dat) ==
+
+=== Word Count ===
+
+The number of words stored in this file is at 0x1C.
+
+=== Word Entry ===
 
 Each entry must have a 4-byte metadata:
 {{{
