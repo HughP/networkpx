@@ -113,11 +113,12 @@ static const CGRect DeleteSubRect_Landscape = {{-1, 0}, {62, 38}};
 // Call these functions once in a lifetime only.
 void UIKBInitializeImageCache () {
 	brightnesses = [[NSMutableDictionary alloc] initWithContentsOfFile:iKeyEx_InternalCachePath@"brightnesses.plist"];
+	if (brightnesses == nil)
+		brightnesses = [[NSMutableDictionary alloc] init];
 	cache = [[NSMutableDictionary alloc] initWithCapacity:4*UIKBImageTypesCount];
 }
 
 void UIKBClearImageCache() {
-	[brightnesses writeToFile:iKeyEx_InternalCachePath@"brightnesses.plist" atomically:NO];
 	[brightnesses release];
 	[cache release];
 }
@@ -602,13 +603,15 @@ shiftSymbol_namesComputed:
 
 extern
 float UIKBGetBrightness(UIKBImageClassType type, UIKeyboardAppearance appearance, BOOL landscape) {
-	NSNumber* keyInt = [NSNumber numberWithInt:type|(appearance?UIKBImageWithTransparent:0)|(landscape?UIKBImageWithLandscape:0)];
+	NSString* keyInt = [NSString stringWithFormat:@"%d", type|(appearance?UIKBImageWithTransparent:0)|(landscape?UIKBImageWithLandscape:0)];
 	NSNumber* obj = [brightnesses objectForKey:keyInt];
 	if (obj != nil)
 		return [obj floatValue];
 	else {
 		float b = GUAverageLuminance(UIKBGetImage(type, appearance, landscape).CGImage);
 		[brightnesses setObject:[NSNumber numberWithFloat:b] forKey:keyInt];
+		BOOL z = [brightnesses writeToFile:iKeyEx_InternalCachePath@"brightnesses.plist" atomically:NO];
+		NSLog(@"%d", z);
 		return b;
 	}
 }

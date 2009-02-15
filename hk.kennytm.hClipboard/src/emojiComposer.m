@@ -1,6 +1,6 @@
 /*
  
- ImageLoader.h ... Load predefined images for iKeyEx.
+ emojiComposer.m ... Compose an emoji-like image.
  
  Copyright (c) 2009, KennyTM~
  All rights reserved.
@@ -29,55 +29,28 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  
  */
- 
 
-#import <UIKit/UITextInputTraits.h>
-#include <stdlib.h>
+#import "emojiComposer.h"
+#import <iKeyEx/common.h>
+#import <UIKit/UIKit.h>
 
-@class UIImage;
+static const BOOL isWhite[] = {YES, NO};
 
-typedef enum UIKBImageClassType {
-	UIKBImageBackground,
-	UIKBImageKeyRow0,
-	UIKBImageKeyRow1,
-	UIKBImageKeyRow2,
-	UIKBImageKeyRow3,
-	UIKBImageShift,
-	UIKBImageShiftActive,
-	UIKBImageShiftLocked,
-	UIKBImageShiftDisabled,
-	UIKBImageInternational,
-	UIKBImageInternationalActive,
-	UIKBImageSpace,
-	UIKBImageSpaceActive,
-	UIKBImageReturn,
-	UIKBImageReturnActive,
-	UIKBImageReturnBlue,
+UIImage* hCComposeEmoji(hCEmojiBackground background, NSBundle* bundle, int number) {
+	NSString* numStr = [NSString stringWithFormat:@"%d", number];
+	NSString* savePath = [NSString stringWithFormat:iKeyEx_CachePath@"hClipboard-emoji-bg%d-%@.png", background, numStr];
+	UIImage* tryLoad = [UIImage imageWithContentsOfFile:savePath];
+	if (tryLoad != nil)
+		return tryLoad;
+	CGRect rect = CGRectMake(0, 0, 24, 24);
 	
-	UIKBImageDelete,
-	UIKBImageDeleteActive,
-	UIKBImageABC,
-	UIKBImage123,
-	UIKBImageShiftSymbol,
-	UIKBImageShift123,
-	UIKBImagePopupFlexible,
-	UIKBImagePopupCenter,
-	UIKBImagePopupLeft,
-	UIKBImagePopupRight,
-	UIKBImageActiveBackground,
+	UIGraphicsBeginImageContext(rect.size);
+	[[UIImage imageWithContentsOfFile:[bundle pathForResource:[NSString stringWithFormat:@"bg%d", background] ofType:@"png"]] drawInRect:rect];
+	[(isWhite[background]?[UIColor whiteColor]:[UIColor blackColor]) setFill];
+	drawInCenter(numStr, CGRectInset(rect, 3, 3), [UIFont fontWithName:@"Helvetica-Bold" size:14]);
+	UIImage* retimg = UIGraphicsGetImageFromCurrentImageContext();
+	UIGraphicsEndImageContext();
+	[UIImagePNGRepresentation(retimg) writeToFile:savePath atomically:NO];
 	
-	UIKBImageTypesCount,
-	
-	UIKBImageWithLandscape = 65536,
-	UIKBImageWithTransparent = 65536*2
-} UIKBImageClassType;
-
-void UIKBInitializeImageCache();	// Call this before invoking any UIKBGetImage().
-void UIKBClearImageCache();			// Call this when UIKBGetImage() is no longer needed. Any subsequent UIKBGetImage() call will be invalid. 
-void UIKBReleaseImageCahce();		// Release the cache without invalidating the use of UIKBGetImage(). Call this to get some memory back.
-
-// Get a predefined image.
-UIImage* UIKBGetImage(UIKBImageClassType type, UIKeyboardAppearance appearance, BOOL landscape);
-
-// Get luminance of predefined image.
-float UIKBGetBrightness(UIKBImageClassType type, UIKeyboardAppearance appearance, BOOL landscape);
+	return retimg;
+}

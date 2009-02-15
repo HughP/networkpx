@@ -1,6 +1,6 @@
 Package: hk.kennytm.hclipboard
 Name: hClipboard
-Version: 0.1-3
+Version: 0.1-5
 Architecture: iphoneos-arm
 Description: Global Copy & Paste for iPhone
 Homepage: http://code.google.com/p/networkpx/wiki/Using_hClipboard
@@ -8,6 +8,6 @@ Depiction: http://moreinfo.thebigboss.org/moreinfo/hclipboardDp.php
 Maintainer: KennyTM~ <kennytm+hClipboard@gmail.com>
 Author: KennyTM~ <kennytm+hClipboard@gmail.com>
 Section: Keyboard Extension
-Depends: hk.kennytm.iKeyEx (>=0.0-1)
-Installed-Size: 268
+Depends: hk.kennytm.iKeyEx (>=0.1-5)
+Installed-Size: 332
 dev: kennytm

@@ -461,7 +461,7 @@ else \
 -(UIImage*)fgImageWithShift:(BOOL)shift {
 	UIGraphicsBeginImageContext(CGSizeMake(totalWidthForPopupChar, UIKBKeyPopupSize.height*maxCount));
 	
-	float keyB = GUAverageLuminance(UIKBGetImage(UIKBImagePopupCenter, keyboardAppearance, landscape).CGImage);
+	float keyB = UIKBGetBrightness(UIKBImagePopupCenter, keyboardAppearance, landscape);
 	if (keyB <= 0.5)
 		[[UIColor whiteColor] setFill];
 	else
@@ -531,9 +531,10 @@ else \
 				top += 1;
 		}
 		
-		CGImageRef keyImg = UIKBGetImage(UIKBImageKeyRow0+((NSUInteger)top/RowDivider(landscape)), keyboardAppearance, landscape).CGImage;
+		UIKBImageClassType imgType = UIKBImageKeyRow0+((NSUInteger)top/RowDivider(landscape));
+		CGImageRef keyImg = UIKBGetImage(imgType, keyboardAppearance, landscape).CGImage;
 		CGRect imgRect = CGRectIntegral(CGRectMake(lefts[i], top, widths[i], xheight));
-		float imgLuma = GUAverageLuminance(keyImg);
+		float imgLuma = UIKBGetBrightness(imgType, keyboardAppearance, landscape);
 		UIImage* resizedImage = GUCreateUIImageAndRelease(GUImageCreateWithCaps(keyImg,
 																				CGRectMake(0, 0, imgRect.size.width, imgRect.size.height),
 																				GUCapsMake(Padding, Padding, Padding, Padding)));

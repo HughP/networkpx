@@ -1,6 +1,6 @@
 /*
  
- ImageLoader.h ... Load predefined images for iKeyEx.
+ emojiComposer.h ... Compose an emoji-like image.
  
  Copyright (c) 2009, KennyTM~
  All rights reserved.
@@ -29,55 +29,12 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  
  */
- 
 
-#import <UIKit/UITextInputTraits.h>
-#include <stdlib.h>
+@class UIImage, NSBundle;
 
-@class UIImage;
+typedef enum hCEmojiBackground {
+	hCEmojiBlueSquare,
+	hCEmojiGreenCircle
+} hCEmojiBackground;
 
-typedef enum UIKBImageClassType {
-	UIKBImageBackground,
-	UIKBImageKeyRow0,
-	UIKBImageKeyRow1,
-	UIKBImageKeyRow2,
-	UIKBImageKeyRow3,
-	UIKBImageShift,
-	UIKBImageShiftActive,
-	UIKBImageShiftLocked,
-	UIKBImageShiftDisabled,
-	UIKBImageInternational,
-	UIKBImageInternationalActive,
-	UIKBImageSpace,
-	UIKBImageSpaceActive,
-	UIKBImageReturn,
-	UIKBImageReturnActive,
-	UIKBImageReturnBlue,
-	
-	UIKBImageDelete,
-	UIKBImageDeleteActive,
-	UIKBImageABC,
-	UIKBImage123,
-	UIKBImageShiftSymbol,
-	UIKBImageShift123,
-	UIKBImagePopupFlexible,
-	UIKBImagePopupCenter,
-	UIKBImagePopupLeft,
-	UIKBImagePopupRight,
-	UIKBImageActiveBackground,
-	
-	UIKBImageTypesCount,
-	
-	UIKBImageWithLandscape = 65536,
-	UIKBImageWithTransparent = 65536*2
-} UIKBImageClassType;
-
-void UIKBInitializeImageCache();	// Call this before invoking any UIKBGetImage().
-void UIKBClearImageCache();			// Call this when UIKBGetImage() is no longer needed. Any subsequent UIKBGetImage() call will be invalid. 
-void UIKBReleaseImageCahce();		// Release the cache without invalidating the use of UIKBGetImage(). Call this to get some memory back.
-
-// Get a predefined image.
-UIImage* UIKBGetImage(UIKBImageClassType type, UIKeyboardAppearance appearance, BOOL landscape);
-
-// Get luminance of predefined image.
-float UIKBGetBrightness(UIKBImageClassType type, UIKeyboardAppearance appearance, BOOL landscape);
+UIImage* hCComposeEmoji(hCEmojiBackground background, NSBundle* bundle,  int number);
