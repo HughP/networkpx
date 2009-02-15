@@ -141,6 +141,40 @@ NSArray* fetchTextRow(NSString* curKey, NSUInteger row, NSDictionary* restrict s
 
 
 @implementation UIKBStandardKeyboard
+@synthesize landscape;
+@synthesize keyboardAppearance;
+@synthesize keyboardSize;
+@synthesize hasSpaceKey, hasInternationalKey, hasReturnKey, hasShiftKey, hasDeleteKey;
+@synthesize shiftKeyLeft, deleteKeyRight, shiftKeyWidth, deleteKeyWidth;
+@synthesize shiftKeyEnabled;
+@synthesize shiftKeyRow, deleteKeyRow;
+@synthesize shiftStyle;
+@synthesize keyHeight;
+@synthesize verticalSpacing;
+@synthesize rows;
+#define ImplementXAtRow(X) X##AtRow:(NSUInteger)row { return (row < rows) ? X##s[row] : 0; }
+#define ImplementXAtRowColumn(X) \
+X##AtRow:(NSUInteger)row column:(NSUInteger)col { \
+	if (row >= rows || col >= [X##s[row] count]) return nil; \
+	return [X##s[row] objectAtIndex:col]; \
+}
+
+-(NSUInteger)ImplementXAtRow(count);
+-(CGFloat)ImplementXAtRow(left);
+-(CGFloat)ImplementXAtRow(right);
+-(CGFloat)ImplementXAtRow(width);
+-(CGFloat)ImplementXAtRow(horizontalSpacing);
+
+-(NSString*)ImplementXAtRowColumn(text);
+-(NSString*)ImplementXAtRowColumn(shiftedText);
+-(NSString*)ImplementXAtRowColumn(label);
+-(NSString*)ImplementXAtRowColumn(shiftedLabel);
+-(NSString*)ImplementXAtRowColumn(popup);
+-(NSString*)ImplementXAtRowColumn(shiftedPopup);
+
+#undef ImplementXAtRow
+#undef ImplementXAtRowColumn
+
 -(void)dealloc {
 	for (NSUInteger i = 0; i < rows; ++ i) {
 		[texts[i] release];
