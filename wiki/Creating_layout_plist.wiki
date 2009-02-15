@@ -1,6 +1,7 @@
 #summary (Developers) How to create a keyboard layout with layout.plist
 #labels Phase-Implementation
-#sidebar TableOfContents
+
+<wiki:toc/>
 
 = Introduction =
 
@@ -409,3 +410,16 @@ When you upgrade your layout.plist, you must empty the cache. You can do so by u
 {{{
   iKeyEx_KBMan purge Colemak
 }}}
+
+= Using layout.plist with custom code =
+
+The `UIKBStandardKeyboard` class provides easy access to transform a layout.plist into resources used in iPhoneOS.
+
+To use it, you first need to load your layout.plist into an NSDictionary, and then create a keyboard using its `-initWithPlist:name:landscape:appearance:` or `+keyboardWithPlist:name:landscape:appearance:` method.
+{{{
+NSDictionary* layout = [NSDictionary dictionaryWithContentsOfFile:[someBundle pathForResource:@"layout" ofType:@"plist"];
+UIKBStandardKeyboard* keyboard = [UIKBStandardKeyboard keyboardWithPlist:layout name:@"Alphabet" landscape:NO appearance:UIKeyboardAppearanceDefault];
+}}}
+Then you can use the read-only properties `image`, `fgImage`, `shiftedImage`, `fgShiftedImage` and `keyDefinitions` for the `UIKeyboardSublayout`s. There is also a vast number of less complex properties you mean need. Check the header file for detail.
+
+

@@ -71,7 +71,6 @@ typedef enum UIKBShiftStyle {
 @package
 	BOOL landscape;
 	UIKeyboardAppearance keyboardAppearance;
-	CGFloat fontSize;
 	
 	CGSize keyboardSize;
 	
@@ -81,42 +80,6 @@ typedef enum UIKBShiftStyle {
 	NSUInteger shiftKeyRow, deleteKeyRow;
 	UIKBShiftStyle shiftStyle;
 }
-
-/*
-@property(assign,readonly) BOOL landscape;
-@property(assign) UIKeyboardAppearance keyboardAppearance;
-@property(assign) NSUInteger rows;
-
--(void)setArrangement:(UIKBKeyboardArrangement)arrangement;
--(void)setArrangementWithObject:(id)obj;
--(void)setArrangementWithNumbers:(NSUInteger*)n count:(NSUInteger)k;
-
--(void)setRowIndentation:(UIKBKeyboardRowIndentation)metrics;
--(void)setRowIndentationWithObject:(id)obj;
--(void)setRowIndentationWithNumbers:(NSUInteger*)n count:(NSUInteger)k;
-
--(void)setText:(NSString*)txt forRow:(NSUInteger)row column:(NSUInteger)col;
--(void)setText:(NSString*)txt shifted:(NSString*)shift forRow:(NSUInteger)row column:(NSUInteger)col;
--(void)setText:(NSString*)txt label:(NSString*)lbl popup:(NSString*)pop forRow:(NSUInteger)row column:(NSUInteger)col;
--(void)setText:(NSString*)txt label:(NSString*)lbl popup:(NSString*)pop shifted:(NSString*)shift shiftedLabel:(NSString*)sfl shiftedPopup:(NSString*)sfp forRow:(NSUInteger)row column:(NSUInteger)col;
--(void)setTexts:(NSArray*)txts forRow:(NSUInteger)row;
--(void)setTexts:(NSArray*)txts shiftedTexts:(NSArray*)sfts forRow:(NSUInteger)row;
-
-@property(assign) BOOL hasSpaceKey;
-@property(assign) BOOL hasInternationalKey;
-@property(assign) BOOL hasReturnKey;
-@property(assign) BOOL hasShiftKey;
-@property(assign) CGFloat shiftKeyLeft;
-@property(assign) CGFloat shiftKeyWidth;
-@property(assign) BOOL hasDeleteKey;
-@property(assign) CGFloat deleteKeyRight;
-@property(assign) CGFloat deleteKeyWidth;
-@property(assign) UIKBShiftStyle shiftStyle;
-@property(assign,readonly) CGSize keyboardSize;
-@property(assign) BOOL shiftKeyEnabled;
-@property(assign) NSInteger horizontalSpacing;
-@property(assign) NSInteger verticalSpacing;
-*/
 
 -(id)initWithPlist:(NSDictionary*)layoutDict name:(NSString*)name landscape:(BOOL)landsc appearance:(UIKeyboardAppearance)appr;
 -(void)dealloc;
@@ -134,5 +97,30 @@ typedef enum UIKBShiftStyle {
 
 @property(assign,readonly,nonatomic) CGRect shiftRect;
 @property(assign,readonly,nonatomic) CGRect deleteRect;
+
+@property(assign,readonly) BOOL landscape;
+@property(assign,readonly) UIKeyboardAppearance keyboardAppearance;
+@property(assign,readonly) CGSize keyboardSize;
+@property(assign,readonly) BOOL hasSpaceKey, hasInternationalKey, hasReturnKey, hasShiftKey, hasDeleteKey;
+@property(assign,readonly) CGFloat shiftKeyLeft, deleteKeyRight, shiftKeyWidth, deleteKeyWidth;
+@property(assign,readonly) BOOL shiftKeyEnabled;
+@property(assign,readonly) NSUInteger shiftKeyRow, deleteKeyRow;
+@property(assign,readonly) UIKBShiftStyle shiftStyle;
+
+@property(assign,readonly) CGFloat keyHeight;
+@property(assign,readonly) CGFloat verticalSpacing;
+@property(assign,readonly) NSUInteger rows;
+-(NSUInteger)countAtRow:(NSUInteger)row;
+-(CGFloat)leftAtRow:(NSUInteger)row;
+-(CGFloat)rightAtRow:(NSUInteger)row;
+-(CGFloat)widthAtRow:(NSUInteger)row;
+-(CGFloat)horizontalSpacingAtRow:(NSUInteger)row;
+-(NSString*)textAtRow:(NSUInteger)row column:(NSUInteger)col;
+-(NSString*)shiftedTextAtRow:(NSUInteger)row column:(NSUInteger)col;
+-(NSString*)labelAtRow:(NSUInteger)row column:(NSUInteger)col;
+-(NSString*)shiftedLabelAtRow:(NSUInteger)row column:(NSUInteger)col;
+-(NSString*)popupAtRow:(NSUInteger)row column:(NSUInteger)col;
+-(NSString*)shiftedPopupAtRow:(NSUInteger)row column:(NSUInteger)col;
+
 
 @end

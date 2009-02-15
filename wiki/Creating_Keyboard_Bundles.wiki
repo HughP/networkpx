@@ -11,7 +11,7 @@ In the iPhoneOS, the so-called *keyboards* or *input modes* are actually compose
 
 The *layout* is a view that interacts with user input and process commands with the *keyboard implementation* (`UIKeyboardImpl`). Layouts must be implemented as subclasses of `UIKeyboardLayout`, which in turn is a subclass of `UIView`.
 
-The standard 4-row keyboard layouts you're using are all subclasses of the more specialized `UIKeyboardLayoutRoman`. It has several `UIKeyboardSublayout` members which does the actual rendering. 
+The standard keyboard layouts you're using are all subclasses of the more specialized `UIKeyboardLayoutRoman`. It has several `UIKeyboardSublayout` members which does the actual rendering. 
 
 There are also layouts not derived from `UIKeyboardLayoutRoman`. The emoji keyboard is a prominent example. 
 
@@ -20,7 +20,9 @@ An *input manager* is an abstract class that transforms key press commands to ac
 
 CJK keyboards usually rely on input managers because of the vast amount of characters.
 
-Input managers are usually subclasses of `UIKeyboardInputManager`. If you're working with a standard keyboard layout, you can subclass the more specialized `UIKeyboardInputManagerAlphabet`. This class will automatically handle word frequency analysis for you. 
+Input managers are usually subclasses of `UIKeyboardInputManager`. If you're working with a standard keyboard layout, you should subclass the more specialized `UIKeyboardInputManagerAlphabet`. This class will automatically handle word frequency analysis for you. 
+
+  If you are not subclassing from `UIKeyboardInputManagerAlphabet`, but wants to use a standard keyboard layout (including layout.plist method), you must implement the `-(void)setShallowPrediction:(BOOL)sp` message to avoid crashing.
 
 Handwriting regconition is also the job of an input manager. 
 
@@ -31,25 +33,70 @@ Keyboard bundles must reside in `/Library/iKeyEx/Keyboards/`, and have an extens
 
   Example: The keyboard bundle for ℏClipboard is placed in `/Library/iKeyEx/Keyboards/hClipboard.keyboard/`
 
-Together with the “iKeyEx:” prefix, the file name will become the *input mode name* of the keyboard extension. It does not have to match the display name, since the latter will be specified in the `Info.plist` file.
+Together with the "iKeyEx:" prefix, the file name will become the *input mode name* of the keyboard extension. It does not have to match the display name, since the latter will be specified in the `Info.plist` file.
 
-  The input mode name is used to uniquely identify a keyboard. For example, the English (US) keyboard’s input mode name is `en_US`, Traditional Chinese Handwriting is `zh_Hant-HWR`, and ℏClipboard is `iKeyEx:hClipboard`. 
+  The input mode name is used to uniquely identify a keyboard. For example, the English (US) keyboard‚Äôs input mode name is `en_US`, Traditional Chinese Handwriting is `zh_Hant-HWR`, and ℏClipboard is `iKeyEx:hClipboard`. 
 
 == Info.plist ==
 `Info.plist` is the description of the keyboard extension. It is a [http://developer.apple.com/documentation/Cocoa/Conceptual/PropertyLists/Introduction/chapter_1_section_1.html property list]. Currently, iKeyEx recognizes the following keys:
 
-|| *Key* || *Value* ||
-|| CFBundleDisplayName || The display name of the keyboard. ||
-|| CFBundleExecutable || The binary file that contains all executable code. ||
-|| UIKeyboardLayoutClass || The layout class to use. To be described below. ||  
-|| UIKeyboardInputManagerClass || The input manager class to use. To be described below. ||
+  _struct_ `<Info.plist>` ::
+<table border="1" bordercolor="#AAAAAA" cellpadding="5">
+<tr>
+	<th>key</th>
+	<th colspan="2">type</th>
+	<th>meaning</th>
+	<th>default</th>
+	<th>depends</th>
+</tr>
+<tr>
+	<td>CFBundleDisplayName</td>
+	<td>string</td>
+	<td>localizable string</td>
+	<td>Display name of the keyboard.</td>
+	<td>_current input mode name_</td>
+	<td>--</td>
+</tr>
+<tr>
+	<td>UIKeyboardLayoutClass</td>
+	<td>string</td>
+	<td>`<layout class>`</td>
+	<td>Layout class to use. To be described below.</td>
+	<td>`"=en_US"`</td>
+	<td>--</td>
+</tr>
+<tr>
+	<td>UIKeyboardLayoutClass</td>
+	<td>string</td>
+	<td>`<input manager class>`</td>
+	<td>Input manager class to use. To be described below.</td>
+	<td>--</td>
+	<td>--</td>
+</tr>
+<tr>
+	<td>CFBundleExecutable</td>
+	<td>string</td>
+	<td>file path</td>
+	<td>Binary file that contains all executable code</td>
+	<td>*Required*</td>
+	<td>_UIKeyboardLayoutClass_ is dictionary of (string, class name) pairs<br />*or* _UIKeyboardInputManagerClass_ is class name</td>
+</tr>
+<tr>
+	<td>PSBundle</td>
+	<td>string</td>
+	<td>file path</td>
+	<td>Sub-bundle that contains the preference pane.</td>
+	<td>--</td>
+	<td>--</td>
+</tr>
+</table>
 
 The display name will be shown when switching keyboards using the international button, and also in the Settings application. If missing, the file name will be used as the display name. 
 
 === UIKeyboardLayoutClass ===
 In iKeyEx the layout class can be specified in 3 ways: _referred_, _layout.plist_ and writing code. 
 
-Referred means the layout of this keyboard will use an existing one. You fill in a string starting with “=”, then the input mode name to inherit the layout. 
+Referred means the layout of this keyboard will use an existing one. You fill in a string starting with "=", then the input mode name to inherit the layout. 
 
   If you want to use the standard QWERTY keyboard layout, fill in `"=en_US"` for this field. 
 
@@ -65,12 +112,59 @@ UIKeyboardLayoutClass = {
 };
 }}}
 
-If this field is missing, the standard QWERTY keyboard will be used as layout.  
+If this field is missing, the standard QWERTY keyboard will be used as layout.
+
+  _union_ `<layout class>` ::
+<table border="1" bordercolor="#AAAAAA" cellpadding="5">
+<tr>
+	<th colspan="2">type</th>
+	<th>meaning</th>
+</tr>
+<tr>
+	<td>string</td>
+	<td>`/^=/`</td>
+	<td>Refered layout.</td>
+</tr>
+<tr>
+	<td>string</td>
+	<td>file path and `/\.plist$/`</td>
+	<td>Specification for dynamically generated standard keyboard (layout.plist).</td>
+</tr>
+<tr>
+	<td>dictionary</td>
+	<td>{`Landscape` = _class name_; `Portrait` = _class name_;}</td>
+	<td>Code-generated layout.</td>
+</tr>
+</table>
 
 === UIKeyboardInputManagerClass ===
-Like UIKeyboardLayoutClass, this field also can be referred using the same “=xxx” syntax. You can also write the class name of your own input manager class here.
+Like UIKeyboardLayoutClass, this field also can be referred using the same "=xxx" syntax. You can also write the class name of your own input manager class here.
 
 If this field is missing, no input managers will be used. 
+
+  _union_ `<input manager class>` ::
+<table border="1" bordercolor="#AAAAAA" cellpadding="5">
+<tr>
+	<th colspan="2">type</th>
+	<th>meaning</th>
+</tr>
+<tr>
+	<td>string</td>
+	<td>`/^=/`</td>
+	<td>Refered input manager.</td>
+</tr>
+<tr>
+	<td>string</td>
+	<td>class name</td>
+	<td>Code-generated manager.</td>
+</tr>
+</table>
+
+== PSBundle ==
+
+Use the _PSBundle_ key to hook a preference pane. See source code of ℏClipboard for detail.
+
+  -- TO BE DONE --
 
 == variants.plist ==
 This is an optional file that specify the *variants* of each key, when you're using a referred layout, layout.plist or a subclass of `UIKeyboardLayoutRoman`. 
@@ -91,6 +185,26 @@ On Firmware 2.2, the variants for A, C, E, I, L, N, O, S, U, Y and Z will be aut
 }
 }}}
 
+  _pairs_ `<variants.plist>` ::
+<table border="1" bordercolor="#AAAAAA" cellpadding="5">
+<tr>
+	<th></th>
+	<th colspan="2">type</th>
+	<th>meaning</th>
+</tr>
+<tr>
+	<td>*key*</td>
+	<td colspan="2">string</td>
+	<td>Text to give the variants list.</td>
+</tr>
+<tr>
+	<td>*value*</td>
+	<td>array</td>
+	<td>...of strings</td>
+	<td>List of variants.</td>
+</tr>
+</table>
+
 = Localization =
 Since in essence keyboard bundles are just regular bundles, the resources can be localized like a regular bundle. 
 
@@ -105,8 +219,6 @@ You can access the following properties in a !KeyboardBundle:
 || `UIKeyboardInputManager*` || manager || The current `UIKeyboardInputManager` instance. ||
 || `Class` || layoutClassPortrait || The current layout class in portrait orientation. ||
 || `Class` || layoutClassLandscape || The current layout class in landscape orientation. ||
-|| `NSString*` || origLayoutClassPortrait || The referred input for portrait layout. ||
-|| `NSString*` || origLayoutClassLandscape || The referred input for landscape layout. ||
 || `NSString*` || displayName || The localized display name. ||
 || `NSDictionary*` || variants || The variants. ||
 || `NSBundle*` || bundle || The underlying bundle object. ||
