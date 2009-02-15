@@ -34,7 +34,7 @@ Options=-lobjc \
 	-O3 \
 	-mthumb
 
-Sources=datasource.m controller.m views.m clipboard.m $(CommandSrcPath)/CMLUndoManager.m $(CommandSrcPath)/CMLSelection.m
+Sources=datasource.m controller.m views.m clipboard.m $(CommandSrcPath)/CMLUndoManager.m $(CommandSrcPath)/CMLSelection.m emojiComposer.m
 Target=../deb/Library/iKeyEx/Keyboards/hClipboard.keyboard/hClipboard
 
 PrefsSources=prefs.m

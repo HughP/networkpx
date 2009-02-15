@@ -33,7 +33,7 @@
 
 #import "datasource.h"
 #import "clipboard.h"
-#import <UIKit/UIStringDrawing.h>
+#import "emojiComposer.h"
 #import <iKeyEx/KeyboardLoader.h>
 #import <iKeyEx/common.h>
 
@@ -62,7 +62,7 @@
 -(id)init {
 	if ((self = [super init])) {
 		// is there a better method to determine if Emoji is supported? (Except checking system version).
-		supportsEmoji = [@"" respondsToSelector:@selector(drawAtPoint:forWidth:withFont:lineBreakMode:letterSpacing:includeEmoji:)];
+		supportsEmoji = NO; //[@"" respondsToSelector:@selector(drawAtPoint:forWidth:withFont:lineBreakMode:letterSpacing:includeEmoji:)];
 		[self switchClipboard];
 	}
 	return self;
@@ -86,6 +86,7 @@
 		cell.lineBreakMode = UILineBreakModeMiddleTruncation;
 	}
 	NSUInteger row = indexPath.row;
+	KeyboardBundle* bundle = [KeyboardBundle activeBundle];
 	
 	cell.selectionStyle = UITableViewCellSelectionStyleGray;
 	cell.selectedTextColor = [UIColor blackColor];
@@ -94,30 +95,40 @@
 	NSString* txt = [[dataCache objectAtIndex:row] description];
 	if (![insecureIndices containsIndex:row]) {
 		txt = [NSString stringWithFormat:
-			   [[KeyboardBundle activeBundle] localizedStringForKey:@"<Secure Text %u chars>"],
+			   [bundle localizedStringForKey:@"<Secure Text %u chars>"],
 			   [txt length]];
 		cell.font = [UIFont italicSystemFontOfSize:[UIFont systemFontSize]];
-		cell.textColor = [UIColor colorWithRed:1 green:1 blue:.5f alpha:1];
+		if ([tbl darkBackgroundColor])
+			cell.textColor = [UIColor colorWithRed:1 green:1 blue:.5f alpha:1];
+		else
+			cell.textColor = [UIColor colorWithRed:.5f green:0 blue:0 alpha:1];
 	} else {
 		NSUInteger txtLen = [txt length];
 		if (txtLen > 200) {
 			txt = [[txt substringToIndex:100] stringByAppendingString:[txt substringFromIndex:txtLen-100]];
 		}
 		cell.font = [UIFont boldSystemFontOfSize:[UIFont systemFontSize]];
-		cell.textColor = [UIColor whiteColor];
+		if ([tbl darkBackgroundColor])
+			cell.textColor = [UIColor whiteColor];
+		else
+			cell.textColor = [UIColor blackColor];
 	}
 		
 	if (usesPrefix) {
-		wchar_t emojiIcon = (wchar_t)row;
+		/*
+		 wchar_t emojiIcon = (wchar_t)row;
 		if (supportsEmoji) {
 			emojiIcon += 0xE21C;	// 0xE21C = [1] in Emoji
 		} else {
 			emojiIcon += 0x2460;	// 0x2460 = Circled 1 in Unicode.
 		}
-		cell.text = [NSString stringWithFormat:@"%C %@", emojiIcon, txt];
-	} else {
 		cell.text = txt;
+		 */
+		cell.image = hCComposeEmoji(hCEmojiBlueSquare, bundle.bundle, row+1);
+	} else {
+		cell.image = hCComposeEmoji(hCEmojiGreenCircle, bundle.bundle, row+1);
 	}
+	cell.text = txt;
 	return cell;
 }
 

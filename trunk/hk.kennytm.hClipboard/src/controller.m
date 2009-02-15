@@ -273,7 +273,7 @@
 		[self copyText:copyStr];
 		selectState = NO;
 		[view->calloutShower registerButton:sender withCalloutString:LS(@"Select from here...")];
-		[sender setImage:PNG(@"selectStart") forState:UIControlStateNormal];
+		[view->toolbar setImageName:@"selectStart" forButton:sender];
 	} else {
 		selectIndex = loc;
 		selectState = YES;
@@ -281,20 +281,19 @@
 		 withCalloutString:LS([view->clipboardView isDefaultClipboard] ?
 							  @"Select to here and copy" :
 							  @"Select to here and add to templates")];
-		[sender setImage:PNG(@"selectEnd") forState:UIControlStateNormal];
+		[view->toolbar setImageName:@"selectEnd" forButton:sender];
 	}
 }
 
 -(void)switchClipboard:(UIKBSpecialKeyButton*)sender {
 	BOOL isDefault = [view->clipboardView switchClipboard];
+	[view setDarkBackgroundColor:view.darkBackgroundColor force:YES];
 	if (isDefault) {
 		[view->clipboardView setPlaceholderText:LS(@"Clipboard is empty")];
-		[sender setImage:PNG(@"toTemplate") forState:UIControlStateNormal];
 		[view->calloutShower registerButton:sender withCalloutString:LS(@"Switch to Templates")];
 		[view->calloutShower registerButton:view->copyBtn withCalloutString:LS(@"Copy")];
 	} else {
 		[view->clipboardView setPlaceholderText:LS(@"No templates")];
-		[sender setImage:PNG(@"toClipboard") forState:UIControlStateNormal];
 		[view->calloutShower registerButton:sender withCalloutString:LS(@"Switch to Clipboard")];
 		[view->calloutShower registerButton:view->copyBtn withCalloutString:LS(@"Add to templates")];
 	}

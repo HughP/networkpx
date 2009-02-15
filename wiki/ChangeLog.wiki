@@ -2,7 +2,7 @@
 #labels Phase-Design
 <wiki:toc max_depth="1" />
 
-= 0.1-4 =
+= 0.1-5 =
 
 == iKeyEx ==
  * Fixed issue 9: Enable iKeyEx keyboards on install.
@@ -10,9 +10,10 @@
  * Fixed issue 2 (Probably). The Globe can be used to exclusively switch to iKeyEx keyboards.
  * Fixed issue 31. Auto-correction dictionaries can be recognized properly.
  * Fixed issue 42. Thanks Tomi for reporting.
- * Rewritten Graphics generation engine for flexibility (issue 5, issue 41)
+ * Rewritten Graphics generation engine for flexibility (issue 5, issue 41).
  * layout.plist gets more options (issue 20, issue 21, issue 32). See [Creating_layout_plist] for the newest spec. 
  * iKeyEx gets an preference pane. Individual keyboards can create one too (issue 30). 
+ * The ".com" accents should now be placed in the correct position.
  * Added localizations:
    * Italian (thanks sagitt)
    * Finnish (thanks Tomi)
@@ -27,10 +28,14 @@
  * Fixed issue 8: Selection copy on read-only text area is now possible.
  * Secure text copying is now possible. 
  * ℏClipboard now gets a preference pane.
+ * Theming is recognized. Icon and font color will be adjusted for bright keyboard themes.
+ * Number indicators are constructed with images dynamically now instead of reusing Emoji. As a result, templates get an indicator also. 
  * Added localizations:
    * Italian, Finnish, German and Dutch
    * Japanese (thanks tokihide).
  * Minor fixes.
+
+= 0.1-4 =
 
 == MathTyper ==
  * Added x̄, x̂, ȳ and ŷ to the list. (Thanks Danstan Bagenda for suggestion.)

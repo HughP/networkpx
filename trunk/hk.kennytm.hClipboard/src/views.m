@@ -50,6 +50,19 @@
 
 @implementation hCClipboardView
 @synthesize secure, soundEffect;
+@synthesize darkBackgroundColor;
+-(void)setDarkBackgroundColor:(BOOL)dark {
+	if (darkBackgroundColor != dark) {
+		darkBackgroundColor = dark;
+		if (dark) {
+			emptyClipboardIndicator.textColor = [UIColor whiteColor];
+			emptyClipboardIndicator.shadowColor = [UIColor colorWithWhite:0 alpha:0.5];
+		} else {
+			emptyClipboardIndicator.textColor = [UIColor blackColor];
+			emptyClipboardIndicator.shadowColor = [UIColor colorWithWhite:1 alpha:0.5];
+		}
+	}
+}
 
 -(void)restoreCellSelectedStyle:(UITableViewCell*)cell {
 	cell.selectionStyle = UITableViewCellSelectionStyleGray;
@@ -127,8 +140,6 @@
 		
 		
 		emptyClipboardIndicator = [[UILabel alloc] initWithFrame:CGRectZero];
-		emptyClipboardIndicator.textColor = [UIColor whiteColor];
-		emptyClipboardIndicator.shadowColor = [UIColor colorWithWhite:0 alpha:0.5];
 		emptyClipboardIndicator.font = [UIFont boldSystemFontOfSize:[UIFont smallSystemFontSize]];
 		emptyClipboardIndicator.textAlignment = UITextAlignmentCenter;
 		emptyClipboardIndicator.backgroundColor = [UIColor clearColor];
@@ -176,6 +187,19 @@
 @implementation hCVerticalToolBar
 
 @synthesize columns;
+@synthesize darkBackgroundColor;
+-(void)setDarkBackgroundColor:(BOOL)dark {
+	if (darkBackgroundColor != dark) {
+		darkBackgroundColor = dark;
+		NSEnumerator* filename = [filenames objectEnumerator];
+		for (UIButton* subview in self.subviews) {
+			[subview setImage:[UIImage imageWithContentsOfFile:[bundle pathForResource:[filename nextObject]
+																				ofType:@"png"
+																		   inDirectory:(darkBackgroundColor?@"icons-white":@"icons-black")]]
+					 forState:UIControlStateNormal];
+		}
+	}
+}
 
 -(void)layoutSubviews {
 	CGSize btnSize = self.bounds.size;
@@ -197,27 +221,65 @@
 		}
 	}
 }
--(UIButton*)addButtonWithImage:(UIImage*)img target:(id)target action:(SEL)action {
+-(UIButton*)addButtonWithImageName:(NSString*)name target:(id)target action:(SEL)action {
 	UIButton* newBtn = [UIButton buttonWithType:UIButtonTypeCustom];
 	newBtn.showsTouchWhenHighlighted = YES;
-	[newBtn setImage:img forState:UIControlStateNormal];
+	[newBtn setImage:[UIImage imageWithContentsOfFile:[bundle pathForResource:name
+																	   ofType:@"png"
+																  inDirectory:(darkBackgroundColor?@"icons-white":@"icons-black")]]
+			forState:UIControlStateNormal];
 	[newBtn addTarget:target action:action forControlEvents:UIControlEventTouchUpInside];
+	[filenames addObject:name];
 	[self addSubview:newBtn];
 	[self layoutIfNeeded];
 	return newBtn;
 }
 
--(id)initWithFrame:(CGRect)frm {
+-(id)initWithFrame:(CGRect)frm bundle:(NSBundle*)bdl {
 	if ((self = [super initWithFrame:frm])) {
 		columns = 1;
+		bundle = bdl;
+		darkBackgroundColor = YES;
+		filenames = [[NSMutableArray alloc] init];
 	}
 	return self;
+}
+-(void)dealloc {
+	[filenames release];
+	[super dealloc];
+}
+
+-(void)setImageName:(NSString*)name forButton:(UIButton*)btn {
+	NSUInteger i = 0;
+	for (UIButton* subview in self.subviews) {
+		if (subview == btn)
+			break;
+		++ i;
+	}
+	[filenames replaceObjectAtIndex:i withObject:name];
+	[btn setImage:[UIImage imageWithContentsOfFile:[bundle pathForResource:name
+																	ofType:@"png"
+															   inDirectory:(darkBackgroundColor?@"icons-white":@"icons-black")]]
+		 forState:UIControlStateNormal];
 }
 @end
 
 
 @implementation hCLayout
 
+@synthesize darkBackgroundColor;
+-(void)setDarkBackgroundColor:(BOOL)dark { [self setDarkBackgroundColor:dark force:NO]; }
+-(void)setDarkBackgroundColor:(BOOL)dark force:(BOOL)force {
+	if (force || dark != darkBackgroundColor) {
+		darkBackgroundColor = dark;
+		toolbar.darkBackgroundColor = darkBackgroundColor;
+		clipboardView.darkBackgroundColor = darkBackgroundColor;
+		[switchClipboardButton setImage:[UIImage imageWithContentsOfFile:[controller.bundle pathForResource:([clipboardView isDefaultClipboard]?@"toTemplate":@"toClipboard")
+																		  ofType:@"png"
+																		  inDirectory:(darkBackgroundColor?@"icons-white":@"icons-black")]]
+							   forState:UIControlStateNormal];
+	}
+}
 
 @synthesize clipboardView;
 -(id)initWithFrame:(CGRect)frm {
@@ -250,8 +312,6 @@
 		[switchClipboardButton addTarget:controller
 								  action:@selector(switchClipboard:)
 						forControlEvents:UIControlEventTouchUpInside];
-		[switchClipboardButton setImage:[UIImage imageWithContentsOfFile:[thisBundle pathForResource:@"toTemplate" ofType:@"png"]]
-							   forState:UIControlStateNormal];
 		[calloutShower registerButton:switchClipboardButton
 					withCalloutString:[thisBundle localizedStringForKey:@"Switch to Templates" value:nil table:nil]];
 		if (soundEffect)
@@ -261,47 +321,35 @@
 		[self addSubview:spBtnGroup];
 		[spBtnGroup release];
 		
-		toolbar = [[hCVerticalToolBar alloc] initWithFrame:CGRectZero];
+		toolbar = [[hCVerticalToolBar alloc] initWithFrame:CGRectZero bundle:thisBundle];
 		
-		copyBtn = [toolbar addButtonWithImage:[UIImage imageWithContentsOfFile:[thisBundle pathForResource:@"copy" ofType:@"png"]]
-									   target:controller
-									   action:@selector(copyText)];
+		copyBtn = [toolbar addButtonWithImageName:@"copy" target:controller action:@selector(copyText)];
 		[calloutShower registerButton:copyBtn withCalloutString:[thisBundle localizedStringForKey:@"Copy" value:nil table:nil]];
 		if (soundEffect)
 			[UIKBSound registerButton:copyBtn];
 		
-		markSelBtn = [toolbar addButtonWithImage:[UIImage imageWithContentsOfFile:[thisBundle pathForResource:@"selectStart" ofType:@"png"]]
-										  target:controller
-										  action:@selector(markSelection:)];
+		markSelBtn = [toolbar addButtonWithImageName:@"selectStart" target:controller action:@selector(markSelection:)];
 		[calloutShower registerButton:markSelBtn withCalloutString:[thisBundle localizedStringForKey:@"Select from here..." value:nil table:nil]];
 		if (soundEffect)
 			[UIKBSound registerButton:markSelBtn];
 		
 		
-		UIButton* btn = [toolbar addButtonWithImage:_UIImageWithName(@"UIButtonBarPreviousSlide.png")
-											 target:controller
-											 action:@selector(moveToBeginning)];
+		UIButton* btn = [toolbar addButtonWithImageName:@"moveStart" target:controller action:@selector(moveToBeginning)];
 		[calloutShower registerButton:btn withCalloutString:[thisBundle localizedStringForKey:@"Move to beginning" value:nil table:nil]];
 		if (soundEffect)
 			[UIKBSound registerButton:btn];
 		
-		btn = [toolbar addButtonWithImage:_UIImageWithName(@"UIButtonBarNextSlide.png")
-								   target:controller
-								   action:@selector(moveToEnd)];
+		btn = [toolbar addButtonWithImageName:@"moveEnd" target:controller action:@selector(moveToEnd)];
 		[calloutShower registerButton:btn withCalloutString:[thisBundle localizedStringForKey:@"Move to end" value:nil table:nil]];
 		if (soundEffect)
 			[UIKBSound registerButton:btn];
 		
-		undoBtn = [toolbar addButtonWithImage:_UIImageWithName(@"UIButtonBarReply.png")
-									   target:controller
-									   action:@selector(undo)];
+		undoBtn = [toolbar addButtonWithImageName:@"undo" target:controller action:@selector(undo)];
 		[calloutShower registerButton:undoBtn withCalloutString:[thisBundle localizedStringForKey:@"Undo" value:nil table:nil]];
 		if (soundEffect)
 			[UIKBSound registerButton:undoBtn];
 		
-		btn = [toolbar addButtonWithImage:_UIImageWithName(@"UIButtonBarInfo.png")
-								   target:controller
-								   action:@selector(toggleEditingMode)];
+		btn = [toolbar addButtonWithImageName:@"edit" target:controller action:@selector(toggleEditingMode)];
 		[calloutShower registerButton:btn withCalloutString:[thisBundle localizedStringForKey:@"Toggle editing mode" value:nil table:nil]];
 		if (soundEffect)
 			[UIKBSound registerButton:btn];
@@ -339,6 +387,8 @@
 	
 	spBtnGroup.landscape = landsc;
 	backgroundView.image = UIKBGetImage(UIKBImageBackground, keyboardAppearance, landsc);
+	[self setDarkBackgroundColor:(UIKBGetBrightness(UIKBImageBackground, keyboardAppearance, landsc) <= 0.5)
+						   force:(switchClipboardButton.currentImage == nil)];
 	backgroundView.frame = spBtnGroup.frame;
 	
 	CGRect bdyRect = self.bounds;
@@ -356,6 +406,7 @@
 	keyboardAppearance = appr;
 	
 	backgroundView.image = UIKBGetImage(UIKBImageBackground, appr, landsc);
+	self.darkBackgroundColor = UIKBGetBrightness(UIKBImageBackground, appr, landsc) <= 0.5;
 	spBtnGroup.keyboardAppearance = appr;
 	backgroundView.frame = spBtnGroup.frame;
 	

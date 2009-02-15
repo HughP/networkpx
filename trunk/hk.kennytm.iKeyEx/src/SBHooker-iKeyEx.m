@@ -45,6 +45,18 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 //------------------------------------------------------------------------------
 #pragma mark -
+#pragma mark Warning-Disabling Protocol
+//------------------------------------------------------------------------------
+
+@protocol IDisableWarnings
+@optional
+-(id)old_initWithFrame:(CGRect)frame variants:(NSArray*)array expansion:(int)exp orientation:(int)ori;
+-(void)old_showPopupVariantsForKey:(UIKeyDefinition*)keydef;
+-(UIKeyDefinitionDownActionFlag)old_downActionFlagsForKey:(UIKeyDefinition*)key;
+@end
+
+//------------------------------------------------------------------------------
+#pragma mark -
 #pragma mark Interfaces
 //------------------------------------------------------------------------------
 
@@ -56,17 +68,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // This class defines -initWithFrame:variants:expansion:orientation: which will
 // be hooked to UIAccentedCharacterView's one for providing custom variants.
-@interface UIAccentedCharacterViewHooked : UIAccentedCharacterView
+@interface UIAccentedCharacterViewHooked : UIAccentedCharacterView<IDisableWarnings>
 -(id)initWithFrame:(CGRect)frame variants:(NSArray*)array expansion:(int)exp orientation:(int)ori;
--(id)old_initWithFrame:(CGRect)frame variants:(NSArray*)array expansion:(int)exp orientation:(int)ori;
 @end
 
 // These classes provide custom variants.
-@interface UIKeyboardLayoutRomanHooked : UIKeyboardLayoutRoman
+@interface UIKeyboardLayoutRomanHooked : UIKeyboardLayoutRoman<IDisableWarnings>
 -(void)showPopupVariantsForKey:(UIKeyDefinition*)keydef;
 -(UIKeyDefinitionDownActionFlag)downActionFlagsForKey:(UIKeyDefinition*)key;
--(void)old_showPopupVariantsForKey:(UIKeyDefinition*)keydef;
--(UIKeyDefinitionDownActionFlag)old_downActionFlagsForKey:(UIKeyDefinition*)key;
 @end
 
 
@@ -236,11 +245,15 @@ static NSString* lastLongPressedKey = nil;	// Record last long-pressed key.
 			}
 		}
 		
-		BOOL newFrameShouldBeLong = [actualArr count] > 0 && [[actualArr objectAtIndex:0] hasPrefix:@"."];
 		
-		if (newFrameShouldBeLong) {
-			frame.origin.x += mismatchCompensation;
-		}		
+		if ([actualArr count] > 0) {
+			NSString* firstString = [actualArr objectAtIndex:0];
+			if ([firstString length] > 0) {
+				unichar firstChar = [firstString characterAtIndex:0];
+				if (firstChar == '.' || firstChar == '?' || firstChar == '!' || firstChar == ',' || firstChar == '\'')
+					frame.origin.x += mismatchCompensation;
+			}
+		}
 	}
 	
 		

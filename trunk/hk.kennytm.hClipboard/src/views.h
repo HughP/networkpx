@@ -48,10 +48,12 @@
 	BOOL secure;
 	UILabel* emptyClipboardIndicator;
 	BOOL soundEffect;
+	BOOL darkBackgroundColor;
 }
 -(id)initWithFrame:(CGRect)frm;
 @property(retain) Clipboard* clipboard;
 @property(assign) BOOL soundEffect;
+@property(assign) BOOL darkBackgroundColor;
 -(BOOL)isDefaultClipboard;
 -(void)setTarget:(id)target action:(SEL)action;
 -(void)setPlaceholderText:(NSString*)txt;
@@ -68,10 +70,17 @@
 // a transparent vertical toolbar
 @interface hCVerticalToolBar : UIView {
 	NSUInteger columns;
+	NSBundle* bundle;
+	NSMutableArray* filenames;
+	BOOL darkBackgroundColor;
 }
 @property(assign) NSUInteger columns;
+@property(assign) BOOL darkBackgroundColor;
 -(void)layoutSubviews;
--(UIButton*)addButtonWithImage:(UIImage*)img target:(id)target action:(SEL)action;
+-(UIButton*)addButtonWithImageName:(NSString*)name target:(id)target action:(SEL)action;
+-(id)initWithFrame:(CGRect)frm bundle:(NSBundle*)bdl;
+-(void)dealloc;
+-(void)setImageName:(NSString*)name forButton:(UIButton*)btn;
 @end
 
 
@@ -85,6 +94,7 @@
 	UIButton* copyBtn;
 	UIButton* undoBtn;
 @protected
+	BOOL darkBackgroundColor;
 	UIButton* markSelBtn;
 	UIImageView* backgroundView;
 	UIKBButtonsGroup* spBtnGroup;
@@ -95,4 +105,6 @@
 -(id)initWithFrame:(CGRect)frm;
 -(void)layoutSubviews;
 @property(readonly,assign) hCClipboardView* clipboardView;
+@property(assign) BOOL darkBackgroundColor;
+-(void)setDarkBackgroundColor:(BOOL)dark force:(BOOL)force;
 @end

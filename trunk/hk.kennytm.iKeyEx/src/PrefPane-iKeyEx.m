@@ -122,7 +122,7 @@
 				[curSpec setObject:[[@"../../.."iKeyEx_KeyboardsPath stringByAppendingPathComponent:keyboardBundleName]
 																	 stringByAppendingPathComponent:prefBundleName]
 							forKey:@"bundle"];
-				[curSpec setObject:kCFBooleanTrue forKey:@"isController"];
+				[curSpec setObject:(NSNumber*)kCFBooleanTrue forKey:@"isController"];
 				insertCell = YES;
 			} 
 			if ([layoutMethod isKindOfClass:[NSString class]] && ([layoutMethod hasSuffix:@".plist"] || [layoutMethod hasSuffix:@".sublayout"])) {
@@ -176,6 +176,11 @@
 			}
 		}
 	}
+	if (![man removeItemAtPath:iKeyEx_InternalCachePath@"brightnesses.plist" error:&error]) {
+		NSLog(@"Cannot remove %@ when clearing image cache: %@", iKeyEx_InternalCachePath@"brightnesses.plist", error);
+		error = nil;
+	}
+	
 	[man changeCurrentDirectoryPath:oldPath];
 }
 @end

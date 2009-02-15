@@ -1,3 +1,35 @@
+/*
+ 
+ GraphicsUtilities.m ... Convenient functions for manipulating bitmaps
+ 
+ Copyright (c) 2009, KennyTM~
+ All rights reserved.
+ 
+ Redistribution and use in source and binary forms, with or without modification,
+ are permitted provided that the following conditions are met:
+ 
+ * Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+ * Redistributions in binary form must reproduce the above copyright notice, 
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+ * Neither the name of the KennyTM~ nor the names of its contributors may be
+   used to endorse or promote products derived from this software without
+   specific prior written permission.
+ 
+ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ 
+ */
+
 #include <math.h>
 #include <GraphicsUtilities.h>
 #import <UIKit/UIImage.h>
@@ -213,32 +245,28 @@ void GUDrawImageWithCaps(CGContextRef c, CGRect rect, CGImageRef img, GUCaps cap
 	}
 }
 
-float GUAverageLuminance (CGImageRef image) {
-	// Ref: http://developer.apple.com/qa/qa2007/qa1509.html on getting bitmap data
-	
+float GUAverageLuminance (CGImageRef img) {
 	float retval = NAN;
-	
-	size_t imgWidth = CGImageGetWidth(image), imgHeight = CGImageGetHeight(image);
-	GUCreateContext(c, imgWidth, imgHeight);
-	if (c == NULL)
+	if (img == NULL)
 		return retval;
 	
-	CGContextDrawImage(c, CGRectMake(0, 0, imgWidth, imgHeight), image);
+	size_t height = CGImageGetHeight(img);
+	size_t width = CGImageGetWidth(img);
+	size_t area = width*height;
 	
-	// the total RGBA components
-	UInt32 A = 0, R = 0, G = 0, B = 0;
-	struct{char r,g,b,a; }* data = CGBitmapContextGetData(c);
-	size_t area = imgWidth * imgHeight;
+	struct{unsigned char r,g,b,a;}* data = calloc(area, 4);
+	CGColorSpaceRef rgbSpace = CGColorSpaceCreateDeviceRGB();
+	CGContextRef c = CGBitmapContextCreate(data, width, height, 8, 4*width, rgbSpace, kCGImageAlphaPremultipliedLast|kCGBitmapByteOrder32Big);
+	CGColorSpaceRelease(rgbSpace);
 	
-	if (data != NULL) {
-		for (ptrdiff_t i = 0; i < area; ++ i) {
-			R += data[i].r;
-			G += data[i].g;
-			B += data[i].b;
-			A += data[i].a;
-		}
+	CGContextDrawImage(c, CGRectMake(0, 0, width, height), img);
 		
-		free(data);
+	UInt32 A = 0, R = 0, G = 0, B = 0;
+	for (int i = 0; i < area; ++ i) {
+		R += data[i].r;
+		G += data[i].g;
+		B += data[i].b;
+		A += data[i].a;
 	}
 	
 	if (A != 0) {
@@ -246,6 +274,8 @@ float GUAverageLuminance (CGImageRef image) {
 	}
 	
 	CGContextRelease(c);
+	free(data);
+	
 	return retval;
 }
 
