@@ -1,0 +1,9 @@
+#!/bin/bash
+
+if [[ $1 == remove || $1 == upgrade || $1 == "abort-install" ]]; then
+	iKeyEx-KBMan purge 5RowQWERTY
+	if [[ $1 != upgrade ]]; then
+		iKeyEx-KBMan remove 5RowQWERTY
+	fi
+	exit 0
+fi
