@@ -448,7 +448,7 @@ else \
 			SetObj(deleteKeyRight, float, 0);
 			SetObj(deleteKeyWidth, float, ShiftDeleteDefaultWidth);
 			if (landscape) {
-				deleteKeyRight = LandscapeMargin + deleteKeyRight * Ratio;
+				deleteKeyRight = LandscapeMargin/2 + deleteKeyRight * Ratio;
 				deleteKeyWidth *= Ratio;
 			}
 			SetObj(deleteKeyRow, integer, rows-2);
