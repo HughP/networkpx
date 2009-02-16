@@ -9,7 +9,7 @@ layout.plist is a method to specify a keyboard layout using just simple a proper
 
 With layout.plist, you only need to decide the arrangement and position of the keys. Then iKeyEx will take care of everything else for you.
 
-You may want to see the source code of Colemak as an example of using layout.plist.
+You may want to see the source code of Colemak as an example of using layout.plist, and that of 5 Row QWERTY for all the advanced features.
 
   Please refer to PlistSpec for how to use a property list and the specification notation used here.
 

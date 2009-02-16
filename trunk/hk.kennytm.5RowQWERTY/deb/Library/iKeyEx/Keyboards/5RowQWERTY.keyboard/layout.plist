@@ -1,0 +1,135 @@
+{
+	Alphabet = {
+		// Use rows to signify a non-4-row keyboard. 
+		rows=5;
+		// Give number of keys per row explicitly. 
+		// Since iKeyEx 0.1-5, rows left blank will not be printed, so we can safely use the "3" here.
+		arrangement=(10,10,9,7,3);
+		// The width of a key is normally 32px (=320px/10). The last row should always be 80. 
+		rowIndentation=(0,0,16,48,80);
+
+		texts = (
+			(1,2,3,4,5,6,7,8,9,0),
+			(q,w,e,r,t,y,u,i,o,p),
+			(a,s,d,f,g,h,j,k,l),
+			(z,x,c,v,b,n,m),
+			()
+		);
+
+		shiftedTexts = (
+			// Use the ",x,y,z" format to avoid having to type a lot of quotation marks. 
+			",!,@,#,$,%,^,&,*,(,)",
+			// Auto-Capitalization will take place when refering shifted texts from texts.  
+			"=Alphabet",
+			// Starting from iKeyEx 0.1-4, you can provide the row number (zero-based) in reference for clarity.  
+			"=Alphabet[2]",
+			// If not provided, the current row will be used.
+			"=Alphabet",
+			// You can, and should, use a single equal sign to refer to itself.
+			// (This gives correct reference in sublayout inheritance)
+			"="
+		); 
+	};
+
+	Numbers = {
+		rows=5;
+		arrangement=(8,8,8,7,3);
+
+		// Asymmetric indentation can be used since 0.1-4. 
+		rowIndentation=((0,32),(0,32),(0,32),(35.56,32),80);
+
+		// The metrics of the shift and delete keys can be changed. 
+		shiftKeyWidth  = 35.56;
+		deleteKeyWidth = 32;
+
+		texts = (
+			// Use an empty string to substitute a key with empty space.  
+			("`", "", "-", "=", "", 7,8,9),
+			// Unicode sequence is supported (features of plist). 
+			("\U0009", "", "[", "]", "\\", 4,5,6),
+			// Of course you should still prefer characters in UTF over obscure unicode sequence.
+			("", "•", ";", "'", "", 1,2,3),
+			(".", ",", "/", "", 0, "", "."),
+			()
+		);
+		
+		shiftedTexts = (
+			// The texts actually don't have to be "typed out". It just need to be understandable by your input manager.
+			// Note: I can't find any use of Insert key in the iPhoneOS. So I've replaced it with the ESC key.  
+			("~", "", "_", "+", "", "•esc", "•home", "•pgup"),
+			("\U0009", "", "{", "}", "|", "•del", "•end", "•pgdown"), 
+			("", "•", ":", "\"", "","", "•up", ""),
+			("<", ">", "?", "", "•left", "•down", "•right"),
+			"="
+		);
+		
+		
+		// what you see could be not what you type.
+		labels = (
+			"=",
+			// We can give some style to the label too.
+			({text="⇥";color=(0.5);}, "", "[", "]", "\\", 4,5,6),
+			"=",
+			"=",
+			"="
+		);
+		shiftedLabels = (
+			// We can even use an image. But you'll need to specify the full path.
+			("~", "", "_", "+", "",
+				{image="/Library/iKeyEx/Keyboards/5RowQWERTY.keyboard/esc.png";},
+				{text="↖"; color=(0.5); },
+				{text="⇞"; color=(0.5); }
+			),
+			({text="⇥";color=(0.5);}, "", "{", "}", "|", {text="⌦";color=(0.5);}, {text="↘";color=(0.5);}, {text="⇟";color=(0.5);}),
+			("", "•", ":", "\"", "", "", "↑", ""),
+			("<", ">", "?", "", "←", "↓", "→"),
+			"="
+		);
+		
+		// what it pops up could also be not what you see.
+		popups = (
+			"=",
+			("Tab", "", "[", "]", "\\", 4,5,6),
+			"=",
+			"=",
+			"="
+		);
+		shiftedPopups = (
+			("~", "", "_", "+", "", "Esc", {size=0.2;text="Home";}, {size=0.3;text="Page Up";}),
+			("Tab", "", "{", "}", "|", "Del.", "End", {size=0.3;text="Page Down";}),
+			"=",
+			"=",
+			"="
+		);
+	};
+
+	URL = {
+		// Copy all *unspecified* data from Alphabet.
+		inherits = "Alphabet";
+
+		// So we just need to give the definition of texts (for the 3 URL keys). 
+		// The rest are *inherited*.
+		texts = (
+			"=Alphabet", "=Alphabet", "=Alphabet", "=Alphabet",
+			(".", "/", ".com")
+		);
+		hasSpaceKey = NO;
+	};
+	URLAlt = {
+		inherits = "Numbers";
+		texts = ("=Numbers", "=Numbers", "=Numbers", "=Numbers", (".", "/", ".com"));
+		hasSpaceKey = NO;
+	};
+	SMSAddressing = { inherits="Alphabet"; shiftKeyEnabled=NO; };
+	EmailAddress = {
+		inherits = "Alphabet";
+		texts = ("=Alphabet", "=Alphabet", "=Alphabet", "=Alphabet", (" ", ".", "@"));
+		hasSpaceKey = NO;
+	};
+	EmailAddressAlt = {
+		inherits = "Numbers";
+		texts = ("=Numbers", "=Numbers", "=Numbers", "=Numbers", (" ", ".", "@"));
+		hasSpaceKey = NO;
+	};
+}
+
