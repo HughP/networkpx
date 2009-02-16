@@ -32,9 +32,7 @@
 
 #import <iKeyEx/common.h>
 #import <UIKit2/Functions.h>
-#import <UIKit/UIGraphics.h>
-#import <UIKit/UIStringDrawing.h>
-#import <UIKit/UIFont.h>
+#import <UIKit/UIKit.h>
 #import <CoreGraphics/CGContext.h>
 #include <pthread.h>
 #import <objc/runtime.h>
@@ -44,6 +42,28 @@
 
 
 static unsigned subclassSequence = 0;
+
+static UIColor* arrayToColor (NSArray* arr) {
+	switch ([arr count]) {
+		case 0:
+			return nil;
+		case 1:
+			return [UIColor colorWithWhite:[[arr objectAtIndex:0] floatValue] alpha:1];
+		case 2:
+			return [UIColor colorWithWhite:[[arr objectAtIndex:0] floatValue]
+									 alpha:[[arr objectAtIndex:1] floatValue]];
+		case 3:
+			return [UIColor colorWithRed:[[arr objectAtIndex:0] floatValue]
+								   green:[[arr objectAtIndex:1] floatValue]
+									blue:[[arr objectAtIndex:2] floatValue]
+								   alpha:1];
+		default:
+			return [UIColor colorWithRed:[[arr objectAtIndex:0] floatValue]
+								   green:[[arr objectAtIndex:1] floatValue]
+									blue:[[arr objectAtIndex:2] floatValue]
+								   alpha:[[arr objectAtIndex:3] floatValue]];
+	}
+}
 
 CGSize computeActualSizeToFitRows(NSString* str, CGRect rect, UIFont* defaultFont, CGSize strSize, CGFloat rows) {
 	CGFloat invRows = 1.f/rows;
@@ -79,7 +99,6 @@ CGSize computeActualSizeToFitRows(NSString* str, CGRect rect, UIFont* defaultFon
 	} while (YES);
 }
 
-#import <UIKit/UIGeometry.h>
 extern void drawInCenter(NSString* str, CGRect rect, UIFont* defaultFont) {
 	NSUInteger strLen = [str length];
 	CGSize strSize = [str sizeWithFont:defaultFont];
@@ -125,12 +144,57 @@ extern void drawInCenter(NSString* str, CGRect rect, UIFont* defaultFont) {
 		CGFloat ratio = fmin(rect.size.width/size.width, rect.size.height/size.height);
 		CGFloat xInset = (rect.size.width - ratio*size.width)/2;
 		CGFloat yInset = (rect.size.height - ratio*size.height)/2;
+		// don't enlarge the font.
+		if (ratio > 1)
+			ratio = 1;
 		
 		UIFont* newFont = [defaultFont fontWithSize:(ratio * defaultFont.pointSize)];
 		[str drawInRect:CGRectIntegral(CGRectInset(rect, xInset, yInset))
 			   withFont:newFont
 		  lineBreakMode:UILineBreakModeWordWrap
 			  alignment:UITextAlignmentCenter];
+	}
+}
+
+extern 
+void drawInCenterWithTraits(NSDictionary* strtraits, CGRect rect, UIFont* defaultFont) {
+	NSString* imagePath = [strtraits objectForKey:@"image"];
+	if (imagePath != nil) {
+		UIImage* img = [UIImage imageWithContentsOfFile:imagePath];
+		if (img != nil) {
+			CGSize size = img.size;
+			CGFloat rescale = 1;
+			if (size.width >= rect.size.width)
+				rescale = rect.size.width / size.width;
+			if (rescale*size.height >= rect.size.height)
+				rescale = rect.size.height / size.height;
+			size.width *= rescale;
+			size.height *= rescale;
+			CGRect drawRect;
+			drawRect.origin = CGPointMake(rect.origin.x + (rect.size.width-size.width)/2, rect.origin.y + (rect.size.height-size.height)/2);
+			drawRect.size = size;
+			[img drawInRect:drawRect];
+		}
+	} else {
+		float fontSizeRescale = [[strtraits objectForKey:@"size"] floatValue];
+		if (fontSizeRescale == 0)
+			fontSizeRescale = 1;
+		NSString* fontName = [strtraits objectForKey:@"font"];
+		if (fontName != nil) {
+			defaultFont = [UIFont fontWithName:fontName size:defaultFont.pointSize*fontSizeRescale];
+		} else if (fontSizeRescale != 1) {
+			defaultFont = [defaultFont fontWithSize:defaultFont.pointSize*fontSizeRescale];
+		}
+		NSArray* color = [strtraits objectForKey:@"color"];
+		CGContextRef c = NULL;
+		if ([color isKindOfClass:[NSArray class]]) {
+			c = UIGraphicsGetCurrentContext();
+			CGContextSaveGState(c);
+			[arrayToColor(color) setFill];
+		}
+		drawInCenter([strtraits objectForKey:@"text"], rect, defaultFont);
+		if (c != NULL)
+			CGContextRestoreGState(c);
 	}
 }
 
@@ -147,7 +211,7 @@ Class createSubclassCopy (Class superclass) {
 }
 
 
-extern NSString* iKeyExVersion () { return @"0.1-3"; }
+extern NSString* iKeyExVersion () { return @"0.1-6"; }
 
 
 #import <UIKit/UIView.h>

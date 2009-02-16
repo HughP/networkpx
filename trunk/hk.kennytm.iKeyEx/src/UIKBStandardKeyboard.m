@@ -102,7 +102,8 @@ NSArray* fetchTextRow(NSString* curKey, NSUInteger row, NSDictionary* restrict s
 	
 	if ([rowContent isKindOfClass:[NSArray class]])
 		// really an array.
-		return [rowContent retain];
+		// but ignore empty arrays.
+		return [rowContent count] > 0 ? [rowContent retain] : nil;
 	
 	else if ([rowContent isKindOfClass:[NSString class]]) {
 		if ([(NSString*)rowContent length] > 0) {
@@ -121,13 +122,16 @@ NSArray* fetchTextRow(NSString* curKey, NSUInteger row, NSDictionary* restrict s
 					specificRow = [[rest substringFromIndex:leftBrac.length+leftBrac.location] integerValue];
 					refSublayoutKey = [rest substringToIndex:leftBrac.location];
 				}
-				NSDictionary* refSublayout = [layoutDict objectForKey:refSublayoutKey];
+				NSDictionary* refSublayout = sublayout;
+				if (![@"" isEqualToString:refSublayoutKey])
+					refSublayout = [layoutDict objectForKey:refSublayoutKey];
 				if (refSublayout == sublayout) {
 					return tryUppercase(curKey, fetchTextRow(referedKeyOf(curKey), specificRow, refSublayout, layoutDict, depth+1));
 				} else
 					return fetchTextRow(curKey, specificRow, refSublayout, layoutDict, depth+1);
 			}
-		}
+		} else
+			return nil;
 	}
 	
 	
@@ -199,11 +203,25 @@ X##AtRow:(NSUInteger)row column:(NSUInteger)col { \
 }
 
 -(id)initWithPlist:(NSDictionary*)layoutDict name:(NSString*)name landscape:(BOOL)landsc appearance:(UIKeyboardAppearance)appr {
-	NSDictionary* sublayout = [layoutDict objectForKey:name];
-	if (sublayout == nil)
+	NSDictionary* sublayout_orig = [layoutDict objectForKey:name];
+	if (sublayout_orig == nil)
 		return nil;
 	
 	if ((self = [super init])) {
+		NSMutableDictionary* sublayout = [sublayout_orig mutableCopy];
+		NSString* inherits = [sublayout objectForKey:@"inherits"];
+		for (NSUInteger depth = 0; depth < RecursionLimit; ++ depth) {
+			if (inherits != nil) {
+				NSDictionary* inherited_sublayout = [layoutDict objectForKey:inherits];
+				for (NSString* key in inherited_sublayout) {
+					if ([sublayout objectForKey:key] == nil)
+						[sublayout setObject:[inherited_sublayout objectForKey:key] forKey:key];
+				}
+				inherits = [inherited_sublayout objectForKey:@"inherits"];
+			} else
+				break;
+		}
+		
 		// get number of rows
 		NSNumber* rowCount = [sublayout objectForKey:@"rows"];
 		if (rowCount != nil) {
@@ -237,7 +255,6 @@ X##AtRow:(NSUInteger)row column:(NSUInteger)col { \
 		// compute height & vertical spacings of each key.
 		defaultHeight = DefaultHeight(landscape);
 		CGFloat availableHeight = KeyboardHeight(landscape) - defaultHeight - DefaultVerticalOffset;
-		NSLog(@"%f , %f, %f", availableHeight, defaultHeight, MaximumVerticalSpacing);
 		if (availableHeight >= defaultHeight*(rows-1)) {
 			if (availableHeight >= MaximumVerticalSpacing*rows + defaultHeight*(rows-1)) {
 				verticalSpacing = MaximumVerticalSpacing;
@@ -439,7 +456,7 @@ else \
 #undef SetObj
 		
 		// done :)
-		
+		[sublayout release];
 	}
 	return self;
 }
@@ -513,7 +530,10 @@ else \
 		drawRect.origin.y = 0;
 		
 		for (NSString* pop in myTexts[i]) {
-			drawInCenter(pop, drawRect, defaultFont);
+			if ([pop isKindOfClass:[NSString class]])
+				drawInCenter(pop, drawRect, defaultFont);
+			else if ([pop isKindOfClass:[NSDictionary class]])
+				drawInCenterWithTraits((NSDictionary*)pop, drawRect, defaultFont);
 			++ j;
 			drawRect.origin.y += UIKBKeyPopupSize.height;
 			if (j >= counts[i])
@@ -588,14 +608,19 @@ else \
 		
 		CGFloat left = lefts[i];
 		for (NSString* lbl in myTexts[i]) {
-			if (keyboardAppearance == UIKeyboardAppearanceAlert)
-				[resizedImage drawInRect:imgRect blendMode:kCGBlendModeDestinationOut alpha:1];
-			[resizedImage drawInRect:imgRect];
-			
-			CGContextSetShadowWithColor(c, shadowOffset, 0, shadowColor);
-			drawInCenter(lbl, CGRectInset(imgRect, Padding/2, 0), defaultFont);
-			CGContextSetShadowWithColor(c, shadowOffset, 0, NULL);
-			
+			if (![@"" isEqualToString:lbl]) {
+				if (keyboardAppearance == UIKeyboardAppearanceAlert)
+					[resizedImage drawInRect:imgRect blendMode:kCGBlendModeDestinationOut alpha:1];
+				[resizedImage drawInRect:imgRect];
+				
+				CGContextSetShadowWithColor(c, shadowOffset, 0, shadowColor);
+				if ([lbl isKindOfClass:[NSString class]])
+					drawInCenter(lbl, CGRectInset(imgRect, Padding/2, 0), defaultFont);
+				else if ([lbl isKindOfClass:[NSDictionary class]])
+					drawInCenterWithTraits((NSDictionary*)lbl, CGRectInset(imgRect, Padding/2, 0), defaultFont);
+				CGContextSetShadowWithColor(c, shadowOffset, 0, NULL);
+			}
+				
 			left += widths[i]+horizontalSpacings[i];
 			imgRect.origin.x = roundf(left);
 			++ j;
@@ -754,6 +779,17 @@ else \
 			keydef->bg_area = imgRect;
 			keydef->pop_char_area = fgRect;
 			
+			NSString* kvalue = [texts[i] objectAtIndex:j];
+			NSString* skvalue = [shiftedTexts[i] objectAtIndex:j];
+			if (![kvalue isKindOfClass:[NSString class]])
+				kvalue = nil;
+			if (![skvalue isKindOfClass:[NSString class]])
+				skvalue = nil;
+			if ([kvalue length] == 0 && [skvalue length] == 0)
+				continue;
+			keydef.value = kvalue;
+			keydef.shifted = skvalue;
+			
 			// compute pop-up type.
 			keydef->pop_bg_area = CGRectMake(0, 0, widths[i]+36, 120);
 			keydef->pop_padding = CGRectZero;
@@ -797,7 +833,7 @@ else \
 				// 53 -> pop_center_url_4
 				// 56 -> pop_center_url_3
 				// else -> pop_center_url_wide being flexible.
-				if (widths[i] < 39) {
+				if (widths[i] < 41) {
 					keydef->pop_type = UIKeyboardPopImageCenter1;
 					keydef->pop_bg_area.size = CGSizeMake(114, 125);
 					keydef->pop_padding = CGRectMake(0, popPadding_y, 0, UIKBKey_PopPadding_height);
@@ -811,8 +847,6 @@ else \
 						keydef->pop_padding.origin.x = -13;
 						keydef->pop_padding.size.width = 4;
 					}
-				} else if (widths[i] < 46) {
-					keydef->pop_type = UIKeyboardPopImageCenter5;
 				} else if (widths[i] < 51) {
 					keydef->pop_type = UIKeyboardPopImageCenter2;
 				} else if (widths[i] < 54) {
@@ -826,9 +860,6 @@ else \
 			
 			keydef->accent_frame = CGRectIntegral(CGRectMake(imgRect.origin.x, imgRect.origin.y + imgRect.size.height + accentDelta,
 															 imgRect.size.width, accentHeight));
-			NSString* kvalue = [texts[i] objectAtIndex:j];
-			keydef.value = kvalue;
-			keydef.shifted = [shiftedTexts[i] objectAtIndex:j];
 			keydef->down_flags = UIKeyFlagActivateKey | UIKeyFlagPlaySound;
 			keydef->up_flags = UIKeyFlagOutputValue | UIKeyFlagDeactivateKey;
 			keydef->key_type = UIKeyTypeNormal;

@@ -253,6 +253,13 @@ The value of each key is a dictionary consists of the following properties:
 	<td>_rows_ − 2</td>
 	<td>_hasDeleteKey_ = ✓</td>
 </tr>
+<tr>
+	<td>inherits</td>
+	<td colspan="2">string</td>
+	<td>Start sublayout as a fresh copy of this value. The maximum inheritance depth is 8. You should avoid circular inheritance.</td>
+	<td>--</td>
+	<td>--</td>
+</tr>
 </table>
 
 Please be aware that all horizontal metrics (widths and _x_-position) are measured in *multiples of key width on that row* instead of pixels.
@@ -313,13 +320,13 @@ The complete spec:
 </tr>
 <tr>
 	<td>array</td>
-	<td>...of strings</td>
+	<td>...of `<text>`s</td>
 	<td>The string to assign to each key in that row.</td>
 </tr>
 <tr>
 	<td>string</td>
-	<td>`/^=(?<key>\w+)(?<row>\[\d+\])?$/`</td>
-	<td>This row will be refered. The format must be "`=key[row]`", where _key_ is one of the keys defined in the root level dictionary. If _row_ is missing, it will be taken as the current row. If the refered row does not exist or breaks the recursion limit (8 recursions), nil will be used. The destination is always _texts_ or _shiftedTexts_ if it refers back to itself, and is the corresponding key if to others.</td>
+	<td>`/^=(?<key>\w+)?(?<row>\[\d+\])?$/`</td>
+	<td>This row will be refered. The format must be "`=key[row]`", where _key_ is one of the keys defined in the root level dictionary. If _row_ is missing, it will be taken as the current row. If _key_ is missing, it will be taken as a self-reference. If the refered row does not exist or breaks the recursion limit (8 recursions), nil will be used. The destination will follow this chain on self-reference: (shifted)Popups → (shifted)Labels → (shifted)Texts → texts.</td>
 </tr>
 <tr>
 	<td>string</td>
@@ -327,6 +334,73 @@ The complete spec:
 	<td>A concatenated string. The first character is the separator. For example, ",q,w,e,r,t,y,u,i,o,p".</td>
 </tr>
 </table>
+
+  _union_ `<text>` ::
+<table border="1" bordercolor="#AAAAAA" cellpadding="5">
+<tr>
+	<th colspan="2">type</th>
+	<th>meaning</th>
+</tr>
+<tr>
+	<td colspan="2">string</td>
+	<td>Ordinary string</td>
+</tr>
+<tr>
+	<td>dictionary</td>
+	<td>`<text with traits>`</td>
+	<td>String with style information. Ignored when used with _texts_ or _shiftedTexts_. <font color="red">Not implemented yet</font></td>
+</tr>
+</table>
+
+  _struct_ `<text with traits>`::
+<table border="1" bordercolor="#AAAAAA" cellpadding="5">
+<tr>
+	<th>key</th>
+	<th colspan="2">type</th>
+	<th>meaning</th>
+	<th>default</th>
+	<th>depends</th>
+</tr>
+<tr>
+	<td>image</td>
+	<td>string</td>
+	<td>absolute file path</td>
+	<td>Show an image instead of a string. Note that the image will be scaled disproportionally.</td>
+	<td>""</td>
+	<td>--</td>
+</tr>
+<tr>
+	<td>text</td>
+	<td colspan="2">string</td>
+	<td>String to show.</td>
+	<td>""</td>
+	<td>_image_ = _nil_</td>
+</tr>
+<tr>
+	<td>font</td>
+	<td>string</td>
+	<td>font name</td>
+	<td>Use the specified font to render the text. It has to be the full name, e.g. if you want to use a the bold Times font you should write `"TimesNewRomanPS-BoldMT"`.</td>
+	<td>_system font name_</td>
+	<td>_text_ ≠ _nil_</td>
+</tr>
+<tr>
+	<td>color</td>
+	<td>array</td>
+	<td>...of reals</td>
+	<td>Font color of the text. Specify 1 element for gray scale, 2 elements with alpha channel, 3 elements for RGB and 4 elements for RGBA.</td>
+	<td>_system color_</td>
+	<td>_text_ ≠ _nil_</td>
+</tr>
+<tr>
+	<td>size</td>
+	<td colspan="2">real</td>
+	<td>Font size to rescale to. For example, if the default font was 45px, and you supply 0.5 here, the text will be rendered with 22.5px</td>
+	<td>1</td>
+	<td>_text_ ≠ _nil_</td>
+</tr>
+</table>
+
 
 == arrangement ==
 arrangement specifies how many keys will be present in each row, e.g.

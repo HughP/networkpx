@@ -41,7 +41,7 @@
 #include <stdlib.h>
 #include <GraphicsUtilities.h>
 
-static NSMutableDictionary* cache;
+//static NSMutableDictionary* cache;
 static NSMutableDictionary* brightnesses = nil;
 
 //------------------------------------------------------------------------------
@@ -115,18 +115,15 @@ void UIKBInitializeImageCache () {
 	brightnesses = [[NSMutableDictionary alloc] initWithContentsOfFile:iKeyEx_InternalCachePath@"brightnesses.plist"];
 	if (brightnesses == nil)
 		brightnesses = [[NSMutableDictionary alloc] init];
-	cache = [[NSMutableDictionary alloc] initWithCapacity:4*UIKBImageTypesCount];
 }
 
 void UIKBClearImageCache() {
 	[brightnesses release];
-	[cache release];
 }
 
-// Call this when you feel lack of memory / all 
+// Deprecated
+__attribute__((deprecated))
 void UIKBReleaseImageCache() {
-	[cache release];
-	cache = [[NSMutableDictionary alloc] initWithCapacity:4*UIKBImageTypesCount];
 }
 
 //------------------------------------------------------------------------------
@@ -610,8 +607,7 @@ float UIKBGetBrightness(UIKBImageClassType type, UIKeyboardAppearance appearance
 	else {
 		float b = GUAverageLuminance(UIKBGetImage(type, appearance, landscape).CGImage);
 		[brightnesses setObject:[NSNumber numberWithFloat:b] forKey:keyInt];
-		BOOL z = [brightnesses writeToFile:iKeyEx_InternalCachePath@"brightnesses.plist" atomically:NO];
-		NSLog(@"%d", z);
+		[brightnesses writeToFile:iKeyEx_InternalCachePath@"brightnesses.plist" atomically:NO];
 		return b;
 	}
 }
@@ -623,13 +619,7 @@ UIImage* UIKBGetImage(UIKBImageClassType type, UIKeyboardAppearance appearance, 
 		actualType |= UIKBImageWithLandscape;
 	if (appearance == UIKeyboardAppearanceAlert)
 		actualType |= UIKBImageWithTransparent;
-	
-	NSNumber* key = [NSNumber numberWithInteger:actualType];
-	UIImage* retImg = [cache objectForKey:key];
-	if (retImg == nil) {
-		retImg = constructImage(actualType);
-		[cache setObject:retImg forKey:key];
-	}
-	
-	return retImg;
+
+	// prefer file cache over memory cache.
+	return constructImage(actualType);
 }
