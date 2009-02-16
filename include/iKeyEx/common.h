@@ -36,7 +36,7 @@
 #import <objc/runtime.h>
 #import <CoreGraphics/CGGeometry.h>
 
-@class UIFont, NSString, UIView;
+@class UIFont, NSString, UIView, NSDictionary;
 
 
 #define UIColorWith(x) [UIColor colorWithRed:(x)[0] green:(x)[1] blue:(x)[2] alpha:(x)[3]]
@@ -58,6 +58,7 @@
 // draw text in the center of the rectangle.
 // The text size will be rescale to fit inside the rectangle totally.
 void drawInCenter(NSString* str, CGRect rect, UIFont* defaultFont);
+void drawInCenterWithTraits(NSDictionary* strtraits, CGRect rect, UIFont* defaultFont);
 
 // create a new objective-C subclass that has a new automatically assigned
 // thread-wise unique name.

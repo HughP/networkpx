@@ -38,6 +38,7 @@
 #import <UIKit/UIGeometry.h>
 #import <UIKit2/Functions.h>
 #import <UIKit2/Constants.h>
+#import <UIKit2/UIKeyboardImpl.h>
 #import <iKeyEx/UIKBKeyDefinition.h>
 #import <stdlib.h>
 #include <GraphicsUtilities.h>
@@ -285,7 +286,8 @@ CreateBuildMethods(EmailAddressAlt, NO, YES);
 // fix the flexible popup to make it really flexible.
 // Can we hide the frame change?
 -(void)activateCompositeKey:(UIKeyDefinition*)keydef {
-	if (keydef->value == nil)
+	BOOL isShifted = [UIKeyboardImpl sharedInstance].shift;
+	if ((isShifted && keydef->shifted == nil) || (!isShifted && keydef->value == nil))
 		return;	
 	[super activateCompositeKey:keydef];
 	if (keydef->pop_type == NSFileAppendOnly)
@@ -326,7 +328,8 @@ CreateBuildMethods(EmailAddressAlt, YES, YES);
 
 // fix the flexible popup to make it really flexible.
 -(void)activateCompositeKey:(UIKeyDefinition*)keydef {
-	if (keydef->value == nil)
+	BOOL isShifted = [UIKeyboardImpl sharedInstance].shift;
+	if ((isShifted && keydef->shifted == nil) || (!isShifted && keydef->value == nil))
 		return;
 	[super activateCompositeKey:keydef];
 	if (keydef->pop_type == NSFileAppendOnly)
