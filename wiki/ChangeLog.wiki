@@ -2,7 +2,7 @@
 #labels Phase-Design
 <wiki:toc max_depth="1" />
 
-= 0.1-5 =
+= 0.1-6 =
 
 == iKeyEx ==
  * Fixed issue 9: Enable iKeyEx keyboards on install.
@@ -22,9 +22,14 @@
    * German and Dutch (thanks fabcamps).
    * Turkish (thanks oguz çolakoglu).
 
+== 5 Row QWERTY ==
+ * Initial release.
+
+= 0.1-5 =
+
 == ℏClipboard ==
  * Fixed issue 14: The clipboard order can be customized.
- * Fixed issue 23: The undo key now replaces the delete key.
+ * Fixed issue 23: The undo button now replaces the delete key.
  * Fixed issue 8: Selection copy on read-only text area is now possible.
  * Secure text copying is now possible. 
  * ℏClipboard now gets a preference pane.

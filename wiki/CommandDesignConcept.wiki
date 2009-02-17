@@ -96,15 +96,79 @@ Besides rearrangement, users are allowed to set whether to enable ⌘ and the ac
  }
 }}}
 
-|| *Key* || Meaning || Default value ||
-|| title / NSMenuItem || The ⌘let's display name || (file name) ||
-|| bin || The library, executable or shell script that will be used when user clicks on the ⌘let's button. || (file name)`.sh` ||
-|| type || Equals:<ul><li>`lib` if _bin_ is treated as a library</li><li>`exec` if treated as executable or shell script</li><li>`service` if treated as a [http://developer.apple.com/documentation/Cocoa/Conceptual/SysServices/Concepts/architecture.html Mac OS X system service]</li></ul> || `exec` ||
-|| app ||  The application that the ⌘let will launch. If the current application is different from the specified one, the button shall appear in red, to indicate that the current program will quit. || "" ||
-|| availableWhenEmpty || Whether the ⌘let will be available even if the selection is empty. || 0 ||
-|| call || When _type_ is `lib`, the function name to call. || (file name) ||
-|| NSMessage || When _type_ is `service`, the message selector name to call. || (file name) ||
-|| NSPortName || When _type_ is `service`, the port name to use. || (file name) ||
+  _struct_ `<Commandlet.plist>` ::
+<table border="1" bordercolor="#AAAAAA" cellpadding="5">
+<tr>
+	<th>key</th>
+	<th colspan="2">type</th>
+	<th>meaning</th>
+	<th>default</th>
+	<th>depends</th>
+</tr>
+<tr>
+	<td>title</td>
+	<td rowspan="2">string</td>
+	<td rowspan="2">localizable string</td>
+	<td rowspan="2">The ⌘let's display name</td>
+	<td rowspan="2">_file name_</td>
+	<td>--</td>
+</tr>
+<tr>
+	<td>NSMenuItem</td>
+</tr>
+<tr>
+	<td>bin</td>
+	<td>string</td>
+	<td>file path</td>
+	<td>The library, executable or shell script that will be used when user clicks on the ⌘let's button.</td>
+	<td>"_file name_`.sh`"</td>
+	<td>--</td>
+</tr>
+<tr>
+	<td>type</td>
+	<td>string</td>
+	<td>{`"lib"`, `"exec"`, `"service"`, `"pipe"`}</td>
+	<td>Type of binary. Equals:<ul><li>`lib` if _bin_ is treated as a library</li><li>`exec` if treated as executable or shell script</li><li>`service` if treated as a [http://developer.apple.com/documentation/Cocoa/Conceptual/SysServices/Concepts/architecture.html Mac OS X system service]</li><li>`pipe` if treated as an I/O pipe.</li></ul></td>
+	<td>`"exec"`</td>
+	<td>--</td>
+</tr>
+<tr>
+	<td>app</td>
+	<td>array</td>
+	<td>...of bundle identifiers</td>
+	<td>The applications that the ⌘let can be performed without quitting. If the current application is different from the specified ones, the button shall appear in red, to indicate that the current program will quit. Don't fill in this array if the ⌘let does not launch any applications.</td>
+	<td>_nil_</td>
+	<td>--</td>
+</tr>
+<tr>
+	<td>availableWhenEmpty</td>
+	<td colspan="2">boolean</td>
+	<td>Whether the ⌘let will be available even if the selection is empty.</td>
+	<td>✗</td>
+	<td>--</td>
+</tr>
+<tr>
+	<td>call</td>
+	<td colspan="2">string</td>
+	<td>When _type_ is `lib`, the function name to call.</td>
+	<td>_file name_</td>
+	<td>--</td>
+</tr>
+<tr>
+	<td>NSMessage</td>
+	<td colspan="2">string</td>
+	<td>When _type_ is `service`, the message selector name to call.</td>
+	<td>_file name_</td>
+	<td>--</td>
+</tr>
+<tr>
+	<td>NSPortName</td>
+	<td colspan="2">string</td>
+	<td>When _type_ is `service`, the port name to use.</td>
+	<td>_file name_</td>
+	<td>--</td>
+</tr>
+</table>
 
 == ⌘let as a `lib` ==
 
@@ -155,7 +219,7 @@ If the ⌘let is a lib, the calling will be *blocking*, meaning the active appli
 
 == ⌘let as an `exec` ==
 
-If _run_ is declared as an `exec`, its `main()` will be called with these arguments:
+If _type_ is declared as an `exec`, its `main()` will be called with these arguments:
 
 || `argv[1]` || The selected string ||
 || `argv[2]` || The starting location of selected range ||
@@ -190,7 +254,7 @@ void init () {
 }}}
 where _portName_ is the string you provided in the _NSPort_ key of the plist file.
 
-  You _cannot_ call `-[UIApplication setServicesProvider:]`, and it won't be supported neither.
+  You _cannot_ call `-[UIApplication setServicesProvider:]`, and it won't be supported either.
 
 Currently _userData_ will always be passed as `nil`. You can return an autorelease'd NSString to _error_ to tell the user something is wrong. If the user opts in for showing services errors, a UIAlertView will pop up alerting the user about this. In any way, the message will be NSLog-ed.
 
@@ -199,6 +263,10 @@ There is no way to change the selection nor querying the target performing the �
 To read the text copied to the NSPasteboard, call `[pasteboard stringForType:NSStringPboardType]`, and to return the text call `[pasteboard setString:@"text" forType:NSStringPboardType]`. Due to current limitation, the pasteboard data type will always be ignored and the data copied will always be a string.
 
 Like libs, a service ⌘let is *blocking*. 
+
+== ⌘let as a `pipe` ==
+
+If _type_ is declared as `pipe`, the selected string will be feed into `stdin`, and you are expected to print the processed result into `stdout`. A pipe ⌘let is *blocking*.
 
 == Localization ==
 
