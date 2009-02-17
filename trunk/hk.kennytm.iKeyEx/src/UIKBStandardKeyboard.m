@@ -123,7 +123,7 @@ NSArray* fetchTextRow(NSString* curKey, NSUInteger row, NSDictionary* restrict s
 					refSublayoutKey = [rest substringToIndex:leftBrac.location];
 				}
 				NSDictionary* refSublayout = sublayout;
-				if (![@"" isEqualToString:refSublayoutKey])
+				if ([refSublayoutKey length] != 0)
 					refSublayout = [layoutDict objectForKey:refSublayoutKey];
 				if (refSublayout == sublayout) {
 					return tryUppercase(curKey, fetchTextRow(referedKeyOf(curKey), specificRow, refSublayout, layoutDict, depth+1));
@@ -281,21 +281,17 @@ X##AtRow:(NSUInteger)row column:(NSUInteger)col { \
 			}
 		} else {
 			// legacy support for strings...
-			NSUInteger r0 = 10, r1 = 9, r2 = 7, r3 = 0;
+			NSUInteger r0 = 10, r1 = 9, r2 = 7, r3 = 3;
 			if ([arrangement isKindOfClass:[NSString class]]) {
 				NSString* theStr = [(NSString*)arrangement lowercaseString];
 				if ([theStr hasPrefix:@"withurlrow4|"]) {
-					r3 = 3;
 					// gcc should be able to remove the strlen during optimization.
 					theStr = [theStr substringFromIndex:strlen("withurlrow4|")];
 				} else if ([theStr hasSuffix:@"|withurlrow4"]) {
-					r3 = 3;
 					theStr = [theStr substringToIndex:[theStr length]-strlen("|withurlrow4")];
 				}
 				
-				if ([theStr isEqualToString:@"withurlrow4"]) {
-					r3 = 3;
-				} else if ([theStr isEqualToString:@"azerty"]) {
+				if ([theStr isEqualToString:@"azerty"]) {
 					r0 = 10; r1 = 10; r2 = 6;
 				} else if ([theStr isEqualToString:@"russian"]) {
 					r0 = 11; r1 = 11; r2 = 9;
@@ -778,14 +774,14 @@ else \
 			
 			keydef->bg_area = imgRect;
 			keydef->pop_char_area = fgRect;
-			
+						
 			NSString* kvalue = [texts[i] objectAtIndex:j];
 			NSString* skvalue = [shiftedTexts[i] objectAtIndex:j];
-			if (![kvalue isKindOfClass:[NSString class]])
+			if (![kvalue isKindOfClass:[NSString class]] || [kvalue length] == 0)
 				kvalue = nil;
-			if (![skvalue isKindOfClass:[NSString class]])
+			if (![skvalue isKindOfClass:[NSString class]] || [skvalue length] == 0)
 				skvalue = nil;
-			if ([kvalue length] == 0 && [skvalue length] == 0)
+			if (kvalue == nil && skvalue == nil)
 				continue;
 			keydef.value = kvalue;
 			keydef.shifted = skvalue;
@@ -869,6 +865,10 @@ else \
 			} else if ([kvalue isEqualToString:@"\n"]) {
 				keydef->key_type = UIKeyTypeReturn;
 				keydef->up_flags |= UIKeyFlagSwitchPlane;
+			} else if ([kvalue isEqualToString:@".com"]) {
+				keydef->up_flags |= UIKeyFlagURLDomainVariants;
+			} else if ([kvalue isEqualToString:@"."]) {
+				keydef->up_flags |= UIKeyFlagEmailDomainVariants;
 			}
 			[retarr addObject:[[keydef copy] autorelease]];
 		}
