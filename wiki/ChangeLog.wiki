@@ -2,12 +2,16 @@
 #labels Phase-Design
 <wiki:toc max_depth="1" />
 
+<p align="center">↑↑↑ Future Releases ↑↑↑</p>
+<hr />
+<p align="center">↓↓↓ Current Releases ↓↓↓</p>
+
 = 0.1-6 =
 
 == iKeyEx ==
  * Fixed issue 9: Enable iKeyEx keyboards on install.
  * Fixed issue 7. Now iKeyEx can run on 2.0 and 2.1 firmware also.
- * Fixed issue 2 (Probably). The Globe can be used to exclusively switch to iKeyEx keyboards.
+ * Fixed issue 2. The Globe can be used to exclusively switch to iKeyEx keyboards.
  * Fixed issue 31. Auto-correction dictionaries can be recognized properly.
  * Fixed issue 42. Thanks Tomi for reporting.
  * Rewritten Graphics generation engine for flexibility (issue 5, issue 41).
@@ -52,10 +56,6 @@
 
 == !L33tTyper ==
  * No longer crashes when typing with 2 fingers (r90).
-
-<p align="center">↑↑↑ Future Releases ↑↑↑</p>
-<hr />
-<p align="center">↓↓↓ Current Releases ↓↓↓</p>
 
 = 0.0-2 =
 
