@@ -1,6 +1,0 @@
-#!/bin/bash
-
-if [[ $1 == install ]]; then
-	iKeyEx-KBMan add Colemak
-	exit 0
-fi
