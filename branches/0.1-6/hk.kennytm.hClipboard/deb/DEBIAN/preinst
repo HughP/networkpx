@@ -1,0 +1,12 @@
+#!/bin/bash
+
+if [[ $1 == install || $1 == upgrade ]]; then
+	if [[ -e /var/mobile/Library/Keyboard/iKeyEx/templates-hClipboard.plist ]]; then
+		mv /var/mobile/Library/Keyboard/iKeyEx/templates-hClipboard.plist /var/mobile/Library/Keyboard/iKeyEx\:hClipboard-templates.plist
+	fi
+
+	if [[ $1 == install ]]; then
+		iKeyEx-KBMan add hClipboard
+		exit 0
+	fi
+fi

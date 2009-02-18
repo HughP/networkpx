@@ -1,0 +1,6 @@
+#!/bin/bash
+
+if [[ $1 == remove || $1 == "abort-install" ]]; then
+	iKeyEx-KBMan remove MathTyper
+	exit 0
+fi

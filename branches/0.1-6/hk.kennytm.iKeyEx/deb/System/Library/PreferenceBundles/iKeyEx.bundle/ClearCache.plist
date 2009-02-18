@@ -1,0 +1,20 @@
+{
+	title = "Clear cache";
+	items = (
+		{
+			cell = PSGroupCell;
+		},
+		{
+			cell = PSButtonCell;
+			action = "clearCache:";
+			label = "Clear layout cache";
+			id = sublayout;
+		},
+		{
+			cell = PSButtonCell;
+			action = "clearCache:";
+			label = "Clear lookup cache (WordTrie)";
+			id = trie;
+		},
+	);
+}

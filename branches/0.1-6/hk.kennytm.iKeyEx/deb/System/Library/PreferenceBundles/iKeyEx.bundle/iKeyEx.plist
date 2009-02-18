@@ -1,0 +1,25 @@
+{
+	title = iKeyEx;
+	items = (
+		{ cell = PSGroupCell; },
+		{ cell = PSLinkListCell;
+			detail = "InternationalKeyboardController";
+			get = "keyboardsValue:";
+			label = "International Keyboards";
+		},
+		{ cell = PSGroupCell;
+			id = ":SpecificPreferenceItems";
+		},
+		{ cell = PSGroupCell;
+			label = "Troubleshooting";
+		},
+		{ cell = PSButtonCell;
+			label = "Fix permissions";
+			action = "chmod";
+		},
+		{ cell = PSButtonCell;
+			label = "Clear image cache";
+			action = "clearImageCache";
+		},
+	);
+}
