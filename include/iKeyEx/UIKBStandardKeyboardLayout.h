@@ -69,11 +69,13 @@ typedef enum UIKBSublayoutType {
 @interface UIKBStandardKeyboardLayout : UIKeyboardLayoutQWERTY {
 	UIKeyDefinition* keyDefs[UIKBSublayoutCount];
 	NSUInteger keyCounts[UIKBSublayoutCount];
+	NSDictionary* plist;
 }
 @end
 
 @interface UIKBStandardKeyboardLayoutLandscape : UIKeyboardLayoutQWERTYLandscape {
 	UIKeyDefinition* keyDefs[UIKBSublayoutCount];
 	NSUInteger keyCounts[UIKBSublayoutCount];
+	NSDictionary* plist;
 }
 @end

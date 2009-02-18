@@ -55,6 +55,9 @@ static NSMutableDictionary* referedLayoutClasses = nil;
 -(NSString*)localizedStringForKey:(NSString*)key { return [bundle localizedStringForKey:key value:nil table:nil]; }
 
 -(id)initWithModeName:(NSString*)mode {
+	if (![mode hasPrefix:iKeyEx_Prefix])
+		return nil;
+	
 	if ((self = [super init])) {
 		NSString* modeName = [mode substringFromIndex:[iKeyEx_Prefix length]];
 		bundle = [[NSBundle alloc] initWithPath:[NSString stringWithFormat:iKeyEx_KeyboardsPath@"/%@.keyboard", modeName]];
@@ -147,7 +150,7 @@ static NSMutableDictionary* referedLayoutClasses = nil;
 }
 
 +(KeyboardBundle*)bundleWithModeName:(NSString*)mode {
-	if (mode == nil)
+	if (mode == nil || ![mode hasPrefix:iKeyEx_Prefix])
 		return nil;
 	KeyboardBundle* retval = [kbcache objectForKey:mode];
 	if (retval == nil) {
@@ -211,6 +214,18 @@ static NSMutableDictionary* referedLayoutClasses = nil;
 +(NSString*)referedLayoutClassForMode:(NSString*)mode {
 	NSString* retval = [referedLayoutClasses objectForKey:mode];
 	return retval ? retval : mode;
+}
+
+-(NSDictionary*)layoutPlist {
+	NSString* layoutName = [bundle objectForInfoDictionaryKey:@"UIKeyboardLayoutClass"];
+	if (![layoutName isKindOfClass:[NSString class]])
+		return nil;
+	
+	NSString* layoutPath = [bundle pathForResource:layoutName ofType:nil];
+	if (layoutPath == nil)
+		return nil;
+	
+	return [NSDictionary dictionaryWithContentsOfFile:layoutPath];
 }
 
 @end
