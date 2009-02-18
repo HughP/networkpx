@@ -142,7 +142,7 @@ static id mobileTerminalApplication = nil;
 						if (curRange.location == NSNotFound)
 							return;
 						if (curRange.length == 0) {
-							if ([del characterAfterCaretSelection] == '\0')
+							if (curRange.location == [del.text length])
 								return;
 							setSelection(del, NSMakeRange(curRange.location+1, 0));
 						}
