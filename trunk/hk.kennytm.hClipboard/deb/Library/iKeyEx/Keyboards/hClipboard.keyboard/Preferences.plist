@@ -5,7 +5,7 @@
 	<key>defaultEditingMode</key>
 	<false/>
 	<key>securityLevel</key>
-	<integer>1</integer>
+	<string>1</string>
 	<key>soundEffect</key>
 	<true/>
 </dict>
