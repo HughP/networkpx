@@ -1,4 +1,11 @@
 {
 ".com" = (".com", ".org", ".edu", ".net");
 "." = (".", ".com", ".org", ".edu", ".net");
+
+// Hack to allow long press actions to be captured by these keys.
+"\U001B[A" = ();
+"\U001B[B" = ();
+"\U001B[C" = ();
+"\U001B[D" = ();
+"\U001B[3~" = ();
 }
