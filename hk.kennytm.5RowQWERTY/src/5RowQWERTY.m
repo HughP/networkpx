@@ -56,9 +56,9 @@ static BOOL canSendActiveKey = NO, cancelNextAction = NO;
 +(BOOL)sendControlAction:(NSString*)str;
 
 -(id)initWithFrame:(CGRect)frm;
--(void)dealloc;
 -(void)sendStringAction:(NSString*)str forKey:(UIKeyDefinition*)keydef;
 -(void)longPressAction;
+-(void)deactivateActiveKeys;
 @end
 
 
@@ -204,18 +204,15 @@ static BOOL canSendActiveKey = NO, cancelNextAction = NO;
 	return self;
 }
 -(void)sendStringAction:(NSString*)str forKey:(UIKeyDefinition*)keydef {
-	if (keydef == NULL && !canSendActiveKey)
-		return;
 	if (cancelNextAction) {
 		cancelNextAction = NO;
 		return;
 	}
 	
-	if ([str hasPrefix:@"\x1b"]) {
-		if (![FiveRowQWERTYLayout sendControlAction:str])
-			[super sendStringAction:str forKey:keydef];
-	} else
-		[super sendStringAction:str forKey:keydef];
+	if ([str hasPrefix:@"\x1b"])
+		if ([FiveRowQWERTYLayout sendControlAction:str])
+			return;
+	[super sendStringAction:str forKey:keydef];
 }
 -(void)longPressAction {
 	if ([UIKeyboardImpl sharedInstance].shift) {

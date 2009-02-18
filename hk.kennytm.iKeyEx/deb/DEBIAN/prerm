@@ -5,7 +5,8 @@ cydia=($CYDIA)
 
 if [[ $1 == remove ]]; then
 	iKeyEx-KBMan removeall
-	rm /var/mobile/Library/Keyboard/iKeyEx/cache/*
+	iKeyEx-KBMan purgeall
+	rm -f /var/mobile/Library/Keyboard/iKeyEx/cache/*
 	if [[ ${CYDIA+@} ]]; then
 	        eval "echo 'finish:restart' >&${cydia[0]}"
     	fi
