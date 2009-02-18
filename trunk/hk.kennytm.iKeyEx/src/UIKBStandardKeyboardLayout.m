@@ -192,7 +192,7 @@ static const GUCaps KeyCaps = {8,8,8,8};
 
 #define CreateBuildMethod(sublayoutType, landsc, isAlt_) \
 -(id)buildUIKeyboardLayout##sublayoutType { \
-	UIKBStandardKeyboard* keyboard = [UIKBStandardKeyboard keyboardWithBundle:[KeyboardBundle activeBundle] \
+	UIKBStandardKeyboard* keyboard = [UIKBStandardKeyboard keyboardWithPlist:plist \
 										name:@#sublayoutType \
 										landscape:landsc \
 										appearance:UIKeyboardAppearanceDefault]; \
@@ -211,7 +211,7 @@ static const GUCaps KeyCaps = {8,8,8,8};
 
 #define CreateBuildMethodTransparent(sublayoutType, landsc, isAlt_) \
 -(id)buildUIKeyboardLayout##sublayoutType##Transparent { \
-	UIKBStandardKeyboard* keyboard = [UIKBStandardKeyboard keyboardWithBundle:[KeyboardBundle activeBundle] \
+	UIKBStandardKeyboard* keyboard = [UIKBStandardKeyboard keyboardWithPlist:plist \
 										name:@#sublayoutType \
 										landscape:landsc \
 										appearance:UIKeyboardAppearanceAlert]; \
@@ -259,6 +259,7 @@ void resizePopupImage (BOOL landscape, UIView* m_activeKeyView, UIKeyDefinition*
 		}
 		free(keyDefs[i]);
 	}
+	[plist release];
 	[super dealloc];
 }
 -(id)initWithFrame:(CGRect)frame {
@@ -267,6 +268,7 @@ void resizePopupImage (BOOL landscape, UIView* m_activeKeyView, UIKeyDefinition*
 			keyDefs[i] = NULL;
 			keyCounts[i] = 0;
 		}
+		plist = [[[KeyboardBundle activeBundle] layoutPlist] retain];
 	}
 	return self;
 }
@@ -302,6 +304,7 @@ CreateBuildMethods(EmailAddressAlt, NO, YES);
 -(void)dealloc {
 	for (NSUInteger i = 0; i < UIKBSublayoutCount; ++ i)
 		free(keyDefs[i]);
+	[plist release];
 	[super dealloc];
 }
 -(id)initWithFrame:(CGRect)frame {
@@ -310,6 +313,7 @@ CreateBuildMethods(EmailAddressAlt, NO, YES);
 			keyDefs[i] = NULL;
 			keyCounts[i] = 0;
 		}
+		plist = [[[KeyboardBundle activeBundle] layoutPlist] retain];
 	}
 	return self;
 }

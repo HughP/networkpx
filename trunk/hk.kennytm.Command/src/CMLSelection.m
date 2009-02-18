@@ -75,7 +75,7 @@ void setSelectionToCurrentDelegate(NSRange newRange) { setSelection([UIKeyboardI
 NSRange getSelection(NSObject<UIKeyboardInput>* del, NSString** selectedText) {
 	NSRange retval = del.selectionRange;
 	DOMRange* domRange = del.selectedDOMRange;
-	if ([del isKindOfClass:[DOMElement class]] && [del respondsToSelector:@selector(readOnly)] && [del readOnly]) {
+	if (retval.location == NSNotFound) {
 		retval = NSMakeRange(domRange.startOffset, domRange.endOffset - domRange.startOffset);
 	}
 	if (selectedText != NULL) {

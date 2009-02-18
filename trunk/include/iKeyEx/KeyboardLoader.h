@@ -78,4 +78,7 @@
 // Get the refered input mode names
 +(NSString*)referedManagerClassForMode:(NSString*)mode;
 +(NSString*)referedLayoutClassForMode:(NSString*)mode;
+
+// Get layout.plist, if any
+-(NSDictionary*)layoutPlist;
 @end

@@ -461,16 +461,7 @@ else \
 	return [[[UIKBStandardKeyboard alloc] initWithPlist:layoutDict name:name landscape:landsc appearance:appr] autorelease];
 }
 +(UIKBStandardKeyboard*)keyboardWithBundle:(KeyboardBundle*)bdl name:(NSString*)name landscape:(BOOL)landsc appearance:(UIKeyboardAppearance)appr {
-	NSString* layoutName = [bdl objectForInfoDictionaryKey:@"UIKeyboardLayoutClass"];
-	if (![layoutName isKindOfClass:[NSString class]])
-		return nil;
-	
-	NSString* layoutPath = [bdl pathForResource:layoutName ofType:nil];
-	if (layoutPath == nil)
-		return nil;
-	
-	return [[[UIKBStandardKeyboard alloc] initWithPlist:[NSDictionary dictionaryWithContentsOfFile:layoutPath]
-												   name:name landscape:landsc appearance:appr] autorelease];
+	return [[[UIKBStandardKeyboard alloc] initWithPlist:[bdl layoutPlist] name:name landscape:landsc appearance:appr] autorelease];
 }
 
 

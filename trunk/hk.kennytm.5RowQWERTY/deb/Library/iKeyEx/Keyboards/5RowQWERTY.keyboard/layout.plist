@@ -55,11 +55,11 @@
 		
 		shiftedTexts = (
 			// The texts actually don't have to be "typed out". It just need to be understandable by your input manager.
-			// Note: I can't find any use of Insert key in the iPhoneOS. So I've replaced it with the ESC key.  
-			("~", "", "_", "+", "", "•esc", "•home", "•pgup"),
-			("\U0009", "", "{", "}", "|", "•del", "•end", "•pgdown"), 
-			("", "•", ":", "\"", "","", "•up", ""),
-			("<", ">", "?", "", "•left", "•down", "•right"),
+			// Note: I can't find any use of Insert key in the iPhoneOS. So I've replaced it with the ESC key.
+			("~", "", "_", "+", "", "\U001B", "\U001B[1~", "\U001B[5~"),
+			("\U0009", "", "{", "}", "|", "\U001B[3~", "\U001B[4~", "\U001B[6~"), 
+			("", "•", ":", "\"", "","", "\U001B[A", ""),
+			("<", ">", "?", "", "\U001B[D", "\U001B[B", "\U001B[C"),
 			"="
 		);
 		
@@ -75,6 +75,7 @@
 		);
 		shiftedLabels = (
 			// We can even use an image. But you'll need to specify the full path.
+			// (We use image here because ⎋ cannot be shown in iPhoneOS)
 			("~", "", "_", "+", "",
 				{image="/Library/iKeyEx/Keyboards/5RowQWERTY.keyboard/esc.png";},
 				{text="↖"; color=(0.5); },
