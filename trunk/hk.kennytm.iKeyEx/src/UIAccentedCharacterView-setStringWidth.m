@@ -38,6 +38,7 @@
 @implementation UIAccentedCharacterView (setStringWidth)
 -(CGFloat)stringWidth { return m_stringWidth; }
 -(void)setStringWidth:(CGFloat)newWidth {
+#ifdef __IPHONE_2_1
 	Ivar tubeRect_ivar = class_getInstanceVariable([UIAccentedCharacterView class], "m_tubeRect");
 	if (tubeRect_ivar == Nil)
 		return;
@@ -88,5 +89,6 @@
 		m_tubeRect.size.width = totalWidth;
 		m_tubeRect.origin.x -= excess;
 	}
+#endif
 }
 @end

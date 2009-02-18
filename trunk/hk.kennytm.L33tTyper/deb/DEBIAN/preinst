@@ -1,6 +1,6 @@
 #!/bin/bash
 
 if [[ $1 == install ]]; then
-	iKeyEx-KBMan add hClipboard
+	iKeyEx-KBMan add L33tTyper
 	exit 0
 fi
