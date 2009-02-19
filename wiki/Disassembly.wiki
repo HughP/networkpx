@@ -61,3 +61,28 @@ static CGImageRef _UIImageRefAtPath(CFStringRef path, bool shouldCache, int* pOr
 	return retval;
 }
 }}}
+
+== UIControl ==
+=== `-[UIControl mouseDown:]:` ===
+{{{
+-(void)mouseDown:(GSEventRef)event {
+	if (![self shouldTrack])
+		[super mouseDown:event];
+	else {
+		CGPoint startPoint = [self convertPoint:GSEventGetLocationInWindow(event) fromView:nil];
+		self.tracking = [self beginTrackingAt:startPoint withEvent:event];
+		if (self.tracking) {
+			_controlFlags.touchInside = YES;
+			_controlFlags.touchDragged = NO;
+			_previousPoint = startPoint;
+			if (!_controlFlags.dontHighlightOnTouchDown) {
+				_downTime = CFAbsoluteTimeGetCurrent();
+				self.highlighted = YES;
+			}
+			int clickCount = GSEventGetClickCount(event);
+			[self _sendActionsForEventMask:(clickCount<=1 ? 1 : 2) withEvent:event];
+		}
+		[self _controlMouseDown:event];
+	}
+}
+}}}
