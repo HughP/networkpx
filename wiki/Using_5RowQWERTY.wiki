@@ -1,6 +1,8 @@
 #summary About the 5 Row QWERTY keyboard.
 #labels Phase-Support
 
+<wiki:toc/>
+
 = Introduction =
 
 5 Row QWERTY is a QWERTY keyboard with the row of numbers, just like a standard QWERTY keyboard found in your computer. The symbols are also arranged to look like that of a computer keyboard, instead of the custom arrangement in the iPhone. It also features some commonly used functional keys and a !NumPad.
