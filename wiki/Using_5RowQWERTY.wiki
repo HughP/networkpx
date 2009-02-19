@@ -3,9 +3,9 @@
 
 = Introduction =
 
-5 Row QWERTY is a QWERTY keyboard with the row of numbers. It also features directional keys (up, down, left, right) and a !NumPad. 
+5 Row QWERTY is a QWERTY keyboard with the row of numbers, just like a standard QWERTY keyboard found in your computer. The symbols are also arranged to look like that of a computer keyboard, instead of the custom arrangement in the iPhone. It also features some commonly used functional keys and a !NumPad.
 
-Internally, 5 Row QWERTY is a demonstration of the advanced features of layout.plist and how to mix layout.plist with custom layout.  
+(Internally, 5 Row QWERTY is a demonstration of the advanced features of layout.plist and how to mix layout.plist with custom layout.)
 
 = Screenshots =
 
@@ -14,3 +14,18 @@ http://xf0.xanga.com/aeef32fac0633233807805/w184535482.png
 http://x21.xanga.com/735f0662c0633233807801/w184535478.png
 
 http://x03.xanga.com/3f2f05f007433233807802/w184535479.png
+
+= Functional keys =
+
+All functional keys are depicted with ISO-9995:7 symbols which are also used in Mac OS X. If you are unfamiliar with the symbols you can tap on it to see the textual description.
+
+The keys available in 5-Row QWERTY are:
+ * ←, ↑, →, ↓: *Directional keys*. Move the cursor left, up, right and downwards. Hold the key to move repeatedly.
+ * ⇥: *Tab*. Inserts a tab (\t) character.
+ * ⎋: *Escape*. Causes the current input field to lose the focus, and usually hides the keyboard as a result.
+ * ⌦: *Forward delete*, otherwise known as Delete. Remove the character immediately after the cursor. Hold the key to keep deleteing.
+ * ↖, ↘: *Home*, *End*. Move the cursor to the beginning or end of text field.
+ * ⇞, ⇟: *Page up*, *Page down*. Move the cursor one page up or down.
+
+= Known issues =
+ * The ↑, ↓, ⇞ and ⇟ keys does not work in UIWebView (Safari) (issue 58).
