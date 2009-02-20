@@ -1,4 +1,6 @@
-#summary Disassembly of some functions.
+#summary Decompilation of some functions.
+
+<wiki:toc/>
 
 = UIKit =
 
@@ -84,5 +86,34 @@ static CGImageRef _UIImageRefAtPath(CFStringRef path, bool shouldCache, int* pOr
 		}
 		[self _controlMouseDown:event];
 	}
+}
+}}}
+
+== UIWebDocumentView ==
+=== `-[UIWebDocumentView(Interaction) calloutApproximateNode]` ===
+{{{
+-(void)calloutApproximateNode {
+	UIWindow* window = self.window;
+	UIView* calloutParent = [window contentView];
+	UICalloutView* callout = [[self class] _calloutViewForWebView:self];
+	if ([self->_delegate respondsToSelector:@selector(superviewForCalloutInWebView:)]) {
+		calloutParent = [self->_delegate superviewForCalloutInWebView:self];
+	}
+	[calloutParent addSubview:callout];
+	NSString* title = [self->_interaction.candidate calloutTitle];
+	NSString* subtitle = [self->_interaction.candidate calloutSubtitle];
+	if ([title length] == 0) {
+		title = subtitle;
+		subtitle = nil;
+	}
+	if ([self->_delegate respondsToSelector:@selector(webView:willShowCalloutWithTitle:andSubtitle:forElement:)]) {
+		[self->_delegate webView:self willShowCalloutWithTitle:&title andSubtitle:&subtitle forElement:self->_interaction.candidate];
+	}
+	[callout setTitle:title];
+	[callout setSubtitle:subtitle];
+	CGPoint anchorPoint = [calloutParent convertPoint:self->_interaction.location fromView:self];
+	CGRect boundaryRect = [calloutParent convertRect:[window convertDeviceToWindow:[self->_interaction.candidate calloutDeviceBoundaryForWebView:self]]
+                                                fromView:window];
+	[callout setAnchorPoint:anchorPoint boundaryRect:boundaryRect animate:YES];
 }
 }}}
