@@ -37,6 +37,7 @@
 #import <UIKit/UIView.h>
 #import <UIKit/UITextView.h>
 #import <WebCore/PublicDOMInterfaces.h>
+#import <WebCore/wak/WebCoreThread.h>
 
 @interface UIWebDocumentView : UIView<UIKeyboardInput>
 @end
@@ -60,12 +61,12 @@ void setSelection(NSObject<UIKeyboardInput>* del, NSRange newRange) {
 			// <input type="text"/> and <textarea/> support this safer and faster method.
 			[del setSelectionRange:newRange.location end:newRange.location+newRange.length];
 		} else {
+			WebThreadLock();
 			DOMRange* range = del.selectedDOMRange;
-			// retain to avoid container suddenly disappeared.
-			// rather memory leak than crash.
-			[range setStart:[range.startContainer retain] offset:newRange.location];
-			[range setEnd:[range.endContainer retain] offset:newRange.location+newRange.length];
+			[range setStart:range.startContainer offset:newRange.location];
+			[range setEnd:range.endContainer offset:newRange.location+newRange.length];
 			[del setSelectedDOMRange:range affinityDownstream:YES];
+			WebThreadUnlock();
 		}
 	}
 }

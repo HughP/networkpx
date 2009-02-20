@@ -91,9 +91,8 @@ int main (int argc, const char* argv[]) {
 						CFRelease(cfString);
 					}
 				}
-				UIApplication* app = [[UIApplication alloc] init];
+				UIApplication* app = [UIApplication sharedApplication] || [[[UIApplication alloc] init] autorelease];
 				[app openURL:[NSURL URLWithString:resultString]];
-				[app release];
 			}
 		} else {
 			printf("Unregconized command: %s", argv[1]);

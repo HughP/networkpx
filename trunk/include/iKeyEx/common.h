@@ -72,9 +72,4 @@ void playKeyboardSound();
 // Get version of this iKeyEx library.
 NSString* iKeyExVersion();
 
-
-// Log UIView Hierarchy with NSLog.
-void UILogViewHierarchy (UIView* v);
-
-
 #endif
