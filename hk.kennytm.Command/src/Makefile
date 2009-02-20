@@ -35,11 +35,20 @@ CommandletToolsSources=Commandlet-Tools.m
 CommandletToolsTarget=$(binPath)/Commandlet-Tools
 CommandletToolsOptions=
 
-all: $(CommandletToolsTarget)
+UIHookerSources=UIHooker-Command.m
+UIHookerTarget=$(MobileSubstratePath)/UIHooker-Command.dylib
+UIHookerOptions=-lsubstrate -dynamiclib -init _init
+
+all: $(CommandletToolsTarget) $(UIHookerTarget)
 
 $(CommandletToolsTarget):	$(CommandletToolsSources)
 	$(Compiler) $(Options) $(CommandletToolsOptions) -o $@ $^
 	$(CodeSign) $@
 
+$(UIHookerTarget):	$(UIHookerSources)
+	$(Compiler) $(Options) $(UIHookerOptions) -o $@ $^
+	$(CodeSign) $@
+
 clean:
 	rm $(CommandletToolsTarget)
+	rm $(UIHookerTarget)
