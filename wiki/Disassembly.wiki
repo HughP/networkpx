@@ -100,19 +100,19 @@ static CGImageRef _UIImageRefAtPath(CFStringRef path, bool shouldCache, int* pOr
 		calloutParent = [self->_delegate superviewForCalloutInWebView:self];
 	}
 	[calloutParent addSubview:callout];
-	NSString* title = [self->_interaction.candidate calloutTitle];
-	NSString* subtitle = [self->_interaction.candidate calloutSubtitle];
+	NSString* title = [self->_interaction.element calloutTitle];
+	NSString* subtitle = [self->_interaction.element calloutSubtitle];
 	if ([title length] == 0) {
 		title = subtitle;
 		subtitle = nil;
 	}
 	if ([self->_delegate respondsToSelector:@selector(webView:willShowCalloutWithTitle:andSubtitle:forElement:)]) {
-		[self->_delegate webView:self willShowCalloutWithTitle:&title andSubtitle:&subtitle forElement:self->_interaction.candidate];
+		[self->_delegate webView:self willShowCalloutWithTitle:&title andSubtitle:&subtitle forElement:self->_interaction.element];
 	}
 	[callout setTitle:title];
 	[callout setSubtitle:subtitle];
 	CGPoint anchorPoint = [calloutParent convertPoint:self->_interaction.location fromView:self];
-	CGRect boundaryRect = [calloutParent convertRect:[window convertDeviceToWindow:[self->_interaction.candidate calloutDeviceBoundaryForWebView:self]]
+	CGRect boundaryRect = [calloutParent convertRect:[window convertDeviceToWindow:[self->_interaction.element calloutDeviceBoundaryForWebView:self]]
                                                 fromView:window];
 	[callout setAnchorPoint:anchorPoint boundaryRect:boundaryRect animate:YES];
 }
