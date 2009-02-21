@@ -117,3 +117,46 @@ static CGImageRef _UIImageRefAtPath(CFStringRef path, bool shouldCache, int* pOr
 	[callout setAnchorPoint:anchorPoint boundaryRect:boundaryRect animate:YES];
 }
 }}}
+
+=== `-[UIWebDocumentView(InteractionPrivate) _showImageSheet]` ===
+{{{
+#define LOCALIZE(str) WebLocalizedString(&UIKitLocalizableStringsBundle, (str))
+-(void)_showImageSheet {
+	self->_interaction.imageSheet = [[UIModalView alloc] init];
+	self->_interaction.imageSheet.alertSheetStyle = UIBarStyleDefault;
+	self->_interaction.imageSheet.delegate = self;
+	
+	UIButton* saveImageButton = [self->_interaction.imageSheet _addButtonWithTitle:LOCALIZE("Save Image")];
+	saveImageButton.tag = 1;
+
+	if ([self->_interaction.delegate respondsToSelector:@selector(numberOfImagesToSaveForWebView:)]) {
+		int imageCount = [self->_interaction.delegate numberOfImagesToSaveForWebView:self];
+		if (imageCount > 1) {
+			saveImageButton = [self->_interaction.imageSheet _addButtonWithTitle:[NSString stringWithFormat:LOCALIZE("Save N Images"), imageCount]];
+			saveImageButton.tag = 2;
+		}
+	}
+
+	if ([self->_interaction.element showsTapHighlight]) {
+		UIButton* openLinkButton = [self->_interaction.imageSheet _addButtonWithTitle:LOCALIZE("Open Link")];
+		openLinkButton.tag = 3;
+		[self hideCalloutAndHighlight];
+	}
+	
+	UIButton* cancelButton = [self->_interaction.imageSheet _addButtonWithTitle:LOCALIZE("Cancel")];
+	cancelButton.tag = 4;
+	self->_interaction.imageSheet.defaultButton = cancelButton;
+	[self highlightApproximateNodeInverted:YES];
+
+	UIWindow* actionShowView = self.window;
+	if ([self->_interaction.delegate respondsToSelector:@selector(superviewForImageSheetForWebView:)]) {
+		actionShowView = [self->_interaction.delegate superviewForImageSheetForWebView:self];
+	}
+	[self->_interaction.imageSheet presentSheetInView:actionShowView];
+
+	if ([self->_interaction.delegate respondsToSelector:@selector(webView:didShowImageSheet:)]) {
+		[self->_interaction.delegate webView:self didShowImageSheet:self->_interaction.imageSheet];
+	}
+}
+#undef LOCALIZE
+}}}
