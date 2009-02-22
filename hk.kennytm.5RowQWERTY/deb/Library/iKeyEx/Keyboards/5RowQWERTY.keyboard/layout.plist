@@ -48,7 +48,7 @@
 			// Unicode sequence is supported (features of plist). 
 			("\U0009", "", "[", "]", "\\", 4,5,6),
 			// Of course you should still prefer characters in UTF over obscure unicode sequence.
-			("", "•", ";", "'", "", 1,2,3),
+			("", "?", ";", "'", "", 1,2,3),
 			(".", ",", "/", "", 0, "", "."),
 			()
 		);

@@ -1,6 +1,7 @@
 {
 ".com" = (".com", ".org", ".edu", ".net");
 "." = (".", ".com", ".org", ".edu", ".net");
+"$" = ("$", "€", "£", "¥", "₩", "¢");
 
 // Hack to allow long press actions to be captured by these keys.
 "\U001B[A" = ();
