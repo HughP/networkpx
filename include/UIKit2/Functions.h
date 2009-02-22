@@ -1,9 +1,3 @@
-/*
- #import <UIKit/UIImage.h>
-#import <Foundation/NSString.h>
-#import <Foundation/NSBundle.h>
- */
-
 #import <objc/objc.h>
 
 @class UIImage, NSString, NSBundle;

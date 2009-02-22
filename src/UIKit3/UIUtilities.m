@@ -30,14 +30,20 @@
  
  */
 
-#import "UIUtilities.h"
+#import <UIKit3/UIUtilities.h>
 #import <Foundation/Foundation.h>
 #import <UIKit/UIView.h>
 #import <WebCore/PublicDOMInterfaces.h>
 #import <WebCore/wak/WebCoreThread.h>
+#import <UIKit2/UIWebDocumentView.h>
+#import <UIKit2/UIPickerTable.h>
+#import <UIKit2/DOMNode-UIWebViewAdditions.h>
+#import <WebKit/mac/Misc/WebLocalizableStrings.h>
+
+static WebLocalizableStringsBundle UIKitLocalizableStringsBundle = {"com.apple.UIKit", nil};
 
 @implementation UIWebTexts
-@synthesize text, linkLabel, URL, alt, imageURL, title;
+@synthesize text, linkLabel, URL, alt, imageURL, title, view, rect, userInfo;
 -(void)dealloc {
 	[text release];
 	[linkLabel release];
@@ -48,14 +54,19 @@
 	[super dealloc];
 }
 -(NSString*)description {
-	return [NSString stringWithFormat:@"text=%@, linkLabel=%@, URL=%@, alt=%@, imageURL=%@, title=%@", text, linkLabel, URL, alt, imageURL, title];
+	return [NSString stringWithFormat:@"text=%@, linkLabel=%@, URL=%@, alt=%@, imageURL=%@, title=%@, rect=%@, userInfo=%d",
+			text, linkLabel, URL, alt, imageURL, title, NSStringFromCGRect(rect), userInfo];
 }
 @end
 
 
 extern
 NSString* UITextOf(UIView* v) {
-	const SEL titleSelectors[] = {@selector(hk_kennytm_title), @selector(title), @selector(currentTitle), @selector(text), @selector(prompt)};
+	if ([v isKindOfClass:objc_getClass("UIPickerTable")]) {
+		return UITextOf([(UIView<UIPickerTable>*)v selectedTableCell]);
+	}
+	
+	const SEL titleSelectors[] = {@selector(title), @selector(currentTitle), @selector(text), @selector(prompt)};
 	for (int i = 0; i < sizeof(titleSelectors)/sizeof(SEL); ++i) {
 		if ([v respondsToSelector:titleSelectors[i]]) {
 			NSString* result = [v performSelector:titleSelectors[i]];
@@ -87,21 +98,11 @@ extern void UILogSuperviews (UIView* v) {
 	}
 }
 
-@interface UITableCell : UIView -(UIView*)wrappedView; @end
-@interface UIPickerTable : UIView -(UITableCell*)selectedTableCell; @end
-
-@implementation UIPickerTable (UIUtilitesExtension)
--(NSString*)hk_kennytm_title { return UITextOf([self selectedTableCell]); }
-@end
-
-@interface WebView -(NSDictionary*)elementAtPoint:(CGPoint)pt; @end
-@interface UIWebDocumentView : UIView -(WebView*)webView; @end
-
-UIWebTexts* UITextsAtPoint(UIWebDocumentView* view, CGPoint pt) {
+UIWebTexts* UITextsAtPoint(UIView* view, CGPoint pt) {
 	UIWebTexts* retval = [[[UIWebTexts alloc] init] autorelease];
 	if ([view isKindOfClass:[UIWebDocumentView class]]) {
 		WebThreadLock();
-		NSDictionary* dict = [[view webView] elementAtPoint:pt];
+		NSDictionary* dict = [[(UIWebDocumentView*)view webView] elementAtPoint:pt];
 		DOMNode* node = [dict objectForKey:@"WebElementDOMNode"];
 		while ([node.nodeName hasPrefix:@"#"]) {
 			node = node.parentNode;
@@ -109,13 +110,22 @@ UIWebTexts* UITextsAtPoint(UIWebDocumentView* view, CGPoint pt) {
 				break;
 		}
 		retval.text = node.textContent;
+		retval.rect = [node convertRect:[node boundingBoxAtPoint:pt] toView:nil];
 		WebThreadUnlock();
 		retval.linkLabel = [dict objectForKey:@"WebElementLinkLabel"];
 		retval.URL = [dict objectForKey:@"WebElementLinkURL"];
 		retval.alt = [dict objectForKey:@"WebElementImageAltString"];
 		retval.imageURL = [dict objectForKey:@"WebElementImageURL"];
 		retval.title = [dict objectForKey:@"WebElementTitle"];
-	} else
+
+	} else {
 		retval.text = UITextOf(view);
+		retval.rect = [view convertRect:view.bounds toView:nil];
+	}
+	retval.view = view;
 	return retval;
+}
+
+NSString* UILocalizedString(const char* str) {
+	return WebLocalizedString(&UIKitLocalizableStringsBundle, str);
 }

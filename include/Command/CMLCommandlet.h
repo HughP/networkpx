@@ -1,6 +1,6 @@
 /*
  
- GraphicsUtilities.h ... Convenient functions for UI elements
+ CMLCommandlet.h ... Public API for manipulating ⌘lets.
  
  Copyright (c) 2009, KennyTM~
  All rights reserved.
@@ -30,35 +30,47 @@
  
  */
 
-#import <Foundation/NSObject.h>
-#import <CoreGraphics/CGGeometry.h>
-@class UIView, NSString, UIWebDocumentView;
 
-// Log UIView Hierarchy (downwards/upwards) with NSLog.
-void UILogViewHierarchy (UIView* v);
-void UILogSuperviews (UIView* v);
+#import <Foundation/Foundation.h>
+#import <UIKit2/UIKeyboardInput.h>
 
-// Get title of UIView for debugging.
-NSString* UITextOf(UIView* v);
+typedef enum CMHookedViewType {
+	CMNotHookable,
+	CMLabel,
+	CMWebTexts,
+	CMTextField
+} CMHookedViewType;
 
-@interface UIWebTexts : NSObject {
-	NSString* text;
-	NSString* linkLabel;
-	NSString* URL;
-	NSString* alt;
-	NSString* imageURL;
-	NSString* title;
-}
-@property(retain) NSString* text;
-@property(retain) NSString* linkLabel;
-@property(retain) NSString* URL;
-@property(retain) NSString* alt;
-@property(retain) NSString* imageURL;
-@property(retain) NSString* title;
--(void)dealloc;
--(NSString*)description;
-@end
+CMHookedViewType CMDetermine(UIView*);
 
-UIWebTexts* UITextsAtPoint(UIWebDocumentView* view, CGPoint pt);
+typedef enum CMLFurtherAction {
+	CMLActionDefault = 0,
+	CMLActionCollapseToStart,
+	CMLActionCollapseToEnd,
+	CMLActionCollapseToOldEnd,
+	CMLActionReuseOldSelection,
+	CMLActionMoveToBeginning,
+	CMLActionMoveToEnding,
+	CMLActionSelectAll,
+	CMLActionSelectToBeginningFromStart,
+	CMLActionSelectToBeginningFromEnd,
+	CMLActionSelectToEndingFromStart,
+	CMLActionSelectToEndingFromEnd,
+	CMLActionAnchorAtStart = 64,
+	CMLActionAnchorAtEnd = 128,
+	CMLActionShowMenu = 4096,
+	CMLActionSelectAllNow = 8192 
+} CMLFurtherAction;
 
 
+@interface CMLCommandlet : NSObject
++(void)performFurtherAction:(CMLFurtherAction)theActions onTarget:(UIView*)target;
++(void)callCommandlet:(NSString*)cmdletName withTarget:(UIView*)target;
++(void)callCommandlet:(NSString*)cmdletName withString:(NSString*)selectedString;
+
++(void)interceptCommandlet:(NSString*)cmdletName toInstance:(NSObject*)interceptor action:(SEL)aSelector;
++(void)uninterceptCommandlet:(NSString*)cmdletName fromInstance:(NSObject*)interceptor action:(SEL)aSelector;
+
+//+(void)registerUndoManager:(CMLUndoManager*)manager;
+//+(CMLUndoManager*)undoManagerForTarget:(NSObject<UIKeyboardInput>*)target;
+@end;

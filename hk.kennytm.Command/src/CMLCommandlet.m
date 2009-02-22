@@ -1,6 +1,6 @@
 /*
  
- CMLSelection.h ... Set selection to a UIKeyboardInput.
+ CMLCommandlet.m ... Public API for manipulating ⌘lets.
  
  Copyright (c) 2009, KennyTM~
  All rights reserved.
@@ -30,14 +30,23 @@
  
  */
 
-#import <Foundation/NSRange.h>
 
-@class NSObject;
-@protocol UIKeyboardInput;
+#import <Command/CMLCommandlet.h>
+#import <UIUtilities.h>
+#import <UIKit/UIKit.h>
+#import <UIKit2/UIWebDocumentView.h>
+#import <UIKit2/UIPickerTable.h>
+#import <UIKit2/UIKeyboardInput.h>
 
-
-void setSelection(NSObject<UIKeyboardInput>* del, NSRange newRange);
-void setSelectionToCurrentDelegate(NSRange newRange);
-
-NSRange getSelection(NSObject<UIKeyboardInput>* del, NSString** selectedText);
-NSRange getSelectionFromCurrentDelegate(NSString** selectedText);
+extern
+CMHookedViewType CMDetermine(UIView* self) {
+	if ([self conformsToProtocol:@protocol(UIKeyboardInput)] && [(UIView<UIKeyboardInput>*)self hasSelection])
+		return CMTextField;
+	else if ([self isKindOfClass:[UIWebDocumentView class]])
+		return CMWebTexts;
+	else if ([self isKindOfClass:[UILabel class]] || [self isKindOfClass:objc_getClass("UITableHeaderFooterView")] ||
+			 [self isKindOfClass:objc_getClass("UIPickerTable")] || [self isKindOfClass:[UINavigationBar class]])
+		return CMLabel;
+	else
+		return CMNotHookable;
+}

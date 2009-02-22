@@ -1,6 +1,6 @@
 /*
  
- CMLSelection.h ... Set selection to a UIKeyboardInput.
+ CMLCommandlet-Internal.h ... Internal API for manipulating ⌘lets.
  
  Copyright (c) 2009, KennyTM~
  All rights reserved.
@@ -30,14 +30,12 @@
  
  */
 
-#import <Foundation/NSRange.h>
 
-@class NSObject;
-@protocol UIKeyboardInput;
+#import <Command/CMLCommandlet.h>
 
+@class UIView;
 
-void setSelection(NSObject<UIKeyboardInput>* del, NSRange newRange);
-void setSelectionToCurrentDelegate(NSRange newRange);
-
-NSRange getSelection(NSObject<UIKeyboardInput>* del, NSString** selectedText);
-NSRange getSelectionFromCurrentDelegate(NSString** selectedText);
+@interface CMLCommandlet ()
++(void)showActionMenuForText:(UIView*)lbl;
++(void)showActionMenuForWebTexts:(UIWebTexts*)txts;
+@end;

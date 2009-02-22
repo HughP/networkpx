@@ -1,6 +1,6 @@
 /*
  
- CMLSelection.h ... Set selection to a UIKeyboardInput.
+ CMLCommandlet-Internal.m ... Internal API for manipulating ⌘lets.
  
  Copyright (c) 2009, KennyTM~
  All rights reserved.
@@ -30,14 +30,31 @@
  
  */
 
-#import <Foundation/NSRange.h>
 
-@class NSObject;
-@protocol UIKeyboardInput;
+#import <Command/CMLCommandlet.h>
+#import <UIKit2/UIAlert.h>
+#import <UIKit3/UIUtilities.h>
+#import <UIKit3/UIActionSheetPro.h>
+#import <UIKit/UIKit.h>
 
-
-void setSelection(NSObject<UIKeyboardInput>* del, NSRange newRange);
-void setSelectionToCurrentDelegate(NSRange newRange);
-
-NSRange getSelection(NSObject<UIKeyboardInput>* del, NSString** selectedText);
-NSRange getSelectionFromCurrentDelegate(NSString** selectedText);
+@implementation CMLCommandlet
++(void)showActionMenuForWebTexts:(UIWebTexts*)txts {
+	UIActionSheetPro* sheet = [[UIActionSheetPro alloc] initWithNumberOfRows:3];
+	sheet.title = [txts description];
+	
+	[sheet addButtonAtRow:0 withTitle:@"Cut" image:nil destructive:NO cancel:NO];
+	[sheet addButtonAtRow:0 withTitle:@"Copy" image:nil destructive:NO cancel:NO];
+	[sheet addButtonAtRow:0 withTitle:@"Paste" image:nil destructive:NO cancel:NO];
+	[sheet addButtonAtRow:1 withTitle:@"Google" image:nil destructive:YES cancel:NO];
+	[sheet addButtonAtRow:1 withTitle:@"Twitter" image:nil destructive:NO cancel:NO];
+	[sheet addButtonAtRow:1 withTitle:@"翻譯" image:nil destructive:NO cancel:NO];
+	[sheet addButtonAtRow:2 withTitle:@"Undo" image:nil destructive:NO cancel:NO];
+	[sheet addButtonAtRow:2 withTitle:@"Redo" image:nil destructive:NO cancel:NO];
+	[sheet addButtonAtRow:2 withTitle:@"Cancel" image:nil destructive:NO cancel:YES];
+	
+	[sheet showWithWebTexts:txts inView:[txts.view.window.subviews objectAtIndex:0]];
+	
+	UILogViewHierarchy(sheet);
+	[sheet release];
+}
+@end;

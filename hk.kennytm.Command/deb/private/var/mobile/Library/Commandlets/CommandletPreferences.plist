@@ -1,4 +1,21 @@
 {
+	control = {
+		label = {
+			taps = 1;
+			endsWithLongHold = YES;
+			endsWithTouchDown = NO;
+		};
+		start = {
+			taps = 1;
+			endsWithLongHold = YES;
+			endsWithTouchDown = NO;
+		};
+		stop = {
+			taps = 1;
+			endsWithLongHold = NO;
+			endsWithTouchDown = NO;
+		};
+	};
 	order = (
 		(
 			Cut,
@@ -9,8 +26,6 @@
 			Mail,
 			Google,
 		),
+		(),
 	);
-	startSelectionMethod = DoubleTap;
-	"showActionSheetOnTextFieldMethod" = CommandKey;
-	"showActionSheetOnLabelMethod" = DoubleTap;
 }
