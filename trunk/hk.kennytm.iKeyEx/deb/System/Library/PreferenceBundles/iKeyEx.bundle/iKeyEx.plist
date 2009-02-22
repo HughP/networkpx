@@ -10,16 +10,10 @@
 		{ cell = PSGroupCell;
 			id = ":SpecificPreferenceItems";
 		},
-		{ cell = PSGroupCell;
+		{ cell = PSGroupCell; },
+		{ cell = PSLinkCell;
 			label = "Troubleshooting";
-		},
-		{ cell = PSButtonCell;
-			label = "Fix permissions";
-			action = "chmod";
-		},
-		{ cell = PSButtonCell;
-			label = "Clear image cache";
-			action = "clearImageCache";
+			detail = TroubleshootingController;
 		},
 	);
 }

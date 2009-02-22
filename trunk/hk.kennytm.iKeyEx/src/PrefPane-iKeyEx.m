@@ -33,10 +33,9 @@
 #import <Preferences/PSListController.h>
 #import <Preferences/PSSpecifier.h>
 #import <Foundation/Foundation.h>
+#import <UIKit/UIApplication.h>
 #import <iKeyEx/common.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>	// chown
+#import <stdlib.h>
 
 @interface iKeyExClearCacheListController : PSListController {}
 -(NSArray*)specifiers;
@@ -84,10 +83,19 @@
 
 
 
+@interface TroubleshootingController : PSListController {}
+@end
+@implementation TroubleshootingController
+@end
+
+
+
 @interface iKeyExListController : PSListController {}
 -(NSArray*)specifiers;
 -(NSString*)keyboardsValue:(PSSpecifier*)spec;
 -(void)chmod;
+-(void)clearImageCache;
+-(void)gotoCydiaPackage;
 @end
 
 @implementation iKeyExListController
@@ -157,8 +165,13 @@
 	return [NSString stringWithFormat:@"%d", [[[NSUserDefaults standardUserDefaults] arrayForKey:@"AppleKeyboards"] count]];
 }
 
+// Troubleshooting actions
 -(void)chmod {
 	system("/usr/bin/iKeyEx-KBMan fixperm");
+}
+
+-(void)gotoCydiaPackage {
+	[[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"cydia://package/hk.kennytm.ikeyex"]];
 }
 
 -(void)clearImageCache {
