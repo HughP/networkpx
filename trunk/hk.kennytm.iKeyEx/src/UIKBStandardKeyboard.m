@@ -847,6 +847,29 @@ else \
 				}				
 			}
 			
+			// adjust the bg_area & pop_padding on the first & last column.
+			if (j == 0) {
+				CGFloat actualLeft = 0;
+				if (shiftKeyRow == i)
+					actualLeft = shiftKeyLeft + shiftKeyWidth;
+				CGFloat adjustment = keydef->bg_area.origin.x - actualLeft;
+				if (adjustment > 0) {
+					keydef->bg_area.origin.x = actualLeft;
+					keydef->bg_area.size.width += adjustment;
+					keydef->pop_padding.origin.x += adjustment/2;
+				}
+			} else if (j == count-1) {
+				CGFloat actualRight = 0;
+				if (deleteKeyRow == i) {
+					actualRight = deleteKeyRight + deleteKeyWidth;
+				}
+				CGFloat adjustment = keydef->bg_area.origin.x + keydef->bg_area.size.width - actualRight;
+				if (adjustment > 0) {
+					keydef->bg_area.size.width += adjustment;
+					keydef->pop_padding.origin.x -= adjustment/2;
+				}
+			}
+			
 			keydef->accent_frame = CGRectIntegral(CGRectMake(imgRect.origin.x, imgRect.origin.y + imgRect.size.height + accentDelta,
 															 imgRect.size.width, accentHeight));
 			keydef->down_flags = UIKeyFlagActivateKey | UIKeyFlagPlaySound;
