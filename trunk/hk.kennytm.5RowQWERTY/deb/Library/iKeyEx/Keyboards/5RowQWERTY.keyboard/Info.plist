@@ -4,5 +4,6 @@
 		Portrait  = FiveRowQWERTYLayout;
 	};
 	UIKeyboardInputManagerClass = "=en_US";
-	CFBundleDisplayName = "5 Row QWERTY";
+	CFBundleDisplayName = "5-Row QWERTY";
+	PSBundle = Preferences;
 }

@@ -4,6 +4,7 @@ iPhoneGCCIncPath=$(iPhoneSDKPath)/usr/lib/gcc/powerpc-apple-darwin9/4.0.1/includ
 iKeyExIncPath=../../include
 iKeyExLibPath=../../hk.kennytm.iKeyEx/deb/usr/lib
 CMLSrcPath=../../hk.kennytm.Command/src
+SharedSrcPath=../../src
 
 Compiler=$(iPhoneDevPath)/usr/bin/arm-apple-darwin9-gcc-4.0.1
 CodeSign=ldid -S
@@ -25,21 +26,28 @@ Options=-lobjc \
 	-L$(iPhoneSDKPath)/usr/lib \
 	-L$(iKeyExLibPath) \
 	-Wall \
-	-dynamiclib \
 	-lobjc \
-	-liKeyEx \
 	-march=armv6 \
 	-mcpu=arm1176jzf-s \
 	-O3 \
-	-mthumb \
-	-liKeyEx \
-	-init _init
+	-mthumb	
 
-Sources=5RowQWERTY.m $(CMLSrcPath)/CMLSelection.m
-Target=../deb/Library/iKeyEx/Keyboards/5RowQWERTY.keyboard/5RowQWERTY
+LayoutSources=5RowQWERTY.m $(CMLSrcPath)/CMLSelection.m
+LayoutTarget=../deb/Library/iKeyEx/Keyboards/5RowQWERTY.keyboard/5RowQWERTY
+LayoutOptions=-liKeyEx -dynamiclib -init _init
 
-$(Target):	$(Sources)
-	$(Compiler) $(Options) -o $@ $^
+PrefSources=prefs.m $(SharedSrcPath)/UIKit3/UIUtilities.m
+PrefTarget=../deb/Library/iKeyEx/Keyboards/5RowQWERTY.keyboard/Preferences.bundle/5RowQWERTY
+PrefOptions=-framework Preferences -framework CoreGraphics -framework WebKit -bundle
+
+all:	$(LayoutTarget) $(PrefTarget)
+
+$(LayoutTarget):	$(LayoutSources)
+	$(Compiler) $(Options) $(LayoutOptions) -o $@ $^
+	$(CodeSign) $@
+
+$(PrefTarget):	$(PrefSources)
+	$(Compiler) $(Options) $(PrefOptions) -o $@ $^
 	$(CodeSign) $@
 
 clean:
