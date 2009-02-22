@@ -444,7 +444,8 @@ else \
 			SetObj(deleteKeyRight, float, 0);
 			SetObj(deleteKeyWidth, float, ShiftDeleteDefaultWidth);
 			if (landscape) {
-				deleteKeyRight = LandscapeMargin/2 + deleteKeyRight * Ratio;
+				// "-1" as workaround for issue 61.
+				deleteKeyRight = LandscapeMargin + deleteKeyRight * Ratio - 1;
 				deleteKeyWidth *= Ratio;
 			}
 			SetObj(deleteKeyRow, integer, rows-2);
@@ -467,7 +468,8 @@ else \
 
 @dynamic shiftRect, deleteRect;
 -(CGRect)shiftRect {
-	return CGRectIntegral(CGRectMake(shiftKeyLeft, verticalOffset+shiftKeyRow*(keyHeight+verticalSpacing),
+	// "-1" as workaround for issue 61.
+	return CGRectIntegral(CGRectMake(shiftKeyLeft, verticalOffset+shiftKeyRow*(keyHeight+verticalSpacing)-(landscape?0:1),
 									 shiftKeyWidth, keyHeight));
 }
 -(CGRect)deleteRect {
