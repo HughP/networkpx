@@ -1,0 +1,20 @@
+{
+	title = Troubleshooting;
+	items = (
+		{ cell = PSGroupCell; },
+		{ cell = PSButtonCell;
+			label = "Fix permissions";
+			action = "chmod";
+		},
+		{ cell = PSGroupCell; },
+		{ cell = PSButtonCell;
+			label = "Clear image cache";
+			action = "clearImageCache";
+		},
+		{ cell = PSGroupCell; },
+		{ cell = PSButtonCell;
+			label = "Uninstall iKeyEx";
+			action = "gotoCydiaPackage";
+		},
+	);
+}
