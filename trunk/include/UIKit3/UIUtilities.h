@@ -1,6 +1,6 @@
 /*
  
- CMLSelection.h ... Set selection to a UIKeyboardInput.
+ GraphicsUtilities.h ... Convenient functions for UI elements
  
  Copyright (c) 2009, KennyTM~
  All rights reserved.
@@ -30,14 +30,44 @@
  
  */
 
-#import <Foundation/NSRange.h>
+#import <Foundation/NSObject.h>
+#import <CoreGraphics/CGGeometry.h>
+@class UIView, NSString, UIWebDocumentView;
 
-@class NSObject;
-@protocol UIKeyboardInput;
+// Log UIView Hierarchy (downwards/upwards) with NSLog.
+void UILogViewHierarchy (UIView* v);
+void UILogSuperviews (UIView* v);
 
+// Get title of UIView for debugging.
+NSString* UITextOf(UIView* v);
 
-void setSelection(NSObject<UIKeyboardInput>* del, NSRange newRange);
-void setSelectionToCurrentDelegate(NSRange newRange);
+@interface UIWebTexts : NSObject {
+	NSString* text;
+	NSString* linkLabel;
+	NSString* URL;
+	NSString* alt;
+	NSString* imageURL;
+	NSString* title;
+	UIView* view;
+	CGRect rect;
+	int userInfo;
+}
+@property(retain) NSString* text;
+@property(retain) NSString* linkLabel;
+@property(retain) NSString* URL;
+@property(retain) NSString* alt;
+@property(retain) NSString* imageURL;
+@property(retain) NSString* title;
+@property(assign) UIView* view;
+@property(assign) CGRect rect;
+@property(assign) int userInfo;
+-(void)dealloc;
+-(NSString*)description;
+@end
 
-NSRange getSelection(NSObject<UIKeyboardInput>* del, NSString** selectedText);
-NSRange getSelectionFromCurrentDelegate(NSString** selectedText);
+// Get texts with extended information at point.
+// Primarily used for UIWebDocumentView
+UIWebTexts* UITextsAtPoint(UIView* view, CGPoint pt);
+
+// Get localized string
+NSString* UILocalizedString(const char* str);

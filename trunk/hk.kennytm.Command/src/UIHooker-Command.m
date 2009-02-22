@@ -1,6 +1,6 @@
 /*
  
- CMLSelection.h ... Set selection to a UIKeyboardInput.
+ UIHooker-Command.m ... UIKit Hooker for ⌘.
  
  Copyright (c) 2009, KennyTM~
  All rights reserved.
@@ -30,14 +30,26 @@
  
  */
 
-#import <Foundation/NSRange.h>
+#import <substrate.h>
+#import <UIKit/UIKit.h>
 
-@class NSObject;
-@protocol UIKeyboardInput;
+#define MSHookFunc(sym) MSHookFunction(&sym, &$##sym, (void**)&_##sym)
+#define MSHookMsg(clsName, sele) MSHookMessage([clsName class], @selector(sele), [clsName##Hooked instanceMethodForSelector:@selector(sele)], "old_")
 
+@interface UILabelHooked : UILabel {}
+@end
+@implementation UILabelHooked
+-(void)setUserInteractionEnabled:(BOOL)enabled {
+	NSLog(@">>%@", self);
+	[self old_setUserInteractionEnabled:YES];
+}
+-(void)touchesBegan:(id)touches withEvent:(id)event {
+	NSLog(@">%@", self);
+	[self old_touchesBegan:touches withEvent:event];
+}
+@end
 
-void setSelection(NSObject<UIKeyboardInput>* del, NSRange newRange);
-void setSelectionToCurrentDelegate(NSRange newRange);
-
-NSRange getSelection(NSObject<UIKeyboardInput>* del, NSString** selectedText);
-NSRange getSelectionFromCurrentDelegate(NSString** selectedText);
+void init () {
+	MSHookMsg(UILabel, touchesBegan:withEvent:);
+	MSHookMsg(UILabel, setUserInteractionEnabled:);
+}

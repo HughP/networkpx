@@ -1,6 +1,6 @@
 /*
  
- CMLSelection.h ... Set selection to a UIKeyboardInput.
+ UIActionSheetPro.h ... More flexible UIActionSheet
  
  Copyright (c) 2009, KennyTM~
  All rights reserved.
@@ -30,14 +30,26 @@
  
  */
 
-#import <Foundation/NSRange.h>
+#import <Foundation/NSObject.h>
+#import <UIKit/UIAlert.h>
+@class NSString, NSMutableArray, UIImage, UIButton, UIWebTexts, UIView;
 
-@class NSObject;
-@protocol UIKeyboardInput;
+// Note: Although UIActionSheetPro inherits from UIActionSheet, 
+//       you should *not* call any standard messages.
+@interface UIActionSheetPro : UIActionSheet {
+	BOOL isLandscape;
+	NSUInteger rows;
+	NSMutableArray** buttons;
+	UIView* buttonsGroup;
+	NSUInteger* cancelButtonsCount;
+}
+-(id)initWithNumberOfRows:(NSUInteger)rows;
+-(UIButton*)addButtonAtRow:(NSUInteger)row withTitle:(NSString*)title image:(UIImage*)image destructive:(BOOL)destructive cancel:(BOOL)cancel;
+-(void)showWithWebTexts:(UIWebTexts*)texts inView:(UIView*)view;
+@end
 
-
-void setSelection(NSObject<UIKeyboardInput>* del, NSRange newRange);
-void setSelectionToCurrentDelegate(NSRange newRange);
-
-NSRange getSelection(NSObject<UIKeyboardInput>* del, NSString** selectedText);
-NSRange getSelectionFromCurrentDelegate(NSString** selectedText);
+// overloaded private methods.
+@interface UIActionSheetPro()
+-(void)layout;
+-(void)_createTitleLabelIfNeeded;
+@end
