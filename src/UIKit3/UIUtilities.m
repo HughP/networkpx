@@ -39,6 +39,7 @@
 #import <UIKit2/UIPickerTable.h>
 #import <UIKit2/DOMNode-UIWebViewAdditions.h>
 #import <WebKit/mac/Misc/WebLocalizableStrings.h>
+#import <UIKit/UIGeometry.h>
 
 static WebLocalizableStringsBundle UIKitLocalizableStringsBundle = {"com.apple.UIKit", nil};
 

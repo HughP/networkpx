@@ -132,5 +132,9 @@
 		texts = ("=Numbers", "=Numbers", "=Numbers", "=Numbers", (" ", ".", "@"));
 		hasSpaceKey = NO;
 	};
+
+	// Any non-standard keys will be ignored.
+	// Therefore, I here abuse the layout.plist to store the preferences as well.
+	layout = QWERTY;
 }
 

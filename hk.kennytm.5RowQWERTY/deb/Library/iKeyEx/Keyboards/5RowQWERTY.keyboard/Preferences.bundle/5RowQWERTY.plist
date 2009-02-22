@@ -1,0 +1,38 @@
+{
+	title = "5-Row QWERTY";
+	items = (
+		{ cell = PSGroupCell; },
+		{ cell = PSLinkListCell;
+			detail = PSListItemsController;
+			label = "Layout";
+			validValues = (QWERTY, QWERTZ, QZERTY, AZERTY);
+			validTitles = (QWERTY, QWERTZ, QZERTY, AZERTY);
+			id = "layout";
+			default = QWERTY;
+			get = "getLayout";
+			set = "setLayout:";
+		},
+		{ cell = PSLinkCell;
+			label = "Special characters";
+			detail = PSDetailController;
+			pane = SpecialCharactersPane;
+		},
+		{ cell = PSGroupCell; },
+		{ cell = PSLinkListCell;
+			detail = PSListItemsController;
+			label = "Auto-Correction";
+			valuesDataSource = "getIMEs";
+			titlesDataSource = "getIMETitles";
+			id = "IME";
+			default = "en_US";
+			get = "getInputManager";
+			set = "setInputManager:";
+		},
+		{ cell = PSGroupCell; },
+		{ cell = PSButtonCell;
+			action = "clearCache";
+			label = "Clear layout cache";
+			id = clearCache;
+		},
+	);
+}

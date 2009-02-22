@@ -37,22 +37,43 @@
 #import <UIKit3/UIActionSheetPro.h>
 #import <UIKit/UIKit.h>
 
+@interface UIGlassButton : UIButton @end
+
+
 @implementation CMLCommandlet
++(void)dismissWithButton:(UIButton*)btn {
+	NSLog(@"%@", [btn currentTitle]);
+}
+
 +(void)showActionMenuForWebTexts:(UIWebTexts*)txts {
-	UIActionSheetPro* sheet = [[UIActionSheetPro alloc] initWithNumberOfRows:3];
-	sheet.title = [txts description];
+	UIActionSheet* sheet = [[UIActionSheet alloc] initWithTitle:@"\n\n\n\n\n\n"
+													   delegate:nil
+											  cancelButtonTitle:@"Cancel"
+										 destructiveButtonTitle:nil
+											  otherButtonTitles:@"Unicode", nil];
+	wchar_t symbols[] = L"!@#$%^&*()`~-=[]\\;',./«»_+{}|:\"<>?¿¡•€£¥₩¢°±µ½§␀";
+	NSUInteger width = 320/12, height = 28;
+	NSUInteger left0 = (320 - width*12)/2;
+	NSUInteger left = left0;
+	NSUInteger top = 0;
+	UIView* glassButtonsContainer = [[UIView alloc] initWithFrame:CGRectMake(0, 10, width*12, height*4)];
+	for (wchar_t* c = symbols; *c != '\0'; ++ c) {
+		UIButton* btn = [[UIButton alloc] initWithFrame:CGRectMake(left, top, width, height)];
+		[btn setTitle:[NSString stringWithCharacters:(unichar*)c length:1] forState:UIControlStateNormal];
+		btn.showsTouchWhenHighlighted = YES;
+		[btn setTitleColor:[UIColor blackColor] forState:UIControlStateHighlighted];
+		[btn addTarget:self action:@selector(dismissWithButton:) forControlEvents:UIControlEventTouchUpInside];
+		[glassButtonsContainer addSubview:btn];
+		[btn release];
+		left += width;
+		if (left >= width*12) {
+			left = left0;
+			top += height;
+		}
+	}
+	[sheet addSubview:glassButtonsContainer];
 	
-	[sheet addButtonAtRow:0 withTitle:@"Cut" image:nil destructive:NO cancel:NO];
-	[sheet addButtonAtRow:0 withTitle:@"Copy" image:nil destructive:NO cancel:NO];
-	[sheet addButtonAtRow:0 withTitle:@"Paste" image:nil destructive:NO cancel:NO];
-	[sheet addButtonAtRow:1 withTitle:@"Google" image:nil destructive:YES cancel:NO];
-	[sheet addButtonAtRow:1 withTitle:@"Twitter" image:nil destructive:NO cancel:NO];
-	[sheet addButtonAtRow:1 withTitle:@"翻譯" image:nil destructive:NO cancel:NO];
-	[sheet addButtonAtRow:2 withTitle:@"Undo" image:nil destructive:NO cancel:NO];
-	[sheet addButtonAtRow:2 withTitle:@"Redo" image:nil destructive:NO cancel:NO];
-	[sheet addButtonAtRow:2 withTitle:@"Cancel" image:nil destructive:NO cancel:YES];
-	
-	[sheet showWithWebTexts:txts inView:[txts.view.window.subviews objectAtIndex:0]];
+	[sheet showInView:[txts.view.window.subviews objectAtIndex:0]];
 	
 	UILogViewHierarchy(sheet);
 	[sheet release];
