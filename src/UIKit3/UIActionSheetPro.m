@@ -37,6 +37,7 @@
 #import <UIKit/UIKit.h>
 #import <objc/runtime.h>
 #import <UIKit3/UIUtilities.h>
+#import <GraphicsUtilities.h>
 
 #define SPACING 7
 #define PADDING SPACING
@@ -161,26 +162,36 @@ UIButton* UIActionSheetButton(NSString* title, UIImage* image, BOOL destructive,
 
 -(void)showWithWebTexts:(UIWebTexts*)texts inView:(UIView*)view {
 	self.title = [texts description];
-	CGRect viewBounds = view.bounds;
-	if (UIDeviceOrientationIsLandscape([self _currentOrientation])) {
-		CGFloat tmp = viewBounds.size.width;
-		viewBounds.size.width = viewBounds.size.height;
-		viewBounds.size.height = tmp;
-	}
-	UIGraphicsBeginImageContext(viewBounds.size);
-	CGContextRef c = UIGraphicsGetCurrentContext();
-	UIColor* bgColor = [UIColor colorWithWhite:0 alpha:0.5f];
-	[bgColor setFill];
-	CGContextFillRect(c, viewBounds);
-	/*if (isLandscape) {
-		CGContextConcatCTM(c, CGAffineTransformMake(0, 1, 1, 0, 0, 0));
-	}*/
-	CGContextClearRect(c, CGRectInset(texts.rect, -2, -2));
-	UIImageView* v = [[UIImageView alloc] initWithImage:UIGraphicsGetImageFromCurrentImageContext()];
-	UIGraphicsEndImageContext();
-	[self setDimView:v];
-	[v release];
+	[self setDimView:UIDimViewWithHole(texts.rect)];
 	[super showInView:view];
 }
 
 @end
+
+
+
+extern UIView* UIDimViewWithHole(CGRect holeRect) {
+	CGRect viewBounds = [UIScreen mainScreen].applicationFrame;
+	CGPoint viewOrigin = viewBounds.origin;
+	viewBounds.size.width += viewOrigin.x;
+	viewBounds.size.height += viewOrigin.y;
+	viewBounds.origin = CGPointZero;
+	CGRect adjustedHoleRect = holeRect;
+	adjustedHoleRect.origin.x += viewOrigin.x;
+	adjustedHoleRect.origin.y += viewOrigin.y;
+	adjustedHoleRect = CGRectInset(adjustedHoleRect, -2, -2);
+	UIGraphicsBeginImageContext(viewBounds.size);
+	CGContextRef c = UIGraphicsGetCurrentContext();
+	[[UIColor colorWithWhite:0 alpha:0.5f] setFill];
+	CGContextFillRect(c, CGRectMake(0, 0, viewBounds.size.width, viewBounds.size.height));
+	CGPathRef path = GUPathCreateRoundRect(adjustedHoleRect, 2);
+	CGContextAddPath(c, path);
+	[[UIColor clearColor] setFill];
+	CGContextSetBlendMode(c, kCGBlendModeCopy);
+	CGContextFillPath(c);
+	UIImageView* v = [[[UIImageView alloc] initWithImage:UIGraphicsGetImageFromCurrentImageContext()] autorelease];
+	v.frame = viewBounds;
+	CGPathRelease(path);
+	UIGraphicsEndImageContext();
+	return v;
+}

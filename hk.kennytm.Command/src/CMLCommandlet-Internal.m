@@ -36,8 +36,26 @@
 #import <UIKit3/UIUtilities.h>
 #import <UIKit3/UIActionSheetPro.h>
 #import <UIKit/UIKit.h>
+#import <icu/unicode/uchar.h>
+#import <UIKit3/UIBigCharacterHUD.h>
+
 
 @interface UIGlassButton : UIButton @end
+
+NSString* unicodeDescription(unichar c) {
+	UErrorCode err = U_ZERO_ERROR;
+	int32_t charlen = u_charName(c, U_UNICODE_CHAR_NAME, NULL, 0, &err);
+	err = U_ZERO_ERROR;
+	char* buffer = malloc(charlen+1);
+	u_charName(c, U_UNICODE_CHAR_NAME, buffer, charlen, &err);
+	
+	NSLog(@"%s", u_errorName(err));
+	
+	NSString* resstr = [[[NSString stringWithUTF8String:buffer] capitalizedString] stringByAppendingFormat:@" (U+%04X)", c];
+	free(buffer);
+	
+	return resstr;
+}
 
 
 @implementation CMLCommandlet
@@ -46,11 +64,19 @@
 }
 
 +(void)showActionMenuForWebTexts:(UIWebTexts*)txts {
-	UIActionSheet* sheet = [[UIActionSheet alloc] initWithTitle:@"\n\n\n\n\n\n"
+	UIBigCharacterHUD* hud = [[UIBigCharacterHUD alloc] initWithFrame:CGRectMake(8, -200, 144, 100)];
+	hud.title = @"#";
+	hud.message = unicodeDescription(L'#');
+	
+	NSLog(@"%@", NSStringFromCGRect([UIScreen mainScreen].applicationFrame));
+	
+	UIActionSheet* sheet = [[UIActionSheetPro alloc] initWithTitle:@"\n\n\n\n\n\n"
 													   delegate:nil
 											  cancelButtonTitle:@"Cancel"
 										 destructiveButtonTitle:nil
 											  otherButtonTitles:@"Unicode", nil];
+	[sheet addSubview:hud];
+	[hud release];
 	wchar_t symbols[] = L"!@#$%^&*()`~-=[]\\;',./«»_+{}|:\"<>?¿¡•€£¥₩¢°±µ½§␀";
 	NSUInteger width = 320/12, height = 28;
 	NSUInteger left0 = (320 - width*12)/2;
@@ -73,9 +99,9 @@
 	}
 	[sheet addSubview:glassButtonsContainer];
 	
-	[sheet showInView:[txts.view.window.subviews objectAtIndex:0]];
+	[sheet showWithWebTexts:nil inView:[txts.view.window.subviews objectAtIndex:0]];
 	
-	UILogViewHierarchy(sheet);
+	//UILogViewHierarchy(sheet);
 	[sheet release];
 }
 @end;

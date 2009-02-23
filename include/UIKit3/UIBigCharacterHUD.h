@@ -1,6 +1,6 @@
 /*
  
- UIActionSheetPro.h ... More flexible UIActionSheet
+ UIBigCharacterHUD.h ... HUD with a big character and a message.
  
  Copyright (c) 2009, KennyTM~
  All rights reserved.
@@ -30,29 +30,12 @@
  
  */
 
-#import <Foundation/NSObject.h>
-#import <UIKit/UIAlert.h>
-@class NSString, NSMutableArray, UIImage, UIButton, UIWebTexts, UIView;
+#import <UIKit/UIView.h>
 
-// Note: Although UIActionSheetPro inherits from UIActionSheet, 
-//       you should *not* call any standard messages.
-@interface UIActionSheetPro : UIActionSheet {
-	BOOL isLandscape;
-	NSUInteger rows;
-	NSMutableArray** buttons;
-	UIView* buttonsGroup;
-	NSUInteger* cancelButtonsCount;
+@interface UIBigCharacterHUD : UIView {
+	UILabel* messageLabel, *titleLabel;
 }
--(id)initWithNumberOfRows:(NSUInteger)rows;
--(UIButton*)addButtonAtRow:(NSUInteger)row withTitle:(NSString*)title image:(UIImage*)image destructive:(BOOL)destructive cancel:(BOOL)cancel;
--(void)showWithWebTexts:(UIWebTexts*)texts inView:(UIView*)view;
+@property(retain) NSString* message;
+@property(retain) NSString* title;
+-(id)initWithFrame:(CGRect)frm;
 @end
-
-// overloaded private methods.
-@interface UIActionSheetPro()
--(void)layout;
--(void)_createTitleLabelIfNeeded;
-@end
-
-// Convenient data even if you don't use UIActionSheetPro
-UIView* UIDimViewWithHole(CGRect holeRect);
