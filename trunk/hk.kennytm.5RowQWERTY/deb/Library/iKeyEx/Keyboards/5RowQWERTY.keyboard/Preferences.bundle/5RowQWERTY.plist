@@ -5,17 +5,19 @@
 		{ cell = PSLinkListCell;
 			detail = PSListItemsController;
 			label = "Layout";
-			validValues = (QWERTY, QWERTZ, QZERTY, AZERTY);
-			validTitles = (QWERTY, QWERTZ, QZERTY, AZERTY);
+			validValues = (QWERTY, QWERTZ, QZERTY, AZERTY, Russian, Ukrainian, Greek, Colemak, ABCDEF);
+			validTitles = (QWERTY, QWERTZ, QZERTY, AZERTY, "Русский", "Українська", "Eλληνικά", Colemak, ABCDEF);
 			id = "layout";
 			default = QWERTY;
-			get = "getLayout";
+			get = "layout";
 			set = "setLayout:";
 		},
 		{ cell = PSLinkCell;
 			label = "Special characters";
 			detail = PSDetailController;
 			pane = SpecialCharactersPane;
+			get = "specialCharacters";
+			set = "setSpecialCharacters:";
 		},
 		{ cell = PSGroupCell; },
 		{ cell = PSLinkListCell;
@@ -25,7 +27,7 @@
 			titlesDataSource = "getIMETitles";
 			id = "IME";
 			default = "en_US";
-			get = "getInputManager";
+			get = "inputManager";
 			set = "setInputManager:";
 		},
 		{ cell = PSGroupCell; },

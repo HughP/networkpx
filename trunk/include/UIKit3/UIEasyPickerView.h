@@ -1,6 +1,6 @@
 /*
  
- UIActionSheetPro.h ... More flexible UIActionSheet
+ UIEasyPickerView.h ... Picker view with a static array as delegate & data source.
  
  Copyright (c) 2009, KennyTM~
  All rights reserved.
@@ -30,29 +30,14 @@
  
  */
 
-#import <Foundation/NSObject.h>
-#import <UIKit/UIAlert.h>
-@class NSString, NSMutableArray, UIImage, UIButton, UIWebTexts, UIView;
+#import <UIKit/UIPickerView.h>
 
-// Note: Although UIActionSheetPro inherits from UIActionSheet, 
-//       you should *not* call any standard messages.
-@interface UIActionSheetPro : UIActionSheet {
-	BOOL isLandscape;
-	NSUInteger rows;
-	NSMutableArray** buttons;
-	UIView* buttonsGroup;
-	NSUInteger* cancelButtonsCount;
+@interface UIEasyPickerView : UIPickerView<UIPickerViewDataSource,UIPickerViewDelegate> {
+	NSMutableArray* components;
+	id delegate;
+	SEL action;
 }
--(id)initWithNumberOfRows:(NSUInteger)rows;
--(UIButton*)addButtonAtRow:(NSUInteger)row withTitle:(NSString*)title image:(UIImage*)image destructive:(BOOL)destructive cancel:(BOOL)cancel;
--(void)showWithWebTexts:(UIWebTexts*)texts inView:(UIView*)view;
+-(id)initWithComponents:(NSArray*)comps, ... NS_REQUIRES_NIL_TERMINATION;
+-(void)dealloc;
+-(void)registerSelectionMonitor:(id)delegate action:(SEL)selector;
 @end
-
-// overloaded private methods.
-@interface UIActionSheetPro()
--(void)layout;
--(void)_createTitleLabelIfNeeded;
-@end
-
-// Convenient data even if you don't use UIActionSheetPro
-UIView* UIDimViewWithHole(CGRect holeRect);

@@ -66,13 +66,29 @@ static int translateString (NSString* key) {
 
 static NSString* referedKeyOf(NSString* key) { return referedKey[translateString(key)]; }
 
+static BOOL betterDontCapitalize(unichar c) {
+	switch (c) {
+		case L'ß':
+		case L'ĸ':
+		case L'ſ':
+		case L'ς':
+		case L'ϑ':
+		case L'ϕ':
+		case L'ϖ':
+		case L'ϗ':
+			return YES;
+		default:
+			return NO;
+	}
+}
+
 static NSArray* tryUppercase(NSString* key, NSArray* srcArr) {
 	if (srcArr == nil)
 		return nil;
 	if (keyRequiresUppercase[translateString(key)]) {
 		NSMutableArray* retArr = [[NSMutableArray alloc] init];
 		for (NSString* s in srcArr) {
-			if ([s length] == 1)
+			if ([s length] == 1 && !betterDontCapitalize([s characterAtIndex:0]))
 				[retArr addObject:[s uppercaseString]];
 			else
 				[retArr addObject:s];
