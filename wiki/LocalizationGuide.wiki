@@ -24,7 +24,7 @@ The _lproj_'s are located in `/svn/trunk/hk.kennytm.iKeyEx/deb/System/Library/Pr
 || iKeyEx Keyboards                || ✓    ||      || ✓    || ✓    || ✓   || ✓    || ✓    || ✓   ||
 || Other Built-in Keyboards        || ✓    ||      || ✓    || ✓    || ✓   || ✓    || ✓    || ✓   ||
 || Clear layout cache              || ✓    ||      || ✓    || ✓    || ✓   || ✓    || ✓    ||      ||
-|| Clear lookup cache (!WordTrie)  || ✓    ||      || ✓    || ✓    || ✓   || ✓    ||      ||      ||
+|| Clear lookup cache (!WordTrie)  || ✓    ||      || ✓    || ✓    || ✓   || ✓    || ✓    ||      ||
 || Clear image cache               || ✓    ||      || ✓    || ✓    || ✓   || ✓    || ✓    ||      ||
 <wiki:comment>
 || `CLEAR_IMAGE_CACHE_DESCRIPTION` || ✓    ||      || ✓    || ✓    ||     || ✓    || ✓    ||      ||
