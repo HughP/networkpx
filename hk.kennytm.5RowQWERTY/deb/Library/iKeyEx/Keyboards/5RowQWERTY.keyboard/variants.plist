@@ -2,6 +2,9 @@
 ".com" = (".com", ".org", ".edu", ".net");
 "." = (".", ".com", ".org", ".edu", ".net");
 
+// Suggestion by Scott Phillips
+1 = (1, ",", ".", "?", "!", "-", ":", ";", "/", "\"");
+
 // Support for Currency symbols
 "$" = ("$", "€", "£", "¥", "₩", "¢");
 "€" = ("€", "$", "£", "¥", "₩", "¢");
@@ -10,7 +13,7 @@
 "₩" = ("₩", "$", "€", "£", "¥", "¢");
 "¢" = ("¢", "$", "€", "£", "¥", "₩");
 
-// Support for Russian & Ukraine
+// Support for Russian & Ukrainian
 "е" = ("е", "ё");
 "ь" = ("ь", "ъ");
 "г" = ("г", "ґ");
