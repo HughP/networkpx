@@ -235,10 +235,11 @@ static UIColor* translucentBlackColor = nil;	// bb468;
 }}}
 
 == UIKeyboardInputManager_ja_JP ==
-=== `-[UIKeyboardInputManager_ja_JP init]` ===
 {{{
 static BOOL imageMapInitialized = NO;  // bb584
 static void* images = NULL;            // 9f588
+
+@implementation UIKeyboardInputManager_ja_JP
 
 -(id)init {
  	if ((self = [super init])) {
@@ -260,19 +261,13 @@ static void* images = NULL;            // 9f588
 
  	return self;
 }
-}}}
 
-=== `-[UIKeyboardInputManager_ja_JP initImplementation]` ===
-{{{
 -(KBInputManager*)initImplementation {
 	if (self->m_impl == NULL)
 		self->m_impl = new KBInputManagerAlphabet;
 	return self->m_impl;
 }
-}}}
 
-=== `-[UIKeyboardInputManager_ja_JP dealloc]` ===
-{{{
 -(void)dealloc {
 	*(BOOL*)0xBB58C = NO;
 
@@ -296,10 +291,7 @@ static void* images = NULL;            // 9f588
 
 	[super dealloc];
 }
-}}}
 
-=== `-[UIkeyboardInputManager_ja_JP addInput:flags:point:]` ===
-{{{
 -(void)addInput:(NSString*)input flags:(unsigned)flags point:(CGPoint)pt {
 	if ([UIKeyboardImpl sharedInstance].shouldSkipCandidateSelection)
 		return;
@@ -314,4 +306,46 @@ static void* images = NULL;            // 9f588
 	self->_EXPECT_CALL_TO_ADDINPUT = NO;
 	[self _addInput:input flags:flags point:pt];
 }
+
+-(void)addInputObject:(InputObject_ja_JP*)obj {
+	if ([UIKeyboardImpl sharedInstance].shouldSkipCandidateSelection)
+		return;
+
+	[[UIKeyboardImpl sharedInstance] acceptCurrentCandidateIfSelected];
+
+	if ([obj afterDelete]) {
+		self->_activeCharacterLength = 1;
+	}
+
+	if (self->_activeCharacterLength != 0) {
+		if (![obj confirmCurrent]) {
+			for (NSUInteger i = 0; i < self->_activeCharacterLength; ++i)
+				[self deleteFromInput];
+		}
+		self->_activeCharacterLength = 0;
+	}
+
+	NSString* str = [obj string];
+	NSUInteger strLength = [str length];
+
+	if (str != nil && strLength != 0) {
+		if (obj.active)
+			self->_activeCharacterLength = strLength;
+	}
+	self->_EXPECT_CALL_TO_ADDINPUT = YES;
+}
+
+-(void)_addInput:(NSString*)input flags:(unsigned)flags point:(CGPoint)pt {
+	[self _cancelCandidatesThread];
+	[super addInput:input flags:0 point:CGPointZero];
+}
+
+-(void)setInput:(id)input {
+	[self _cancelCandidatesThread];
+	self->_activeCharacterLength = 0;
+}
+
+-(void)setInputIndex:(NSUInteger)idx {}
+
+@end
 }}}
