@@ -233,3 +233,31 @@ static UIColor* translucentBlackColor = nil;	// bb468;
 	[self.window _setMouseDownView:self->m_accentedKeyView withEvent:nil];
 }
 }}}
+
+== UIKeyboardInputManager_ja_JP ==
+=== `-[UIKeyboardInputManager_ja_JP init]` ===
+{{{
+static BOOL imageMapInitialized = NO;
+static void* images = NULL;
+
+-(id)init {
+ 	if ((self = [super init])) {
+
+		if (!imageMapInitialized) {
+
+			NSString* bundlePath = [[NSBundle bundleForClass:[UIKeyboardInputManager_ja_JP class]] bundlePath];
+			NSString* bundleName = [[bundlePath lastPathComponent] stringByDeletingPathExtension];
+			NSString* artworkPath = [bundlePath stringByAppendingPathComponent:[bundleName stringByAppendingPathExtension:@"artwork"]];
+
+			UIRegisterMappedImageSetInDomain(images, artworkPath, bundlePath);
+			imageMapInitialized = YES;
+		}
+
+		self.calculatesChargedKeyProbabilities = YES;
+		self.usesCandidateSelection = YES;
+
+	}
+
+ 	return self;
+}
+}}}
