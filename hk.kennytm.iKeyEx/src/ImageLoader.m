@@ -41,7 +41,25 @@
 #include <stdlib.h>
 #include <GraphicsUtilities.h>
 
-//static NSMutableDictionary* cache;
+
+
+static BOOL cacheReleased = YES;
+@interface CacheWatcher : NSObject {}
+-(id)init;
+-(void)dealloc;
+@end
+@implementation CacheWatcher
+-(id)init {
+	cacheReleased = NO;
+	return [super init];
+}
+-(void)dealloc {
+	cacheReleased = YES;
+	[super dealloc];
+}
+@end
+
+static NSMutableDictionary* cache = nil;
 static NSMutableDictionary* brightnesses = nil;
 
 //------------------------------------------------------------------------------
@@ -620,6 +638,18 @@ UIImage* UIKBGetImage(UIKBImageClassType type, UIKeyboardAppearance appearance, 
 	if (appearance == UIKeyboardAppearanceAlert)
 		actualType |= UIKBImageWithTransparent;
 
-	// prefer file cache over memory cache.
-	return constructImage(actualType);
+	if (cacheReleased) {
+		[[[CacheWatcher alloc] init] autorelease];
+		cache = [[[NSMutableDictionary alloc] init] autorelease];
+	}
+	
+	NSNumber* num = [NSNumber numberWithInteger:actualType];
+	UIImage* retimg = [cache objectForKey:num];
+	
+	if (retimg == nil) {
+		retimg = constructImage(actualType);
+		[cache setObject:retimg forKey:num];
+	}
+	
+	return retimg;
 }
