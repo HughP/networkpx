@@ -1,6 +1,6 @@
 #summary Decompilation of some functions.
 
-<wiki:toc/>
+<wiki:toc />
 
 = UIKit =
 
@@ -159,4 +159,77 @@ static CGImageRef _UIImageRefAtPath(CFStringRef path, bool shouldCache, int* pOr
 	}
 }
 #undef LOCALIZE
+}}}
+
+= !TextInput_ja =
+== UIKeyboardLayoutQWERTY_ja_JP_landscape ==
+=== `-[UIKeyboardLayoutQWERTY_ja_JP_landscape longPressAction]` ===
+{{{
+-(void)longPressAction {
+	UIKeyDefinition* keyDef = [self activeKey];
+
+	if (keyDef == nil)
+		return;
+
+	if (![self isLongPressedKey:keyDef])
+		return;
+
+	self->m_didLongPress = YES;
+
+	if ([self downActionFlagsForKey:keyDef] < 0) {
+		[self showPopupVariantsForKey:keyDef];
+	} else
+		[super longPressAction];
+}
+}}}
+
+=== `-[UIKeyboardLayoutQWERTY_ja_JP_landscape showPopupVariantsForKey:]` ===
+{{{
+static UIColor* translucentBlackColor = nil;	// bb468;
+
+// ...
+
+-(void)showPopupVariantsForKey:(UIKeyDefinition*)keyDef {
+	if (keyDef == NULL)
+		return;
+		
+	if ([self downActionFlagsForKey:keyDef] >= 0) {
+		[super showPopupVariantsForKey:keyDef];
+		return;
+	}
+
+	if (translucentBlackColor == nil) {
+		translucentBlackColor = [[UIColor alloc] initWithRed:0 green:0 blue:0 alpha:0.15f];
+	}	
+
+	[self->m_accentedKeyView removeFromSuperview];
+
+	NSString* inputString = [self inputStringForKey:keyDef];
+	UIKeyboardImpl* impl = [UIKeyboardImpl sharedInstance];
+	
+	NSDictionary* fullWidthVariants = UIKeyboardFullwidthVariants(inputString);
+	if (fullWidthVariants == nil)
+		return;
+
+	[impl removeAutocorrectPrompt];
+	[self deactivateActiveKeys];
+
+	NSArray* strings = [fullWidthVariants objectForKey:@"Strings"];	// r4
+	NSArray* keycaps = [fullWidthVariants objectForKey:@"Keycaps"];	// r8
+	NSString* popup = [fullWidthVariants objectForKey:@"Popup"];	// r5
+
+	if ( (keycaps == nil && strings == nil) || popup == nil )
+		return;
+
+	NSMutableArray* newStrings = [[strings mutableCopy] autorelease];
+	[newStrings addObjectsFromArray:keycaps];
+
+	self->m_accentedKeyView = [[UIAccentedCharacterView alloc] initWithFrame:keyDef->accent_frame
+	                                                                variants:newStrings
+	                                                               expansion:[popup isEqualToString:@"left"]
+	                                                             orientation:[impl orientation]];
+	[self addSubview:self->m_accentedKeyView];
+	[self->m_accentedKeyView release];
+	[self.window _setMouseDownView:self->m_accentedKeyView withEvent:nil];
+}
 }}}
