@@ -122,7 +122,7 @@ static NSString* const Arrangements[][6] = {
 {@"й|ц|у|к|е|н|г|ш|щ|з|х", @"ф|ы|в|а|п|р|о|л|д|ж|э", @"я|ч|с|м|и|т|ь|б|ю", @"Й|Ц|У|К|Е|Н|Г|Ш|Щ|З|Х", @"Ф|Ы|В|А|П|Р|О|Л|Д|Ж|Э", @"Я|Ч|С|М|И|Т|Ь|Б|Ю"},
 {@"й|ц|у|к|е|н|г|ш|щ|з|х", @"ф|и|в|а|п|р|о|л|д|ж|є", @"я|ч|с|м|і|т|ь|б|ю", @"Й|Ц|У|К|Е|Н|Г|Ш|Щ|З|Х", @"Ф|И|В|А|П|Р|О|Л|Д|Ж|Є", @"Я|Ч|С|М|І|Т|Ь|Б|Ю"},
 {@";|ς|ε|ρ|τ|υ|θ|ι|ο|π", @"α|σ|δ|φ|γ|η|ξ|κ|λ", @"ζ|χ|ψ|ω|β|ν|μ", @":|^|Ε|Ρ|Τ|Υ|Θ|Ι|Ο|Π", @"Α|Σ|Δ|Φ|Γ|Η|Ξ|Κ|Λ", @"Ζ|Χ|Ψ|Ω|Β|Ν|Μ"},
-{@"q|w|f|p|g|j|l|u|y|,", @"a|r|s|t|d|h|n|e|i|o", @"z|x|c|v|b|k|m", @"Q|W|F|P|G|J|L|U|Y||", @"A|R|S|T|D|H|N|E|I|O", @"Z|X|C|V|B|K|M"},
+{@"q|w|f|p|g|j|l|u|y|,", @"a|r|s|t|d|h|n|e|i|o", @"z|x|c|v|b|k|m", @"Q|W|F|P|G|J|L|U|Y|,", @"A|R|S|T|D|H|N|E|I|O", @"Z|X|C|V|B|K|M"},
 {@"a|b|c|d|e|f|g|h|i|j", @"k|l|m|n|o|p|q|r|s", @"t|u|v|w|x|y|z", @"A|B|C|D|E|F|G|H|I|J", @"K|L|M|N|O|P|Q|R|S", @"T|U|V|W|X|Y|Z"}
 };
 
@@ -614,6 +614,14 @@ void clearCache () { system("/usr/bin/iKeyEx-KBMan purge 5RowQWERTY"); }
 	[layoutPlist writeToFile:LAYOUT_PATH atomically:NO];
 	
 	clearCache();
+}
+
+-(NSArray*)specialCharacters {
+	NSArray* shNums = [[[layoutPlist objectForKey:@"Alphabet"] objectForKey:@"shiftedTexts"] objectAtIndex:0];
+	if ([shNums isKindOfClass:[NSString class]])
+		shNums = [[shNums substringFromIndex:1] componentsSeparatedByString:[shNums substringToIndex:1]];
+	
+	
 }
 
 -(NSString*)inputManager { return [[infoPlist objectForKey:@"UIKeyboardInputManagerClass"] substringFromIndex:1] ?: @""; }

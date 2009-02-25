@@ -175,25 +175,6 @@
 }
 
 -(void)clearImageCache {
-	NSFileManager* man = [NSFileManager defaultManager];
-	NSString* oldPath = [man currentDirectoryPath];
-	[man changeCurrentDirectoryPath:iKeyEx_DataDirectory];
-	NSArray* files = [man contentsOfDirectoryAtPath:@"." error:NULL];
-	NSError* error = nil;
-	// check one by one if the file has the desired prefix. If yes, delete that file.
-	for (NSString* filename in files) {
-		if ([filename hasPrefix:iKeyEx_CachePrefix] && [@"png" isEqualToString:[filename pathExtension]]) {
-			if (![man removeItemAtPath:filename error:&error]) {
-				NSLog(@"Cannot remove %@ when clearing image cache: %@", filename, error);
-				error = nil;
-			}
-		}
-	}
-	if (![man removeItemAtPath:iKeyEx_InternalCachePath@"brightnesses.plist" error:&error]) {
-		NSLog(@"Cannot remove %@ when clearing image cache: %@", iKeyEx_InternalCachePath@"brightnesses.plist", error);
-		error = nil;
-	}
-	
-	[man changeCurrentDirectoryPath:oldPath];
+	system("/usr/bin/iKeyEx-KBMan purgeall");
 }
 @end

@@ -65,7 +65,7 @@ NSString* unicodeDescription(unichar c) {
 
 +(void)showActionMenuForWebTexts:(UIWebTexts*)txts {
 	UIBigCharacterHUD* hud = [[UIBigCharacterHUD alloc] initWithFrame:CGRectMake(8, -200, 144, 100)];
-	hud.title = @"#";
+	hud.title = [@"ß" uppercaseString];
 	hud.message = unicodeDescription(L'#');
 	
 	NSLog(@"%@", NSStringFromCGRect([UIScreen mainScreen].applicationFrame));
@@ -77,27 +77,7 @@ NSString* unicodeDescription(unichar c) {
 											  otherButtonTitles:@"Unicode", nil];
 	[sheet addSubview:hud];
 	[hud release];
-	wchar_t symbols[] = L"!@#$%^&*()`~-=[]\\;',./«»_+{}|:\"<>?¿¡•€£¥₩¢°±µ½§␀";
-	NSUInteger width = 320/12, height = 28;
-	NSUInteger left0 = (320 - width*12)/2;
-	NSUInteger left = left0;
-	NSUInteger top = 0;
-	UIView* glassButtonsContainer = [[UIView alloc] initWithFrame:CGRectMake(0, 10, width*12, height*4)];
-	for (wchar_t* c = symbols; *c != '\0'; ++ c) {
-		UIButton* btn = [[UIButton alloc] initWithFrame:CGRectMake(left, top, width, height)];
-		[btn setTitle:[NSString stringWithCharacters:(unichar*)c length:1] forState:UIControlStateNormal];
-		btn.showsTouchWhenHighlighted = YES;
-		[btn setTitleColor:[UIColor blackColor] forState:UIControlStateHighlighted];
-		[btn addTarget:self action:@selector(dismissWithButton:) forControlEvents:UIControlEventTouchUpInside];
-		[glassButtonsContainer addSubview:btn];
-		[btn release];
-		left += width;
-		if (left >= width*12) {
-			left = left0;
-			top += height;
-		}
-	}
-	[sheet addSubview:glassButtonsContainer];
+	
 	
 	[sheet showWithWebTexts:nil inView:[txts.view.window.subviews objectAtIndex:0]];
 	
