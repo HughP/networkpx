@@ -211,4 +211,12 @@ Class createSubclassCopy (Class superclass) {
 }
 
 
-extern NSString* iKeyExVersion () { return @"0.1-6"; }
+extern NSString* iKeyExVersion () { return @"0.1-7"; }
+
+extern void iKeyEx_KBMan(const char* restrict command, const char* restrict arg) {
+	pid_t forked_pid = fork();
+	if (forked_pid == 0) {
+		execl("/usr/bin/iKeyEx-KBMan", "iKeyEx-KBMan", command, arg, NULL);
+		exit(127);
+	}
+}

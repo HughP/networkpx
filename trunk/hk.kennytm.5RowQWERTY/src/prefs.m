@@ -229,11 +229,11 @@ typedef union UTF16Character {
 } UTF16Character;
 
 
-
+#include <errno.h>
 void clearCache () {
 	// purge only once.
 	if (cacheDirty) {
-		execl("/usr/bin/iKeyEx-KBMan", "purge", "5RowQWERTY");
+		iKeyEx_KBMan("purge", "5RowQWERTY");
 		cacheDirty = NO;
 	}
 }

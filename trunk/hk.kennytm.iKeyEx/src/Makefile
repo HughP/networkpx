@@ -51,7 +51,7 @@ KBManOptions=
 
 PrefPaneSources=PrefPane-iKeyEx.m
 PrefPaneTarget=$(iKeyExPrefPath)/iKeyEx
-PrefPaneOptions=-bundle -framework Preferences
+PrefPaneOptions=-bundle -framework Preferences -liKeyEx
 
 all: $(iKeyExTarget) $(PrefHookerTarget) $(SBHookerTarget) $(KBManTarget) $(PrefPaneTarget)
 

@@ -8,5 +8,5 @@ Maintainer: KennyTM~ <kennytm+5RowQWERTY@gmail.com>
 Author: KennyTM~ <kennytm+5RowQWERTY@gmail.com>
 Section: System
 Depends: hk.kennytm.iKeyEx (>=0.1-6)
-Installed-Size: 44
+Installed-Size: 148
 dev: kennytm

@@ -72,4 +72,8 @@ void playKeyboardSound();
 // Get version of this iKeyEx library.
 NSString* iKeyExVersion();
 
+
+// Run an iKeyEx-KBMan command
+void iKeyEx_KBMan(const char* restrict command, const char* restrict arg);
+
 #endif
