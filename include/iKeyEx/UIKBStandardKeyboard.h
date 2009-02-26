@@ -77,6 +77,7 @@ typedef enum UIKBShiftStyle {
 	BOOL hasSpaceKey, hasInternationalKey, hasReturnKey, hasShiftKey, hasDeleteKey;
 	CGFloat shiftKeyLeft, deleteKeyRight, shiftKeyWidth, deleteKeyWidth;
 	BOOL shiftKeyEnabled;
+	BOOL registersKeyCentroids, usesKeyCharges;
 	NSUInteger shiftKeyRow, deleteKeyRow;
 	UIKBShiftStyle shiftStyle;
 }
@@ -107,9 +108,12 @@ typedef enum UIKBShiftStyle {
 @property(assign,readonly) NSUInteger shiftKeyRow, deleteKeyRow;
 @property(assign,readonly) UIKBShiftStyle shiftStyle;
 
+@property(assign,readonly) BOOL registersKeyCentroids, usesKeyCharges;
+
 @property(assign,readonly) CGFloat keyHeight;
 @property(assign,readonly) CGFloat verticalSpacing;
 @property(assign,readonly) NSUInteger rows;
+
 -(NSUInteger)countAtRow:(NSUInteger)row;
 -(CGFloat)leftAtRow:(NSUInteger)row;
 -(CGFloat)rightAtRow:(NSUInteger)row;

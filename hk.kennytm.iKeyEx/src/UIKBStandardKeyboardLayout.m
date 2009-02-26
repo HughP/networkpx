@@ -132,9 +132,10 @@ static const GUCaps KeyCaps = {8,8,8,8};
 	[sl setImageView:image];
 	[sl setShiftImageView:shiftImage];
 	
-	[sl setRegistersKeyCentroids:YES];
-	[sl registerKeyCentroids];
-	[sl setUsesKeyCharges:YES];
+	[sl setRegistersKeyCentroids:keyboard->registersKeyCentroids];
+	if (keyboard->registersKeyCentroids)
+		[sl registerKeyCentroids];
+	[sl setUsesKeyCharges:keyboard->usesKeyCharges];
 	
 	NSString* baseName = landscape ? @"kb-std-landscape-active-bg-pop-center-url%d.png" : @"kb-std-active-bg-pop-center-url%d.png";
 	UIImage* flexibleImage = UIKBGetImage(UIKBImagePopupFlexible, appr, landscape);

@@ -114,7 +114,7 @@ extern void drawInCenter(NSString* str, CGRect rect, UIFont* defaultFont) {
 		
 		CGPoint p = CGPointMake(roundf(rect.origin.x+(rect.size.width-strSize.width)/2),
 								roundf(rect.origin.y+(rect.size.height-strSize.height)/2));
-		[str drawAtPoint:p withFont:defaultFont];
+		[str drawAtPoint:p withFont:newFont];
 		
 		// (2) Compute the number of rows required to minimize the area wasted.
 	} else {

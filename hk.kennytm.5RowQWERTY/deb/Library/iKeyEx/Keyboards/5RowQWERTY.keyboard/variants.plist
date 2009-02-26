@@ -3,7 +3,8 @@
 "." = (".", ".com", ".org", ".edu", ".net");
 
 // Suggestion by Scott Phillips
-1 = (1, ",", ".", "?", "!", "-", ":", ";", "/", "\"");
+// Order reversed since the size triggered isExp behavior.
+1 = (1, "\"", "/", ";", ":", "-", "!", "?", ".", ",");
 
 // Support for Currency symbols
 "$" = ("$", "€", "£", "¥", "₩", "¢");

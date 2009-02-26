@@ -172,6 +172,7 @@ NSArray* fetchTextRow(NSString* curKey, NSUInteger row, NSDictionary* restrict s
 @synthesize keyHeight;
 @synthesize verticalSpacing;
 @synthesize rows;
+@synthesize registersKeyCentroids, usesKeyCharges;
 #define ImplementXAtRow(X) X##AtRow:(NSUInteger)row { return (row < rows) ? X##s[row] : 0; }
 #define ImplementXAtRowColumn(X) \
 X##AtRow:(NSUInteger)row column:(NSUInteger)col { \
@@ -466,6 +467,9 @@ else \
 			}
 			SetObj(deleteKeyRow, integer, rows-2);
 		}
+		
+		SetObj(registersKeyCentroids, bool, YES);
+		SetObj(usesKeyCharges, bool, YES);
 #undef SetObj
 		
 		// done :)
@@ -525,14 +529,15 @@ else \
 	
 	NSArray** myTexts = shift ? shiftedPopups : popups;
 	UIFont* defaultFont = [UIFont boldSystemFontOfSize:PopupMaxFontSize];
-	CGRect drawRect = CGRectMake(Padding, 0, 0, UIKBKeyPopupSize.height);
+	// 2px spilling buffer...
+	CGRect drawRect = CGRectMake(Padding, 1, 0, UIKBKeyPopupSize.height-2);
 	for (NSUInteger i = 0; i < rows; ++ i) {
 		NSUInteger j = 0;
 		drawRect.size.width = widths[i];
 		if (drawRect.size.width < UIKBKeyPopupSize.width)
 			drawRect.size.width = UIKBKeyPopupSize.width;
 		drawRect.size.width -= 2*Padding;
-		drawRect.origin.y = 0;
+		drawRect.origin.y = 1;
 		
 		for (NSString* pop in myTexts[i]) {
 			if ([pop isKindOfClass:[NSString class]])

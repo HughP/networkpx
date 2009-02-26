@@ -29,6 +29,11 @@
 			// (This gives correct reference in sublayout inheritance)
 			"="
 		); 
+
+		// New in iKeyEx 0.1-7: Disable key charges to avoid auto touch snapping to a wrong key.
+		// (e.g. pressing on L resulting in K being activated. No no no.)
+		usesKeyCharges = NO;
+		registersKeyCentroids = NO;
 	};
 
 	Numbers = {
@@ -102,6 +107,9 @@
 			"=",
 			"="
 		);
+
+		usesKeyCharges = NO;
+		registersKeyCentroids = NO;
 	};
 
 	URL = {
