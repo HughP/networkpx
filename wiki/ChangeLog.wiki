@@ -2,6 +2,23 @@
 #labels Phase-Design
 <wiki:toc max_depth="1" />
 
+= 0.1-7 =
+
+== iKeyEx ==
+ * Fixed issue 61.
+ * Fixed issue 59. Keys near the edge will extend its sensitive region.
+ * Added an "Uninstall iKeyEx" button in preferences.
+ * Clearing cache and fixing permission can be done faster.
+
+== 5-Row QWERTY Keyboard ==
+ * Fixed issue 63. "?" is available where "•" was.
+ * Added a preference page for 5-Row QWERTY Keyboard, where you can:
+   * Change the keyboard layout to one of QWERTY, QWERTZ, QZERTY, AZERTY, Russian, Ukrainian, Greek, Colemak and ABCDEF.
+   * Totally customize the special characters.
+   * Change the auto-correction language. Supports Chinese and Japanese IME as well.
+   * Clear cache.
+ * Long-press the "1" key to show some commonly used punctuations. Thanks Scott Phillips for suggestion.
+
 <p align="center">↑↑↑ Future Releases ↑↑↑</p>
 <hr />
 <p align="center">↓↓↓ Current Releases ↓↓↓</p>

@@ -254,6 +254,20 @@ The value of each key is a dictionary consists of the following properties:
 	<td>_hasDeleteKey_ = ✓</td>
 </tr>
 <tr>
+	<td>registersKeyCentroids</td>
+	<td colspan="2">boolean</td>
+	<td>Registers key centroids or not.</td>
+	<td>✓</td>
+	<td>--</td>
+</tr>
+<tr>
+	<td>usesKeyCharges</td>
+	<td colspan="2">boolean</td>
+	<td>Uses key charges or not. If set to be true, the probability of the key to be pressed will also be considered when determining which key to activate. This can reduce typing error when keys are pretty close to each other, but can also _cause_ typing error when the keys are too cramped together.</td>
+	<td>✓</td>
+	<td>--</td>
+</tr>
+<tr>
 	<td>inherits</td>
 	<td colspan="2">string</td>
 	<td>Start sublayout as a fresh copy of this value. The maximum inheritance depth is 8. You should avoid circular inheritance.</td>
