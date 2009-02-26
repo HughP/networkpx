@@ -78,3 +78,14 @@ Note: the complete message of `SECURITY_BREACH_MESSAGE` is _"Cannot put secure d
 || This action cannot be undone. Proceed? || ✓    ||      || ✓   || ✓    || ✓    || ✓    ||      ||      ||
 
 Note: `No sel.` here is the short form of `Disable selection` owe to space limitation.
+
+= 5-Row QWERTY Keyboard =
+
+The _lproj_'s are located in `/svn/trunk/hk.kennytm.5RowQWERTY/deb/Library/iKeyEx/Keyboards/5RowQWERTY.keyboard/Preferences.bundle/`.
+
+|| *Key*              ||
+|| Layout             ||
+|| Special characters ||
+|| Reset              ||
+|| Empty slot         ||
+|| Palette            || 

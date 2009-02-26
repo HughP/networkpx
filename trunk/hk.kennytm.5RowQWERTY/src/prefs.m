@@ -49,6 +49,7 @@
 #define CURBUNDLE_PATH iKeyEx_KeyboardsPath@"/5RowQWERTY.keyboard/Preferences.bundle"
 
 static const wchar_t symbols[] = L"!@#$%^&*()`~-=[]\\;',./«»_+{}|:\"<>?¿¡•€£¥₩¢°±µ½§␀";
+static BOOL cacheDirty = YES;
 
 static NSString* const IMEs[] = {
 	@"en_US", @"en_GB",
@@ -63,14 +64,7 @@ static NSString* const IMEs[] = {
 	@""
 };
 
-static NSString* const SCPresetLanguages[] = {
-	@"en_US",
-	@"en_GB",
-};
-
-static NSString* const characters[][10+(5*4-1)*2] = {
-// en_US
-{
+static NSString* const defaultSymbols[] = {
 	@"!" , @"@" , @"#" , @"$" , @"%" , @"^" , @"&" , @"*" , @"(" , @")" ,
 
 	@"`" , @"", @"-" , @"=" , @"",
@@ -82,21 +76,6 @@ static NSString* const characters[][10+(5*4-1)*2] = {
 	@"\t", @"", @"{" , @"}" , @"|" ,
 	@"", @"•" , @":" , @"\"" , @"",
 		  @"<" , @">" , @"?" , @""
-},
-// en_GB
-{
-	@"!" , @"\"" , @"£", @"$" , @"%" , @"^" , @"&" , @"*" , @"(" , @")" ,
-
-	@"`" , @"", @"-" , @"=" , @"",
-	@"\t", @"", @"[" , @"]" , @"#",
-	@"", @"?" , @";" , @"\"", @"",
-		  @"," , @"." , @"/" , @"",
-
-	@"¬", @"", @"_" , @"+" , @"",
-	@"\t", @"", @"{" , @"}" , @"~" ,
-	@"", @"•" , @":", @"@" , @"",
-		  @"<" , @">" , @"?" , @""
-},
 };
 
 
@@ -134,8 +113,6 @@ NSString* unicodeDescription(unichar c) {
 	char* buffer = malloc(charlen+1);
 	u_charName(c, U_UNICODE_CHAR_NAME, buffer, charlen+1, &err);
 	
-	NSLog(@"%s", u_errorName(err));
-	
 	NSString* resstr = [[[NSString stringWithUTF8String:buffer] capitalizedString] stringByAppendingFormat:@" (U+%04X)", c];
 	free(buffer);
 	
@@ -172,19 +149,74 @@ NSString* actualDisplayStringForString(NSString* t) {
 }
 
 __attribute__((pure))
-UIColor* colorForString(NSString* t) {
+NSObject* actualDisplayObjectForString(NSString* t, BOOL isPopup) {
+	if ([@"\t" isEqualToString:t]) {
+		if (isPopup)
+			return @"Tab";
+		else
+			return [NSDictionary dictionaryWithObjectsAndKeys:
+					[NSArray arrayWithObject:[NSNumber numberWithFloat:0.5f]], @"color",
+					@"⇥", @"text",
+					nil];
+	} else if ([@"\n" isEqualToString:t]) {
+		if (isPopup)
+			return [NSDictionary dictionaryWithObjectsAndKeys:
+					[NSNumber numberWithFloat:0.2f], @"size",
+					@"Return", @"text",
+					nil];
+		else
+			return [NSDictionary dictionaryWithObjectsAndKeys:
+					[NSArray arrayWithObject:[NSNumber numberWithFloat:0.5f]], @"color",
+					@"↵", @"text",
+					nil];
+	} else if ([@" " isEqualToString:t]) {
+		if (isPopup)
+			return [NSDictionary dictionaryWithObjectsAndKeys:
+					[NSNumber numberWithFloat:0.25f], @"size",
+					@"Space", @"text",
+					nil];
+		else
+			return [NSDictionary dictionaryWithObjectsAndKeys:
+					[NSArray arrayWithObject:[NSNumber numberWithFloat:0.5f]], @"color",
+					@"␣", @"text",
+					nil];
+	} else if ([t length] != 1) {
+		return t;
+	} else {
+		unichar c = [t characterAtIndex:0];
+		if (L'\u0300' <= c && c <= L'\u0348') {
+			NSNumber* zero = [NSNumber numberWithFloat:0];
+			return [NSDictionary dictionaryWithObjectsAndKeys:
+					(CombiningCharacters[c-0x300] ?: t), @"text",
+					[NSArray arrayWithObjects:[NSNumber numberWithFloat:1], zero, zero, nil], @"color",
+					nil];
+		} else
+			return t;
+	}
+}
+
+
+__attribute__((pure))
+int colorTypeForString(NSString* t) {
 	if ([t length] == 1) {
 		int8_t ct = u_charType([t characterAtIndex:0]);
 		
 		if (ct == U_NON_SPACING_MARK || ct == U_ENCLOSING_MARK || ct == U_COMBINING_SPACING_MARK)
-			return [UIColor redColor];
+			return 2;
 		else if (ct == U_SPACE_SEPARATOR || ct == U_LINE_SEPARATOR || ct == U_PARAGRAPH_SEPARATOR || ct == U_CONTROL_CHAR)
-			return [UIColor grayColor];
+			return 1;
 	}
-	return [UIColor darkTextColor];
+	return 0;
 }
 
-
+__attribute__((pure))
+UIColor* colorForString(NSString* t) {
+	switch (colorTypeForString(t)) {
+		case 0: return [UIColor darkTextColor];
+		case 1: return [UIColor grayColor];
+		case 2: return [UIColor redColor];
+	}
+}
 
 typedef union UTF16Character {
 	struct {
@@ -198,15 +230,20 @@ typedef union UTF16Character {
 
 
 
-void clearCache () { system("/usr/bin/iKeyEx-KBMan purge 5RowQWERTY"); }
+void clearCache () {
+	// purge only once.
+	if (cacheDirty) {
+		execl("/usr/bin/iKeyEx-KBMan", "purge", "5RowQWERTY");
+		cacheDirty = NO;
+	}
+}
 
 
 
 @interface SpecialCharactersPane : PSEditingPane<UIActionSheetDelegate> {
+	UIActionSheet* resetSheet;
 	UIActionSheet* sheet;
-	UIActionSheet* presetSheet;
 	UIActionSheet* unicodeSheet;
-	UIPickerView* presetPicker;
 	UIEasyPickerView* unicodePicker;
 	NSMutableArray* preferenceValue;
 	UIView* symbolsContainer;
@@ -215,9 +252,10 @@ void clearCache () { system("/usr/bin/iKeyEx-KBMan purge 5RowQWERTY"); }
 	NSBundle* myBundle;
 }
 -(id)initWithFrame:(CGRect)frm;
--(void)showPreset;
+-(void)showReset;
 -(void)showCharacterSelector:(UIButton*)btn;
 @property(retain) NSObject* preferenceValue;
+-(void)updateButtons;
 @end
 @implementation SpecialCharactersPane
 @synthesize preferenceValue;
@@ -242,30 +280,22 @@ void clearCache () { system("/usr/bin/iKeyEx-KBMan purge 5RowQWERTY"); }
 	if ((self = [super initWithFrame:frm])) {
 		myBundle = [[NSBundle bundleWithPath:CURBUNDLE_PATH] retain];
 		
-		// Preset button.
+		// reset button.
+		NSString* resetString = [myBundle localizedStringForKey:@"Reset" value:nil table:@"5RowQWERTY"];
 		UIButton* presetButton = [UIButton buttonWithType:UIButtonTypeRoundedRect];
-		[presetButton setTitle:[myBundle localizedStringForKey:@"Preset" value:nil table:@"5RowQWERTY"] forState:UIControlStateNormal];
+		[presetButton setTitle:resetString forState:UIControlStateNormal];
 		presetButton.frame = CGRectMake(5, 5, 320-2*5, 48);
 		[presetButton setTitleColor:[UIColor darkTextColor] forState:UIControlStateNormal];
 		presetButton.font = [UIFont boldSystemFontOfSize:[UIFont labelFontSize]];
-		[presetButton addTarget:self action:@selector(showPreset) forControlEvents:UIControlEventTouchUpInside];
+		[presetButton addTarget:self action:@selector(showReset) forControlEvents:UIControlEventTouchUpInside];
 		[self addSubview:presetButton];
 		
-		// Preset sheet.
-		presetSheet = [[UIActionSheet alloc] initWithTitle:@"\n\n\n\n\n\n\n\n\n\n\n\n\n"
-												  delegate:self
-										 cancelButtonTitle:UILocalizedString("OK")
-									destructiveButtonTitle:nil
-										 otherButtonTitles:nil];
-		presetSheet.actionSheetStyle = UIActionSheetStyleBlackTranslucent;
-		NSMutableArray* translatedPresets = [[NSMutableArray alloc] initWithCapacity:(sizeof(SCPresetLanguages)/sizeof(NSString*))];
-		for (NSUInteger i = 0; i < sizeof(SCPresetLanguages)/sizeof(NSString*); ++ i) {
-			[translatedPresets addObject:[[NSLocale currentLocale] displayNameForKey:NSLocaleIdentifier value:SCPresetLanguages[i]]];
-		}
-		presetPicker = [[UIEasyPickerView alloc] initWithComponents:translatedPresets, nil];
-		presetPicker.showsSelectionIndicator = YES;
-		[presetSheet addSubview:presetPicker];
-		[translatedPresets release]; 
+		// reset sheet.
+		resetSheet = [[UIActionSheet alloc] initWithTitle:nil
+												 delegate:self
+										cancelButtonTitle:UILocalizedString("Cancel")
+								   destructiveButtonTitle:resetString
+										otherButtonTitles:nil];
 		
 		// List of symbols.
 		symbolsContainer = [[UIView alloc] initWithFrame:CGRectMake(5, 5+48+10, 320-2*5, 32*5)];
@@ -388,11 +418,11 @@ void clearCache () { system("/usr/bin/iKeyEx-KBMan purge 5RowQWERTY"); }
 -(void)dealloc {
 	[myBundle release];
 	[hud release];
-	[presetSheet release];
+	[resetSheet release];
 	[sheet release];
 	[super dealloc];
 }
--(void)showPreset { [presetSheet showInView:self.window]; }
+-(void)showReset { [resetSheet showInView:self.window]; }
 
 -(void)setHUDCharacter:(NSString*)c {
 	hud.title = c;
@@ -448,30 +478,32 @@ void clearCache () { system("/usr/bin/iKeyEx-KBMan purge 5RowQWERTY"); }
 }
 
 -(void)actionSheet:(UIActionSheet*)sht clickedButtonAtIndex:(NSInteger)idx {
-	if (sht == presetSheet) {
-		self.preferenceValue = [NSArray arrayWithObjects:characters[[presetPicker selectedRowInComponent:0]] count:10+(5*4-1)*2];
-	} else if (sht == sheet || sht == unicodeSheet) {
-		if (idx == 0) {
-			if (sht == sheet) {
-				NSString* hudTitle = hud.title;
-				if ([hudTitle length] == 0) {
-					[unicodePicker selectRow:0 inComponent:3 animated:NO];
-					[unicodePicker selectRow:0 inComponent:2 animated:NO];
-					[unicodePicker selectRow:0 inComponent:1 animated:NO];
-					[unicodePicker selectRow:0 inComponent:0 animated:NO];
-				} else {
-					UTF16Character hudChar;
-					hudChar.c = [hudTitle characterAtIndex:0];
-					[unicodePicker selectRow:hudChar.nibbles.n0 inComponent:3 animated:NO];
-					[unicodePicker selectRow:hudChar.nibbles.n1 inComponent:2 animated:NO];
-					[unicodePicker selectRow:hudChar.nibbles.n2 inComponent:1 animated:NO];
-					[unicodePicker selectRow:hudChar.nibbles.n3 inComponent:0 animated:NO];
-				}
-				[unicodeSheet performSelector:@selector(showInView:) withObject:self.window afterDelay:0.25];
+	if (idx == 0) {
+		if (sht == sheet) {
+			NSString* hudTitle = hud.title;
+			if ([hudTitle length] == 0) {
+				[unicodePicker selectRow:0 inComponent:3 animated:NO];
+				[unicodePicker selectRow:0 inComponent:2 animated:NO];
+				[unicodePicker selectRow:0 inComponent:1 animated:NO];
+				[unicodePicker selectRow:0 inComponent:0 animated:NO];
 			} else {
-				[sheet performSelector:@selector(showInView:) withObject:self.window afterDelay:0.25];
+				UTF16Character hudChar;
+				hudChar.c = [hudTitle characterAtIndex:0];
+				[unicodePicker selectRow:hudChar.nibbles.n0 inComponent:3 animated:NO];
+				[unicodePicker selectRow:hudChar.nibbles.n1 inComponent:2 animated:NO];
+				[unicodePicker selectRow:hudChar.nibbles.n2 inComponent:1 animated:NO];
+				[unicodePicker selectRow:hudChar.nibbles.n3 inComponent:0 animated:NO];
 			}
-		} else {
+			[unicodeSheet performSelector:@selector(showInView:) withObject:self.window afterDelay:0.25];
+		} else if (sht == unicodeSheet) {
+			[sheet performSelector:@selector(showInView:) withObject:self.window afterDelay:0.25];
+		} else if (sht == resetSheet) {
+			[preferenceValue release];
+			preferenceValue = [[NSMutableArray alloc] initWithObjects:defaultSymbols count:10+2*(5*4-1)];
+			[self updateButtons];
+		}
+	} else {
+		if (sht != resetSheet) {
 			[dimView release];
 			[preferenceValue replaceObjectAtIndex:hud.tag withObject:hud.title];
 			[self updateButtons];
@@ -504,6 +536,7 @@ void clearCache () { system("/usr/bin/iKeyEx-KBMan purge 5RowQWERTY"); }
 	if ((self = [super initForContentSize:size])) {
 		layoutPlist = [[NSMutableDictionary alloc] initWithContentsOfFile:LAYOUT_PATH];
 		infoPlist = [[NSMutableDictionary alloc] initWithContentsOfFile:INFO_PATH];
+		cacheDirty = YES;
 	}
 	return self;
 }
@@ -575,8 +608,8 @@ void clearCache () { system("/usr/bin/iKeyEx-KBMan purge 5RowQWERTY"); }
 	else CheckArrangement(ABCDEF);
 #undef CheckArrangement
 	
-	[sublayout setObject:[NSArray arrayWithObjects:texts count:5] forKey:@"texts"];
-	[sublayout setObject:[NSArray arrayWithObjects:shiftedTexts count:5] forKey:@"shiftedTexts"];
+	[sublayout setObject:[NSMutableArray arrayWithObjects:texts count:5] forKey:@"texts"];
+	[sublayout setObject:[NSMutableArray arrayWithObjects:shiftedTexts count:5] forKey:@"shiftedTexts"];
 	
 	NSUInteger counts[3] = {[texts[1] count], [texts[2] count], [texts[3] count]};
 	[sublayout setObject:[NSArray arrayWithObjects:
@@ -612,16 +645,141 @@ void clearCache () { system("/usr/bin/iKeyEx-KBMan purge 5RowQWERTY"); }
 	
 	[layoutPlist setObject:sublayout forKey:@"Alphabet"];
 	[layoutPlist writeToFile:LAYOUT_PATH atomically:NO];
-	
 	clearCache();
 }
 
 -(NSArray*)specialCharacters {
 	NSArray* shNums = [[[layoutPlist objectForKey:@"Alphabet"] objectForKey:@"shiftedTexts"] objectAtIndex:0];
 	if ([shNums isKindOfClass:[NSString class]])
-		shNums = [[shNums substringFromIndex:1] componentsSeparatedByString:[shNums substringToIndex:1]];
+		shNums = [[(NSString*)shNums substringFromIndex:1] componentsSeparatedByString:[(NSString*)shNums substringToIndex:1]];
+	NSMutableArray* retval = [[shNums mutableCopy] autorelease];
 	
+	NSDictionary* symPlane = [layoutPlist objectForKey:@"Numbers"];
+	NSArray* syms = [symPlane objectForKey:@"texts"];
+	NSArray* shSyms = [symPlane objectForKey:@"shiftedTexts"];
 	
+	[retval addObjectsFromArray:[[syms objectAtIndex:0] subarrayWithRange:NSMakeRange(0,5)]];
+	[retval addObjectsFromArray:[[syms objectAtIndex:1] subarrayWithRange:NSMakeRange(0,5)]];
+	[retval addObjectsFromArray:[[syms objectAtIndex:2] subarrayWithRange:NSMakeRange(0,5)]];
+	[retval addObjectsFromArray:[[syms objectAtIndex:3] subarrayWithRange:NSMakeRange(0,4)]];
+	
+	[retval addObjectsFromArray:[[shSyms objectAtIndex:0] subarrayWithRange:NSMakeRange(0,5)]];
+	[retval addObjectsFromArray:[[shSyms objectAtIndex:1] subarrayWithRange:NSMakeRange(0,5)]];
+	[retval addObjectsFromArray:[[shSyms objectAtIndex:2] subarrayWithRange:NSMakeRange(0,5)]];
+	[retval addObjectsFromArray:[[shSyms objectAtIndex:3] subarrayWithRange:NSMakeRange(0,4)]];
+	
+	return retval;
+}
+-(void)setSpecialCharacters:(NSArray*)characterArray {	
+	NSString** characters = calloc(10+(5*4-1)*2, sizeof(NSString*));
+	[characterArray getObjects:characters];
+	NSUInteger i = 0;
+	
+	// (1) set the shifted-numbers row.
+	{
+		NSMutableDictionary* alphabet = [layoutPlist objectForKey:@"Alphabet"];
+		
+		NSMutableArray* shiftedLabelsRow = [[NSMutableArray alloc] initWithCapacity:10];
+		NSMutableArray* shiftedPopupsRow = [[NSMutableArray alloc] initWithCapacity:10];
+		NSMutableArray* shiftedTextsRow  = [[NSMutableArray alloc] initWithCapacity:10];
+		
+		for (; i < 10; ++ i) {
+			[shiftedTextsRow addObject:characters[i]];
+			[shiftedLabelsRow addObject:actualDisplayObjectForString(characters[i], NO)];
+			[shiftedPopupsRow addObject:actualDisplayObjectForString(characters[i], YES)];
+		}
+		
+		[[alphabet objectForKey:@"shiftedTexts"] replaceObjectAtIndex:0 withObject:shiftedTextsRow];
+		[alphabet setObject:[NSArray arrayWithObjects:shiftedLabelsRow, @"=", @"=", @"=", @"=", nil]
+					 forKey:@"shiftedLabels"];
+		[alphabet setObject:[NSArray arrayWithObjects:shiftedPopupsRow, @"=", @"=", @"=", @"=", nil]
+					 forKey:@"shiftedPopups"];
+		
+		[shiftedLabelsRow release];
+		[shiftedPopupsRow release];
+		[shiftedTextsRow release];
+		
+		[layoutPlist setObject:alphabet forKey:@"Alphabet"];
+	}
+	
+	// (2) set the symbols
+	NSMutableDictionary* numbers = [layoutPlist objectForKey:@"Numbers"];
+	{
+		NSMutableArray* texts = [numbers objectForKey:@"texts"];
+		NSMutableArray* labels = [numbers objectForKey:@"labels"];
+		NSMutableArray* popups = [numbers objectForKey:@"popups"];
+		
+		NSMutableArray* curTextsRow = nil;
+		NSMutableArray* curLabelsRow = nil;
+		NSMutableArray* curPopupsRow = nil;
+		
+		NSInteger row = -1, col = 4;
+
+		for (; i < 10+(5*4-1); ++ i) {
+			++ col;
+			if (col == 5) {
+				++ row;
+				col = 0;
+				
+				curTextsRow = [texts objectAtIndex:row];
+				curLabelsRow = [labels objectAtIndex:row];
+				curPopupsRow = [popups objectAtIndex:row];
+				if ([curLabelsRow isKindOfClass:[NSString class]]) {
+					curLabelsRow = [curTextsRow mutableCopy];
+					[labels replaceObjectAtIndex:row withObject:curLabelsRow];
+					[curLabelsRow release];
+				}
+				if ([curPopupsRow isKindOfClass:[NSString class]]) {
+					curPopupsRow = [curLabelsRow mutableCopy];
+					[popups replaceObjectAtIndex:row withObject:curPopupsRow];
+					[curPopupsRow release];
+				}
+			}
+			
+			[curTextsRow replaceObjectAtIndex:col withObject:characters[i]];
+			[curLabelsRow replaceObjectAtIndex:col withObject:actualDisplayObjectForString(characters[i], NO)];
+			[curPopupsRow replaceObjectAtIndex:col withObject:actualDisplayObjectForString(characters[i], YES)];
+		}
+	
+		NSMutableArray* shiftedTexts = [numbers objectForKey:@"shiftedTexts"];
+		NSMutableArray* shiftedLabels = [numbers objectForKey:@"shiftedLabels"];
+		NSMutableArray* shiftedPopups = [numbers objectForKey:@"shiftedPopups"];
+		
+		row = -1; col = 4;
+		
+		for (; i < 10+2*(5*4-1); ++ i) {
+			++ col;
+			if (col == 5) {
+				++ row;
+				col = 0;
+				
+				curTextsRow = [shiftedTexts objectAtIndex:row];
+				curLabelsRow = [shiftedLabels objectAtIndex:row];
+				curPopupsRow = [shiftedPopups objectAtIndex:row];
+				if ([curLabelsRow isKindOfClass:[NSString class]]) {
+					curLabelsRow = [curTextsRow mutableCopy];
+					[shiftedLabels replaceObjectAtIndex:row withObject:curLabelsRow];
+					[curLabelsRow release];
+				}
+				if ([curPopupsRow isKindOfClass:[NSString class]]) {
+					curPopupsRow = [curLabelsRow mutableCopy];
+					[shiftedPopups replaceObjectAtIndex:row withObject:curPopupsRow];
+					[curPopupsRow release];
+				}
+			}
+			
+			[curTextsRow replaceObjectAtIndex:col withObject:characters[i]];
+			[curLabelsRow replaceObjectAtIndex:col withObject:actualDisplayObjectForString(characters[i], NO)];
+			[curPopupsRow replaceObjectAtIndex:col withObject:actualDisplayObjectForString(characters[i], YES)];
+		}
+		
+		[layoutPlist setObject:numbers forKey:@"Numbers"];
+	}
+	
+	free(characters);
+	
+	[layoutPlist writeToFile:LAYOUT_PATH atomically:NO];
+	clearCache();
 }
 
 -(NSString*)inputManager { return [[infoPlist objectForKey:@"UIKeyboardInputManagerClass"] substringFromIndex:1] ?: @""; }
