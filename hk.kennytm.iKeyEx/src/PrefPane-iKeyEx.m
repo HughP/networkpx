@@ -167,7 +167,7 @@
 
 // Troubleshooting actions
 -(void)chmod {
-	execl("/usr/bin/iKeyEx-KBMan", "fixperm");
+	iKeyEx_KBMan("fixperm", NULL);
 }
 
 -(void)gotoCydiaPackage {
@@ -175,6 +175,6 @@
 }
 
 -(void)clearImageCache {
-	execl("/usr/bin/iKeyEx-KBMan", "purgeall");
+	iKeyEx_KBMan("purgeall", NULL);
 }
 @end

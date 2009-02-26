@@ -39,7 +39,7 @@ LayoutOptions=-liKeyEx -dynamiclib -init _init
 
 PrefSources=prefs.m $(SharedSrcPath)/GraphicsUtilities.m $(UIKit3SrcPath)/UIUtilities.m $(UIKit3SrcPath)/UIBigCharacterHUD.m $(UIKit3SrcPath)/UIActionSheetPro.m $(UIKit3SrcPath)/UIEasyPickerView.m
 PrefTarget=../deb/Library/iKeyEx/Keyboards/5RowQWERTY.keyboard/Preferences.bundle/5RowQWERTY
-PrefOptions=-framework Preferences -framework CoreGraphics -framework WebKit -licucore -bundle
+PrefOptions=-framework Preferences -framework CoreGraphics -framework WebKit -licucore -liKeyEx -bundle
 
 all:	$(LayoutTarget) $(PrefTarget)
 
