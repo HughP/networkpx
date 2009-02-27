@@ -238,6 +238,7 @@ static UIColor* translucentBlackColor = nil;	// bb468;
 {{{
 static BOOL imageMapInitialized = NO;  // bb584
 static void* images = NULL;            // 9f588
+static CFCharacterSetRef endsWordCharSet = NULL;     // bb58c
 
 @implementation UIKeyboardInputManager_ja_JP
 
@@ -269,7 +270,7 @@ static void* images = NULL;            // 9f588
 }
 
 -(void)dealloc {
-	*(BOOL*)0xBB58C = NO;
+	endsWordCharSet = NULL;
 
 	if (*(CFTypeRef*)0xBB590 != NULL) {
 		CFRelease(*(CFTypeRef*)0xBB590);
@@ -346,6 +347,69 @@ static void* images = NULL;            // 9f588
 }
 
 -(void)setInputIndex:(NSUInteger)idx {}
+
+-(void)deleteFromInput {
+	[self _cancelCandidatesThread];
+	
+	-- self->_activeCharacterLength;
+	[super deleteFromInput];
+	
+	if (self.inputCount != 0)
+		return;
+	
+	[self->_candidates release];
+	self->_candidates = nil;
+	
+	[self->_convertStringForCurrentCandidates release];
+	self->_convertStringForCurrentCandidates = nil;	
+}
+
+-(void)clearInput {
+	UIKeyboardImpl* impl = [UIKeyboardImpl sharedInstance];
+	
+	if (impl.shift && !impl.shiftLocked)
+		impl.shift = NO;			
+	
+	[self _cancelCandidatesThread];
+	
+	[self->_candidates release];
+	self->_candidates = nil;
+	
+	[self->_convertStringForCurrentCandidates release];
+	self->_convertStringForCurrentCandidates = nil;
+	
+	self->_activeCharacterLength = 0;
+	
+	[super clearInput];
+}
+
+-(void)inputLocationChanged {
+	[self _cancelCandidatesThread];
+	
+	[self->_candidates release];
+	self->_candidates = nil;
+	
+	[self->_convertStringForCurrentCandidates release];
+	self->_convertStringForCurrentCandidates = nil;
+	
+	self->_activeCharacterLength = 0;
+	
+	[super inputLocationChanged];
+}
+
+-(void)acceptInput { [super acceptInput]; }
+-(NSString*)rawInputString { return super.inputString; }
+-(NSString*)inputString { return [self rawInputString]; }
+-(NSString*)_convertString { return [self rawInputString]; }
+
+-(BOOL)stringEndsWord:(NSString*)str {
+	if ([str length] != 1)
+		return NO;
+	if (endsWordCharSet == NULL)
+		endsWordCharSet = CFCharacterSetGetPredefined(kCFCharacterSetWhitespaceAndNewline);
+	
+	return CFCharacterSetIsCharacterMember(endsWordCharSet, [str characterAtIndex:0]);
+}
 
 @end
 }}}
