@@ -1,9 +1,9 @@
-#summary (Technical) The format of the WordTrie binary files and the API to access them.
+#summary (Technical) The format of the WordTrie and KBWordSearch binary files and the API to access them.
 #labels Phase-Implementation
 
 <wiki:toc/>
 
-= Format =
+= WordTrie =
 
 The !WordTrie consist of 2 files, the index file (.idx) and word file (.dat).
 
@@ -55,6 +55,49 @@ If `Return-Raw-Data` is set, the raw data in the Words file will be returned whe
 
 The null-terminated string following is the word entry. A word entry is usually _not_ aligned.
 
-= API =
+== API ==
 
 You can use the `WordTrie` C++ class in the UIKit framework to access !WordTries.
+
+= KBWordSearch =
+
+KBWordSearch is a binary IME data format. It is also the name of the Objective-C class dealing with this format. It is located in UIKit.
+
+== Concepts ==
+ * *Yomi* is the Japanese word 読み, meaning Reading. In the Japanese Romaji input method, the yomi is sound of the words transliterated into Latin characters. In a general IME, the yomi is the displayed input string. For example, _tokyo_ is the yomi of the Japanese word 東京.
+
+== Binary Image Format ==
+
+There is no magic numbers in the KBWordSearch format. The header is 32 bytes of offset data:
+{{{
+struct KBWordSearchOffsets {
+  int wordlist_begin;
+  int wordlist_maxDelta;
+  int dict_begin;
+  int dict_maxDelta;
+  int dictLink_begin;
+  int dictLink_maxDelta;
+  int connectionLink_begin;
+  int connectionLink_maxDelta;
+};
+}}}
+As shown, there are 4 sections in the KBWordSearch format. The `_begin` variables are the absolute offset the section will start in the file. The `_maxDelta` variables are the maximum relative offset can move before overflowing to the next section. It is equal to the block size plus 4.
+
+As for the sections, *wordlist* consists of null-terminated strings used in the dictionary. Each string should not contain more than 25 UTF8 code points, otherwise you'll risk having buffer overflow. This is equivalent to 8 CJK characters. If you want to support more than 8 characters, slice it up and use connections to output it chunk by chunk.
+
+*dict* is an array of `DictEntry`s, which are 24-byte structures:
+{{{
+struct DictEntry {
+  int yomiOffset;
+  int candidateOffset;
+  int outConnection;
+  int inConnection;
+  int _field5;
+  int _field6;
+};
+}}}
+The two offsets point to the *wordlist* table, as the position where the respective string can be found.
+
+== Learned Dictionary Plist Specification ==
+
+== API ==
