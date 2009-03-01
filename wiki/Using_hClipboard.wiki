@@ -1,22 +1,6 @@
 #summary How to use ℏClipboard
 #labels Phase-Support
 
-----
-
-<font color="#800000">
-= DO NOT UPGRADE to the "latest" version of hClipboard =
-
-The "latest" version of hClipboard seems to be mispackaged. While it is shown as 0.1-5, the content is actually 0.0-1, the initial buggy version.
-
-I don't know what happened. I haven't sent any new packages to any repositories after Feb 19th.
-
-*Please do not "upgrade" to this version, because you are in fact downgrading.*
-
-If you have unfortunately "upgraded", you can remove that package, then install 0.1-5 from http://code.google.com/p/networkpx/downloads/detail?name=hk.kennytm.hClipboard-0.1-5.deb. 
-</font>
-
-----
-
 <wiki:toc/>
 
 = Introduction =
