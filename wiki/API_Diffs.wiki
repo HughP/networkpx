@@ -1,0 +1,299 @@
+#summary Diff of the API between different firmware versions
+
+<wiki:toc />
+
+= 2.0 → 2.1 =
+== UIKit ==
+=== UIPickerView ===
+*New in 2.1:*
+ * `-(void)_setSoundsEnabled:(BOOL)enabled activate:(BOOL)activate;`
+
+=== UIApplication ===
+*New in 2.1:*
+ * `+(NSString*)stringForStatusBarStyle:(UIStatusBarStyle)style;`
+ * `+(UIStatusBarStyle)statusBarStyleForString:(NSString*)string;`
+ * `+(UIInterfaceOrientation)interfaceOrientationForString:(NSString*)string;`
+ * `+(NSString*)stringForInterfaceOrientation:(UIInterfaceOrientation)orientation;`
+ * `-(void)_remoteNotificationReceived:(id)notification;`
+ * `-(BOOL)disableRemoteNotifications;`
+ * `-(void)_registerForRemoteNotifications;`
+ * `-(BOOL)remoteNotificationsAreActive;`
+ * `-(BOOL)registerForRemoteNotificationsFromPublisher:(id)publisher;`
+ * `-(void)unregisterForRemoteNotificationsFromPublisher:(id)publisher;`
+ * `-(id)registeredRemoteNotificationPublishers;`
+ * `-(id)remoteNotificationSystemIdentifier;`
+
+*Changed in 2.1:*
+|| *Old* || *New* ||
+|| `-(NSString*)_pathToDefaultImageNamed:(NSString*)name;` || `-(NSString*)pathToDefaultImageNamed:(NSString*)name;` ||
+|| `-(void)addDownloadingIconToHomeScreen:(NSString*)icon;` || `-(BOOL)addDownloadingIconToHomeScreen:(NSString*)icon;` ||
+|| `-(void)_registerForSleepWake;` || `-(void)_registerForDisplayOnOff;` ||
+|| `-(void)_unregisterForSleepWake;` || `-(void)_unregisterForDisplayOnOff;` ||
+|| `-(void)willSleep;` || `-(void)didTurnOffDisplay;` ||
+|| `-(void)didWake;` || `-(void)didTurnOnDisplay;` ||
+
+=== UIWindow ===
+*New in 2.1:*
+ * `-(void)_handleStatusBarOrientationChange:(id)fp8;`
+ * `-(void)_clearPendingKeyboardChanges;`
+ * `-(void)_setRotatableViewOrientation:(UIInterfaceOrientation)orientation duration:(NSTimeInterval)duration force:(BOOL)force;`
+
+=== UIScrollView ===
+*New in 2.1:*
+ * `-(BOOL)cancelMouseTracking;`
+
+=== UINavigationBar ===
+*New in 2.1:*
+ * `-(UIView*)_commonHitTest:(CGPoint)pt forView:(UIView*)view;`
+ * `-(UIView*)hitTest:(CGPoint)pt withEvent:(UIEvent*)event;`
+
+=== UITextField ===
+Note that the ivar layout is changed by adding a `UITextInputTraits* _nonAtomTraits` ivar in 2.1
+
+*Changed in 2.1:*
+|| *Old* || *New* ||
+|| `-(id)keyboardInputOverlayContainer:(id)fp8;` || `-(id)customOverlayContainer;` ||
+
+=== UIFieldEditor ===
+*Changed in 2.1:*
+|| *Old* || *New* ||
+|| `-(id)keyboardInputOverlayContainer:(id)fp8;` || `-(id)customOverlayContainer;` ||
+
+*Removed in 2.1:*
+ * `-(void)webView:(id)webview didFinishLoadForFrame:(id)fp12;`
+
+=== UINavigationController ===
+*Changed in 2.1:*
+|| *Old* || *New* ||
+|| `-(id)init;` || `-(id)initWithNibName:(NSString*)nib bundle:(NSBundle*)bundle;` ||
+
+=== UITabBarController ===
+*Changed in 2.1:*
+|| *Old* || *New* ||
+|| `-(id)init;` || `-(id)initWithNibName:(NSString*)nib bundle:(NSBundle*)bundle;` ||
+
+=== UIToolbar ===
+*New in 2.1:*
+ * `-(void)_finishSetItems:(id)fp8 finished:(id)fp12 context:(void*)fp16;`
+
+=== UITextView ===
+*Removed in 2.1:*
+ * `-(id)keyboardInputOverlayContainer:(id)fp8;`
+
+=== UIPreferencesTextTableCell ===
+*Removed in 2.1:*
+ * `-(id)keyboardInputOverlayContainer:(id)fp8;`
+
+=== UIFormAssistant ===
+Note that the ivar layout is changed by adding a `id<UIFormControl> _controlToFocusAfterRotation` ivar in 2.1.
+
+*New in 2.1:*
+ * `-(id)_getPeripheralFromCache:(Class)fp8;`
+ * `-(void)_cachePeripheral:(id)fp8 withClass:(Class)fp12;`
+ * `-(void)willMoveToWindow:(id)fp8;`
+ * `-(void)didMoveToWindow;`
+ * `-(void)_windowWillRotate;`
+ * `-(void)_windowDidRotate;`
+ * `@property UIView<UIFormPeripheral>* _nextPeripheral;`
+ * `@property UIView<UIFormPeripheral>* _peripheral;`
+ * `@property id<UIFormControl> _controlToFocusAfterRotation;`
+ * `@property id<UIFormControl> _nextControl;`
+ * `@property id<UIFormControl> _control;`
+
+*Changed in 2.1:*
+|| *Old* || *New* ||
+|| `-(void)animationWillStart:(id)fp8;` || `-(void)setUpAnimation:(id)fp8;` ||
+
+*Removed in 2.1:*
+ * `-(id)_formPeripheralForFormControl:(id)fp8;`
+
+=== UISelectionPeripheral ===
+*New in 2.1:*
+ * `@property id<UIItemControl> _selectedItemControl;`
+ * `@property id<UISelectionControl> _control;`
+
+=== _UICachedItemControl ===
+*New in 2.1:*
+ * `@property id<UIItemControl> _control;`
+
+=== UIKeyboardPeripheral ===
+*New in 2.1:*
+ * `-(void)postKeyboardNotification:(id)fp8;`
+ * `-(void)willAnimateInWithFormAssistant:(id)assistant;`
+ * `-(void)willAnimateOutWithFormAssistant:(id)assistant;`
+ * `-(void)didAnimateInWithFormAssistant:(id)assistant;`
+ * `-(void)didAnimateOutWithFormAssistant:(id)assistant;`
+ * `@property id<UITextControl> _control;`
+
+=== UIKeyboardImpl ===
+*New in 2.1:*
+ * `-(int)changeCount;`
+ * `-(BOOL)soundPreference;`
+ * `-(void)updateSoundActivationState;`
+ * `-(void)deactivateSounds;`;
+
+*Removed in 2.1:*
+ * `-(id)callInputOverlayContainer;`
+ * `-(id)manuallySelectedOverlay;`
+ * `-(void)initializeSounds;`
+
+=== UIKeyboard ===
+*Removed in 2.1:*
+ * `+(void)useAutomaticInputOverlay:(BOOL)fp8;`
+ * `+(BOOL)usesAutomaticInputOverlay;`
+ * `+(void)preheatArtwork;`
+
+=== UIAutocorrectInlinePrompt ===
+Note that the ivar layout is changed by removing an `int m_position` ivar in 2.1.
+
+*New in 2.1:*
+ `-(BOOL)isAcceptableTextEffectsFrame:(CGRect)frame;`
+ `-(float)maximumCandidateWidth;`
+ `-(CGRect)horizontallySquishedCorrectionFrame:(CGRect)frame;`
+ `-(CGRect)correctionFrameFromDesiredFrame:(CGRect)frame textHeight:(int)height;`
+
+*Removed in 2.1:*
+ * `@property int position;`
+ * `-(CGRect)topRect;`
+ * `-(CGRect)bottomRect;`
+
+=== UIInlineCandidateTextView ===
+The whole class is removed in 2.1.
+
+=== !InlineCandidateCell ===
+The whole class is removed in 2.1.
+
+=== UIAccentedCharacterView ===
+The ivar layout is completely modified. Do not rely on the ivar layout at all. Use class_getInstanceVariable() or other runtime functions instead.
+
+*New in 2.1:*
+ * `-(unsigned)moveCharactersAndCapsToAltSide:(unsigned)fp8 position:(unsigned)fp12 expansion:(int)fp16;`
+
+=== KBWordSearch ===
+*New in 2.1:*
+ * `-(void)clearLearningDictionary;`
+
+Changed in 2.1:
+|| *Old* || *New* ||
+|| `-(BOOL)generateCand1:(int)index connection:(int)connection matchedLen:(int)matchedLen level:(int)level patLen:(int)patLen;` || `-(BOOL)generateCand1:(int)index connection:(int)connection matchedStringLen:(int)matchedStringLen matchedLen:(int)matchedLen level:(int)level patLen:(int)patLen;` ||
+
+=== Romakana ===
+*Changed in 2.1:*
+|| *Old* || *New* ||
+|| `-(NSString*)roma2hiragana:(NSString*)roma;` || `-(NSString*)roma2hiragana:(NSString*)roma stripIncompleteRomajiAtEnd:(BOOL)strip;` ||
+
+=== WordInfo ===
+*New in 2.1:*
+ * `-(const char*)yomiUTF8String;`
+ * `-(void)getInConnection:(int*)pInConnection outConnection:(int**)pOutConnection andOutConnections:(int*)pOutConnections;`
+
+=== UIKeyboardLayoutRoman ===
+Note that the ivar layout is changed by adding 3 ivars (`int m_preferredTrackingChangeCount`, `struct USet* m_accentInfo` and `struct USet* m_hasAccents`) in 2.1.
+
+*New in 2.1:*
+ * `+(NSArray*)availableTopLevelDomains;`
+ * `-(CGRect)compositeFGLongPressFrameForKey:(UIKeyDefinition*)key orientation:(int)orientation;`
+ * `-(BOOL)shouldCacheViewForKey:(UIKeyDefinition*)key;`
+
+=== UIKeyboardInputManagerAlphabet ===
+*New in 2.1:*
+ * `-(void)loadAddressBook;`
+
+=== UIKeyboardInputManager ===
+*New in 2.1:*
+ * `-(id)remainingInput;`
+ * `-(void)loadAddressBook;`
+
+=== !CandWord ===
+*New in 2.1:*
+ * `-(const char*)wordUTF8String;`
+
+=== !CandWordString ===
+This class is new in 2.1.
+
+=== UITouch ===
+*New in 2.1:*
+ * `-(BOOL)isWarped;`
+
+=== UIWebDocumentView ===
+The ivar layout is changed a little. 
+
+*Removed in 2.1:*
+ * `-(id)keyboardInputOverlayContainer:(id)fp8;`
+
+=== UIWebView ===
+*New in 2.1:*
+ * `-(void)_frameOrBoundsChanged;`
+ * `-(void)setBounds:(CGRect)bounds;`
+ * `-(void)webView:(id)fp8 didFirstLayoutInFrame:(id)fp12;`
+ * `-(void)modalView:(UIModalView*)modalView didDismissWithButtonIndex:(int)index;`
+ * `-(void)webView:(id)fp8 runJavaScriptAlertPanelWithMessage:(id)fp12 initiatedByFrame:(id)fp16;`
+ * `-(BOOL)webView:(id)fp8 runJavaScriptConfirmPanelWithMessage:(id)fp12 initiatedByFrame:(id)fp16;`
+ * `-(id)webView:(id)fp8 runJavaScriptTextInputPanelWithPrompt:(id)fp12 defaultText:(id)fp16 initiatedByFrame:(id)fp20;`
+ * `-(void)webView:(id)fp8 resource:(id)fp12 didReceiveAuthenticationChallenge:(id)fp16 fromDataSource:(id)fp20;`
+ * `-(void)webView:(id)fp8 resource:(id)fp12 didCancelAuthenticationChallenge:(id)fp16 fromDataSource:(id)fp20;`
+
+=== UITable ===
+*New in 2.1:*
+ * `-(BOOL)_checkCanSelectRow:(int)row view:(id)view;`
+
+=== UIDevice ===
+*New in 2.1:*
+ * `-(NSString*)buildVersion;`
+
+=== UITableViewCell ===
+*New in 2.1:*
+ * `-(void)_saveOpaqueViewState:(id)fp8;`
+ * `-(void)_setOpaque:(BOOL)opaque forSubview:(UIView*)subview;`
+
+=== UITextViewLegacy ===
+*Removed in 2.1:*
+ * `-(id)keyboardInputOverlayContainer:(id)fp8;`
+
+=== UIKeyboardCandidateInline ===
+*New in 2.1:*
+ * `-(void)_startBackgroundLayoutIfNeeded;`
+ * `-(void)_stopBackgroundLayout;`
+
+=== KBCandidateCell ===
+*New in 2.1:*
+ * `-(void)setStringMayBeTooLong:(BOOL)fp8;`
+
+=== UITabBar ===
+*New in 2.1:*
+ * `-(void)_finishSetItems:(id)fp8 finished:(id)fp12 context:(void *)fp16;`
+
+=== UITabBarCustomizeView ===
+*New in 2.1:*
+ * `-(id)initWithFrame:(CGRect)frame;`
+
+=== UITextEffectsWindow ===
+*Removed in 2.1:*
+ * `-(int)currentOrientation;`
+
+=== UIWebClip ===
+This class is new in 2.1.
+
+=== NSMutableArray(UIKBExtras) ===
+This category is new in 2.1.
+
+=== UITouch(UITouchInternal) ===
+*New in 2.1:*
+ * `-(void)setIsWarped:(BOOL)warped;`
+
+=== DOMNode(UIWebViewTextEditingAdditions) ===
+*Removed in 2.1:*
+ * `-(id)keyboardInputOverlayContainer:(id)fp8;`
+
+=== UIWebDocumentView(Interaction) ===
+*New in 2.1:*
+ * `-(void)touchesCancelled:(NSSet*)touches withEvent:(UIEvent*)event;`
+
+=== UITableViewCell(UITableViewCellStatic) ===
+*New in 2.1:*
+ * `-(void)_updateAndCacheBackgroundColorForHighlight;`
+
+*Removed in 2.1:*
+ * `-(void)_saveViewStateForSelectionOfView:(id)fp8;`
+ * `-(void)_updateHighlightColorsForSelectionOfView:(id)fp8;`
+ * `-(void)_updateHighlightColorsForDeselectionOfView:(id)fp8;`
