@@ -127,7 +127,9 @@ static const GUCaps KeyCaps = {8,8,8,8};
 																	  keysCount:*keyCount];
 	
 	[sl setUsesAutoShift:!isAlt];
-	[sl setIsShiftKeyPlaneChooser:isAlt];
+	// attempt to fix issue 67.
+	if ([sl respondsToSelector:@selector(setIsShiftKeyPlaneChooser:)])
+		[sl setIsShiftKeyPlaneChooser:isAlt];
 	
 	[sl setImageView:image];
 	[sl setShiftImageView:shiftImage];

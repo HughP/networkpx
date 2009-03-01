@@ -5,8 +5,8 @@
 		{ cell = PSLinkListCell;
 			detail = PSListItemsController;
 			label = "Layout";
-			validValues = (QWERTY, QWERTZ, QZERTY, AZERTY, Russian, Ukrainian, Greek, Colemak, ABCDEF);
-			validTitles = (QWERTY, QWERTZ, QZERTY, AZERTY, "Русский", "Українська", "Eλληνικά", Colemak, ABCDEF);
+			validValues = (QWERTY, QWERTZ, QZERTY, AZERTY, Russian, Ukrainian, Korean, Greek, Colemak, ABCDEF);
+			validTitles = (QWERTY, QWERTZ, QZERTY, AZERTY, "Русский", "Українська", "한국말", "Eλληνικά", Colemak, ABCDEF);
 			id = "layout";
 			default = QWERTY;
 			get = "layout";
