@@ -7,6 +7,6 @@ Homepage: http://code.google.com/p/networkpx/wiki/Using_5RowQWERTY
 Maintainer: KennyTM~ <kennytm+5RowQWERTY@gmail.com>
 Author: KennyTM~ <kennytm+5RowQWERTY@gmail.com>
 Section: System
-Depends: hk.kennytm.iKeyEx (>=0.1-6)
+Depends: hk.kennytm.iKeyEx (>=0.1-7)
 Installed-Size: 148
 dev: kennytm

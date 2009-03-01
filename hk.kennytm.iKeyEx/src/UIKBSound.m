@@ -41,7 +41,8 @@
 @implementation UIKBSound
 +(void)play {
 	// TODO: Make this portable.
-	[UIHardware _playSystemSound:1104];
+	if ([UIHardware respondsToSelector:@selector(_playSystemSound:)])
+		[UIHardware _playSystemSound:1104];
 }
 +(void)registerButton:(UIButton*)btn {
 	[btn addTarget:[UIKBSound class] action:@selector(play) forControlEvents:UIControlEventTouchDown];

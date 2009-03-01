@@ -7,7 +7,7 @@ Homepage: http://code.google.com/p/networkpx/wiki/Using_hClipboard
 Depiction: http://moreinfo.thebigboss.org/moreinfo/hclipboardDp.php
 Maintainer: KennyTM~ <kennytm+hClipboard@gmail.com>
 Author: KennyTM~ <kennytm+hClipboard@gmail.com>
-Section: Keyboard Extension
+Section: System
 Depends: hk.kennytm.iKeyEx (>=0.1-5)
 Installed-Size: 332
 dev: kennytm

@@ -55,7 +55,7 @@ static NSString* const IMEs[] = {
 	@"en_US", @"en_GB",
 	@"cs_CZ", @"da_DK", @"de_DE", @"es_ES", @"et_EE", @"fi_FI",
 	@"fr_FR", @"fr_CA",
-	@"hr_HR", @"hu_HU", @"is_IS", @"it_IT", @"lt_LT", @"lv_LV", @"nb_NO", @"nl_NL", @"pl_PL",
+	@"hr_HR", @"hu_HU", @"is_IS", @"it_IT", @"ko_KO", @"lt_LT", @"lv_LV", @"nb_NO", @"nl_NL", @"pl_PL",
 	@"pt_PT", @"pt_BR",
 	@"ro_RO", @"ru_RU", @"sk_SK", @"sv_SE", @"tr_TR", @"uk_UK",
 	@"ja_JP-Romaji",
@@ -87,6 +87,7 @@ typedef enum AllowedArrangements {
 	AA_AZERTY,
 	AA_Russian,
 	AA_Ukrainian,
+	AA_Korean,
 	AA_Greek,
 	AA_Colemak,
 	AA_ABCDEF,
@@ -100,6 +101,7 @@ static NSString* const Arrangements[][6] = {
 {@"a|z|e|r|t|y|u|i|o|p", @"q|s|d|f|g|h|j|k|l|m", @"w|x|c|v|b|n", @"A|Z|E|R|T|Y|U|I|O|P", @"Q|S|D|F|G|H|J|K|L|M", @"W|X|C|V|B|N"},
 {@"й|ц|у|к|е|н|г|ш|щ|з|х", @"ф|ы|в|а|п|р|о|л|д|ж|э", @"я|ч|с|м|и|т|ь|б|ю", @"Й|Ц|У|К|Е|Н|Г|Ш|Щ|З|Х", @"Ф|Ы|В|А|П|Р|О|Л|Д|Ж|Э", @"Я|Ч|С|М|И|Т|Ь|Б|Ю"},
 {@"й|ц|у|к|е|н|г|ш|щ|з|х", @"ф|и|в|а|п|р|о|л|д|ж|є", @"я|ч|с|м|і|т|ь|б|ю", @"Й|Ц|У|К|Е|Н|Г|Ш|Щ|З|Х", @"Ф|И|В|А|П|Р|О|Л|Д|Ж|Є", @"Я|Ч|С|М|І|Т|Ь|Б|Ю"},
+{@"ㅂ|ㅈ|ㄷ|ㄱ|ㅅ|ㅛ|ㅕ|ㅑ|ㅐ|ㅔ", @"ㅁ|ㄴ|ㅇ|ㄹ|ㅎ|ㅗ|ㅓ|ㅏ|ㅣ", @"ㅋ|ㅌ|ㅊ|ㅍ|ㅠ|ㅜ|ㅡ", @"ㅃ|ㅉ|ㄸ|ㄲ|ㅆ|ㅛ|ㅕ|ㅑ|ㅒ|ㅖ", @"ㅁ|ㄴ|ㅇ|ㄹ|ㅎ|ㅗ|ㅓ|ㅏ|ㅣ", @"ㅋ|ㅌ|ㅊ|ㅍ|ㅠ|ㅜ|ㅡ"},
 {@";|ς|ε|ρ|τ|υ|θ|ι|ο|π", @"α|σ|δ|φ|γ|η|ξ|κ|λ", @"ζ|χ|ψ|ω|β|ν|μ", @":|^|Ε|Ρ|Τ|Υ|Θ|Ι|Ο|Π", @"Α|Σ|Δ|Φ|Γ|Η|Ξ|Κ|Λ", @"Ζ|Χ|Ψ|Ω|Β|Ν|Μ"},
 {@"q|w|f|p|g|j|l|u|y|,", @"a|r|s|t|d|h|n|e|i|o", @"z|x|c|v|b|k|m", @"Q|W|F|P|G|J|L|U|Y|,", @"A|R|S|T|D|H|N|E|I|O", @"Z|X|C|V|B|K|M"},
 {@"a|b|c|d|e|f|g|h|i|j", @"k|l|m|n|o|p|q|r|s", @"t|u|v|w|x|y|z", @"A|B|C|D|E|F|G|H|I|J", @"K|L|M|N|O|P|Q|R|S", @"T|U|V|W|X|Y|Z"}
@@ -603,6 +605,7 @@ void clearCache () {
 	else CheckArrangement(AZERTY)
 	else CheckArrangement(Russian)
 	else CheckArrangement(Ukrainian)
+	else CheckArrangement(Korean)
 	else CheckArrangement(Greek)
 	else CheckArrangement(Colemak)
 	else CheckArrangement(ABCDEF);
