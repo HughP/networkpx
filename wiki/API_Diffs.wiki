@@ -1,6 +1,6 @@
 #summary Diff of the API between different firmware versions
 
-<wiki:toc />
+<wiki:toc max_depth="2" />
 
 = 2.0 → 2.1 =
 == UIKit ==
@@ -164,7 +164,7 @@ The whole class is removed in 2.1.
 The whole class is removed in 2.1.
 
 === UIAccentedCharacterView ===
-The ivar layout is completely modified. Do not rely on the ivar layout at all. Use class_getInstanceVariable() or other runtime functions instead.
+The ivar layout is significantly modified. Do not rely on the ivar layout at all. Use class_getInstanceVariable() or other runtime functions instead.
 
 *New in 2.1:*
  * `-(unsigned)moveCharactersAndCapsToAltSide:(unsigned)fp8 position:(unsigned)fp12 expansion:(int)fp16;`
@@ -182,7 +182,7 @@ Changed in 2.1:
 || *Old* || *New* ||
 || `-(NSString*)roma2hiragana:(NSString*)roma;` || `-(NSString*)roma2hiragana:(NSString*)roma stripIncompleteRomajiAtEnd:(BOOL)strip;` ||
 
-=== WordInfo ===
+=== !WordInfo ===
 *New in 2.1:*
  * `-(const char*)yomiUTF8String;`
  * `-(void)getInConnection:(int*)pInConnection outConnection:(int**)pOutConnection andOutConnections:(int*)pOutConnections;`
@@ -297,3 +297,518 @@ This category is new in 2.1.
  * `-(void)_saveViewStateForSelectionOfView:(id)fp8;`
  * `-(void)_updateHighlightColorsForSelectionOfView:(id)fp8;`
  * `-(void)_updateHighlightColorsForDeselectionOfView:(id)fp8;`
+
+= 2.1 → 2.2 =
+== UIKit ==
+=== @protocol UIKeyboardEmojiController ===
+This protocol is new in 2.2.
+
+=== @protocol UIKeyboardInput ===
+*Removed in 2.2:*
+ * `-(BOOL)spaceFollowsWordInRange:(DOMRange*)range;`
+ * `-(CGRect)autocorrectionRect;`
+ * `-(id)previousNGrams:(unsigned)fp8;`
+ * `-(void)markCurrentWordForAutoCorrection:(id)fp8 correction:(id)fp12;`
+
+=== @protocol UIKeyboardLayoutProtocol ===
+*New in 2.2:*
+ * `-(BOOL)shouldShowIndicator;`
+
+=== @protocol UITextInputTraits_Private ===
+*New in 2.2:*
+ * `@property BOOL acceptsEmoji;`
+
+=== UIPickerView ===
+*New in 2.2:*
+ * `-(void)_updateSound;`
+ * `-(void)setHidden:(BOOL)hidden;`
+ * `-(void)setAlpha:(float)alpha;`
+ * `-(void)didMoveToWindow;`
+
+*Removed in 2.2:*
+ * `-(void)_setupDefaultSounds;`
+
+=== UIApplication ===
+*New in 2.2:*
+ * `-(BOOL)_canOpenURL:(NSURL*)url publicURLsOnly:(BOOL)publicURLsOnly;`
+ * `-(void)_purgeSharedInstances;`
+ * `-(void)_playbackTimerCallback:(id)fp8;`
+ * `-(void)_startPlaybackTimer;`
+ * `-(id)_recordedEvents;`
+ * `-(void)_recordEvent:(GSEventRef)fp8;`
+ * `-(void)_startRecordingEvents;`
+ * `-(void)_stopRecordingEvents;`
+ * `-(void)_clearRecordedEvents;`
+ * `-(void)_playbackEvents:(id)fp8 atPlaybackRate:(float)fp12 messageWhenDone:(id)fp16 withSelector:(SEL)fp20;`
+ * `-(void)setHasMiniAlerts:(BOOL)hasMiniAlerts;`
+
+*Changed in 2.2:*
+|| *Old* || *New* ||
+|| `-(void)addStatusBarImageNamed:(NSString*)name removeOnAbnormalExit:(BOOL)remove;` || `-(void)addStatusBarImageNamed:(NSString*)fp8 removeOnExit:(BOOL)remove;` ||
+|| `-(void)_setStatusBarShowsProgress:(id)fp8;` || `-(void)_setStatusBarShowsProgress:(BOOL)fp8;` ||
+
+*Removed in 2.2:*
+ * `-(BOOL)addDownloadingIconToHomeScreen:(NSString*)icon;`
+
+=== UIWindow ===
+*New in 2.2:*
+ * `-(BOOL)_shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)orientation;`
+
+=== UINavigationItemView ===
+*New in 2.2:*
+ * `-(id)scriptingInfo;`
+
+=== UIUpdateItem ===
+*New in 2.2:*
+ * `-(BOOL)isSectionOperation;`
+ * `-(int)compareIndexPaths:(id)fp8;`
+ * `-(int)inverseCompareIndexPaths:(id)fp8;`
+
+=== UITableView ===
+Note that the ivar layout is changed by adding a `UIView* _touchedContentView` ivar in 2.2.
+
+*New in 2.2:*
+ * `-(void)_beginTouchesInContentView:(id)fp8 touches:(id)fp12 withEvent:(id)fp16;`
+
+*Removed in 2.2:*
+ * `-(id)_createTouchesWithMouseEvent:(GSEventRef)fp8 phase:(int)fp12;`
+
+=== UIHardware ===
+*New in 2.2:*
+ * `+(void)_updateSystemSoundActiveStatus:(id)fp8;`
+ * `+(void)_registerForSystemSounds:(id)fp8;`
+ * `+(void)_unregisterForSystemSounds:(id)fp8;`
+ * `+(void)_playSystemSound:(unsigned long)fp8;`
+
+=== UIPushButton ===
+*New in 2.2:*
+ * `-(void)setTracking:(BOOL)tracking;`
+ * `-(BOOL)_alwaysHandleScrollerMouseEvent;`
+ * `-(void)_setAlwaysHandleScrollerMouseEvent:(BOOL)handle;`
+
+=== UITextField ===
+*New in 2.2:*
+ * `-(CGPoint)_scrollOffset;`
+ * `-(BOOL)_fieldEditorAttached;`
+ * `-(void)_setSystemBackgroundViewActive:(BOOL)active;`
+ * `-(UIView*)_placeholderView;`
+ * `-(UIView*)_textLabelView;`
+ * `-(NSString*)_text;`
+
+=== UIFieldEditor ===
+*New in 2.2:*
+ * `-(void)setNotificationsDisabled:(BOOL)disabled;`
+
+=== UIViewController ===
+*New in 2.2:*
+ * `-(void)_loadViewFromNibNamed:(NSString*)nib bundle:(NSBundle*)bundle;`
+ * `-(NSString*)_existingNibNameMatchingClassName:(NSString*)className bundle:(NSBundle*)bundle;`
+ * `-(void)unloadView;`
+ * `-(void)viewDidUnload;`
+ * `-(int)keyboardDirectionForTransition:(int)fp8 isOrderingIn:(BOOL)fp12;`
+ * `-(id)presentedViewController;`
+ * `-(int)_transitionForModalTransition:(int)fp8;`
+ * `-(void)presentViewController:(id)fp8 withModalTransition:(int)fp12;`
+ * `-(void)dismissViewControllerWithModalTransition:(int)fp8;`
+ * `-(void)setNibBundle:(NSBundle*)bundle;`
+ * `-(void)setNibName:(NSString*)name;`
+
+*Changed in 2.2:*
+|| *Old* || *New* ||
+|| `-(void)viewDidMoveToWindow:(UIWindow*)window;` || `-(void)viewDidMoveToWindow:(UIWindow*)window shouldAppearOrDisappear:(BOOL)fp12;` ||
+
+*Removed in 2.2:*
+ * `-(void)_showAutomaticKeyboardFromBottomWithDuration:(id)fp8;`
+ * `-(void)_showAutomaticKeyboardForTransition:(int)fp8;`
+ * `-(void)prepareFirstResponder;`
+ * `-(void)presentModalViewController:(id)fp8 withNavigationController:(BOOL)fp12 animated:(BOOL)fp16;`
+
+=== UINavigationController ===
+*New in 2.2:*
+ * `-(void)viewDidMoveToWindow:(UIWindow*)window shouldAppearOrDisappear:(BOOL)fp12;`
+
+*Removed in 2.2:*
+ * `-(void)prepareFirstResponder;`
+
+=== UITabBarController ===
+*New in 2.2:*
+ * `-(void)tabBar:(id)fp8 willBeginCustomizingItems:(id)fp12;`
+
+=== UIMoreNavigationController ===
+*Changed in 2.2:*
+|| *Old* || *New* ||
+|| `-(void)willShowViewController:(id)fp8 animated:(BOOL)fp12;` || `-(void)didShowViewController:(id)fp8 animated:(BOOL)fp12;` ||
+
+=== UITiledView ===
+*New in 2.2:*
+ * `-(BOOL)shouldRepaintInPieces:(CGRect)fp8 region:(void *)fp24;`
+ * `-(void)accurateDirtyRects:(CGRect**)fp8 count:(unsigned*)fp12 clear:(BOOL)fp16;`
+ * `-(void)setAdjustsMaxTileCountDynamically:(BOOL)fp8;`
+ * `-(unsigned)adjustedMaxTileCount;`
+
+=== _UIAlertManager ===
+This class is new in 2.2.
+
+=== _UIAlertStackWatcher ===
+*Changed in 2.2:*
+|| *Old* || *New* ||
+|| `-(void)_resumeWithNotification:(id)fp8;` || `-(void)_appResumed:(id)fp8;` ||
+
+=== UIRemoveControl ===
+*New in 2.2:*
+ * `-(void)layoutSubviews;`
+ * `-(CGRect)_removeConfirmationStartingFrame;`
+ * `-(CGRect)_removeConfirmationEndingFrame;`
+
+=== UIDelayedAction ===
+*New in 2.2:*
+ * `-(NSTimeInterval)delay;`
+
+=== UIPreferencesTextTableCell ===
+*New in 2.2:*
+ * `-(unsigned)numberOfPlaceholders;`
+ * `-(void)setPlaceholderIndicesForCovers:(unsigned*)fp8;`
+
+*Changed in 2.2:*
+|| *Old* || *New* ||
+|| `-(id)initWithFrame:(CGRect)frame numberOfCovers:(unsigned)covers;` || `-(id)initWithFrame:(CGRect)frame numberOfCovers:(unsigned)covers numberOfPlaceholders:(unsigned)placeholders;` ||
+|| `-(void)setPlaceholderImage:(void*)fp8;` || `-(void)setPlaceholderImage:(void*)fp8 atPlaceholderIndex:(unsigned)index;` ||
+
+=== UILabel ===
+Note that the ivar layout is changed by adding a `float _lastLineBaseline` ivar in 2.2.
+
+*New in 2.2:*
+ * `-(float)_lastLineBaseline;`
+ * `-(void)_drawTextInRect:(CGRect)fp8 baselineCalculationOnly:(BOOL)fp24;`
+
+=== UICalloutView ===
+The ivar layout is significantly modified. Do not rely on the ivar layout at all. Use class_getInstanceVariable() or other runtime functions instead.
+
+*New in 2.2:*
+ * `-(void)_setLeftView:(id)fp8;`
+ * `-(void)_scheduleViewToFadeIn:(id)fp8;`
+ * `-(void)_scheduleViewToFadeOut:(id)fp8;`
+ * `-(void)setLeftView:(id)fp8 animated:(BOOL)fp12;`
+ * `-(void)setSubtitle:(id)fp8 animated:(BOOL)fp12;`
+ * `-(void)_setLayoutAnimationTimer:(id)fp8;`
+ * `-(void)_layoutAnimation;`
+ * `-(void)_scheduleLayoutAnimation;`
+ * `@property id leftView;`
+ * `-(void)_fadeViewsIn:(BOOL)fp8;`
+ * `@property UILineBreakMode titleLineBreakMode;
+ * `@property UILineBreakMode subtitleLineBreakMode;`
+ * `-(void)_layoutSubviews:(BOOL)fp8;`
+ * `-(void)_markDidMoveCalled;`
+
+*Changed in 2.2:*
+|| *Old* || *New* ||
+|| `-(void)animationDidStop:(id)fp8 finished:(id)fp12;` || `-(void)animationDidStop:(id)fp8 finished:(id)fp12 context:(void*)fp16;` ||
+
+=== UIFormAssistant ===
+Note that the ivar layout is changed by removing an `id<UIFormControl> _controlToFocusAfterRotation` ivar in 2.2.
+
+*New in 2.2:*
+ * `+(BOOL)isShowing;`
+
+*Removed in 2.2:*
+ * `-(void)willMoveToWindow:(id)fp8;`
+ * `-(void)didMoveToWindow;`
+ * `-(void)_windowWillRotate;`
+ * `-(void)_windowDidRotate;`
+ * `@property id<UIFormControl> _controlToFocusAfterRotation;`
+
+=== UIKeyboardImpl ===
+Note that the ivar layout is changed by adding `BOOL m_autocorrectionPreference` and removing `BOOL m_soundsEnabled` ivars in 2.2. Two ivars have renamed as well.
+
+*New in 2.2:*
+ * `-(BOOL)autocorrectionPreference;`
+ * `-(void)setKeyboardDefault:(id)fp8 forKey:(id)fp12;`
+ * `-(id)keyboardDefaultForKey:(id)fp8;`
+ * `-(NSString*)inputModeLastChosen;`
+ * `-(void)notifyShiftState;`
+ * `-(void)setShiftOffIfNeeded;`
+ * `-(void)toggleShift;`
+ * `-(void)setShiftPreventAutoshift:(BOOL)fp8;`
+ * `-(void)setShiftNeedsUpdate;`
+ * `-(void)clearShiftState;`
+ * `-(void)forceShiftUpdate;`
+ * `-(void)forceShiftUpdateIfKeyboardStateChanged;`
+ * `-(void)touchLongPressTimerWithDelay:(double)fp8;`
+
+*Changed in 2.2:*
+|| *Old* || *New* ||
+|| `-(BOOL)autoCapitalizationPreference;` || `-(BOOL)autocapitalizationPreference;` ||
+|| `-(void)updateShift;` || `-(void)updateShiftState;` ||
+
+*Removed in 2.2:*
+ * `-(BOOL)soundPreference;`
+ * `-(void)updateSoundActivationState;`
+ * `-(void)deactivateSounds;`
+ * `-(void)playKeyboardSound:(unsigned long)fp8;`
+ * `-(void)setSoundsEnabled:(BOOL)fp8;`
+
+=== UIKeyboardLayout ===
+*New in 2.2:*
+ * `-(BOOL)isShiftKeyPlaneChooser;`
+ * `-(BOOL)shiftKeyRequiresImmediateUpdate;`
+ * `-(BOOL)shouldShowIndicator;`
+
+=== UIDefaultKeyboardInput ===
+*New in 2.2:*
+ * `@property BOOL acceptsEmoji;`
+
+*Removed in 2.2:*
+ * `-(CGRect)autocorrectionRect;`
+ * `-(BOOL)spaceFollowsWordInRange:(DOMRange*)range;`
+ * `-(id)previousNGrams:(unsigned)fp8;`
+ * `-(void)markCurrentWordForAutoCorrection:(id)fp8 correction:(id)fp12;`
+
+=== UIGradientBar ===
+*New in 2.2:*
+ * `-(void)drawRect:(CGRect)rect;`
+
+=== UIRemoteApplication ===
+*Changed in 2.2:*
+|| *Old* || *New* ||
+|| `-(BOOL)updatePort;` || `-(void)updatePort;` ||
+|| `-(BOOL)disableMiniAlerts:(int)fp8;` || `-(void)hideTopMostMiniAlert:(int)fp8;` ||
+|| `-(BOOL)enableMiniAlerts:(char*)fp8;` || `-(void)showTopMostMiniAlert;` ||
+|| `-(BOOL)statusBarWillAnimateToHeight:(float)fp8 duration:(NSTimeInterval)fp12 fence:(int)fp20;` || `-(void)statusBarWillAnimateToHeight:(float)fp8 duration:(NSTimeInterval)fp12 fence:(int)fp20;` ||
+
+*Removed in 2.2:*
+ * `-(void)invalidatePort;`
+ * `-(void)disconnected;`
+ * `-(BOOL)available;`
+ * `-(BOOL)wantsToShowMiniAlert:(char*)fp8;`
+
+=== KBSearchThread ===
+*New in 2.2:*
+ * `-(void)completeSearchOnMainThread:(id)fp8;`
+
+=== KBWordSearchThreadParameters ===
+*New in 2.2:*
+ * `-(void)complete;`
+ * `@property NSArray* results;`
+
+=== UIKeyboardLayoutRoman ===
+*New in 2.2:*
+ * `-(BOOL)isShiftKeyPlaneChooser;`
+ * `-(BOOL)cancelTouchTracking;`
+ * `-(BOOL)cancelMouseTracking;`
+
+=== UIKeyboardSublayout ===
+*New in 2.2:*
+ * `@property BOOL isShiftKeyPlaneChooser;`
+
+=== UIWebDocumentView ===
+The ivar layout is significantly modified. Do not rely on the ivar layout at all. Use class_getInstanceVariable() or other runtime functions instead.
+
+*New in 2.2:*
+ * `-(void)enableReachability;`
+ * `-(void)_reachabilityManagerNotifiedIsReachable:(BOOL)fp8;`
+ * `-(void)setUsePreTimberlineTransparencyBehavior;`
+ * `-(void)accurateDirtyRects:(CGRect**)fp8 count:(unsigned*)fp12 clear:(BOOL)fp16;`
+ * `-(BOOL)shouldRepaintInPieces:(CGRect)fp8 region:(void*)fp24;`
+
+*Removed in 2.2:*
+ * `@property BOOL respectsBackgroundColorAlpha;`
+ * `-(CGRect)autocorrectionRect;`
+ * `-(BOOL)spaceFollowsWordInRange:(DOMRange*)range;`
+ * `-(id)previousNGrams:(unsigned)fp8;`
+ * `-(void)markCurrentWordForAutoCorrection:(id)fp8 correction:(id)fp12;`
+
+=== !WebViewReachabilityObserver ===
+This class is new in 2.2.
+
+=== UIThreadSafeNode ===
+*Removed in 2.2:*
+ * `-(void)setupPlaceholderTextIfNeeded;`
+
+=== UIWebViewLabel ===
+*New in 2.2:*
+ * `-(void)dealloc;`
+
+=== UIWebViewWebViewDelegate ===
+This class is new in 2.2.
+
+=== UIWebView ===
+*New in 2.2:*
+ * `-(void)_forceOpaque:(BOOL)fp8;`
+ * `-(void)setOpaque:(BOOL)fp8;`
+ * `-(void)_forceBackgroundColor:(id)fp8;`
+ * `-(void)setBackgroundColor:(id)fp8;`
+
+=== UIDevice ===
+*Removed in 2.2:*
+ * `+(void)initialize;`
+
+*New in 2.2:*
+ * `-(BOOL)isGeneratingBatteryStateNotifications;`
+ * `-(void)beginGeneratingBatteryStateChangeNotifications;`
+ * `-(void)endGeneratingBatteryStateChangeNotifications;`
+
+=== UIPageControl ===
+*New in 2.2:*
+ * `-(id)_pageIndicatorImage;`
+ * `-(id)_pageIndicatorCurrentImage;`
+
+=== UITextInputTraits ===
+*New in 2.2:*
+ * `@property BOOL acceptsEmoji;`
+
+=== UIKeyboardInputManagerZephyr ===
+The whole class is removed in 2.2.
+
+=== UIKeyboardCandidateInline ===
+*New in 2.2:*
+ * `-(void)obsoleteCandidates;`
+
+=== UITableViewController ===
+*New in 2.2:*
+ * `-(void)viewWillDisappear:(BOOL)fp8;`
+ * `-(void)_adjustTableForKeyboardHeight:(id)fp8;`
+
+=== UITableViewControllerKeyboardSupport ===
+This class is new in 2.2.
+
+=== UITextEffectsWindow ===
+*New in 2.2:*
+ * `-(void)didAddSubview:(id)fp8;`
+ * `-(void)bringSubviewToFront:(id)fp8;`
+ * `-(void)sendSubviewToBack:(id)fp8;`
+
+*Removed in 2.2:*
+ * `-(void)addSubview:(id)fp8;`
+
+=== UIWebClip ===
+*New in 2.2:*
+ * `-(NSString*)_displayIdentifierString;`
+ * `-(void)updateCustomIconLocationsFromWebDocumentView:(id)fp8;`
+
+=== UIKeyboardLayoutEmoji ===
+This class is new in 2.2.
+
+=== NSString(UIStringDrawing) ===
+*New in 2.2:*
+ * `-(CGSize)sizeWithFont:(UIFont*)font forWidth:(CGFloat)width lineBreakMode:(UILineBreakMode)mode letterSpacing:(CGFloat)spacing;`
+ * `-(CGSize)drawAtPoint:(CGPoint)point forWidth:(CGFloat)width withFont:(UIFont*)font lineBreakMode:(UILineBreakMode)mode letterSpacing:(CGFloat)spacing;`
+ * `-(CGSize)drawAtPoint:(CGPoint)point forWidth:(CGFloat)width withFont:(UIFont*)font lineBreakMode:(UILineBreakMode)mode letterSpacing:(CGFloat)spacing includeEmoji:(BOOL)emoji;`
+ * `-(CGSize)sizeWithFont:(UIFont*)font constrainedToSize:(CGSize)size lineBreakMode:(UILineBreakMode)mode lineSpacing:(int)lineSpacing;`
+ * `-(CGSize)drawInRect:(CGRect)rect withFont:(UIFont*)font lineBreakMode:(UILineBreakMode)mode alignment:(UITextAlignment)alignment lineSpacing:(int)lineSpacing;`
+ * `-(CGSize)drawInRect:(CGRect)rect withFont:(UIFont*)font lineBreakMode:(UILineBreakMode)mode alignment:(UITextAlignment)alignment lineSpacing:(int)lineSpacing includeEmoji:(BOOL)emoji;`
+ * `-(CGSize)drawAtPoint:(CGPoint)point forWidth:(CGFloat)width withFont:(UIFont*)font fontSize:(CGFloat)fontSize lineBreakMode:(UILineBreakMode)mode baselineAdjustment:(UIBaselineAdjustment)adjust includeEmoji:(BOOL)emoji;`
+ * `-(CGSize)drawAtPoint:(CGPoint)point forWidth:(CGFloat)width withFont:(UIFont*)font minFontSize:(CGFloat)minFontSize actualFontSize:(CGFloat*)pActualFontSize lineBreakMode:(UILineBreakMode)mode baselineAdjustment:(UIBaselineAdjustment)adjust includeEmoji:(BOOL)emoji;`
+
+=== UIScrollView(Static) ===
+*Removed in 2.2:*
+ * `-(void)_beginTouchesInContentView:(id)fp8 touches:(NSSet*)touches withEvent:(UIEvent*)event;`
+
+Note: this message is not actually "removed", but moved to the category (UIScrollViewInternal).
+
+=== UIScrollView(UIScrollViewInternal) ===
+*New in 2.2:*
+ * `-(NSTimeInterval)_touchDelayForScrollDetection;`
+ * `-(void)_beginTouchesInContentView:(id)fp8 touches:(NSSet*)touches withEvent:(UIEvent*)event;`
+ * `-(id)_touchedContentView;`
+ * `-(CGPoint)_stopOffset;`
+ * `-(double)_horizontalVelocity;`
+
+=== UIApplication(UIApplicationTesting) ===
+*New in 2.2:*
+ * `-(NSString*)_pathForFrameworkName:(NSString*)fp8 inPrivate:(BOOL)fp12;`
+
+=== UIAlertView(Private) & UIActionSheet(Private) ===
+*Removed in 2.2:*
+ * `+(id)topMostAlert;`
+ * `+(id)visibleAlert;`
+ * `+(BOOL)atLeastOneAlertVisible;`
+ * `+(void)_reorientAlertWindowTo:(int)fp8 animated:(BOOL)fp12;`
+ * `+(void)noteOrientationChangingTo:(int)fp8;`
+ * `+(void)hideTopmostMiniAlert:(int)fp8;`
+ * `+(void)hideAlertsForTermination;`
+ * `+(void)showTopmostMiniAlert:(char *)fp8;`
+ * `+(void)wantsToShowMiniAlerts:(char *)fp8;`
+ * `+(BOOL)_hideTopMostAlertAnimated:(BOOL)fp8;`
+ * `-(void)_addToStack;`
+ * `-(void)_removeFromStack;`
+ * `-(void)_tellSpringboardShowingSheet:(BOOL)fp8;`
+ * `-(void)_tellSpringboardHidingSheet:(BOOL)fp8;`
+ * `-(void)_createAlertWindowIfNeeded:(BOOL)fp8;`
+
+=== UIModalView(Private) ===
+*New in 2.2:*
+ * `+(BOOL)atLeastOneAlertVisible;`
+ * `-(void)_setTextFieldsHidden:(BOOL)fp8;`
+
+*Removed in 2.2:*
+ * `+(void)_reorientAlertWindowTo:(int)fp8 animated:(BOOL)fp12;`
+ * `+(void)hideTopmostMiniAlert:(int)fp8;`
+ * `+(void)hideAlertsForTermination;`
+ * `+(void)showTopmostMiniAlert:(char *)fp8;`
+ * `+(void)wantsToShowMiniAlerts:(char *)fp8;`
+ * `+(BOOL)_hideTopMostAlertAnimated:(BOOL)fp8;`
+ * `-(void)_addToStack;`
+ * `-(void)_removeFromStack;`
+ * `-(void)_tellSpringboardShowingSheet:(BOOL)fp8;`
+ * `-(void)_tellSpringboardHidingSheet:(BOOL)fp8;`
+ * `-(void)_createAlertWindowIfNeeded:(BOOL)fp8;`
+
+=== UISlider(UISliderPrivate) ===
+*New in 2.2:*
+ * `-(void)_setTrackEnabled:(BOOL)fp8;`
+ * `-(BOOL)_trackEnabled;`
+
+=== UIKeyboardImpl(UIKeyboardLayoutLanguageAdapter) ===
+*New in 2.2:*
+ * `-(BOOL)callLayoutIsShiftKeyPlaneChooser;`
+ * `-(BOOL)callLayoutShiftKeyRequiresImmediateUpdate;`
+
+=== NSURL(UIKitAdditions) ===
+*New in 2.2:*
+ * `-(id)phobosURL;`
+
+=== UITouch(UITouchInternal) ===
+*New in 2.2:*
+ * `+(id)_createTouchesWithGSEvent:(GSEventRef)event phase:(int)fp12 view:(UIView*)view;`
+
+=== DOMNode(UIWebViewTextEditingAdditions) & DOMNode(UITextInputAdditions) ===
+The category DOMNode(UIWebViewTextEditingAdditions) was renamed to DOMNode(UITextInputAdditions) in 2.2, and adopted the UIKeyboardInput protocol.
+
+*New in 2.2:*
+ * `-(BOOL)hasText;`
+ * `-(void)setupPlaceholderTextIfNeeded;`
+
+*Changed in 2.2:*
+|| *Old* || *New* ||
+|| `-(void*)fontForCaretSelection;` || `-(UIFont*)fontForCaretSelection;` ||
+
+*Removed in 2.2:*
+ * `-(CGRect)autocorrectionRect;`
+ * `-(BOOL)spaceFollowsWordInRange:(DOMRange*)range;`
+ * `-(id)previousNGrams:(unsigned)fp8;`
+ * `-(void)markCurrentWordForAutoCorrection:(id)fp8 correction:(id)fp12;`
+
+=== DOMNode(UIWebViewAdditions) ===
+*Removed in 2.2:*
+ * `-(BOOL)hasText;`
+
+Note: this message is not actually "removed", but moved to the category (UITextInputAdditions).
+
+=== UIWebDocumentView(Forms) ===
+*Removed in 2.2:*
+ * `-(void)_updateFormElementBoundaries;`
+
+=== UITableViewCell(UITableViewCellInternal) ===
+*New in 2.2:*
+ * `-(void)_setShowsReorderControl:(BOOL)fp8;`
+ * `-(void)_setShowingDeleteConfirmation:(BOOL)fp8;`
+
+=== NSObject(UIKitVersDynaMap) ===
+This category is new in 2.2.
+
+=== UIApplication(UIKitVersDynaMap) ===
+This category is new in 2.2.
+
+= 2.2 → 2.2.1 =
+== UIKit ==
+Nothing was changed in the UIKit from 2.2 to 2.2.1.
