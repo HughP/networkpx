@@ -3,7 +3,7 @@
 
 <wiki:toc/>
 
-= WordTrie =
+= !WordTrie =
 
 The !WordTrie consist of 2 files, the index file (.idx) and word file (.dat).
 
@@ -93,10 +93,12 @@ struct DictEntry {
   int outConnection;
   int inConnection;
   int _field5;
-  int _field6;
+  int nextLink;
 };
 }}}
 The two offsets point to the *wordlist* table, as the position where the respective string can be found.
+
+The `nextLink` variable points to the index in the _dict_.
 
 == Learned Dictionary Plist Specification ==
 
