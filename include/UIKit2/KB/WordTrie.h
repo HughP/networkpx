@@ -13,17 +13,17 @@
 namespace KB {
 	class ReadOnlyDataFile;
 	class WordTrie;
+	typedef int TrieSearchType;
 	
 	// sizeof = 0x20
 	class WordTrieNode {
-		unsigned m_retain_count;	// ?
-		ReadOnlyDataFile* m_datafile;
-		char* m_data;
-		unsigned m_c;
-		unsigned m_10;
-		int m_oflag;
-		unsigned m_18;
-		WTF::ListRefPtr<KB::WordTrieNode> m_1c;
+		unsigned m_retain_count;		// 0
+		ReadOnlyDataFile* m_datafile;	// 4
+		char* m_data;					// 8
+		const char* m_next;				// c
+		unsigned m_search_type;			// 10
+		PackedTrieSibling m_sibling;	// 14
+		WTF::ListRefPtr<KB::WordTrieNode> m_1c;	// 1c
 		
 		// 0x18
 	 
@@ -34,7 +34,6 @@ namespace KB {
 	};
 	
 	// sizeof == 0x50
-	typedef int TrieSearchType;
 	class WordTrieSearch {
 		WTF::Vector<WTF::RefPtr<KB::WordTrieNode> > m_states;	// 0
 	    TrieSearchType m_type;			// c
