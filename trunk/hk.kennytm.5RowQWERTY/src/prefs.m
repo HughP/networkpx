@@ -78,21 +78,34 @@ static NSString* const defaultSymbols[] = {
 		  @"<" , @">" , @"?" , @""
 };
 
+static NSString* const numPadTexts[][3] = {
+{@"7", @"8", @"9"},
+{@"4", @"5", @"6"},
+{@"1", @"2", @"3"},
+{@"0", @"" , @"."},
+};
+static NSString* const controlKeysTexts[][3] = {
+{@"\x1B",    @"\x1B[1~", @"\x1B[5~"},
+{@"\x1B[3~", @"\x1B[4~", @"\x1B[6~"},
+{@"",         @"\x1B[A", @""},
+{@"\x1B[D", @"\x1B[B", @"\x1B[C"},
+};
 
 
-typedef enum AllowedArrangements {
-	AA_QWERTY,
-	AA_QWERTZ,
-	AA_QZERTY,
-	AA_AZERTY,
-	AA_Russian,
-	AA_Ukrainian,
-	AA_Korean,
-	AA_Greek,
-	AA_Colemak,
-	AA_ABCDEF,
-	
-} AllowedArrangements;
+
+static NSString* const AllowedArrangements[] = {
+	@"QWERTY",
+	@"QWERTZ",
+	@"QZERTY",
+	@"AZERTY",
+	@"Russian",
+	@"Ukrainian",
+	@"Korean",
+	@"JapaneseQWERTY",
+	@"Greek",
+	@"Colemak",
+	@"ABCDEF",
+};
 
 static NSString* const Arrangements[][6] = {
 {@"q|w|e|r|t|y|u|i|o|p", @"a|s|d|f|g|h|j|k|l", @"z|x|c|v|b|n|m", @"Q|W|E|R|T|Y|U|I|O|P", @"A|S|D|F|G|H|J|K|L", @"Z|X|C|V|B|N|M"},
@@ -102,6 +115,7 @@ static NSString* const Arrangements[][6] = {
 {@"й|ц|у|к|е|н|г|ш|щ|з|х", @"ф|ы|в|а|п|р|о|л|д|ж|э", @"я|ч|с|м|и|т|ь|б|ю", @"Й|Ц|У|К|Е|Н|Г|Ш|Щ|З|Х", @"Ф|Ы|В|А|П|Р|О|Л|Д|Ж|Э", @"Я|Ч|С|М|И|Т|Ь|Б|Ю"},
 {@"й|ц|у|к|е|н|г|ш|щ|з|х", @"ф|и|в|а|п|р|о|л|д|ж|є", @"я|ч|с|м|і|т|ь|б|ю", @"Й|Ц|У|К|Е|Н|Г|Ш|Щ|З|Х", @"Ф|И|В|А|П|Р|О|Л|Д|Ж|Є", @"Я|Ч|С|М|І|Т|Ь|Б|Ю"},
 {@"ㅂ|ㅈ|ㄷ|ㄱ|ㅅ|ㅛ|ㅕ|ㅑ|ㅐ|ㅔ", @"ㅁ|ㄴ|ㅇ|ㄹ|ㅎ|ㅗ|ㅓ|ㅏ|ㅣ", @"ㅋ|ㅌ|ㅊ|ㅍ|ㅠ|ㅜ|ㅡ", @"ㅃ|ㅉ|ㄸ|ㄲ|ㅆ|ㅛ|ㅕ|ㅑ|ㅒ|ㅖ", @"ㅁ|ㄴ|ㅇ|ㄹ|ㅎ|ㅗ|ㅓ|ㅏ|ㅣ", @"ㅋ|ㅌ|ㅊ|ㅍ|ㅠ|ㅜ|ㅡ"},
+{@"q|w|e|r|t|y|u|i|o|p", @"a|s|d|f|g|h|j|k|l|ー", @"z|x|c|v|b|n|m", @"Q|W|E|R|T|Y|U|I|O|P", @"A|S|D|F|G|H|J|K|L|—", @"Z|X|C|V|B|N|M"},
 {@";|ς|ε|ρ|τ|υ|θ|ι|ο|π", @"α|σ|δ|φ|γ|η|ξ|κ|λ", @"ζ|χ|ψ|ω|β|ν|μ", @":|^|Ε|Ρ|Τ|Υ|Θ|Ι|Ο|Π", @"Α|Σ|Δ|Φ|Γ|Η|Ξ|Κ|Λ", @"Ζ|Χ|Ψ|Ω|Β|Ν|Μ"},
 {@"q|w|f|p|g|j|l|u|y|,", @"a|r|s|t|d|h|n|e|i|o", @"z|x|c|v|b|k|m", @"Q|W|F|P|G|J|L|U|Y|,", @"A|R|S|T|D|H|N|E|I|O", @"Z|X|C|V|B|K|M"},
 {@"a|b|c|d|e|f|g|h|i|j", @"k|l|m|n|o|p|q|r|s", @"t|u|v|w|x|y|z", @"A|B|C|D|E|F|G|H|I|J", @"K|L|M|N|O|P|Q|R|S", @"T|U|V|W|X|Y|Z"}
@@ -152,23 +166,26 @@ NSString* actualDisplayStringForString(NSString* t) {
 
 __attribute__((pure))
 NSObject* actualDisplayObjectForString(NSString* t, BOOL isPopup) {
+	if ([t length] == 0) return t;
+	NSArray* gray = [NSArray arrayWithObject:[NSNumber numberWithFloat:0.5f]];
+	NSNumber* point2 = [NSNumber numberWithFloat:0.2f];
 	if ([@"\t" isEqualToString:t]) {
 		if (isPopup)
 			return @"Tab";
 		else
 			return [NSDictionary dictionaryWithObjectsAndKeys:
-					[NSArray arrayWithObject:[NSNumber numberWithFloat:0.5f]], @"color",
+					gray, @"color",
 					@"⇥", @"text",
 					nil];
 	} else if ([@"\n" isEqualToString:t]) {
 		if (isPopup)
 			return [NSDictionary dictionaryWithObjectsAndKeys:
-					[NSNumber numberWithFloat:0.2f], @"size",
+					point2, @"size",
 					@"Return", @"text",
 					nil];
 		else
 			return [NSDictionary dictionaryWithObjectsAndKeys:
-					[NSArray arrayWithObject:[NSNumber numberWithFloat:0.5f]], @"color",
+					gray, @"color",
 					@"↵", @"text",
 					nil];
 	} else if ([@" " isEqualToString:t]) {
@@ -179,10 +196,74 @@ NSObject* actualDisplayObjectForString(NSString* t, BOOL isPopup) {
 					nil];
 		else
 			return [NSDictionary dictionaryWithObjectsAndKeys:
-					[NSArray arrayWithObject:[NSNumber numberWithFloat:0.5f]], @"color",
+					gray, @"color",
 					@"␣", @"text",
 					nil];
-	} else if ([t length] != 1) {
+	} else if ([@"\x1b" isEqualToString:t]) {
+		if (isPopup)
+			return @"Esc";
+		else
+			return [NSDictionary dictionaryWithObject:@"/Library/iKeyEx/Keyboards/5RowQWERTY.keyboard/esc.png" forKey:@"image"];
+	} else if ([t length] > 1) {
+		if ([t characterAtIndex:0] == '\x1b' && [t length] >= 3) {
+			switch ([t characterAtIndex:2]) {
+				case 'A': return @"↑";
+				case 'B': return @"↓";
+				case 'C': return @"→";
+				case 'D': return @"←";
+				case '1':
+					if (isPopup)
+						return [NSDictionary dictionaryWithObjectsAndKeys:
+								point2, @"size",
+								@"Home", @"text",
+								nil];
+					else
+						return [NSDictionary dictionaryWithObjectsAndKeys:
+								gray, @"color",
+								@"↖", @"text",
+								nil];
+				case '3':
+					if (isPopup)
+						return @"Del.";
+					else
+						return [NSDictionary dictionaryWithObjectsAndKeys:
+								gray, @"color",
+								@"⌦", @"text",
+								nil];
+				case '4':
+					if (isPopup)
+						return @"End";
+					else
+						return [NSDictionary dictionaryWithObjectsAndKeys:
+								gray, @"color",
+								@"↘", @"text",
+								nil];
+				case '5':
+					if (isPopup)
+						return [NSDictionary dictionaryWithObjectsAndKeys:
+								[NSNumber numberWithFloat:0.3f], @"size",
+								@"Page Up", @"text",
+								nil];
+					else
+						return [NSDictionary dictionaryWithObjectsAndKeys:
+								gray, @"color",
+								@"⇞", @"text",
+								nil];
+				case '6':
+					if (isPopup)
+						return [NSDictionary dictionaryWithObjectsAndKeys:
+								[NSNumber numberWithFloat:0.3f], @"size",
+								@"Page Down", @"text",
+								nil];
+					else
+						return [NSDictionary dictionaryWithObjectsAndKeys:
+								gray, @"color",
+								@"⇟", @"text",
+								nil];
+				default:
+					return t;
+			}
+		}
 		return t;
 	} else {
 		unichar c = [t characterAtIndex:0];
@@ -518,6 +599,13 @@ void clearCache () {
 
 @interface FiveRowQWERTYListController : PSListController {
 	NSMutableDictionary* layoutPlist, *infoPlist;
+	
+	NSArray* shiftTopRows;
+	NSArray* altSymbols[4];
+	NSArray* shiftAltSymbols[4];
+	NSString* layout;
+	NSString* topRow;
+	NSString* altPlane;
 }
 -(NSArray*)specifiers;
 -(id)initForContentSize:(CGSize)size;
@@ -526,18 +614,258 @@ void clearCache () {
 -(NSArray*)getIMEs;
 -(NSArray*)getIMETitles;
 
-@property(retain) NSString* layout;
-@property(retain) NSArray* specialCharacters;
-@property(retain) NSString* inputManager;
+-(NSString*)valueForSpecifier:(PSSpecifier*)spec;
+-(void)setValue:(NSString*)value forSpecifier:(PSSpecifier*)spec;
+
+@property(nonatomic,retain) NSString* layout;
+@property(nonatomic,retain) NSString* topRow;
+@property(nonatomic,retain) NSString* altPlane;
+
+@property(nonatomic,retain) NSArray* specialCharacters;
+@property(nonatomic,retain) NSString* inputManager;
+
+-(void)readLayout;
+-(void)saveLayout;
+
 @end
 
 @implementation FiveRowQWERTYListController
-@dynamic layout, specialCharacters, inputManager;
+@synthesize layout, topRow, altPlane;
+@dynamic specialCharacters, inputManager;
+
+-(NSString*)valueForSpecifier:(PSSpecifier*)spec { return [self valueForKey:spec.identifier]; }
+-(void)setValue:(NSString*)value forSpecifier:(PSSpecifier*)spec {
+	[self setValue:value forKey:spec.identifier];
+	[self saveLayout];
+}
+
+
+-(void)readLayout {
+	[layout release];
+	layout = [[layoutPlist objectForKey:@"layout"] retain];
+	
+	[topRow release];
+	topRow = [[layoutPlist objectForKey:@"topRow"] retain];
+	
+	[altPlane release];
+	altPlane = [[layoutPlist objectForKey:@"altPlane"] retain];
+	
+	[shiftTopRows release];
+	if ([topRow isEqualToString:@"Symbols"]) {
+		shiftTopRows = [[[layoutPlist objectForKey:@"Alphabet"] objectForKey:@"texts"] objectAtIndex:0];
+	} else if ([topRow isEqualToString:@"Disabled"]) {
+		shiftTopRows = [[[layoutPlist objectForKey:@"Alphabet"] objectForKey:@"shiftedTexts"] lastObject];
+	} else {
+		shiftTopRows = [[[layoutPlist objectForKey:@"Alphabet"] objectForKey:@"shiftedTexts"] objectAtIndex:0];
+	}
+	if ([shiftTopRows isKindOfClass:[NSString class]]) {
+		shiftTopRows = [[(NSString*)shiftTopRows substringFromIndex:1] componentsSeparatedByString:[(NSString*)shiftTopRows substringToIndex:1]];
+	}
+	[shiftTopRows retain];
+	
+	NSUInteger i = 0;
+	NSDictionary* numbersSublayout = [layoutPlist objectForKey:@"Numbers"];
+	for (NSArray* sym in [numbersSublayout objectForKey:@"texts"]) {
+		[altSymbols[i] release];
+		altSymbols[i] = [[sym subarrayWithRange:NSMakeRange(0, i==3 ? 4 : 5)] retain];
+		++ i;
+		if (i == 4)
+			break;
+	}
+	i = 0;
+	for (NSArray* sym in [numbersSublayout objectForKey:@"shiftedTexts"]) {
+		[shiftAltSymbols[i] release];
+		shiftAltSymbols[i] = [[sym subarrayWithRange:NSMakeRange(0, i==3 ? 4 : 5)] retain];
+		++ i;
+		if (i == 4)
+			break;
+	}
+}
+
+-(void)saveLayout {	
+	[layoutPlist setObject:layout forKey:@"layout"];
+	[layoutPlist setObject:topRow forKey:@"topRow"];
+	[layoutPlist setObject:altPlane forKey:@"altPlane"];
+	
+	int i;
+	// Set Alphabets
+	
+	NSArray* numRow = [NSArray arrayWithObjects:@"1", @"2", @"3", @"4", @"5", @"6", @"7", @"8", @"9", @"0", nil];
+	NSMutableArray* texts = [NSMutableArray arrayWithObject:numRow];
+	NSMutableArray* shiftedTexts = [NSMutableArray arrayWithObject:shiftTopRows];
+	BOOL textsSet = NO;
+	for (i = 0; i < sizeof(AllowedArrangements)/sizeof(NSString*); ++ i) {
+		if ([AllowedArrangements[i] isEqualToString:layout]) {
+			[texts addObject:[Arrangements[i][0] componentsSeparatedByString:@"|"]];
+			[texts addObject:[Arrangements[i][1] componentsSeparatedByString:@"|"]];
+			[texts addObject:[Arrangements[i][2] componentsSeparatedByString:@"|"]];
+			[texts addObject:[NSArray array]];
+			
+			[shiftedTexts addObject:[Arrangements[i][3] componentsSeparatedByString:@"|"]];
+			[shiftedTexts addObject:[Arrangements[i][4] componentsSeparatedByString:@"|"]];
+			[shiftedTexts addObject:[Arrangements[i][5] componentsSeparatedByString:@"|"]];
+			[shiftedTexts addObject:[NSArray array]];
+			
+			textsSet = YES;
+			break;
+		}
+	}
+	if (!textsSet) {
+		[texts addObject:[Arrangements[0][0] componentsSeparatedByString:@"|"]];
+		[texts addObject:[Arrangements[0][1] componentsSeparatedByString:@"|"]];
+		[texts addObject:[Arrangements[0][2] componentsSeparatedByString:@"|"]];
+		[texts addObject:[NSArray array]];
+		
+		[shiftedTexts addObject:[Arrangements[0][3] componentsSeparatedByString:@"|"]];
+		[shiftedTexts addObject:[Arrangements[0][4] componentsSeparatedByString:@"|"]];
+		[shiftedTexts addObject:[Arrangements[0][5] componentsSeparatedByString:@"|"]];
+		[shiftedTexts addObject:@"="];
+	}
+	
+	NSArray* urls = [NSArray arrayWithObjects:@".", @"/", @".com", nil];
+	NSArray* emails = [NSArray arrayWithObjects:@" ", @".", @"@", nil];
+	BOOL isTopRowDisabled = [topRow isEqualToString:@"Disabled"];
+	if (isTopRowDisabled) {
+		NSMutableArray* temp = [texts objectAtIndex:0];
+		[texts removeObjectAtIndex:0];
+		[texts addObject:temp];
+		temp = [shiftedTexts objectAtIndex:0];
+		[shiftedTexts removeObjectAtIndex:0];
+		[shiftedTexts addObject:temp];
+		
+		temp = [[layoutPlist objectForKey:@"URL"] objectForKey:@"texts"];
+		[temp replaceObjectAtIndex:3 withObject:urls];
+		[temp replaceObjectAtIndex:4 withObject:@"=Alphabet"];
+		
+		temp = [[layoutPlist objectForKey:@"EmailAddress"] objectForKey:@"texts"];
+		[temp replaceObjectAtIndex:3 withObject:emails];
+		[temp replaceObjectAtIndex:4 withObject:@"=Alphabet"];
+	} else {
+		if ([topRow isEqualToString:@"Symbols"]) {
+			[texts replaceObjectAtIndex:0 withObject:shiftTopRows];
+			[shiftedTexts replaceObjectAtIndex:0 withObject:numRow];
+		}
+		
+		NSMutableArray* temp = [[layoutPlist objectForKey:@"URL"] objectForKey:@"texts"];
+		[temp replaceObjectAtIndex:3 withObject:@"=Alphabet"];
+		[temp replaceObjectAtIndex:4 withObject:urls];
+		
+		temp = [[layoutPlist objectForKey:@"URLAlt"] objectForKey:@"texts"];
+		[temp replaceObjectAtIndex:3 withObject:@"=Numbers"];
+		[temp replaceObjectAtIndex:4 withObject:urls];
+		
+		temp = [[layoutPlist objectForKey:@"EmailAddress"] objectForKey:@"texts"];
+		[temp replaceObjectAtIndex:3 withObject:@"=Alphabet"];
+		[temp replaceObjectAtIndex:4 withObject:emails];
+		
+		temp = [[layoutPlist objectForKey:@"EmailAddressAlt"] objectForKey:@"texts"];
+		[temp replaceObjectAtIndex:3 withObject:@"=Numbers"];
+		[temp replaceObjectAtIndex:4 withObject:emails];
+	}
+	NSMutableDictionary* alphabetSublayout = [layoutPlist objectForKey:@"Alphabet"];
+	NSMutableArray* counts = [NSMutableArray arrayWithCapacity:5], *rowIndentation = [NSMutableArray arrayWithCapacity:5];
+	NSUInteger maxCount = 0;
+	int rowCount = (isTopRowDisabled?4:5);
+	i = 0;
+	for (NSArray* a in texts) {
+		NSUInteger count = (i == rowCount-1) ? 3 : [a count];
+		[counts addObject:[NSNumber numberWithInteger:count]];
+		if (count > maxCount)
+			maxCount = count;
+		++i;
+	}
+	CGFloat keyHalfWidth = 160.f / maxCount;
+	i = 0;
+	for (NSNumber* n in counts) {
+		[rowIndentation addObject:[NSNumber numberWithFloat:((i == rowCount-1) ? 80 : 160-[n integerValue]*keyHalfWidth)]];
+		++i;
+	}
+	CGFloat shiftKeyWidth = [[rowIndentation objectAtIndex:rowCount-2] floatValue];
+	if (shiftKeyWidth > 42)
+		shiftKeyWidth = 42;
+	
+	[alphabetSublayout setObject:[NSNumber numberWithInteger:rowCount] forKey:@"rows"];
+	[alphabetSublayout setObject:counts forKey:@"arrangement"];
+	[alphabetSublayout setObject:rowIndentation forKey:@"rowIndentation"];
+	[alphabetSublayout setObject:texts forKey:@"texts"];
+	[alphabetSublayout setObject:shiftedTexts forKey:@"shiftedTexts"];
+	[alphabetSublayout setObject:[NSNumber numberWithFloat:shiftKeyWidth] forKey:@"shiftKeyWidth"];
+	[alphabetSublayout setObject:[NSNumber numberWithFloat:shiftKeyWidth] forKey:@"deleteKeyWidth"];
+	[alphabetSublayout setObject:[NSNumber numberWithBool:isTopRowDisabled] forKey:@"usesKeyCharges"];
+	[alphabetSublayout setObject:[NSNumber numberWithBool:isTopRowDisabled] forKey:@"registersKeyCentroids"];
+	[layoutPlist setObject:alphabetSublayout forKey:@"Alphabet"];
+	
+	// Set Numbers
+	BOOL isNumPad = [@"NumPad" isEqualToString:altPlane];
+	texts = [NSMutableArray arrayWithCapacity:5];
+	shiftedTexts = [NSMutableArray arrayWithCapacity:5];
+	for (i = 0; i < 4; ++ i) {
+		[texts addObject:[altSymbols[i] arrayByAddingObjectsFromArray:[NSArray arrayWithObjects:(isNumPad?numPadTexts:controlKeysTexts)[i] count:3]]];
+		[shiftedTexts addObject:[shiftAltSymbols[i] arrayByAddingObjectsFromArray:[NSArray arrayWithObjects:(isNumPad?controlKeysTexts:numPadTexts)[i] count:3]]];
+	}
+	[texts addObject:[NSArray array]];
+	[shiftedTexts addObject:@"="];
+	
+	NSMutableArray* labels = [NSMutableArray arrayWithCapacity:5];
+	NSMutableArray* popups = [NSMutableArray arrayWithCapacity:5];
+	i = 0;
+	for (NSArray* row in texts) {
+		NSMutableArray* curLabel = [NSMutableArray arrayWithCapacity:8];
+		NSMutableArray* curPopup = [NSMutableArray arrayWithCapacity:8];
+		for (NSString* col in row) {
+			[curLabel addObject:actualDisplayObjectForString(col, NO)];
+			[curPopup addObject:actualDisplayObjectForString(col, YES)];
+		}
+		[labels addObject:curLabel];
+		[popups addObject:curPopup];
+		++ i;
+		if (i == 4)
+			break;
+	}
+	[labels addObject:@"="];
+	[popups addObject:@"="];
+	
+	NSMutableArray* shiftedLabels = [NSMutableArray arrayWithCapacity:5];
+	NSMutableArray* shiftedPopups = [NSMutableArray arrayWithCapacity:5];
+	i = 0;
+	for (NSArray* row in shiftedTexts) {
+		NSMutableArray* curLabel = [NSMutableArray arrayWithCapacity:8];
+		NSMutableArray* curPopup = [NSMutableArray arrayWithCapacity:8];
+		for (NSString* col in row) {
+			[curLabel addObject:actualDisplayObjectForString(col, NO)];
+			[curPopup addObject:actualDisplayObjectForString(col, YES)];
+		}
+		[shiftedLabels addObject:curLabel];
+		[shiftedPopups addObject:curPopup];
+		++ i;
+		if (i == 4)
+			break;
+	}
+	[shiftedLabels addObject:@"="];
+	[shiftedPopups addObject:@"="];
+	
+	NSMutableDictionary* numbersSublayout = [layoutPlist objectForKey:@"Numbers"];
+	[numbersSublayout setObject:texts forKey:@"texts"];
+	[numbersSublayout setObject:shiftedTexts forKey:@"shiftedTexts"];
+	[numbersSublayout setObject:labels forKey:@"labels"];
+	[numbersSublayout setObject:shiftedLabels forKey:@"shiftedLabels"];
+	[numbersSublayout setObject:popups forKey:@"popups"];
+	[numbersSublayout setObject:shiftedPopups forKey:@"shiftedPopups"];
+	[layoutPlist setObject:numbersSublayout forKey:@"Numbers"];
+	
+	// Done :)
+	
+	[layoutPlist writeToFile:LAYOUT_PATH atomically:NO];
+	clearCache();
+}
 
 -(id)initForContentSize:(CGSize)size {
 	if ((self = [super initForContentSize:size])) {
 		layoutPlist = [[NSMutableDictionary alloc] initWithContentsOfFile:LAYOUT_PATH];
 		infoPlist = [[NSMutableDictionary alloc] initWithContentsOfFile:INFO_PATH];
+		
+		[self readLayout];
+		
 		cacheDirty = YES;
 	}
 	return self;
@@ -545,6 +873,14 @@ void clearCache () {
 -(void)dealloc {
 	[layoutPlist release];
 	[infoPlist release];
+	[shiftTopRows release];
+	for (int i = 0; i < 4; ++ i) {
+		[altSymbols[i] release];
+		[shiftAltSymbols[i] release];
+	}
+	[layout release];
+	[topRow release];
+	[altPlane release];
 	[super dealloc];
 }
 
@@ -581,208 +917,44 @@ void clearCache () {
 
 -(void)clearCache { clearCache(); }
 
--(NSString*)layout { return [layoutPlist objectForKey:@"layout"]; }
--(void)setLayout:(NSString*)layout {
-	[layoutPlist setObject:layout forKey:@"layout"];
-	NSMutableDictionary* sublayout = [layoutPlist objectForKey:@"Alphabet"];
-	NSArray* texts[5];
-	NSArray* shiftedTexts[5];
-	texts[0] = [NSArray arrayWithObjects:@"1", @"2", @"3", @"4", @"5", @"6", @"7", @"8", @"9", @"0", nil];
-	shiftedTexts[0] = [[sublayout objectForKey:@"shiftedTexts"] objectAtIndex:0];
-	texts[4] = shiftedTexts[4] = @"=";
-
-#define CheckArrangement(type) if ([layout isEqualToString:@#type]) { \
-	texts[1] = [Arrangements[AA_##type][0] componentsSeparatedByString:@"|"]; \
-	texts[2] = [Arrangements[AA_##type][1] componentsSeparatedByString:@"|"]; \
-	texts[3] = [Arrangements[AA_##type][2] componentsSeparatedByString:@"|"]; \
-	shiftedTexts[1] = [Arrangements[AA_##type][3] componentsSeparatedByString:@"|"]; \
-	shiftedTexts[2] = [Arrangements[AA_##type][4] componentsSeparatedByString:@"|"]; \
-	shiftedTexts[3] = [Arrangements[AA_##type][5] componentsSeparatedByString:@"|"]; \
-}	
-	     CheckArrangement(QWERTY)
-	else CheckArrangement(QWERTZ)
-	else CheckArrangement(QZERTY)
-	else CheckArrangement(AZERTY)
-	else CheckArrangement(Russian)
-	else CheckArrangement(Ukrainian)
-	else CheckArrangement(Korean)
-	else CheckArrangement(Greek)
-	else CheckArrangement(Colemak)
-	else CheckArrangement(ABCDEF);
-#undef CheckArrangement
-	
-	[sublayout setObject:[NSMutableArray arrayWithObjects:texts count:5] forKey:@"texts"];
-	[sublayout setObject:[NSMutableArray arrayWithObjects:shiftedTexts count:5] forKey:@"shiftedTexts"];
-	
-	NSUInteger counts[3] = {[texts[1] count], [texts[2] count], [texts[3] count]};
-	[sublayout setObject:[NSArray arrayWithObjects:
-						  [NSNumber numberWithInteger:10],
-						  [NSNumber numberWithInteger:counts[0]],
-						  [NSNumber numberWithInteger:counts[1]],
-						  [NSNumber numberWithInteger:counts[2]],
-						  [NSNumber numberWithInteger:3],
-						  nil]
-				  forKey:@"arrangement"];
-	NSUInteger maxCount = 10;
-	for (NSUInteger i = 0; i < 3; ++ i)
-		if (counts[i] > maxCount)
-			maxCount = counts[i];
-	CGFloat keyHalfWidth = 160.f / maxCount;
-	CGFloat rowIndent[3] = {160.f - counts[0]*keyHalfWidth, 160.f - counts[1]*keyHalfWidth, 160.f - counts[2]*keyHalfWidth};
-	NSNumber* thirdIndent = [NSNumber numberWithFloat:rowIndent[2]];
-	[sublayout setObject:[NSArray arrayWithObjects:
-						  [NSNumber numberWithFloat:0],
-						  [NSNumber numberWithFloat:rowIndent[0]],
-						  [NSNumber numberWithFloat:rowIndent[1]],
-						  thirdIndent,
-						  [NSNumber numberWithFloat:80],
-						  nil]
-				  forKey:@"rowIndentation"];
-	if (rowIndent[2] <= 42) {
-		[sublayout setObject:thirdIndent forKey:@"shiftKeyWidth"];
-		[sublayout setObject:thirdIndent forKey:@"deleteKeyWidth"];
-	} else {
-		[sublayout removeObjectForKey:@"shiftKeyWidth"];
-		[sublayout removeObjectForKey:@"deleteKeyWidth"];
-	}
-	
-	[layoutPlist setObject:sublayout forKey:@"Alphabet"];
-	[layoutPlist writeToFile:LAYOUT_PATH atomically:NO];
-	clearCache();
-}
-
 -(NSArray*)specialCharacters {
-	NSArray* shNums = [[[layoutPlist objectForKey:@"Alphabet"] objectForKey:@"shiftedTexts"] objectAtIndex:0];
-	if ([shNums isKindOfClass:[NSString class]])
-		shNums = [[(NSString*)shNums substringFromIndex:1] componentsSeparatedByString:[(NSString*)shNums substringToIndex:1]];
-	NSMutableArray* retval = [[shNums mutableCopy] autorelease];
+	NSMutableArray* retval = [[shiftTopRows mutableCopy] autorelease];
 	
-	NSDictionary* symPlane = [layoutPlist objectForKey:@"Numbers"];
-	NSArray* syms = [symPlane objectForKey:@"texts"];
-	NSArray* shSyms = [symPlane objectForKey:@"shiftedTexts"];
+	[retval addObjectsFromArray:altSymbols[0]];
+	[retval addObjectsFromArray:altSymbols[1]];
+	[retval addObjectsFromArray:altSymbols[2]];
+	[retval addObjectsFromArray:altSymbols[3]];
 	
-	[retval addObjectsFromArray:[[syms objectAtIndex:0] subarrayWithRange:NSMakeRange(0,5)]];
-	[retval addObjectsFromArray:[[syms objectAtIndex:1] subarrayWithRange:NSMakeRange(0,5)]];
-	[retval addObjectsFromArray:[[syms objectAtIndex:2] subarrayWithRange:NSMakeRange(0,5)]];
-	[retval addObjectsFromArray:[[syms objectAtIndex:3] subarrayWithRange:NSMakeRange(0,4)]];
-	
-	[retval addObjectsFromArray:[[shSyms objectAtIndex:0] subarrayWithRange:NSMakeRange(0,5)]];
-	[retval addObjectsFromArray:[[shSyms objectAtIndex:1] subarrayWithRange:NSMakeRange(0,5)]];
-	[retval addObjectsFromArray:[[shSyms objectAtIndex:2] subarrayWithRange:NSMakeRange(0,5)]];
-	[retval addObjectsFromArray:[[shSyms objectAtIndex:3] subarrayWithRange:NSMakeRange(0,4)]];
+	[retval addObjectsFromArray:shiftAltSymbols[0]];
+	[retval addObjectsFromArray:shiftAltSymbols[1]];
+	[retval addObjectsFromArray:shiftAltSymbols[2]];
+	[retval addObjectsFromArray:shiftAltSymbols[3]];
 	
 	return retval;
 }
--(void)setSpecialCharacters:(NSArray*)characterArray {	
-	NSString** characters = calloc(10+(5*4-1)*2, sizeof(NSString*));
-	[characterArray getObjects:characters];
-	NSUInteger i = 0;
+-(void)setSpecialCharacters:(NSArray*)characterArray {
+	[shiftTopRows release];
+	shiftTopRows = [[characterArray subarrayWithRange:NSMakeRange(0,10)] retain];
 	
-	// (1) set the shifted-numbers row.
-	{
-		NSMutableDictionary* alphabet = [layoutPlist objectForKey:@"Alphabet"];
-		
-		NSMutableArray* shiftedLabelsRow = [[NSMutableArray alloc] initWithCapacity:10];
-		NSMutableArray* shiftedPopupsRow = [[NSMutableArray alloc] initWithCapacity:10];
-		NSMutableArray* shiftedTextsRow  = [[NSMutableArray alloc] initWithCapacity:10];
-		
-		for (; i < 10; ++ i) {
-			[shiftedTextsRow addObject:characters[i]];
-			[shiftedLabelsRow addObject:actualDisplayObjectForString(characters[i], NO)];
-			[shiftedPopupsRow addObject:actualDisplayObjectForString(characters[i], YES)];
-		}
-		
-		[[alphabet objectForKey:@"shiftedTexts"] replaceObjectAtIndex:0 withObject:shiftedTextsRow];
-		[alphabet setObject:[NSArray arrayWithObjects:shiftedLabelsRow, @"=", @"=", @"=", @"=", nil]
-					 forKey:@"shiftedLabels"];
-		[alphabet setObject:[NSArray arrayWithObjects:shiftedPopupsRow, @"=", @"=", @"=", @"=", nil]
-					 forKey:@"shiftedPopups"];
-		
-		[shiftedLabelsRow release];
-		[shiftedPopupsRow release];
-		[shiftedTextsRow release];
-		
-		[layoutPlist setObject:alphabet forKey:@"Alphabet"];
-	}
+	[altSymbols[0] release];
+	altSymbols[0] = [[characterArray subarrayWithRange:NSMakeRange(10,5)] retain];
+	[altSymbols[1] release];
+	altSymbols[1] = [[characterArray subarrayWithRange:NSMakeRange(15,5)] retain];
+	[altSymbols[2] release];
+	altSymbols[2] = [[characterArray subarrayWithRange:NSMakeRange(20,5)] retain];
+	[altSymbols[3] release];
+	altSymbols[3] = [[characterArray subarrayWithRange:NSMakeRange(25,4)] retain];
 	
-	// (2) set the symbols
-	NSMutableDictionary* numbers = [layoutPlist objectForKey:@"Numbers"];
-	{
-		NSMutableArray* texts = [numbers objectForKey:@"texts"];
-		NSMutableArray* labels = [numbers objectForKey:@"labels"];
-		NSMutableArray* popups = [numbers objectForKey:@"popups"];
-		
-		NSMutableArray* curTextsRow = nil;
-		NSMutableArray* curLabelsRow = nil;
-		NSMutableArray* curPopupsRow = nil;
-		
-		NSInteger row = -1, col = 4;
-
-		for (; i < 10+(5*4-1); ++ i) {
-			++ col;
-			if (col == 5) {
-				++ row;
-				col = 0;
-				
-				curTextsRow = [texts objectAtIndex:row];
-				curLabelsRow = [labels objectAtIndex:row];
-				curPopupsRow = [popups objectAtIndex:row];
-				if ([curLabelsRow isKindOfClass:[NSString class]]) {
-					curLabelsRow = [curTextsRow mutableCopy];
-					[labels replaceObjectAtIndex:row withObject:curLabelsRow];
-					[curLabelsRow release];
-				}
-				if ([curPopupsRow isKindOfClass:[NSString class]]) {
-					curPopupsRow = [curLabelsRow mutableCopy];
-					[popups replaceObjectAtIndex:row withObject:curPopupsRow];
-					[curPopupsRow release];
-				}
-			}
-			
-			[curTextsRow replaceObjectAtIndex:col withObject:characters[i]];
-			[curLabelsRow replaceObjectAtIndex:col withObject:actualDisplayObjectForString(characters[i], NO)];
-			[curPopupsRow replaceObjectAtIndex:col withObject:actualDisplayObjectForString(characters[i], YES)];
-		}
+	[shiftAltSymbols[0] release];
+	shiftAltSymbols[0] = [[characterArray subarrayWithRange:NSMakeRange(29,5)] retain];
+	[shiftAltSymbols[1] release];
+	shiftAltSymbols[1] = [[characterArray subarrayWithRange:NSMakeRange(34,5)] retain];
+	[shiftAltSymbols[2] release];
+	shiftAltSymbols[2] = [[characterArray subarrayWithRange:NSMakeRange(39,5)] retain];
+	[shiftAltSymbols[3] release];
+	shiftAltSymbols[3] = [[characterArray subarrayWithRange:NSMakeRange(44,4)] retain];
 	
-		NSMutableArray* shiftedTexts = [numbers objectForKey:@"shiftedTexts"];
-		NSMutableArray* shiftedLabels = [numbers objectForKey:@"shiftedLabels"];
-		NSMutableArray* shiftedPopups = [numbers objectForKey:@"shiftedPopups"];
-		
-		row = -1; col = 4;
-		
-		for (; i < 10+2*(5*4-1); ++ i) {
-			++ col;
-			if (col == 5) {
-				++ row;
-				col = 0;
-				
-				curTextsRow = [shiftedTexts objectAtIndex:row];
-				curLabelsRow = [shiftedLabels objectAtIndex:row];
-				curPopupsRow = [shiftedPopups objectAtIndex:row];
-				if ([curLabelsRow isKindOfClass:[NSString class]]) {
-					curLabelsRow = [curTextsRow mutableCopy];
-					[shiftedLabels replaceObjectAtIndex:row withObject:curLabelsRow];
-					[curLabelsRow release];
-				}
-				if ([curPopupsRow isKindOfClass:[NSString class]]) {
-					curPopupsRow = [curLabelsRow mutableCopy];
-					[shiftedPopups replaceObjectAtIndex:row withObject:curPopupsRow];
-					[curPopupsRow release];
-				}
-			}
-			
-			[curTextsRow replaceObjectAtIndex:col withObject:characters[i]];
-			[curLabelsRow replaceObjectAtIndex:col withObject:actualDisplayObjectForString(characters[i], NO)];
-			[curPopupsRow replaceObjectAtIndex:col withObject:actualDisplayObjectForString(characters[i], YES)];
-		}
-		
-		[layoutPlist setObject:numbers forKey:@"Numbers"];
-	}
-	
-	free(characters);
-	
-	[layoutPlist writeToFile:LAYOUT_PATH atomically:NO];
-	clearCache();
+	[self saveLayout];	
 }
 
 -(NSString*)inputManager { return [[infoPlist objectForKey:@"UIKeyboardInputManagerClass"] substringFromIndex:1] ?: @""; }

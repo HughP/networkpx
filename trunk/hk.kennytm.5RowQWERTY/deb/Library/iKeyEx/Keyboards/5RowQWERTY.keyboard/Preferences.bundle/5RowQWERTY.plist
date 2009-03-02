@@ -5,12 +5,12 @@
 		{ cell = PSLinkListCell;
 			detail = PSListItemsController;
 			label = "Layout";
-			validValues = (QWERTY, QWERTZ, QZERTY, AZERTY, Russian, Ukrainian, Korean, Greek, Colemak, ABCDEF);
-			validTitles = (QWERTY, QWERTZ, QZERTY, AZERTY, "Русский", "Українська", "한국말", "Eλληνικά", Colemak, ABCDEF);
+			validValues = (QWERTY, QWERTZ, QZERTY, AZERTY, Russian, Ukrainian, Korean, JapaneseQWERTY, Greek, Colemak, ABCDEF);
+			validTitles = (QWERTY, QWERTZ, QZERTY, AZERTY, "Русский", "Українська", "한국말", "日本語 QWERTY", "Eλληνικά", Colemak, ABCDEF);
 			id = "layout";
 			default = QWERTY;
-			get = "layout";
-			set = "setLayout:";
+			get = "valueForSpecifier:";
+			set = "setValue:forSpecifier:";
 		},
 		{ cell = PSLinkCell;
 			label = "Special characters";
@@ -18,6 +18,27 @@
 			pane = SpecialCharactersPane;
 			get = "specialCharacters";
 			set = "setSpecialCharacters:";
+		},
+		{ cell = PSGroupCell; },
+		{ cell = PSLinkListCell;
+			detail = PSListItemsController;
+			label = "Top Row";
+			validValues = (Numbers, Symbols, Disabled);
+			validTitles = (Numbers, "Special characters", Off);
+			id = "topRow";
+			default = Numbers;
+			get = "valueForSpecifier:";
+			set = "setValue:forSpecifier:";
+		},
+		{ cell = PSLinkListCell;
+			detail = PSListItemsController;
+			label = "Alt Keyboard";
+			validValues = (NumPad, ControlKeys);
+			validTitles = (NumPad, "Control Keys");
+			id = "altPlane";
+			default = ControlKeys;
+			get = "valueForSpecifier:";
+			set = "setValue:forSpecifier:";
 		},
 		{ cell = PSGroupCell; },
 		{ cell = PSLinkListCell;

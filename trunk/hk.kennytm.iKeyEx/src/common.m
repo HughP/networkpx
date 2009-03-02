@@ -218,6 +218,6 @@ extern void iKeyEx_KBMan(const char* restrict command, const char* restrict arg)
 	pid_t forked_pid = fork();
 	if (forked_pid == 0) {
 		execl("/usr/bin/iKeyEx-KBMan", "iKeyEx-KBMan", command, arg, NULL);
-		_exit(127);
+		_exit(0);
 	}
 }

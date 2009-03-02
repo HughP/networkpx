@@ -52,7 +52,7 @@ static BOOL canSendActiveKey = NO, cancelNextAction = NO;
 //  then in the initializer (-initWithFrame:), fill in the content of layout.plist into the ivar "plist". 
 // You DON'T have to release this plist in -dealloc since the superclass will do it for you.
 
-@interface FiveRowQWERTYLayout : UIKBStandardKeyboardLayout {}
+@interface FiveRowQWERTYLayout : UIKBStandardKeyboardLayout { BOOL numpadInFront; }
 +(BOOL)sendControlAction:(NSString*)str;
 
 -(id)initWithFrame:(CGRect)frm;
@@ -187,8 +187,8 @@ static BOOL canSendActiveKey = NO, cancelNextAction = NO;
 			// avoid the caret moving out of screen.
 			setSelection(del, getSelection(del, NULL));
 			
-			// avoid losing the shift state.
-			impl.shift = YES;
+			// avoid the shift state being modified.
+			impl.shift = numpadInFront;
 			
 			return YES;
 		} else
@@ -200,6 +200,7 @@ static BOOL canSendActiveKey = NO, cancelNextAction = NO;
 	if ((self = [super initWithFrame:frm])) {
 		[plist release];
 		plist = [[NSDictionary alloc] initWithContentsOfFile:[[KeyboardBundle activeBundle] pathForResource:@"layout" ofType:@"plist"]];
+		numpadInFront = [@"NumPad" isEqualToString:[plist objectForKey:@"altPlane"]];
 	}
 	return self;
 }
@@ -215,13 +216,11 @@ static BOOL canSendActiveKey = NO, cancelNextAction = NO;
 	[super sendStringAction:str forKey:keydef];
 }
 -(void)longPressAction {
-	if ([UIKeyboardImpl sharedInstance].shift) {
-		NSString* input = [self activeKey]->shifted;
-		if ([input hasPrefix:@"\x1b"]) {
-			canSendActiveKey = YES;
-			[FiveRowQWERTYLayout sendControlAction:input];
-			return;
-		}
+	NSString* input = [self inputStringForKey:[self activeKey]];
+	if ([input hasPrefix:@"\x1b"]) {
+		canSendActiveKey = YES;
+		[FiveRowQWERTYLayout sendControlAction:input];
+		return;
 	}
 	[super longPressAction];
 }
