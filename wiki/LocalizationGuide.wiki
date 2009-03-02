@@ -88,4 +88,10 @@ The _lproj_'s are located in `/svn/trunk/hk.kennytm.5RowQWERTY/deb/Library/iKeyE
 || Special characters ||
 || Reset              ||
 || Empty slot         ||
-|| Palette            || 
+|| Palette            ||
+|| Top Row            ||
+|| Numbers            ||
+|| Off                ||
+|| Alt Keyboard       ||
+|| NumPad             ||
+|| Control Keys       ||
