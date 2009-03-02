@@ -2,6 +2,16 @@
 #labels Phase-Design
 <wiki:toc max_depth="1" />
 
+= 0.1-8 =
+
+== iKeyEx ==
+ * Fixes crashing in pre-2.2 firmwares. See issue 67 for detail.
+
+== 5-Row QWERTY Keyboard ==
+ * Supports Korean and Japanese QWERTY.
+ * Change the top row from numbers to symbols by default. Or disable it to revert to a 4-row keyboard.
+ * Control keys are default in the 123 keyboard now. You can also change this defaults in the settings.
+
 = 0.1-7 =
 
 == iKeyEx ==
