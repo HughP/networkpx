@@ -306,6 +306,24 @@ This category is new in 2.1.
  * `-(void)_updateHighlightColorsForSelectionOfView:(id)fp8;`
  * `-(void)_updateHighlightColorsForDeselectionOfView:(id)fp8;`
 
+== Preferences ==
+=== PSSpecifier ===
+*New in 2.1:*
+ * `-(int)titleCompare:(id)fp8;`
+
+=== PSControlTableCell ===
+*New in 2.1:*
+ * `-(void)layoutSubviews;`
+
+=== PSDetailController ===
+*Changed in 2.1:*
+|| *Old* || *New* ||
+|| `-(void)popController;` || `-(BOOL)popController;` ||
+
+=== PSRootController ===
+*New in 2.1:*
+ * `-(BOOL)taskIsRunning:(id)fp8;`
+
 = 2.1 → 2.2 =
 == UIKit ==
 === @protocol UIKeyboardEmojiController ===
@@ -817,6 +835,14 @@ This category is new in 2.2.
 === UIApplication(UIKitVersDynaMap) ===
 This category is new in 2.2.
 
+== Preferences ==
+=== PSRootController ===
+*New in 2.2:*
+ * `-(void)popBackToTopController;`
+
 = 2.2 → 2.2.1 =
 == UIKit ==
-Nothing was changed in the UIKit from 2.2 to 2.2.1.
+Nothing was changed in UIKit from 2.2 to 2.2.1.
+
+== Preferences ==
+Nothing was changed in Preferences from 2.2 to 2.2.1.
