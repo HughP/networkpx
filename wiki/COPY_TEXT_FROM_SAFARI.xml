@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Module>
+<ModulePrefs title="Copy Text from Safari" />
+<Content type="html">
+<![CDATA[
+
+<h1>Convert Elements to Text Field</h1>
+<p><textarea style="width:100%;">javascript:d=document;l='length';N='tagName';L='toLowerCase';P='parentNode';r='replaceChild';S='stopPropagation';function y(e){this[P][r](this.hh,this);e[S]();}function x(e){s=e.target;if(s[N][L]()in{textarea:0,input:0,select:0})return;if(s!=this&&(s.href||s.onclick||s.onfocus))return;a=d.createElement('textarea');a.value=this.textContent;a.style.width=this.clientWidth+'px';a.style.height=this.clientHeight+'px';a.hh=this;a.onblur=y;this[P][r](a,this);a.focus();e[S]();}c=d.getElementsByTagName('*');for(i=c[l]-1;i>=0;--i)if(c[i][N][L]()in{p:0,blockquote:0,h1:0,h2:0,h3:0,h4:0,h5:0,h6:0,dt:0,dd:0,li:0,th:0,td:0,caption:0,div:0,pre:0,address:0})c[i].addEventListener('click',x,false);</textarea></p>
+
+<h1>Send Whole Page to Mail</h1>
+<p><textarea style="width:100%;">javascript:void(document.location='mailto:?body='+encodeURIComponent(document.body.innerHTML.replace(/\n/g,'')));</textarea></p>
+
+]]>
+</Content>
+</Module>
