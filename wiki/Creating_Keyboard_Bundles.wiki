@@ -35,7 +35,7 @@ Keyboard bundles must reside in `/Library/iKeyEx/Keyboards/`, and have an extens
 
 Together with the "iKeyEx:" prefix, the file name will become the *input mode name* of the keyboard extension. It does not have to match the display name, since the latter will be specified in the `Info.plist` file.
 
-  The input mode name is used to uniquely identify a keyboard. For example, the English (US) keyboard‚Äôs input mode name is `en_US`, Traditional Chinese Handwriting is `zh_Hant-HWR`, and ℏClipboard is `iKeyEx:hClipboard`. 
+  The input mode name is used to uniquely identify a keyboard. For example, the English (US) keyboard's input mode name is `en_US`, Traditional Chinese Handwriting is `zh_Hant-HWR`, and ℏClipboard is `iKeyEx:hClipboard`. 
 
 == Info.plist ==
 `Info.plist` is the description of the keyboard extension. It is a [http://developer.apple.com/documentation/Cocoa/Conceptual/PropertyLists/Introduction/chapter_1_section_1.html property list]. Currently, iKeyEx recognizes the following keys:
@@ -66,7 +66,7 @@ Together with the "iKeyEx:" prefix, the file name will become the *input mode na
 	<td>--</td>
 </tr>
 <tr>
-	<td>UIKeyboardLayoutClass</td>
+	<td>UIKeyboardInputManagerClass</td>
 	<td>string</td>
 	<td>`<input manager class>`</td>
 	<td>Input manager class to use. To be described below.</td>
@@ -78,7 +78,7 @@ Together with the "iKeyEx:" prefix, the file name will become the *input mode na
 	<td>string</td>
 	<td>file path</td>
 	<td>Binary file that contains all executable code</td>
-	<td>*Required*</td>
+	<td>_file name_</td>
 	<td>_UIKeyboardLayoutClass_ is dictionary of (string, class name) pairs<br />*or* _UIKeyboardInputManagerClass_ is class name</td>
 </tr>
 <tr>
