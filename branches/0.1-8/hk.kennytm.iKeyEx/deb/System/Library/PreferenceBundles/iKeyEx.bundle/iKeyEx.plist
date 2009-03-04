@@ -1,0 +1,19 @@
+{
+	title = iKeyEx;
+	items = (
+		{ cell = PSGroupCell; },
+		{ cell = PSLinkListCell;
+			detail = "InternationalKeyboardController";
+			get = "keyboardsValue:";
+			label = "International Keyboards";
+		},
+		{ cell = PSGroupCell;
+			id = ":SpecificPreferenceItems";
+		},
+		{ cell = PSGroupCell; },
+		{ cell = PSLinkCell;
+			label = "Troubleshooting";
+			detail = TroubleshootingController;
+		},
+	);
+}

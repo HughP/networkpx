@@ -1,0 +1,5 @@
+{
+	CFBundleDisplayName = "5-Row QWERTY";
+	CFBundleExecutable = 5RowQWERTY;
+	NSPrincipleClass = "FiveRowQWERTYListController";
+}
