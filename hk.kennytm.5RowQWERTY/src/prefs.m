@@ -792,7 +792,7 @@ void clearCache () {
 	[alphabetSublayout setObject:[NSNumber numberWithFloat:shiftKeyWidth] forKey:@"shiftKeyWidth"];
 	[alphabetSublayout setObject:[NSNumber numberWithFloat:shiftKeyWidth] forKey:@"deleteKeyWidth"];
 	[alphabetSublayout setObject:[NSNumber numberWithBool:isTopRowDisabled] forKey:@"usesKeyCharges"];
-	[alphabetSublayout setObject:[NSNumber numberWithBool:isTopRowDisabled] forKey:@"registersKeyCentroids"];
+	[alphabetSublayout setObject:[NSNumber numberWithBool:YES] forKey:@"registersKeyCentroids"];
 	[layoutPlist setObject:alphabetSublayout forKey:@"Alphabet"];
 	
 	// Set Numbers

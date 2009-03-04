@@ -33,10 +33,23 @@
 #import <PrefHooker/ReorderPane.h>
 #import <UIKit/UITableView.h>
 
+// being lazy :)
+#define list preferenceValue
 
 @implementation PHReorderPane 
 -(BOOL)requiresKeyboard { return NO; }
 -(BOOL)drawLabel { return NO; }
+
+@synthesize preferenceValue;
+-(void)setPreferenceValue:(NSArray*)prefValue {
+	if (list != prefValue) {
+		[list release];
+		// can I have a *deep* mutable copy instead??
+		list = [prefValue mutableCopy];
+		listCount = [list count];
+	}
+}
+
 -(id)initWithFrame:(CGRect)frm {
 	if ((self = [super initWithFrame:frm])) {
 		UITableView* tbl = [[UITableView alloc] initWithFrame:frm style:UITableViewStyleGrouped];
@@ -45,25 +58,17 @@
 		tbl.dataSource = self;
 		tbl.delegate = self;
 		tbl.editing = YES;
-		list = [[NSMutableArray alloc] initWithObjects:
-				[NSMutableArray arrayWithObjects:@"1",@"3",nil],
-				[NSMutableArray arrayWithObjects:@"2",@"4",nil],
-				[NSMutableArray arrayWithObjects:@"6",@"12",@"18",nil],
-				nil];
-		listCount = [list count];
-		removedItems = [[NSMutableArray alloc] init];
 	}
 	return self;
 }
 -(void)dealloc {
 	[list release];
-	[removedItems release];
 	[super dealloc];
 }
 
--(NSUInteger)numberOfSectionsInTableView:(UITableView*)tbl { return listCount + 1; }
+-(NSUInteger)numberOfSectionsInTableView:(UITableView*)tbl { return listCount ?: 1; }
 -(NSUInteger)tableView:(UITableView*)tbl numberOfRowsInSection:(NSUInteger)sect {
-	return sect == listCount ? [removedItems count] : [[list objectAtIndex:sect] count];
+	return listCount == 0 ? 0 : [[list objectAtIndex:sect] count];
 }
 -(UITableViewCell*)tableView:(UITableView*)tbl cellForRowAtIndexPath:(NSIndexPath*)indexPath {
 	UITableViewCell* cell = [tbl dequeueReusableCellWithIdentifier:@"reord"];
@@ -72,33 +77,32 @@
 	}
 	
 	NSUInteger sect = indexPath.section;
-	NSArray* arr = (sect == listCount) ? removedItems : [list objectAtIndex:sect];
 	
-	cell.text = [arr objectAtIndex:indexPath.row];
+	cell.text = [[list objectAtIndex:sect] objectAtIndex:indexPath.row];
 	
 	return cell;
 }
 
 -(void)tableView:(UITableView*)tableView moveRowAtIndexPath:(NSIndexPath*)fromIndexPath toIndexPath:(NSIndexPath*)toIndexPath {
 	NSUInteger row0 = fromIndexPath.row, sect0 = fromIndexPath.section, sect1 = toIndexPath.section;
-	NSMutableArray* oldArr = (listCount == sect0) ? removedItems : [list objectAtIndex:sect0];
-	NSMutableArray* newArr = (listCount == sect1) ? removedItems : [list objectAtIndex:sect1];
+	NSMutableArray* oldArr = [list objectAtIndex:sect0];
+	NSMutableArray* newArr = [list objectAtIndex:sect1];
 	NSObject* oldObj = [oldArr objectAtIndex:row0];
 	[oldArr removeObjectAtIndex:row0];
 	[newArr insertObject:oldObj atIndex:toIndexPath.row];
 	[tableView performSelector:@selector(reloadData) withObject:nil afterDelay:0.5];
 }
 -(NSString*)tableView:(UITableView*)tableView titleForHeaderInSection:(NSInteger)section {
-	if (section == listCount)
-		return @"Addible";
-	if (listCount <= 1)
+	if (section == listCount-1)
+		return @"Not Added";
+	if (listCount <= 2)
 		return nil;
 	else
-		return [NSString stringWithFormat:@"Row %d", section+1];
+		return [NSString stringWithFormat:@"Section %d", section+1];
 }
 
 -(UITableViewCellEditingStyle)tableView:(UITableView*)v editingStyleForRowAtIndexPath:(NSIndexPath*)ip {
-	return ip.section == [list count] ? UITableViewCellEditingStyleInsert : UITableViewCellEditingStyleDelete;
+	return ip.section == listCount-1 ? UITableViewCellEditingStyleInsert : UITableViewCellEditingStyleDelete;
 }
 
 -(void)tableView:(UITableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath {
@@ -106,7 +110,8 @@
 		case UITableViewCellEditingStyleInsert:
 			if (listCount > 0) {
 				NSUInteger row = indexPath.row;
-				[[list lastObject] addObject:[removedItems objectAtIndex:row]];
+				NSMutableArray* removedItems = [list lastObject];
+				[[list objectAtIndex:0] addObject:[removedItems objectAtIndex:row]];
 				[removedItems removeObjectAtIndex:row];
 			}
 			break;
@@ -116,7 +121,7 @@
 			NSObject* obj = [arr objectAtIndex:row];
 
 			[arr removeObjectAtIndex:row];
-			[removedItems addObject:obj];
+			[[list lastObject] addObject:obj];
 		}
 			break;
 		default:
@@ -125,7 +130,9 @@
 	[tableView reloadData];
 }
 
-- (BOOL)tableView:(UITableView *)tableView canMoveRowAtIndexPath:(NSIndexPath *)indexPath {
-	return indexPath.section < listCount;
+-(BOOL)tableView:(UITableView *)tableView canMoveRowAtIndexPath:(NSIndexPath *)indexPath {
+	return indexPath.section < listCount-1;
 }
 @end
+
+#undef list

@@ -36,26 +36,6 @@
 #import <UIKit3/UIUtilities.h>
 #import <UIKit3/UIActionSheetPro.h>
 #import <UIKit/UIKit.h>
-#import <icu/unicode/uchar.h>
-#import <UIKit3/UIBigCharacterHUD.h>
-
-
-@interface UIGlassButton : UIButton @end
-
-NSString* unicodeDescription(unichar c) {
-	UErrorCode err = U_ZERO_ERROR;
-	int32_t charlen = u_charName(c, U_UNICODE_CHAR_NAME, NULL, 0, &err);
-	err = U_ZERO_ERROR;
-	char* buffer = malloc(charlen+1);
-	u_charName(c, U_UNICODE_CHAR_NAME, buffer, charlen, &err);
-	
-	NSLog(@"%s", u_errorName(err));
-	
-	NSString* resstr = [[[NSString stringWithUTF8String:buffer] capitalizedString] stringByAppendingFormat:@" (U+%04X)", c];
-	free(buffer);
-	
-	return resstr;
-}
 
 
 @implementation CMLCommandlet
@@ -64,22 +44,12 @@ NSString* unicodeDescription(unichar c) {
 }
 
 +(void)showActionMenuForWebTexts:(UIWebTexts*)txts {
-	UIBigCharacterHUD* hud = [[UIBigCharacterHUD alloc] initWithFrame:CGRectMake(8, -200, 144, 100)];
-	hud.title = [@"ß" uppercaseString];
-	hud.message = unicodeDescription(L'#');
+	UIActionSheetPro* sheet = [[UIActionSheetPro alloc] initWithNumberOfRows:3];
+	[sheet addButtonAtRow:0 withTitle:@"^_^" image:nil destructive:NO cancel:NO];
+	[sheet addButtonAtRow:1 withTitle:@"^_^" image:nil destructive:YES cancel:NO];
+	[sheet addButtonAtRow:2 withTitle:@"^_^" image:nil destructive:NO cancel:YES];
 	
-	NSLog(@"%@", NSStringFromCGRect([UIScreen mainScreen].applicationFrame));
-	
-	UIActionSheet* sheet = [[UIActionSheetPro alloc] initWithTitle:@"\n\n\n\n\n\n"
-													   delegate:nil
-											  cancelButtonTitle:@"Cancel"
-										 destructiveButtonTitle:nil
-											  otherButtonTitles:@"Unicode", nil];
-	[sheet addSubview:hud];
-	[hud release];
-	
-	
-	[sheet showWithWebTexts:nil inView:[txts.view.window.subviews objectAtIndex:0]];
+	[sheet showWithWebTexts:txts inView:[txts.view.window.subviews objectAtIndex:0]];
 	
 	//UILogViewHierarchy(sheet);
 	[sheet release];

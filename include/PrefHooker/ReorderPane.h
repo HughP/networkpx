@@ -33,18 +33,13 @@
 #import <Preferences/PSEditingPane.h>
 #import <UIKit/UITableView.h>
 
-@protocol PHReorderPaneDataSource
-@property(retain) NSArray* data;
-@end
-
 
 @interface PHReorderPane : PSEditingPane<UITableViewDataSource,UITableViewDelegate> {
-	id<PHReorderPaneDataSource> source;
-	NSMutableArray* list;
+	NSMutableArray* preferenceValue;
 	NSUInteger listCount;
-	NSMutableArray* removedItems;
 }
 -(id)initWithFrame:(CGRect)frm;
+@property(retain) NSArray* preferenceValue;
 
 // UITableViewDataSource
 -(NSUInteger)numberOfSectionsInTableView:(UITableView*)tbl;

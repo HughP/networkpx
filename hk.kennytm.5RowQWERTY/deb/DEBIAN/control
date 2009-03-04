@@ -1,12 +1,12 @@
 Package: hk.kennytm.5rowqwerty
 Name: 5-Row QWERTY Keyboard
-Version: 0.1-8
+Version: 0.1-9a
 Architecture: iphoneos-arm
 Description: 5-Row QWERTY keyboard layout.
 Homepage: http://code.google.com/p/networkpx/wiki/Using_5RowQWERTY
 Maintainer: KennyTM~ <kennytm+5RowQWERTY@gmail.com>
 Author: KennyTM~ <kennytm+5RowQWERTY@gmail.com>
-Section: System
+Section: Keyboards
 Depends: hk.kennytm.iKeyEx (>=0.1-7)
 Installed-Size: 148
 dev: kennytm

@@ -4,6 +4,11 @@ declare -a cydia
 cydia=($CYDIA)
 
 if [[ $1 == install || $1 == upgrade ]]; then
+	echo "";
+	echo "!!! Please report all crashes to kennytm@gmail.com.";
+	echo "";
+	echo "IntelliScreen users: Please enable iKeyEx in the Performance options.";
+	echo "";
 	if [[ ${CYDIA+@} ]]; then
 	        eval "echo 'finish:restart' >&${cydia[0]}"
     	fi

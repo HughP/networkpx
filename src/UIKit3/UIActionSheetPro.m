@@ -41,16 +41,16 @@
 
 #define SPACING 7
 #define PADDING SPACING
-#define BUTTON_HEIGHT 46
+#define BUTTON_HEIGHT 30
 
 UIButton* UIActionSheetButton(NSString* title, UIImage* image, BOOL destructive, BOOL cancel) {
-	NSString* imageName = @"UIAlertSheetDefaultButton.png";
-	NSString* pressedImageName = @"UIAlertSheetDefaultButtonPressed.png";
+	NSString* imageName = @"UINavigationBarDefaultButton.png";
+	NSString* pressedImageName = @"UINavigationBarDefaultButtonPressed.png";
 	if (cancel)
-		imageName = @"UIAlertSheetDefaultCancelButton.png";
+		imageName = @"UINavigationBarDoneButton.png";
 	else if (destructive) {
-		imageName = @"UIAlertSheetDefaultDestroyButton.png";
-		pressedImageName = @"UIAlertSheetDefaultDestroyButtonPressed.png";
+		imageName = @"UINavigationBarRemoveButton.png";
+		pressedImageName = @"UINavigationBarRemoveButtonPressed.png";
 	}
 	
 	UIImage* normalImage = _UIImageWithName(imageName);
@@ -64,20 +64,10 @@ UIButton* UIActionSheetButton(NSString* title, UIImage* image, BOOL destructive,
 	[retbtn setBackgroundImage:stretchedPressedImage forState:UIControlStateHighlighted];
 	[retbtn setImage:image forState:UIControlStateNormal];
 	[retbtn setTitle:title forState:UIControlStateNormal];
-	if (cancel||destructive) {
-		[retbtn setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
-		[retbtn setTitleShadowColor:[UIColor colorWithWhite:0 alpha:0.23] forState:UIControlStateNormal];
-		retbtn.titleShadowOffset = CGSizeMake(0, -1);
-	} else {
-		[retbtn setTitleColor:[UIColor blackColor] forState:UIControlStateNormal];
-		[retbtn setTitleColor:[UIColor whiteColor] forState:UIControlStateHighlighted];
-		[retbtn setTitleShadowColor:[UIColor colorWithWhite:1 alpha:0.23] forState:UIControlStateNormal];
-		[retbtn setTitleShadowColor:[UIColor colorWithWhite:0 alpha:0.23] forState:UIControlStateHighlighted];
-		retbtn.titleShadowOffset = CGSizeMake(0, 1);
-		retbtn.reversesTitleShadowWhenHighlighted = YES;
-	}
-	[retbtn setTitleColor:[UIColor whiteColor] forState:UIControlStateHighlighted];
-	retbtn.font = [UIFont boldSystemFontOfSize:18];
+	[retbtn setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+	[retbtn setTitleShadowColor:[UIColor colorWithWhite:0 alpha:0.23] forState:UIControlStateNormal];
+	retbtn.titleShadowOffset = CGSizeMake(0, -1);
+	retbtn.font = [UIFont boldSystemFontOfSize:14];
 	retbtn.frame = CGRectMake(0, 0, 0, BUTTON_HEIGHT);
 	
 	retbtn.tag = destructive ? 2 : cancel ? 1 : 0;
@@ -171,7 +161,7 @@ UIButton* UIActionSheetButton(NSString* title, UIImage* image, BOOL destructive,
 
 
 extern UIView* UIDimViewWithHole(CGRect holeRect) {
-	CGRect viewBounds = [UIScreen mainScreen].applicationFrame;
+	CGRect viewBounds = [UIScreen mainScreen].bounds;
 	CGPoint viewOrigin = viewBounds.origin;
 	viewBounds.size.width += viewOrigin.x;
 	viewBounds.size.height += viewOrigin.y;
