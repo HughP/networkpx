@@ -1,5 +1,0 @@
-{
-	CFBundleDisplayName = "\U210fClipboard";
-	CFBundleExecutable = hClipboard;
-	NSPrincipleClass = "hClipboardListController";
-}

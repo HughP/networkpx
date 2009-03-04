@@ -1,9 +1,0 @@
-{
-	CFBundleExecutable = MultiTap;
-	"UIKeyboardLayoutClass" = {
-		Landscape = "MultiTapLayoutLandscape";
-		Portrait = MultiTapLayout;
-	};
-	"UIKeyboardInputManagerClass" = MultiTapInputManager;
-	CFBundleDisplayName = MultiTap;
-}
