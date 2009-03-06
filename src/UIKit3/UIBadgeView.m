@@ -1,6 +1,6 @@
 /*
  
- UIActionSheetPro.h ... More flexible UIActionSheet for use with Command.
+ UIBadgeView.m ... Controllable badge
  
  Copyright (c) 2009, KennyTM~
  All rights reserved.
@@ -30,29 +30,47 @@
  
  */
 
-#import <Foundation/NSObject.h>
-#import <UIKit/UIAlert.h>
-@class NSString, NSMutableArray, UIImage, UIButton, UIWebTexts, UIView;
+#import <UIKit3/UIBadgeView.h>
+#import <UIKit/UIKit.h>
+#import <UIKit2/Functions.h>
 
-// Note: Although UIActionSheetPro inherits from UIActionSheet, 
-//       you should *not* call any standard messages.
-@interface UIActionSheetPro : UIActionSheet {
-	BOOL isLandscape;
-	NSUInteger rows;
-	NSMutableArray** buttons;
-	UIView* buttonsGroup;
-	NSUInteger* cancelButtonsCount;
+#define HEIGHT 28
+#define WIDTH  27
+
+@implementation UIBadgeView
+-(id)initWithFrame:(CGRect)frm {
+	if ((self = [super initWithFrame:CGRectMake(frm.origin.x, frm.origin.y, WIDTH, HEIGHT)])) {
+		background = [[UIImageView alloc] initWithImage:_UIImageWithName(@"UIButtonBarBadgeOff.png")];
+		alterate = [[UIImageView alloc] initWithImage:_UIImageWithName(@"UIButtonBarBadgeOn.png")];
+		alterate.hidden = YES;
+		[self addSubview:background];
+		[self addSubview:alterate];
+		[background release];
+		[alterate release];
+		
+		label = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, WIDTH, HEIGHT)];
+		label.textColor = [UIColor whiteColor];
+		label.backgroundColor = [UIColor clearColor];
+		label.font = [UIFont boldSystemFontOfSize:11];
+		label.textAlignment = UITextAlignmentCenter;
+		
+		[self addSubview:label];
+		[label release];
+	}
+	return self;
+	
 }
--(id)initWithNumberOfRows:(NSUInteger)rows;
--(UIButton*)addButtonAtRow:(NSUInteger)row withTitle:(NSString*)title image:(UIImage*)image destructive:(BOOL)destructive cancel:(BOOL)cancel;
--(void)showWithWebTexts:(UIWebTexts*)texts inView:(UIView*)view;
-@end
+@dynamic text;
+-(NSString*)text { return label.text; }
+-(void)setText:(NSString*)text { label.text = text; }
+-(void)setInteger:(NSInteger)integer { label.text = [NSString stringWithFormat:@"%d", integer]; }
 
-// overloaded private methods.
-@interface UIActionSheetPro()
--(void)layout;
--(void)_createTitleLabelIfNeeded;
+@synthesize state;
+-(void)setState:(BOOL)state_ {
+	if (state != state_) {
+		background.hidden = state_;
+		alterate.hidden = !state_;
+		state = state_;
+	}
+}
 @end
-
-// Convenient data even if you don't use UIActionSheetPro
-UIView* UIDimViewWithHole(CGRect holeRect);

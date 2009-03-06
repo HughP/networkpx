@@ -1,0 +1,35 @@
+{
+	title = "Labels";
+	items = (
+		{ cell = PSGroupCell; },
+		{ cell = PSLinkListCell;
+			detail = PSListItemsController;
+			validTitles = ("Single (1)", "Double (2)", "Triple (3)", "Quadruple (4)");
+			validValues = (1, 2, 3, 4);
+			label = "Taps";
+			set = "setValue:forSpecifier:";
+			id = "beginTapCount";
+		},
+		{ cell = PSLinkListCell;
+			label = "Long Hold (sec.)";
+			detail = PSListItemsController;
+			validTitles = ("Immediate", 0.5, 1, 1.5, 2, 2.5, 3, 4, 5);
+			validValues = (0, 0.5, 1, 1.5, 2, 2.5, 3, 4, 5);
+			set = "setValue:forSpecifier:";
+			id = "beginTapHold";
+		},
+		{ cell = PSGroupCell; },
+		{ cell = PSSwitchCell;
+			label = "Ends with Touch Up";
+			set = "setValue:forSpecifier:";
+			id = "endsWithTouchUp";
+		},
+		{ cell = PSSwitchCell;
+			label = "Show ⌘bar";
+			set = "setValue:forSpecifier:";
+			id = "showCmdbar"; },
+		{ cell = PSGroupCell;
+			label = "Gesture Guide";
+			id = Preview; },
+	);
+}

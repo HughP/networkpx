@@ -1,0 +1,8 @@
+{
+	title = "⌘ (Command)";
+	items = (
+		{cell = PSLinkCell;
+			label = "Labels";
+			detail = AnimatableListController; },
+	);
+}

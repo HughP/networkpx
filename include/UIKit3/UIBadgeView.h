@@ -1,6 +1,6 @@
 /*
  
- UIActionSheetPro.h ... More flexible UIActionSheet for use with Command.
+ UIBadgeView.h ... Controllable badge
  
  Copyright (c) 2009, KennyTM~
  All rights reserved.
@@ -30,29 +30,20 @@
  
  */
 
-#import <Foundation/NSObject.h>
-#import <UIKit/UIAlert.h>
-@class NSString, NSMutableArray, UIImage, UIButton, UIWebTexts, UIView;
+#import <UIKit/UIView.h>
+#import <CoreGraphics/CGGeometry.h>
+#import <Foundation/NSObjCRuntime.h>
 
-// Note: Although UIActionSheetPro inherits from UIActionSheet, 
-//       you should *not* call any standard messages.
-@interface UIActionSheetPro : UIActionSheet {
-	BOOL isLandscape;
-	NSUInteger rows;
-	NSMutableArray** buttons;
-	UIView* buttonsGroup;
-	NSUInteger* cancelButtonsCount;
+@class UILabel, UIImageView, NSString;
+
+@interface UIBadgeView : UIView {
+	UILabel* label;
+	UIImageView* background;
+	UIImageView* alterate;
+	BOOL state;
 }
--(id)initWithNumberOfRows:(NSUInteger)rows;
--(UIButton*)addButtonAtRow:(NSUInteger)row withTitle:(NSString*)title image:(UIImage*)image destructive:(BOOL)destructive cancel:(BOOL)cancel;
--(void)showWithWebTexts:(UIWebTexts*)texts inView:(UIView*)view;
+-(id)initWithFrame:(CGRect)frm;
+@property(retain,nonatomic) NSString* text;
+-(void)setInteger:(NSInteger)integer;
+@property(assign,nonatomic) BOOL state;
 @end
-
-// overloaded private methods.
-@interface UIActionSheetPro()
--(void)layout;
--(void)_createTitleLabelIfNeeded;
-@end
-
-// Convenient data even if you don't use UIActionSheetPro
-UIView* UIDimViewWithHole(CGRect holeRect);

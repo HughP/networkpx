@@ -1,0 +1,6 @@
+{
+	CFBundleDisplayName = Command;
+	CFBundleExecutable = Command;
+	PHAddToSettings = YES;
+	NSPrincipalClass = CommandListController;
+}
