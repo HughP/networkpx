@@ -2,6 +2,32 @@
 #labels Phase-Design
 <wiki:toc max_depth="1" />
 
+= 0.2-12 =
+
+(Tentative)
+
+== iKeyEx ==
+ * Added localizations:
+  * Arabic (thanks zomoo1)
+
+== ℏClipboard ==
+ * Added localizations:
+  * Arabic
+
+== ⌘ (Command) ==
+ * Initial beta release.
+
+= 0.1-10 =
+
+== 5-Row QWERTY Keyboard ==
+ * Added localizations:
+  * Arabic (thanks zomoo1)
+  * Italian (thanks sagitt)
+
+<p align="center">↑↑↑ Future Releases ↑↑↑</p>
+<hr />
+<p align="center">↓↓↓ Current Releases ↓↓↓</p>
+
 = 0.1-8 =
 
 == iKeyEx ==
@@ -28,10 +54,6 @@
    * Change the auto-correction language. Supports Chinese and Japanese IME as well.
    * Clear cache.
  * Long-press the "1" key to show some commonly used punctuations. Thanks Scott Phillips for suggestion.
-
-<p align="center">↑↑↑ Future Releases ↑↑↑</p>
-<hr />
-<p align="center">↓↓↓ Current Releases ↓↓↓</p>
 
 = 0.1-6 =
 

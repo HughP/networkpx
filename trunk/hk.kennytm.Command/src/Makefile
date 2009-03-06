@@ -5,6 +5,8 @@ incPath=../../include
 libPath=../deb/usr/lib
 binPath=../deb/usr/bin
 MobileSubstratePath=../deb/Library/MobileSubstrate/DynamicLibraries
+PreferencesPath=../deb/System/Library/PreferenceBundles/Command.bundle
+UIKit3SrcPath=../../src/UIKIt3
 
 Compiler=$(iPhoneDevPath)/usr/bin/arm-apple-darwin9-gcc-4.0.1
 CodeSign=ldid -S
@@ -39,7 +41,11 @@ UIHookerSources=UIHooker-Command.m
 UIHookerTarget=$(MobileSubstratePath)/UIHooker-Command.dylib
 UIHookerOptions=-lsubstrate -dynamiclib -init _init
 
-all: $(CommandletToolsTarget) $(UIHookerTarget)
+PrefSources=prefs.m $(UIKit3SrcPath)/UIBadgeView.m
+PrefTarget=$(PreferencesPath)/Command
+PrefOptions=-framework Preferences -bundle
+
+all: $(CommandletToolsTarget) $(UIHookerTarget) $(PrefTarget)
 
 $(CommandletToolsTarget):	$(CommandletToolsSources)
 	$(Compiler) $(Options) $(CommandletToolsOptions) -o $@ $^
@@ -47,6 +53,10 @@ $(CommandletToolsTarget):	$(CommandletToolsSources)
 
 $(UIHookerTarget):	$(UIHookerSources)
 	$(Compiler) $(Options) $(UIHookerOptions) -o $@ $^
+	$(CodeSign) $@
+
+$(PrefTarget):	$(PrefSources)
+	$(Compiler) $(Options) $(PrefOptions) -o $@ $^
 	$(CodeSign) $@
 
 clean:

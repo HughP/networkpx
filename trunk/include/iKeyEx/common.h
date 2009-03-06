@@ -36,6 +36,7 @@
 #import <objc/runtime.h>
 #import <CoreGraphics/CGGeometry.h>
 
+
 @class UIFont, NSString, UIView, NSDictionary;
 
 
@@ -74,6 +75,6 @@ NSString* iKeyExVersion();
 
 
 // Run an iKeyEx-KBMan command
-void iKeyEx_KBMan(const char* restrict command, const char* restrict arg);
+void iKeyEx_KBMan(const char* command, const char* arg);
 
 #endif
