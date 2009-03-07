@@ -44,6 +44,21 @@ Besides rearrangement, users are allowed to set whether to enable ⌘ and the ac
    DynamicLibraries/
     UIHooker-Command.dylib
     UIHooker-Command.plist
+    PrefHooker-Command.dylib
+    PrefHooker-Command.plist
+  Command/
+   preference.plist
+   Commandlets/
+    Clipboard.commandlet/
+     Info.plist
+     Copy.plist
+     Cut.plist
+     Paste.plist
+     ...
+    Google.commandlet/
+     Google.plist
+     Google.sh
+    ...
  System/
   Library/
    PreferenceBundles/
@@ -52,27 +67,20 @@ Besides rearrangement, users are allowed to set whether to enable ⌘ and the ac
  usr/
   lib/
    libcommandlets.dylib
- var/
-  mobile/
-   Library/
-    Commandlets/
-     CommandletsPreferences.plist
-     cut.plist
-     copy.plist
-     paste.plist
-     google.plist
-     ...
-     clipboard.bundle
-     google.sh
-     ...
-     en.lproj/
-      _default.strings
-      cut.strings
-      ...
-     es.lproj/ ...
-     ja.lproj/ ...
-     ...
 }}}
+
+== Declaring ⌘lets ==
+
+⌘let definitions are stored in /Library/Command/Commandlets/ as modern bundles (i.e. ordinary directories with a definite structure). All these ⌘let bundles must have file name *.commandlet. A ⌘let bundles can contain multiple ⌘lets to reduce code duplication for similar functions.
+
+As usual an Info.plist should be provided. There is only one required key in the Info.plist, `CMLCommandlets`, which is an array of ⌘lets this bundle provides. For example, in Clipboard.commandlet, the Info.plist contains exactly these content:
+{{{
+{
+CMLCommandlets = (Copy, Cut, Paste);
+CFBundleExecutable = Clipboard;
+}
+}}}
+This means Clipboard.commandlet provides the Copy, Cut and Paste ⌘lets. 
 
 == ⌘let plist format ==
 
@@ -82,7 +90,6 @@ Besides rearrangement, users are allowed to set whether to enable ⌘ and the ac
 # for paste.plist
  {
    title = "Paste";
-   bin = "clipboard.bundle";
    type = "lib";
    call = "pasteEntry";
    availableWhenEmpty = 1;
@@ -92,7 +99,7 @@ Besides rearrangement, users are allowed to set whether to enable ⌘ and the ac
    title = "Google";
    bin = "google.sh";
    type = "exec";
-   app = "com.apple.MobileSafari";
+   app = ("com.apple.MobileSafari", "com.yourcompany.myFox");
  }
 }}}
 
@@ -120,7 +127,7 @@ Besides rearrangement, users are allowed to set whether to enable ⌘ and the ac
 	<td>bin</td>
 	<td>string</td>
 	<td>file path</td>
-	<td>The library, executable or shell script that will be used when user clicks on the ⌘let's button.</td>
+	<td>If declared as `"exec"` or `"pipe"`, the shell script/executable that will be used when user clicks on the ⌘let's button.</td>
 	<td>"_file name_`.sh`"</td>
 	<td>--</td>
 </tr>
@@ -141,11 +148,17 @@ Besides rearrangement, users are allowed to set whether to enable ⌘ and the ac
 	<td>--</td>
 </tr>
 <tr>
-	<td>availableWhenEmpty</td>
-	<td colspan="2">boolean</td>
-	<td>Whether the ⌘let will be available even if the selection is empty.</td>
-	<td>✗</td>
-	<td>--</td>
+	<td rowspan="2">capabilities</td>
+	<td>array</td>
+        <td>...of `<capability>`</td>
+	<td>Capabilities the ⌘let must meet so that it is enabled. Leave it undefined to make it always available.</td>
+	<td rowspan="2">_nil_</td>
+	<td rowspan="2">--</td>
+</tr>
+<tr>
+	<td>string</td>
+	<td>selector</td>
+	<td>Dynamically determine if the ⌘let is available. (Details to be discussed.)</td>
 </tr>
 <tr>
 	<td>call</td>
@@ -170,17 +183,36 @@ Besides rearrangement, users are allowed to set whether to enable ⌘ and the ac
 </tr>
 </table>
 
+
+ _enum_ `<capability>` ::
+  * "textfield.selection.empty"
+  * "textfield.selection.selected"
+  * "textfield.selection.undefined"
+  * "textfield.selection.defined"
+  * "textfield.empty"
+  * "textfield.filled"
+  * "textfield.secure"
+  * "textfield.insecure"
+  * "textfield.singleline"
+  * "textfield.multiline"
+  * "textfield"
+  * "label"
+  * "url"
+  * "notarget"
+
 == ⌘let as a `lib` ==
 
 When the ⌘let is run as a library, the function with symbol specified in _call_ will be called.
 
 That function must have signature
 {{{
-CMLFurtherAction run (NSString**                 pSelectedContent,
-                      NSRange                    selectedRange,
-                      NSObject<UIKeyboardInput>* target,
-                      NSDictionary*              cmdletParams);
+CMLFurtherAction run (NSString**    pSelectedContent,
+                      NSRange       selectedRange,
+                      id            target,
+                      NSDictionary* cmdletParams);
 }}}
+
+_target_ may be nil if the ⌘let is invoked programmatically. If not, its class must be a subclass of DOMNode or UIView.
 
 You can change the selected string while the program runs. If you do so, you _must_ release the old string and retain the new string, like this:
 {{{
@@ -189,8 +221,7 @@ You can change the selected string while the program runs. If you do so, you _mu
 *pSelectedContent = [[NSString alloc] initWithString:@"new content"];
 ...
 }}}
-
-_target_ may be nil if the ⌘let is invoked programmatically.
+This has no effect when _target_ is nil or read-only.
 
 _pSelectedContent_ should never point to nil. If the ⌘let is invoked from an empty selection, _pSelectedContent_ will contain the whole text field. Nevertheless, replacing the content in this situation only inserts text at the cursor, instead of replacing the whole string. You can check `(selectedRange.length == 0)` to see if the selection is actually empty. To force selecting the whole string, set the flag `CMLActionSelectAllNow` in the returned value as discussed below.
 
@@ -211,9 +242,9 @@ _pSelectedContent_ should never point to nil. If the ⌘let is invoked from an e
 || CMLActionAnchorAtStart = 64 || Anchor the selection to the start point of the new selection. Subsequent movements in the text field will be interpreted as changing end point of selection, instead of moving the cursor, until another ⌘let is called. ||
 || CMLActionAnchorAtEnd = 128 || Anchor the selection to the end point of the new selection. ||
 || CMLActionShowMenu = 4096 || Show the action menu. ||
-|| CMLActionSelectAllNow = 8192 || Select the whole text field now, before text replacing begins. ||
+|| CMLActionReplaceAll = 8192 || Replace content of the whole text field instead of just the selection. Equivalent to selecting the whole text field before text replacement begins. ||
 
-`CMLActionShowMenu`, `CMLActionSelectAllNow` and `CMLActionAnchor`_xxx_ can be combined with the rest of the actions.
+`CMLActionShowMenu`, `CMLActionReplaceAll` and `CMLActionAnchor`_xxx_ can be combined with the rest of the actions.
 
 If the ⌘let is a lib, the calling will be *blocking*, meaning the active application cannot continue until the ⌘let function finishes.
 
@@ -224,13 +255,13 @@ If _type_ is declared as an `exec`, its `main()` will be called with these argum
 || `argv[1]` || The selected string ||
 || `argv[2]` || The starting location of selected range ||
 || `argv[3]` || The length of selected range ||
-|| `argv[4]` || The whole string in the active text field ||
+|| `argv[4]` || The whole string in the target ||
 
 All of these are converted to a UTF8 string. 
 
 An exec ⌘let *cannot* return or change any arguments. Also, the call can be *non-blocking*, i.e. the program flow can continue without waiting the ⌘let to finish.
 
-  But we need to check if `system()`, `execl()`, etc. is allowed in sandboxed applications.
+  But we need to check if `fork()` and `execl()` are allowed in sandboxed applications.
 
 == ⌘let as a `service` ==
 
@@ -249,6 +280,8 @@ static ServiceProviderClass* serviceProviderObj = nil;
 void init () {
   serviceProviderObj = [[ServiceProviderClass alloc] init];
   NSRegisterServicesProvider(serviceProviderObj, @"portName"); // <---- Call this line
+  ...
+  atexit(&releaseServiceProviderObj);
   ...
 }
 }}}
