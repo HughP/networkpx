@@ -324,8 +324,8 @@ This category is new in 2.1.
 *New in 2.1:*
  * `-(BOOL)taskIsRunning:(id)fp8;`
 
-== SpringBoard.app ==
-=== SpringBoard ===
+== !SpringBoard.app ==
+=== !SpringBoard ===
 Note that the ivar layout is changed by removing the `unsigned int _delaySleepOnHeadsetClick:1` and `unsigned int _powerManagementEnabled:1` ivars.
 
 *New in 2.1:*
@@ -519,7 +519,249 @@ Note that the ivar layout is changed by removing the `unsigned int _disallowTouc
 === SBPhoneApplicationIcon ===
 The whole class is removed in 2.1.
 
-(To be completed)
+=== SBIconList ===
+Note that the ivar layout is changed by removing the `unsigned int _allowJitter:1;` and `unsigned int _isJittering:1` ivars.
+
+*New in 2.1:*
+ * `-(BOOL)containsIconForDisplayIdentifier:(NSString*)ident;`
+ * `-(int)columnAtPoint:(CGPoint)pt;`
+ * `-(int)rowAtPoint:(CGPoint)pt;`
+
+*Removed in 2.1:*
+ * `+(SBIconList*)sharedInstance;`
+ * `-(void)startJittering;`
+
+=== SBSlidingAlertDisplay ===
+*New in 2.1:*
+ * `-(void)finishedAnimatingOut;`
+
+=== SBSIMToolkitSetUpCallDisplay ===
+*New in 2.1:*
+ * `+(id)createTopBarForInstance:(id)fp8;`
+
+=== !EllipseWindow ===
+The whole class is removed in 2.1.
+
+=== SBUserNotificationAlert ===
+Note that the ivar layout is changed by adding the `NSString* _launchAppUponDefaultButton;` ivar.
+
+*New in 2.1:*
+ * `-(void)launchAppIfRequested;`
+
+=== SBEmergencyCallButton ===
+*Changed in 2.1:*
+|| *Old* || *New* ||
+|| `+(GSFontRef)defaultFont;` || `+(UIFont*)defaultFont;` ||
+
+=== SBAlertItemsController ===
+*New in 2.1:*
+ * `-(id)alertItemOfClass:(Class)fp8;`
+
+=== SBSMSAlertItem ===
+*New in 2.1:*
+ * `+(BOOL)shouldPlayMessageReceived;`
+ * `-(int)_groupID;`
+
+*Changed in 2.1:*
+|| *Old* || *New* ||
+|| `-(void)_playMessageReceived;` || `+(void)playMessageReceived;` ||
+|| `-(BOOL)_showSMSPreviewWithPasscodeEnabled;` || `+(BOOL)_showSMSPreviewWithPasscodeEnabled;` ||
+
+=== SBSIMLockAlertItem ===
+*New in 2.1:*
+ * `+(SBSIMLockAlertItem*)alertTitleForStatus:(int)fp8;`
+ * `-(id)initWithStatus:(int)fp8;`
+
+=== SBLowPowerAlertItem ===
+*Removed in 2.1:*
+ * `+(void)savePowerDiagnosisLogWithCurrentCapacity:(int)fp8 startCapacity:(int)fp12;`
+
+=== SBLaunchAlertItem ===
+Note that the ivar layout is changed by adding the `NSString* _bundleID;` ivar.
+
+*New in 2.1:*
+ * `-(id)_customAirplaneModeAlertPrompt;`
+
+*Changed in 2.1:*
+|| *Old* || *New* ||
+|| `-(id)initWithLaunchAlertType:(int)fp8 dataAlert:(BOOL)fp12 usesCellNetwork:(BOOL)fp16;` || `-(id)initWithLaunchAlertType:(int)fp8 dataAlert:(BOOL)fp12 usesCellNetwork:(BOOL)fp16 bundleID:(NSString*)fp20;` ||
+
+=== SBWiFiManager ===
+*New in 2.1:*
+ * `-(SEL)_dequeueEventAction;`
+ * `-(void)_eventThread;`
+ * `-(void)_eventThreadFinished;`
+ * `-(void)enqueueEventAction:(SEL)action;`
+
+=== SBPlatformController ===
+*New in 2.1:*
+ * `-(BOOL)hasRestriction:(id)fp8;`
+ * `-(BOOL)canTakePhoto;`
+
+=== SBNowPlayingAlertItem ===
+*New in 2.1:*
+ * `-(BOOL)dismissOnLock;`
+
+=== SBIconController ===
+Note that the ivar layout is changed by adding the `int _currentColumnIndex;` and removing the `unsigned int _animatingToNewState:1;` and `unsigned int _animateToNewStateAfterDelay:1;` ivars.
+
+*New in 2.1:*
+ * `-(void)resetCurrentVisibleIconListImageVisibilityAndJitterState;`
+ * `-(void)uninstallIcon:(id)fp8 animate:(BOOL)fp12;`
+
+*Changed in 2.1:*
+|| *Old* || *New* ||
+|| `-(void)updateCurrentIconListIndexUpdatingPageIndicator:(BOOL)fp8;` || `-(void)updateCurrentIconListIndex;` ||
+|| `-(int)lowestVisibleIconListIndex;` || `-(int)lowestVisibleIconListIndexAndColumnIndex:(int*)pColumnIndex;` ||
+
+*Removed in 2.1:*
+ * `-(void)startJitteringCurrentIconLists;`
+ * `-(void)stopJitteringCurrentIconLists;`
+ * `-(void)_jitterOptionsChanged;`
+ * `-(void)jitterOptionsChanged;`
+ * `-(void)relayoutIcons;`
+ * `-(void)revealIconForDisplayIdentifier:(id)fp8;`
+ * `-(void)scrollerWillStartSmoothScrolling:(id)fp8;`
+ * `-(void)startDraggingIcon:(id)fp8 fromIconList:(id)fp12;`
+
+=== SBDestinationHole ===
+*Removed in 2.1:*
+ * `-(id)topRimmedIcon;`
+ * `-(id)highlightedIcon;`
+
+=== SBIconModel ===
+The ivar layout is significantly modified. Do not rely on the ivar layout at all. Use class_getInstanceVariable() or other runtime functions instead.
+
+*New in 2.1:*
+ * `-(id)addBookmarkIconForWebClip:(id)fp8;`
+ * `-(void)reloadIconImage:(id)fp8;`
+ * `-(void)cacheImageForIcon:(id)fp8;`
+ * `-(id)getCachedImagedForIcon:(id)fp8;`
+ * `-(void)addIconForApplication:(id)fp8;`
+ * `-(id)iconListContainingIconWithDisplayIdentifier:(id)fp8;`
+ * `-(void)deleteIconState;`
+ * `-(void)_replaceAppIconsWithDownloadingIcons;`
+ * `-(void)_replaceAppIconWithDownloadingIcon:(id)fp8 sourceList:(id)fp12;`
+
+
+*Changed in 2.1:*
+|| *Old* || *New* ||
+|| `-(void)reloadIconForDisplayIdentifier:(id)fp8;` || `-(void)reloadIconImageForDisplayIdentifier:(id)fp8;` ||
+
+*Removed in 2.1:*
+ * `-(void)_addBookmarks;`
+ * `-(id)bookmarkIconForDisplayIdentifier:(id)fp8;`
+ * `-(Class)iconClassForApplication:(id)fp8;`
+ * `-(id)editIcon;`
+ * `-(id)buttonBarIcons;`
+
+=== SBMediaController ===
+*New in 2.1:*
+ * `-(BOOL)isTVOut;`
+ * `-(void)_delayedExtendSleepTimer;`
+
+=== SBWeatherApplicationIcon ===
+*Removed in 2.1:*
+ * `-(void)resetIcon;`
+
+=== SBBookmarkIcon ===
+The ivar layout is significantly modified. Do not rely on the ivar layout at all. Use class_getInstanceVariable() or other runtime functions instead.
+
+*Changed in 2.1:*
+|| *Old* || *New* ||
+|| `-(id)initWithBookmarkBundle:(NSBundle*)bundle;` || `-(id)initWithWebClip:(id)fp8;` ||
+|| `-(NSBundle*)bundle;` || `-(id)webClip;` ||
+
+=== SBEditIcon ===
+The whole class is removed in 2.1.
+
+=== SBIcon ===
+The ivar layout is significantly modified. Do not rely on the ivar layout at all. Use class_getInstanceVariable() or other runtime functions instead.
+
+*New in 2.1:*
+ * `+(void)enqueueReusableIconImageView:(id)fp8;`
+ * `+(id)dequeueReusableIconImageView;`
+ * `-(CGContextRef)_createIconImageBitmapContext;`
+ * `-(BOOL)isShowingImages;`
+ * `-(void)setShowsImages:(BOOL)fp8;`
+
+*Changed in 2.1:*
+|| *Old* || *New* ||
+|| `-(void)startJitteringAnimation;`<br />`-(void)stopJitteringAnimation;` || `-(void)setIsJittering:(BOOL)fp8;` ||
+|| `-(void)unjitter;` || `-(void)removeAllIconAnimations;` ||
+
+*Removed in 2.1:*
+ * `-(void)resetIconImage;`
+ * `-(id)topRimmedIcon;`
+ * `-(id)highlightedIcon;`
+ * `-(void)layout;`
+
+=== SBIconImageView ===
+This class is new in 2.1.
+
+=== SBDownloadController ===
+*New in 2.1:*
+ * `-(void)_showDownloadQueueError;`
+
+=== SBDownloadingIcon ===
+*New in 2.1:*
+ * `-(BOOL)shouldEllipsizeLabel;`
+
+*Removed in 2.1:*
+ * `-(void)resetIconImage;`
+
+=== SBApplicationController ===
+*New in 2.1:*
+ * `-(id)allBundleIdentifiers:(BOOL)fp8;`
+ * `-(void)loadApplicationsAndIcons:(id)fp8 reveal:(BOOL)fp12 popIn:(BOOL)fp16;`
+ * `-(void)removeApplicationsFromModelWithBundleIdentifier:(NSString*)ident;`
+ * `-(Class)applicationClassForBundleIdentifier:(id)fp8;`
+ * `-(id)widgetRoles;`
+
+*Changed in 2.1:*
+|| *Old* || *New* ||
+|| `-(void)loadApplications:(BOOL)fp8;` || `-(void)loadApplications;` ||
+|| `-(void)loadApplicationsWithPath:(id)fp8 isSystemApplication:(BOOL)fp12 defaultTags:(id)fp16 signerIdentity:(id)fp20 seatbeltProfilePath:(id)fp24 seatbeltEnvironmentVariables:(id)fp28;` || `-(void)loadRolesWithBundle:(id)fp8 bundlePath:(id)fp12 isSystemApplication:(BOOL)fp16 defaultTags:(id)fp20 signerIdentity:(id)fp24 seatbeltProfilePath:(id)fp28 seatbeltEnvironmentVariables:(id)fp32;` ||
+
+=== SBStatusBarVPNView ===
+*Changed in 2.1:*
+|| *Old* || *New* ||
+|| `-(void)vpnConnectionChanged;` || `-(void)updateIndicator;` ||
+
+=== SBWidgetApplicationIcon ===
+This class is new in 2.1.
+
+=== SBAwayWindow ===
+This class is new in 2.1.
+
+=== SBStatusBarInWorkOutView ===
+This class is new in 2.1.
+
+=== SBRemoteNotificationServer ===
+This class is new in 2.1.
+
+=== SBRemoteNotification ===
+This class is new in 2.1.
+
+=== SBImageCache ===
+This class is new in 2.1.
+
+=== NSUserDefaults(!SpringBoardAdditions) ===
+This category is new in 2.1.
+
+=== SBUIController(SBHIDInterface) ===
+The whole category is removed in 2.1.
+
+=== SBUIController(!ShowTouchPoints) ===
+The whole category is removed in 2.1.
+
+=== NSArray(!AlertItemsAdditions) ===
+*New in 2.1:*
+ * `-(id)objectOfClass:(Class)cls;`
+
+=== ISDownload(!SpringBoardAdditions) ===
+*New in 2.1:*
+ * `-(BOOL)isFailed;`
 
 = 2.1 → 2.2 =
 == UIKit ==
@@ -1036,6 +1278,147 @@ This category is new in 2.2.
 === PSRootController ===
 *New in 2.2:*
  * `-(void)popBackToTopController;`
+
+== !SpringBoard.app ==
+=== !SpringBoard ===
+*New in 2.2:*
+ * `-(void)_significantTimeChange;`
+ * `-(void)simulateInCallStatusBar;`
+ * `-(void)fakeVolumeButtonUpEvent:(BOOL)fp8;`
+ * `-(void)fakeVolumeUpButtonUpEvent;`
+ * `-(void)fakeVolumeDownButtonUpEvent;`
+ * `-(void)setHasMiniAlerts:(BOOL)fp8;`
+
+*Changed in 2.2:*
+|| *Old* || *New* ||
+|| `-(void)smsSoundPrefsChanged;` || `-(void)smsPrefsChanged;` ||
+
+*Removed in 2.2:*
+ * `-(void)tripleFingerGestureTriggered;`
+ * `-(void)updateAccelerometerSettings;`
+ * `-(void)_nowPlayingInfoChanged:(id)fp8;`
+
+=== SBUIController ===
+Note that the ivar layout is changed by adding the `SBApplication* _launchedApp` ivar.
+
+*Changed in 2.2:*
+|| *Old* || *New* ||
+|| `-(void)showZoomLayerAnimationDidStop:(id)fp8 finished:(id)fp12;` || `-(void)showZoomLayerAnimationDidStop:(id)fp8 finished:(id)fp12 application:(id)fp16;` ||
+|| `-(void)cancelLaunchAnimationDidStop:(id)fp8 finished:(id)fp12;` || `-(void)cancelLaunchAnimationDidStop:(id)fp8 finished:(id)fp12 application:(id)fp16;` ||
+
+=== SBApplication ===
+The ivar layout is significantly modified. Do not rely on the ivar layout at all. Use class_getInstanceVariable() or other runtime functions instead.
+
+*New in 2.2:*
+ * `@property BOOL hasMiniAlerts;`
+ * `-(void)_setDoingBackgroundNetworking:(unsigned int)fp8;`
+ * `-(BOOL)isUserRatable;`
+ * `-(void)willActivateOtherRole:(id)fp8;`
+ * `-(void)clearApplicationSignatureStateCache;`
+ * `-(void)_purgeRemoteApplication;`
+
+*Changed in 2.2:*
+|| *Old* || *New* ||
+|| `-(id)_snapshotsDirectory;` || `+(id)snapshotsDirectory;` ||
+
+*Removed in 2.2:*
+ * `+(void)playBundleAlertSoundDictionary:(id)fp8;`
+
+=== SBAwayController ===
+Note that the ivar layout is changed by adding the `unsigned int _lockdownIsLocked:1;` ivar.
+
+*New in 2.2:*
+ * `-(void)_setLockdownLockState:(BOOL)fp8;`
+ * `-(BOOL)_getLockdownLockState;`
+
+
+=== SBAwayModel ===
+*New in 2.2:*
+ * `+(BOOL)shouldHideSMSSender;`
+
+=== SBTelephonyManager ===
+*Changed in 2.2:*
+|| *Old* || *New* ||
+|| `-(void)updateLocale;` || `-(BOOL)updateLocale;` ||
+|| `-(void)updateNetworkLocale;` || `-(BOOL)updateNetworkLocale;` ||
+
+*Removed in 2.2:*
+ * `-(void)kickStartSearching;`
+
+=== SBDisplayStack ===
+*Removed in 2.2:*
+ * `-(void)flushWithoutCallbackSparingDisplay:(id)fp8;`
+
+=== SBDisplay ===
+Note that the ivar layout is changed by changing the type of `_accelerometerSampleInterval` ivar from `float` to `NSTimeInterval` (`double`).
+
+*New in 2.2:*
+ * `+(void)purgeOrphanedDisplayStates;`
+ * `-(void)_exitedCommon;`
+
+*Changed in 2.2:*
+|| *Old* || *New* ||
+|| `-(void)setAccelerometerDeviceOrientationChangedEventsEnabled:(BOOL)fp8 sampleInterval:(float)fp12;` || `-(void)setAccelerometerDeviceOrientationChangedEventsEnabled:(BOOL)fp8;`<br />`-(void)setAccelerometerSampleInterval:(NSTimeInterval)fp8;` ||
+|| `-(float)accelerometerSampleInterval;` || `-(NSTimeInterval)accelerometerSampleInterval;` ||
+
+=== SBStatusBarOperatorNameView ===
+*Removed in 2.2:*
+ * `-(id)operatorNameStyle;`
+
+=== SBStatusBarContentView ===
+*Changed in 2.2:*
+|| *Old* || *New* ||
+|| `-(GSEventRef)textFont;` || `-(UIFont*)textFont;` ||
+
+=== SBInfoBubble ===
+The whole class is removed in 2.2.
+
+=== SBIconList ===
+*New in 2.2:*
+ * `-(BOOL)getX:(int*)pX Y:(int*)pY forDisplayIdentifier:(id)fp16;`
+
+=== SBSlidingAlertDisplay ===
+Note that the ivar layout is changed by removing the `BOOL _alphanumericPIN;` and adding the `int _alphanumericPIN;` and `BOOL _alphanumericPINLoaded;` ivars.
+
+*New in 2.2:*
+ * `-(BOOL)alphanumericKeyboard;`
+ * `-(BOOL)fourDigitPasscode;`
+
+*Removed in 2.2:*
+ * `-(BOOL)alphanumericPIN;`
+
+=== SBTextDisplayView ===
+Note that the ivar layout is changed by removing the `NSString* _style;` and adding the `UIFont* _font;` and `UIColor* _fontColor;` ivars.
+
+*Changed in 2.2:*
+|| *Old* || *New* ||
+|| `-(id)initWithWidth:(float)width text:(NSString*)text style:(NSString*)style;` || `-(id)initWithWidth:(float)width font:(UIFont*)font fontColor:(UIColor*)color;` ||
+|| `-(void)setStyle:(NSString*)style;` || `-(void)setFont:(UIFont*)font;`<br />`-(void)setFontColor:(UIColor*)color;` ||
+
+=== AlarmController ===
+The ivar layout is significantly modified. Do not rely on the ivar layout at all. Use class_getInstanceVariable() or other runtime functions instead.
+
+*Changed in 2.2:*
+|| *Old* || *New* ||
+|| `-(void)_alarmTimeReached:(id)fp8;` || `-(void)_alarmTimeReached;` ||
+|| `-(void)_countDownTimerFired:(id)fp8;` || `-(void)_countDownTimerFired;` ||
+
+*Removed in 2.2:*
+ * `-(void)_sleepTimerFired:(id)fp8;`
+ * `-(void)_wokeFromSleep;`
+
+=== SBUserNotificationAlert ===
+The ivar layout is significantly modified. Do not rely on the ivar layout at all. Use class_getInstanceVariable() or other runtime functions instead.
+
+*New in 2.2:*
+ * `-(void)_setSheetDefaultButtonTitle:(id)fp8;`
+ * `-(void)_textFieldButtonPressed:(id)fp8;`
+
+*Changed in 2.2:*
+|| *Old* || *New* ||
+|| `-(id)alertSheet;` || `-(Class)alertSheetClass;` ||
+
+(To be done)
 
 = 2.2 → 2.2.1 =
 == UIKit ==
