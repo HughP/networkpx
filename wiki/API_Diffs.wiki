@@ -1418,11 +1418,207 @@ The ivar layout is significantly modified. Do not rely on the ivar layout at all
 || *Old* || *New* ||
 || `-(id)alertSheet;` || `-(Class)alertSheetClass;` ||
 
-(To be done)
+=== UIUserNotificationAlertSheet ===
+*Removed in 2.2:*
+ * `-(void)dismiss;`
+
+=== SBMiniAlertController ===
+Note that the ivar layout is changed by removing the `unsigned int _dontAskApps:1;` and adding the `unsigned int _miniAlertVisible:1;` and `unsigned int _lastMiniAlertVisible:1;` ivars.
+
+*New in 2.2:*
+ * `-(BOOL)miniAlertVisible;`
+
+*Changed in 2.2:*
+|| *Old* || *New* ||
+|| `-(void)displayDidDisableMiniAlerts:(id)fp8;` || `-(void)displayDidDismissMiniAlert:(id)fp8;` ||
+
+*Removed in 2.2:*
+ * `-(void)setShouldAskApps:(BOOL)fp8;`
+
+=== SBEmergencyCallButton ===
+Note that the ivar layout is changed by removing the `NSString* _subtitle` ivar.
+
+*Removed in 2.2:*
+ * `-(id)initWithFrame:(CGRect)frm;`
+ * `-(void)dealloc;`
+ * `-(void)setSubtitle:(NSString*)subtitle;`
+
+=== SBAlertItem ===
+*New in 2.2:*
+ * `-(Class)alertSheetClass;`
+
+=== SBSMSAlertItem ===
+*New in 2.2:*
+ * `-(Class)alertSheetClass;`
+
+=== SBSIMLockAlertItem ===
+*New in 2.2:*
+ * `+(id)alertTitleForStatus:(int)fp8 languageCode:(id)fp12;`
+ * `-(id)_overrideLanguageCode;`
+
+*Changed in 2.2:*
+|| *Old* || *New* ||
+|| `-(id)alertTitle;` || `-(id)alertTitleForLanguageCode:(id)fp8;` ||
+|| `-(id)alertText;` || `-(id)alertTextForLanguageCode:(id)fp8;` ||
+
+=== SBSIMLockEntryAlertDisplay ===
+*Changed in 2.2:*
+|| *Old* || *New* ||
+|| `-(BOOL)alphanumericPIN;` || `-(BOOL)alphanumericKeyboard;` ||
+
+=== SBWiFiManager ===
+*New in 2.2:*
+ * `@property BOOL wiFiEnabled;`
+
+=== SBRingingAlertItem ===
+*Changed in 2.2:*
+|| *Old* || *New* ||
+|| `-(void)willPresentAlertSheet:(id)fp8;` || `-(void)willActivate;` ||
+
+=== SBNowPlayingAlertItem ===
+*New in 2.2:*
+ * `-(Class)alertSheetClass;`
+
+=== SBIconModel ===
+*New in 2.2:*
+ * `-(void)removeAppForDownloadingIcon:(id)fp8;`
+
+*Changed in 2.2:*
+|| *Old* || *New* ||
+|| `-(void)replaceDownloadingDisplayIdentifier:(id)fp8 withDisplayIdentifier:(id)fp12;` || `-(void)replaceDownloadingDisplayIdentifiers:(id)fp8 withDisplayIdentifiers:(id)fp12;` ||
+|| `-(id)downloadingIconForDownload:(id)fp8;` || `-(id)addDownloadingIconForDownload:(id)fp8;` || 
+|| `-(id)downloadingIconForDisplayIdentifier:(id)fp8;` || `-(id)addDownloadingIconForDisplayIdentifier:(id)fp8;` ||
+|| `-(void)addNewIconToDesignatedLocation:(id)fp8 animate:(BOOL)fp12 scrollToList:(BOOL)fp16;` || `-(void)addNewIconToDesignatedLocation:(id)fp8 animate:(BOOL)fp12 scrollToList:(BOOL)fp16 saveIconState:(BOOL)fp20;` ||
+
+
+*Removed in 2.2:*
+ * `-(void)_addDownloadingApplications;`
+
+=== SBMediaController ===
+*New in 2.2:*
+ * `-(int)_playerControlConnection;`
+ * `-(BOOL)_iPodAppIsAvailable;`
+
+*Removed in 2.2:*
+ * `-(BOOL)_performIAPCommand:(int)fp8 status:(int)fp12;`
+
+=== SBIconLabel ===
+*Removed in 2.2:*
+ * `+(void)initialize;`
+ * `+(void)preheatStylizedStrings;`
+
+=== SBIcon ===
+*New in 2.2:*
+ * `-(BOOL)shouldKernLabel;`
+
+*Changed in 2.2:*
+|| *Old* || *New* ||
+|| `-(void)updateLabelKerning;` || `-(void)updateLabelKerningAndEllipsing;` ||
+
+=== SBDownloadController ===
+Note that the ivar layout is changed by removing the `ISImageCache* _imageCache;` and `NSMutableDictionary* _artworkDict;` ivars.
+
+*Removed in 2.2:*
+ * `-(id)iconImageForDownload:(id)fp8;`
+ * `-(void)_fetchArtworkForDownload:(id)fp8;`
+ * `-(void)_installationComplete:(id)fp8;`
+ * `-(void)downloadQueue:(id)fp8 downloadStateChanged:(id)fp12;`
+ * `-(void)_setImage:(CGImageRef)fp8 forURL:(id)fp12;`
+ * `-(void)imageCache:(id)fp8 loadedImage:(CGImageRef)fp12 forURL:(id)fp16 fetchTag:(int)fp20;`
+
+=== SBDownloadingIcon ===
+Note that the ivar layout is changed by adding the `NSString* _bundleID;` ivar.
+
+*New in 2.2:*
+ * `+(id)displayIdentifierForDownloadUniqueID:(id)fp8;`
+ * `-(NSString*)description;`
+ * `-(BOOL)shouldKernLabel;`
+ * `-(void)download:(id)fp8 loadedArtworkImage:(CGImageRef)fp12;`
+ * `@property NSString* bundleID;`
+ * `-(void)_reloadIcon;`
+
+=== SBInstalledApplicationIcon ===
+*New in 2.2:*
+ * `-(id)ratingsAlertTitle;`
+ * `-(id)ratingsAlertBody;`
+ * `-(id)ratingsAlertSkipTitle;`
+ * `-(id)ratingsAlertRateButtonTitle;`
+ * `-(void)setBadge:(id)fp8;`
+
+=== SBDownloadFailureAlertItem ===
+The whole class is removed in 2.2.
+
+=== SBApplicationUninstallationOperation ===
+This class is new in 2.2.
+
+=== SBApplicationController ===
+The ivar layout is significantly modified. Do not rely on the ivar layout at all. Use class_getInstanceVariable() or other runtime functions instead.
+
+*New in 2.2:*
+ * `-(void)waitForUninstallsToComplete;`
+
+*Changed in 2.2:*
+|| *Old* || *New* ||
+|| `-(void)_applicationInstallationCallback;` || `-(void)_applicationInstallationCallback:(id)fp8;` ||
+
+*Removed in 2.2:*
+ * `-(id)_dequeueApplicationToUninstall;`
+ * `-(void)_uninstallApplicationsThread;`
+ * `-(void)_uninstallationThreadFinished;`
+ * `-(void)_enqueueApplicationToUninstall:(id)fp8;`
+ * `@property unsigned ignoreInstallationEventCount;`
+
+=== SBWiFiTrustAlertItem ===
+*Changed in 2.2:*
+|| *Old* || *New* ||
+|| `-(id)alertSheet;` || `-(Class)alertSheetClass;` ||
+
+=== SBLaunchdUtilities ===
+*Changed in 2.2:*
+|| *Old* || *New* ||
+|| `+(BOOL)createJobWithLabel:(id)fp8 path:(id)fp12 arguments:(id)fp16 environment:(id)fp20 standardOutputPath:(id)fp24 standardErrorPath:(id)fp28 waitForDebugger:(BOOL)fp32 seatbeltProfilePath:(id)fp36 machServices:(id)fp40;` || `+(BOOL)createJobWithLabel:(id)fp8 path:(id)fp12 arguments:(id)fp16 environment:(id)fp20 standardOutputPath:(id)fp24 standardErrorPath:(id)fp28 waitForDebugger:(BOOL)fp32 seatbeltProfilePath:(id)fp36 denyCreatingOtherJobs:(BOOL)fp40 machServices:(id)fp44;` ||
+
+=== SBWidgetApplicationIcon ===
+*New in 2.2:*
+ * `-(BOOL)shouldEllipsizeLabel;`
+
+=== SBRemoteNotificationServer ===
+*New in 2.2:*
+ * `-(void)_setBadgeMainThread:(id)fp8;`
+ * `-(void)_playBundleAlertSoundMainThread:(id)fp8;`
+
+=== SBCFBundle ===
+This class is new in 2.2.
+
+=== SBAccelerometerInterface ===
+This class is new in 2.2.
+
+=== SBAccelerometerClient ===
+This class is new in 2.2.
+
+=== SleepProofTimer ===
+This class is new in 2.2.
+
+=== SBAppRatingsStarControl ===
+This class is new in 2.2.
+
+=== SBAppRatingsAlertSheet ===
+This class is new in 2.2.
+
+=== SBAppRatingsAlertItem ===
+This class is new in 2.2.
+
+=== SBPlatformController(private) ===
+*Changed in 2.2:*
+|| *Old* || *New* ||
+|| `-(void)runPrefUpdateToolIfNeeded;` || `-(void)runMigrationToolsIfNeeded;` ||
 
 = 2.2 → 2.2.1 =
 == UIKit ==
 Nothing was changed in UIKit from 2.2 to 2.2.1.
 
 == Preferences ==
+Nothing was changed in Preferences from 2.2 to 2.2.1.
+
+== !SpringBoard.app ==
 Nothing was changed in Preferences from 2.2 to 2.2.1.
