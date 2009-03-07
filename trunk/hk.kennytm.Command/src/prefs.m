@@ -38,6 +38,8 @@
 #import <UIKit2/Functions.h>
 #import <UIKit3/UIBadgeView.h>
 
+#define PREFERENCE_PATH @"/Library/Command/preference.plist"
+
 @interface TappingHandView : UIView {
 	UIImageView* onView, *offView;
 	UIBadgeView* badgeView;
@@ -75,9 +77,9 @@
 		badgeView = [[UIBadgeView alloc] initWithFrame:CGRectMake(68-28, 0, 0, 0)];
 		badgeView.hidden = YES;
 		
-		clock = [[UILabel alloc] initWithFrame:CGRectMake(68-28, 0, 28, 27)];
+		clock = [[UILabel alloc] initWithFrame:CGRectMake(68-28, (27-13)/2, 28, 13)];
 		clock.textColor = [UIColor blueColor];
-		clock.backgroundColor = [UIColor clearColor];
+		clock.backgroundColor = [UIColor colorWithWhite:1 alpha:0.9];
 		clock.hidden = YES;
 		clock.font = [UIFont boldSystemFontOfSize:11];
 		clock.textAlignment = UITextAlignmentCenter;
@@ -180,10 +182,12 @@
 -(id)initWithFrame:(CGRect)frm;
 -(void)startAnimating;
 -(void)stopAnimating;
+-(void)setValue:(id)value forUndefinedKey:(NSString*)key;
 @end
 
 @implementation GestureGuideAnimation
 +(BOOL)accessInstanceVariablesDirectly { return YES; }
+-(void)setValue:(id)value forUndefinedKey:(NSString*)key {}
 -(id)initWithFrame:(CGRect)frm {
 	if ((self = [super initWithFrame:CGRectMake(5, frm.size.height+5, frm.size.width-2*5, 75)])) {
 		UILabel* lipsum = [[UILabel alloc] initWithFrame:CGRectMake(5, 0, frm.size.width-2*5, 28)];
@@ -227,38 +231,68 @@
 
 @interface AnimatableListController : PSListController {
 	GestureGuideAnimation* anim;
+	NSMutableDictionary* preference;
 }
+-(NSString*)section;
+-(id)initForContentSize:(CGSize)size;
+-(void)dealloc;
 -(void)viewWillBecomeVisible:(PSSpecifier*)parentSpec;
 -(void)viewDidBecomeVisible;
 -(void)setValue:(NSNumber*)value forSpecifier:(PSSpecifier*)spec;
 -(NSNumber*)valueForSpecifier:(PSSpecifier*)spec;
+-(void)refreshAnimation;
 @end
 
 @implementation AnimatableListController
+-(NSString*)section { return @"Labels"; }
+-(id)initForContentSize:(CGSize)size {
+	if ((self = [super initForContentSize:size])) {
+		preference = [[NSMutableDictionary alloc] initWithContentsOfFile:PREFERENCE_PATH];
+	}
+	return self;
+}
+-(void)dealloc {
+	[preference writeToFile:PREFERENCE_PATH atomically:NO];
+	[preference release];
+	[super dealloc];
+}
+
 -(void)viewDidBecomeVisible {
 	[super viewDidBecomeVisible];
 	
 	// insert animation.
 	UIView* lastCell = [self cachedCellForSpecifierID:@"Preview"];
 	CGRect lastCellFrame = lastCell.frame;
-	
 	anim = [[GestureGuideAnimation alloc] initWithFrame:lastCellFrame];
+	
 	[lastCell addSubview:anim];
 	[anim release];
+	[self refreshAnimation];
 }
 -(void)setValue:(NSNumber*)value forSpecifier:(PSSpecifier*)spec {
-	[anim setValue:value forKey:spec.identifier];
+	NSMutableDictionary* content = [[preference objectForKey:@"control"] objectForKey:[self section]];
+	NSString* key = spec.identifier;
+	[content setObject:value forKey:key];
+	[anim setValue:value forKey:key];
 	if (spec->cellType != PSLinkListCell)
-		[anim startAnimating];
+		[self refreshAnimation];
 }
 -(NSNumber*)valueForSpecifier:(PSSpecifier*)spec {
-	return nil;
+	return [[[preference objectForKey:@"control"] objectForKey:[self section]] objectForKey:spec.identifier];
 }
 -(void)viewWillBecomeVisible:(PSSpecifier*)parentSpec {
 	// adjust the specifier to point to self.
 	[parentSpec setTarget:self];
 	[super viewWillBecomeVisible:parentSpec];
 }
+
+-(void)refreshAnimation {
+	NSDictionary* content = [[preference objectForKey:@"control"] objectForKey:[self section]];
+	for (NSString* key in content)
+		[anim setValue:[content objectForKey:key] forKey:key];
+	[anim startAnimating];
+}
+
 @end
 
 

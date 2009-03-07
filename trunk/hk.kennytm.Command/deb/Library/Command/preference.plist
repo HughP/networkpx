@@ -1,18 +1,14 @@
 {
 	control = {
-		label = {
+		Labels = {
+			beginTapCount = 1;
+			beginTapHold = 2;
+			endsWithTouchUp = YES;
+			showCmdbar = NO;
+		};
+		"Text fields" = {
 			taps = 1;
 			endsWithLongHold = YES;
-			endsWithTouchDown = NO;
-		};
-		start = {
-			taps = 1;
-			endsWithLongHold = YES;
-			endsWithTouchDown = NO;
-		};
-		stop = {
-			taps = 1;
-			endsWithLongHold = NO;
 			endsWithTouchDown = NO;
 		};
 	};

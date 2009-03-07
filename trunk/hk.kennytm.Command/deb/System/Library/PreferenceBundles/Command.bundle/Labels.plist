@@ -8,6 +8,7 @@
 			validValues = (1, 2, 3, 4);
 			label = "Taps";
 			set = "setValue:forSpecifier:";
+			get = "valueForSpecifier:";
 			id = "beginTapCount";
 		},
 		{ cell = PSLinkListCell;
@@ -16,17 +17,20 @@
 			validTitles = ("Immediate", 0.5, 1, 1.5, 2, 2.5, 3, 4, 5);
 			validValues = (0, 0.5, 1, 1.5, 2, 2.5, 3, 4, 5);
 			set = "setValue:forSpecifier:";
+			get = "valueForSpecifier:";
 			id = "beginTapHold";
 		},
 		{ cell = PSGroupCell; },
 		{ cell = PSSwitchCell;
 			label = "Ends with Touch Up";
 			set = "setValue:forSpecifier:";
+			get = "valueForSpecifier:";
 			id = "endsWithTouchUp";
 		},
 		{ cell = PSSwitchCell;
 			label = "Show ⌘bar";
 			set = "setValue:forSpecifier:";
+			get = "valueForSpecifier:";
 			id = "showCmdbar"; },
 		{ cell = PSGroupCell;
 			label = "Gesture Guide";
