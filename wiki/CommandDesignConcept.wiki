@@ -155,6 +155,14 @@ CMLCommandlets = (<filename>);
 	<td>--</td>
 </tr>
 <tr>
+	<td>icon</td>
+	<td>string</td>
+	<td>file path</td>
+	<td>The icon to use when the ⌘let is shown on the ⌘bar. The icon should be 22×22 in size and expects a white background.</td>
+	<td>"_file name_`.png`"</td>
+	<td>--</td>
+</tr>
+<tr>
 	<td rowspan="2">capabilities</td>
 	<td>array</td>
         <td>...of `<capability>`</td>
