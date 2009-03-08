@@ -44,12 +44,13 @@
 }
 
 +(void)showActionMenuForWebTexts:(UIWebTexts*)txts {
-	UIActionSheetPro* sheet = [[UIActionSheetPro alloc] initWithNumberOfRows:3];
-	[sheet addButtonAtRow:0 withTitle:@"^_^" image:nil destructive:NO cancel:NO];
-	[sheet addButtonAtRow:1 withTitle:@"^_^" image:nil destructive:YES cancel:NO];
-	[sheet addButtonAtRow:2 withTitle:@"^_^" image:nil destructive:NO cancel:YES];
+	UIActionSheetPro* sheet = [[UIActionSheetPro alloc] initWithNumberOfRows:2];
+	[sheet addButtonAtRow:0 withTitle:@"Cut" image:nil destructive:NO cancel:NO];
+	[sheet addButtonAtRow:0 withTitle:@"Copy" image:nil destructive:NO cancel:NO];
+	[sheet addButtonAtRow:0 withTitle:@"Paste" image:nil destructive:NO cancel:NO];
+	[sheet addButtonAtRow:1 withTitle:@"Cancel" image:nil destructive:NO cancel:YES];
 	
-	[sheet showWithWebTexts:txts inView:[txts.view.window.subviews objectAtIndex:0]];
+	[sheet showWithWebTexts:nil inView:[txts.view.window.subviews objectAtIndex:0]];
 	
 	//UILogViewHierarchy(sheet);
 	[sheet release];

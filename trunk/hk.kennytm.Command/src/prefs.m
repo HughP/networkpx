@@ -39,6 +39,7 @@
 #import <UIKit3/UIBadgeView.h>
 
 #define PREFERENCE_PATH @"/Library/Command/preference.plist"
+#define BUNDLE_PATH @"/System/Library/PreferenceBundles/Command.bundle"
 
 @interface TappingHandView : UIView {
 	UIImageView* onView, *offView;
@@ -70,8 +71,8 @@
 @implementation TappingHandView
 -(id)initWithFrame:(CGRect)frm {
 	if ((self = [super initWithFrame:CGRectMake(frm.origin.x, frm.origin.y, 68, 65)])) {
-		onView = [[UIImageView alloc] initWithImage:[UIImage imageWithContentsOfFile:@"/System/Library/PreferenceBundles/Command.bundle/hand-on.png"]];
-		offView = [[UIImageView alloc] initWithImage:[UIImage imageWithContentsOfFile:@"/System/Library/PreferenceBundles/Command.bundle/hand.png"]];
+		onView = [[UIImageView alloc] initWithImage:[UIImage imageWithContentsOfFile:BUNDLE_PATH@"/hand-on.png"]];
+		offView = [[UIImageView alloc] initWithImage:[UIImage imageWithContentsOfFile:BUNDLE_PATH@"/hand.png"]];
 		onView.hidden = YES;
 
 		badgeView = [[UIBadgeView alloc] initWithFrame:CGRectMake(68-28, 0, 0, 0)];
@@ -119,7 +120,7 @@
 	togglesLeft = 2*count-1;
 	[badgeView setInteger:count];
 	badgeView.hidden = NO;
-	[self performSelector:@selector(toggleState) withObject:nil afterDelay:0.5];
+	[self performSelector:@selector(toggleState) withObject:nil afterDelay:0.25];
 }
 
 -(void)delay:(float)delay {
@@ -139,7 +140,7 @@
 	-- togglesLeft;
 	[badgeView setInteger:1+togglesLeft/2];
 	if (togglesLeft != 0)
-		[self performSelector:@selector(toggleState) withObject:nil afterDelay:0.5];
+		[self performSelector:@selector(toggleState) withObject:nil afterDelay:0.25];
 	else {
 		[self performSelector:@selector(finishTogglingState) withObject:nil afterDelay:0.1];
 	}
@@ -171,6 +172,9 @@
 
 @interface GestureGuideAnimation : UIView {
 	TappingHandView* hand;
+	UIImageView* actionsheet;
+	UIView* cover;
+	UIImageView* cmdbar, *cmdbarActive;
 	float beginTapHold, endTapHold;
 	int beginTapCount, endTapCount;
 	BOOL dragging;
@@ -185,19 +189,55 @@
 -(void)setValue:(id)value forUndefinedKey:(NSString*)key;
 @end
 
+@interface GestureGuideAnimation()
+-(void)animatePhase2;
+-(void)animatePhase3;
+-(void)animatePhase4a;
+-(void)animatePhase4b;
+-(void)animatePhase5;
+-(void)animatePhase6;
+-(void)animatePhase7;
+-(void)animatePhase8c;
+-(void)animatePhase8d;
+-(void)animateEnd;
+@end
+
+
 @implementation GestureGuideAnimation
 +(BOOL)accessInstanceVariablesDirectly { return YES; }
 -(void)setValue:(id)value forUndefinedKey:(NSString*)key {}
 -(id)initWithFrame:(CGRect)frm {
-	if ((self = [super initWithFrame:CGRectMake(5, frm.size.height+5, frm.size.width-2*5, 75)])) {
-		UILabel* lipsum = [[UILabel alloc] initWithFrame:CGRectMake(5, 0, frm.size.width-2*5, 28)];
+	CGRect myRect = CGRectMake(5, frm.size.height+5, frm.size.width-2*5, 75);
+	if ((self = [super initWithFrame:myRect])) {
+		self.clipsToBounds = YES;
+		
+		UILabel* lipsum = [[UILabel alloc] initWithFrame:CGRectMake(5, 0, myRect.size.width-2*5, 28)];
 		lipsum.text = @"Lorem ipsum dolor sit amet, consectetur adipiscing elit.";
 		lipsum.font = [UIFont fontWithName:@"Times New Roman" size:24];
 		lipsum.backgroundColor = [UIColor clearColor];
 		[self addSubview:lipsum];
 		[lipsum release];
 		
-		hand = [[TappingHandView alloc] initWithFrame:CGRectMake(20, 0, 0, 0)];
+		cover = [[UIView alloc] initWithFrame:CGRectMake(0, 0, myRect.size.width, myRect.size.height)];
+		cover.backgroundColor = [UIColor blackColor];
+		cover.opaque = NO;
+		[self addSubview:cover];
+		[cover release];
+		
+		actionsheet = [[UIImageView alloc] initWithImage:[UIImage imageWithContentsOfFile:BUNDLE_PATH@"/actionsheet.png"]];
+		actionsheet.frame = CGRectMake(0, myRect.size.height, myRect.size.width, 36);
+		[self addSubview:actionsheet];
+		[actionsheet release];
+		
+		cmdbar = [[UIImageView alloc] initWithImage:[UIImage imageWithContentsOfFile:BUNDLE_PATH@"/cmdbar.png"]];
+		[self addSubview:cmdbar];
+		[cmdbar release];
+		
+		cmdbarActive = [[UIImageView alloc] initWithImage:[UIImage imageWithContentsOfFile:BUNDLE_PATH@"/cmdbar-active.png"]];
+		[self addSubview:cmdbarActive];
+		[cmdbarActive release];
+		
+		hand = [[TappingHandView alloc] initWithFrame:CGRectMake(30, 0, 0, 0)];
 		hand.target = self;	// hmmm... retain cycle.
 		[self addSubview:hand];
 		[hand release];
@@ -210,19 +250,57 @@
 -(void)stopAnimating {
 	[hand stopAnimating];
 	[NSObject cancelPreviousPerformRequestsWithTarget:self];
+	actionsheet.frame = CGRectMake(0, 75, 310, 36);
 	hand.frame = CGRectMake(20, 0, 0, 0);
+	cover.alpha = 0;
+	cmdbar.alpha = 0;
+	cmdbarActive.alpha = 0;
 }
 
+// phase 1 = begin taps
 -(void)startAnimating {
 	[self stopAnimating];
 	hand.action = @selector(animatePhase2);
 	[hand tap:beginTapCount];
 }
+// phase 2 = begin hold
 -(void)animatePhase2 {
-	hand.action = @selector(animatePhaseN);
+	hand.action = isStaticText ? @selector(animatePhase7) : @selector(animatePhase3);
 	[hand delay:beginTapHold];
 }
--(void)animatePhaseN {
+// phase 3 = begin up
+-(void)animatePhase3 {
+	[self animateEnd];
+}
+// phase 7 = end up
+-(void)animatePhase7 {
+	if (endsWithTouchUp)
+		hand.state = NO;
+	SEL nextAction = showCmdbar ? @selector(animatePhase8c) : @selector(animatePhase8d);
+	[self performSelector:nextAction withObject:nil afterDelay:0.1];
+}
+// phase 8c = show cmdbar.
+-(void)animatePhase8c {
+	CGRect oldFrame = cmdbar.frame;
+	oldFrame.origin = hand.frame.origin;
+	oldFrame.origin.x += 10;
+	cmdbar.frame = oldFrame;
+	cmdbarActive.frame = oldFrame;
+	
+	(endsWithTouchUp ? cmdbar : cmdbarActive).alpha = 0.9f;
+	[self animateEnd];
+}
+// phase 8d = show action sheet
+-(void)animatePhase8d {
+	[UIView beginAnimations:@"CMLShowActionSheet" context:NULL];
+	[UIView setAnimationDelegate:self];
+	[UIView setAnimationDidStopSelector:@selector(animateEnd)];
+	actionsheet.frame = CGRectMake(0, 75-36, 310, 36);
+	cover.alpha = 0.5f;
+	[UIView commitAnimations];
+}
+
+-(void)animateEnd {
 	[self performSelector:@selector(startAnimating) withObject:nil afterDelay:3];
 }
 @end
@@ -264,6 +342,7 @@
 	UIView* lastCell = [self cachedCellForSpecifierID:@"Preview"];
 	CGRect lastCellFrame = lastCell.frame;
 	anim = [[GestureGuideAnimation alloc] initWithFrame:lastCellFrame];
+	[anim setValue:[NSNumber numberWithBool:[@"Labels" isEqualToString:[self section]]] forKey:@"isStaticText"];
 	
 	[lastCell addSubview:anim];
 	[anim release];
@@ -282,6 +361,7 @@
 }
 -(void)viewWillBecomeVisible:(PSSpecifier*)parentSpec {
 	// adjust the specifier to point to self.
+	// there ought to be a way to do the same in the specifiers.plist right? right??
 	[parentSpec setTarget:self];
 	[super viewWillBecomeVisible:parentSpec];
 }

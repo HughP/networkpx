@@ -1,4 +1,1 @@
-{
-	bin = "clipboard.bundle";
-	type = lib;
-}
+{type=lib;}
