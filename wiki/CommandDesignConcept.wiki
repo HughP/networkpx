@@ -71,7 +71,7 @@ Besides rearrangement, users are allowed to set whether to enable ⌘ and the ac
 
 == Declaring ⌘lets ==
 
-⌘let definitions are stored in /Library/Command/Commandlets/ as modern bundles (i.e. ordinary directories with a definite structure). All these ⌘let bundles must have file name *.commandlet. A ⌘let bundles can contain multiple ⌘lets to reduce code duplication for similar functions.
+⌘let definitions are stored in /Library/Command/Commandlets/ as modern bundles (i.e. ordinary directories with a definite structure). All these ⌘let bundles must have file name `*.commandlet`. A ⌘let bundles can contain multiple ⌘lets to reduce code duplication for similar functions.
 
 As usual an Info.plist should be provided. There is only one required key in the Info.plist, `CMLCommandlets`, which is an array of ⌘lets this bundle provides. For example, in Clipboard.commandlet, the Info.plist contains exactly these content:
 {{{
@@ -81,6 +81,13 @@ CFBundleExecutable = Clipboard;
 }
 }}}
 This means Clipboard.commandlet provides the Copy, Cut and Paste ⌘lets. 
+
+If the Info.plist is not provided, it is assumed that the content is
+{{{
+{
+CMLCommandlets = (<filename>);
+}
+}}}
 
 == ⌘let plist format ==
 
@@ -92,7 +99,7 @@ This means Clipboard.commandlet provides the Copy, Cut and Paste ⌘lets.
    title = "Paste";
    type = "lib";
    call = "pasteEntry";
-   availableWhenEmpty = 1;
+   capabilities = ("textfield.selection.defined");
  }
 # for google.plist
  {
