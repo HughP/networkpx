@@ -209,9 +209,11 @@ static NSString* lastLongPressedKey = nil;	// Record last long-pressed key.
 	BOOL isLandscape = (ori == 90 || ori == -90);
 	CGFloat newWidth = isLandscape ? 47 : 32;
 	CGFloat mismatchCompensation = isLandscape ? 32 : 9;
+	CGFloat maxWidth = [UIKeyboardImpl defaultSizeForOrientation:ori].width;
 	
 	NSString* mode = UIKeyboardGetCurrentInputMode();
-	if ([mode hasPrefix:iKeyEx_Prefix]) {
+	BOOL is_iKeyExKeyboard = [mode hasPrefix:iKeyEx_Prefix];
+	if (is_iKeyExKeyboard) {
 		actualArr = [[KeyboardBundle bundleWithModeName:mode] variantsForString:lastLongPressedKey];
 		if (actualArr == nil)
 			actualArr = array;
@@ -227,13 +229,16 @@ static NSString* lastLongPressedKey = nil;	// Record last long-pressed key.
 					newWidth = thisWidth;
 			}
 			actualArr = [actualArr arrayByAddingObjectsFromArray:actualArr];
+			// decrease the string width if necessary.
+			if (newWidth * halfCount > maxWidth)
+				newWidth = maxWidth / halfCount;
 		}
 		// this is to fix a crashing bug in 2.2 when expansion = 0 and the
 		// variants list overflow the screen.
 		// Also make things list in the correct direction.
 		if (exp == 0) {
 			CGFloat occupiedSize = newWidth * (halfCount + 0.5);
-			if (frame.origin.x + occupiedSize > [UIKeyboardImpl defaultSizeForOrientation:ori].width) {
+			if (frame.origin.x + occupiedSize > maxWidth) {
 				isExp = 1;
 				// reverse the actual array if exp is changed.
 				NSMutableArray* newArray = [actualArr mutableCopy];
@@ -259,14 +264,15 @@ static NSString* lastLongPressedKey = nil;	// Record last long-pressed key.
 		
 	UIAccentedCharacterView* newSelf = [self old_initWithFrame:frame variants:actualArr expansion:isExp orientation:ori];
 	
-	// 
-	if (isExp != exp && isExp == 1)
-		[actualArr release];
-	
-	// the predefined m_stringWidth is too short! increase it.
-	if (newSelf != nil && newSelf->m_stringWidth < newWidth) {
-		newSelf.stringWidth = newWidth;
-		[newSelf setSelectedIndex:newSelf->m_selectedIndex];
+	if (is_iKeyExKeyboard) {
+		if (isExp != exp && isExp == 1)
+			[actualArr release];
+		
+		// the predefined m_stringWidth is too short! increase it.
+		if (newSelf != nil && (newSelf->m_stringWidth < newWidth || halfCount > 10)) {
+			newSelf.stringWidth = newWidth;
+			[newSelf setSelectedIndex:newSelf->m_selectedIndex];
+		}
 	}
 	
 	return newSelf;
@@ -287,6 +293,11 @@ void cleanup () {
 }
 
 void installHook () {
+	// don't hook on SpringBoard.
+	if ([@"com.apple.springboard" isEqualToString:[[NSBundle mainBundle] bundleIdentifier]])
+		return;
+	
+	
 	atexit(&cleanup);
 	
 	method_exchangeImplementations(
