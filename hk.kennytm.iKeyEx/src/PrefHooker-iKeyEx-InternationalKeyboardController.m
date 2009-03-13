@@ -73,12 +73,10 @@
 		}
 		[result addObjectsFromArray:[_specifiers subarrayWithRange:NSMakeRange(1, separator-1)]];
 		
-		// add iKeyEx keyboards in.
-		[result addObject:[PSSpecifier groupSpecifierWithName:[localizationBundle localizedStringForKey:@"iKeyEx Keyboards" value:nil table:nil]]];
-		
 		NSFileManager* manager = [NSFileManager defaultManager];
 		NSString* rootPath = iKeyEx_KeyboardsPath;
 		
+		BOOL iKeyExKeyboardGroup_notAdded = YES;
 		for (NSString* keyboardBundleName in [manager contentsOfDirectoryAtPath:rootPath error:NULL]) {
 			if (![keyboardBundleName hasSuffix:@".keyboard"])
 				continue;
@@ -86,6 +84,12 @@
 			NSBundle* bundle = [NSBundle bundleWithPath:[rootPath stringByAppendingPathComponent:keyboardBundleName]];
 			if (bundle == nil)
 				continue;
+			
+			// add iKeyEx keyboards in.
+			if (iKeyExKeyboardGroup_notAdded) {
+				iKeyExKeyboardGroup_notAdded = NO;
+				[result addObject:[PSSpecifier groupSpecifierWithName:[localizationBundle localizedStringForKey:@"iKeyEx Keyboards" value:nil table:nil]]];
+			}
 			
 			NSString* modeName = [keyboardBundleName stringByDeletingPathExtension];
 			NSString* dispName = [bundle objectForInfoDictionaryKey:@"CFBundleDisplayName"];
