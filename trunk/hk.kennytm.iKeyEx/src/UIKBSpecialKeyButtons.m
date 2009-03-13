@@ -275,8 +275,10 @@ static const CGFloat UIKBColor_Gray37Percent[] = {0.375, 0.375, 0.375, 1};
 	
 	if([[impl candidateList] count] > 0) {
 		[impl acceptCurrentCandidate];
-	} else
+	} else {
 		[impl handleStringInput:@"\n"];
+		[[NSNotificationCenter defaultCenter] postNotificationName:@"UIKeyboardReturnKeyPressed" object:nil];
+	}
 }
 
 -(UIKBReturnKeyButton*)init {

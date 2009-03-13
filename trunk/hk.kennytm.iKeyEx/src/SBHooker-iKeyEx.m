@@ -293,11 +293,6 @@ void cleanup () {
 }
 
 void installHook () {
-	// don't hook on SpringBoard.
-	if ([@"com.apple.springboard" isEqualToString:[[NSBundle mainBundle] bundleIdentifier]])
-		return;
-	
-	
 	atexit(&cleanup);
 	
 	method_exchangeImplementations(
