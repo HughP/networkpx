@@ -33,6 +33,7 @@
 #import <Foundation/Foundation.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 #import <iKeyEx/common.h>
 
 static const char* Usage = "Usage:\n\
@@ -73,6 +74,10 @@ void clearCache(NSString* removingNamePrefix) {
 // TODO: Lock the preference files during read/write. (Use CFPreferences API?)
 int main (int argc, const char* argv[]) {
 	NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
+	
+	// Reduce permission except when required.
+	uid_t euid = geteuid();
+	seteuid(getuid());
 	
 	if (argc == 1)
 		printf(Usage);
@@ -192,6 +197,9 @@ int main (int argc, const char* argv[]) {
 			}
 			
 		} else if (!strcmp("fixperm", argv[1])) {
+			
+			// Acquire root permission.
+			seteuid(euid);
 			
 			NSError* error = nil;
 			NSFileManager* man = [NSFileManager defaultManager];

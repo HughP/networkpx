@@ -46,9 +46,10 @@
 UIButton* UIActionSheetButton(NSString* title, UIImage* image, BOOL destructive, BOOL cancel) {
 	NSString* imageName = @"UINavigationBarDefaultButton.png";
 	NSString* pressedImageName = @"UINavigationBarDefaultButtonPressed.png";
-	if (cancel)
-		imageName = @"UINavigationBarDoneButton.png";
-	else if (destructive) {
+	if (cancel) {
+		imageName = @"UINavigationBarBlackOpaqueButton.png";
+		pressedImageName = @"UINavigationBarBlackButtonPressed.png";
+	} else if (destructive) {
 		imageName = @"UINavigationBarRemoveButton.png";
 		pressedImageName = @"UINavigationBarRemoveButtonPressed.png";
 	}
@@ -104,7 +105,7 @@ UIButton* UIActionSheetButton(NSString* title, UIImage* image, BOOL destructive,
 	[buttons[row] addObject:btn];
 	if (cancel) {
 		cancelButtonsCount[row] += 2;
-		[btn addTarget:self action:@selector(dismiss) forControlEvents:UIControlEventTouchDown];
+		[btn addTarget:self action:@selector(dismiss) forControlEvents:UIControlEventTouchUpInside];
 	}
 	return btn;
 }
