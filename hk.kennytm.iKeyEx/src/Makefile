@@ -49,9 +49,9 @@ KBManSources=iKeyEx-KBMan.m
 KBManTarget=$(iKeyExBinPath)/iKeyEx-KBMan
 KBManOptions=
 
-PrefPaneSources=PrefPane-iKeyEx.m
+PrefPaneSources=PrefPane-iKeyEx.m $(SharedSrcPath)/UIKit3/UIUtilities.m $(SharedSrcPath)/MailCrashLog.m $(SharedSrcPath)/UIKit3/UIMailComposeView.m
 PrefPaneTarget=$(iKeyExPrefPath)/iKeyEx
-PrefPaneOptions=-bundle -framework Preferences -liKeyEx
+PrefPaneOptions=-bundle -framework Preferences -framework WebKit -framework UIKit -framework WebCore -framework MessageUI -framework Message -liKeyEx
 
 all: $(iKeyExTarget) $(PrefHookerTarget) $(SBHookerTarget) $(KBManTarget) $(PrefPaneTarget)
 

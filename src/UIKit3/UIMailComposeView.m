@@ -31,6 +31,7 @@
  */
 
 #import <UIKit3/UIMailComposeView.h>
+#import <UIKit3/UIUtilities.h>
 
 @implementation UIMailComposeView
 @synthesize delegate, controller;
@@ -53,14 +54,29 @@
 -(void)mailComposeControllerCompositionFinished:(id)r2 {
 	if ([controller needsDelivery]) {
 		[controller retain];
-		[controller setDelegate:nil];
+		[controller setDelegate:self];
 		[NSThread detachNewThreadSelector:@selector(_deliverMailForController:) toTarget:self withObject:controller];
+		alert = [[UIAlertView alloc] init];
+		alert.title = [[NSBundle bundleWithPath:@"/Applications/MobileMail.app"] localizedStringForKey:@"SENDING" value:@"Sending" table:@"Main"];
+		[alert show];
+		UIActivityIndicatorView* indic = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleWhiteLarge];
+		[alert addSubview:indic];
+		CGSize alertSize = alert.bounds.size;
+		indic.center = CGPointMake(alertSize.width/2, alertSize.height/2+10);
+		[indic startAnimating];
+		[indic release];
 	}
 	if ([delegate respondsToSelector:@selector(hideMailComposeView:)])
 		[delegate hideMailComposeView:self];
 	else
 		[self didHide];
 }
+
+-(void)mailComposeControllerDidAttemptToSend:(MailComposeController*)controller outgoingMessageDelivery:(id)delivery {
+	[alert dismissWithClickedButtonIndex:0 animated:NO];
+	[alert release];
+}
+
 -(void)_deliverMailForController:(MailComposeController*)controller_ {
 	NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
 	if ([controller_ needsDelivery])

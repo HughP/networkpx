@@ -33,9 +33,12 @@
 #import <Preferences/PSListController.h>
 #import <Preferences/PSSpecifier.h>
 #import <Foundation/Foundation.h>
-#import <UIKit/UIApplication.h>
+#import <UIKit/UIKit.h>
 #import <iKeyEx/common.h>
 #import <stdlib.h>
+#import <UIKit3/UIMailComposeView.h>
+#import <UIKit3/UIUtilities.h>
+#import <MailCrashLog.h>
 
 @interface iKeyExClearCacheListController : PSListController {}
 -(NSArray*)specifiers;
@@ -96,6 +99,7 @@
 -(void)chmod;
 -(void)clearImageCache;
 -(void)gotoCydiaPackage;
+-(void)emailDiagnosisInfo;
 @end
 
 @implementation iKeyExListController
@@ -177,4 +181,60 @@
 -(void)clearImageCache {
 	iKeyEx_KBMan("purgeall", NULL);
 }
+
+#define LS2(x,v) [selfBundle localizedStringForKey:(x) value:(v) table:nil]
+#define LS(x) LS2(x,nil)
+-(void)emailDiagnosisInfo {
+	NSBundle* selfBundle = [self bundle];
+
+	// This should never happen...
+	/*
+	if ([MailComposeController isSetupForDelivery]) {
+		UIAlertView* errorInfo = [[UIAlertView alloc] initWithTitle:nil
+														    message:@"Cannot send mail with attachment!"
+														   delegate:nil
+											      cancelButtonTitle:UILocalizedString("OK")
+											      otherButtonTitles:nil];
+		[errorInfo show];
+		[errorInfo release];
+		return;
+	}
+	*/
+
+	MailCrashLogManager* m = [[MailCrashLogManager alloc] initWithView:nil
+														  emailAddress:@"kennytm@gmail.com"
+															   subject:LS(@"Crash Report (iKeyEx)")
+																  body:LS(@"Additional Detail:\n\n")];
+	CGRect frm = m.view.frame;
+	frm.origin.y = 0;
+	m.view.frame = frm;
+	// list of Cydia packages installed.
+	[m attachOutputOfCommandLine:"dpkg -l" withFilename:@"dpkg_list.txt"];
+	// content of cache.
+	[m attachOutputOfCommandLine:"ls -laFt /User/Library/Keyboard/" withFilename:@"ls_Library_Keyboard.txt"];
+	// list of iKeyEx keyboards installed.
+	[m attachOutputOfCommandLine:"ls -laFt /Library/iKeyEx/Keyboards/" withFilename:@"ls_iKeyEx_Keyboards.txt"];
+	// syslog, if user had installed syslogd.
+	[m attachFile:@"/var/log/syslog"];
+	// .GlobalPreferences, for list of keyboards enabled.
+	[m attachFile:@"/User/Library/Preferences/.GlobalPreferences.plist"];
+	// com.apple.Preferences.plist, for current active keyboard.
+	[m attachFile:@"/User/Library/Preferences/com.apple.Preferences.plist"];
+	NSFileManager* fm = [NSFileManager defaultManager];
+	// crash logs...
+	[fm changeCurrentDirectoryPath:@"/User/Library/Logs/CrashReporter/"];
+	for (NSString* filename in [fm contentsOfDirectoryAtPath:@"." error:NULL]) {
+		// ignore symlinks
+		if (![NSFileTypeSymbolicLink isEqualToString:[[fm attributesOfItemAtPath:filename error:NULL] fileType]]) {
+			// ignore crash reports that are irrelevant to us.
+			if ([[NSString stringWithContentsOfFile:filename encoding:NSUTF8StringEncoding error:NULL] rangeOfString:@"iKeyEx.dylib  "].location != NSNotFound) {
+				[m attachFile:filename];
+			}
+		}
+	}
+	[m release];
+}
+#undef LS
+#undef LS2
+
 @end

@@ -13,6 +13,15 @@
 		},
 		{ cell = PSGroupCell; },
 		{ cell = PSButtonCell;
+			label = "Email Diagnosis Info";
+			action = "emailDiagnosisInfo";
+		},
+		{ cell = PSButtonCell;
+			label = "Report Issue";
+			action = "reportIssue";
+		},
+		{ cell = PSGroupCell; },
+		{ cell = PSButtonCell;
 			label = "Uninstall iKeyEx";
 			action = "gotoCydiaPackage";
 		},
