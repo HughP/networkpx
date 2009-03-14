@@ -30,12 +30,13 @@
  
  */
 
-#import <UIKit/UIView.h>
+#import <UIKit/UIKit.h>
 #import <MessageUI/MailComposeController.h>
 
 @interface UIMailComposeView : UIView {
 	id delegate;
 	MailComposeController* controller;
+	UIAlertView* alert;
 }
 +(BOOL)isSetupForDelivery;
 -(id)init;
