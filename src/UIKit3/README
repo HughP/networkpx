@@ -1,0 +1,2 @@
+UIKit3 is a set of custom Objective-C classes to simply use of some common UI elements.
+UIKit3 is *not* SDK-compatible. To use the SDK-compatible extensions, see UIKit4.

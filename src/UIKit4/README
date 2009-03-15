@@ -1,0 +1,2 @@
+UIKit4 is a set of custom Objective-C classes to simply use of some common UI elements.
+UIKit4 is SDK-compatible. See also UIKit3 for some SDK-incompatible extensions if you aren't going to distribute though AppStore.

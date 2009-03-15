@@ -31,7 +31,7 @@
  */
 
 #import <UIKit/UIKit.h>
-#import <UIKit3/UIBigCharacterHUD.h>
+#import <UIKit4/UIBigCharacterHUD.h>
 #import <GraphicsUtilities.h>
 
 #define MESSAGE_HEIGHT 32

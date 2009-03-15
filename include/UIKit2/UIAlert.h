@@ -98,3 +98,9 @@
 - (void)layout;
 - (void)presentSheetFromButtonBar:(id)fp8;
 @end
+
+
+@interface UIAlertView (Private)
+@property(assign) BOOL runsModal;
+@property(assign) int numberOfRows;
+@end
