@@ -2,13 +2,10 @@
 #labels Phase-Design
 <wiki:toc max_depth="1" />
 
+<wiki:comment>
 = 0.2-12 =
 
 (Tentative)
-
-== iKeyEx ==
- * Added localizations:
-  * Arabic (thanks zomoo1)
 
 == ℏClipboard ==
  * Added localizations:
@@ -16,8 +13,16 @@
 
 == ⌘ (Command) ==
  * Initial beta release.
+</wiki:comment>
 
 = 0.1-10 =
+
+== iKeyEx ==
+ * Variants can use labels as well. (issue 68).
+ * Added "Email diagnosis info" button in settings to ease bug reporting.
+ * Fixed issue 70.
+ * Added localizations:
+  * Arabic (thanks zomoo1)
 
 == 5-Row QWERTY Keyboard ==
  * Added localizations:

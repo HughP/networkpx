@@ -32,10 +32,19 @@ The _lproj_'s are located in `/svn/trunk/hk.kennytm.iKeyEx/deb/System/Library/Pr
 || Troubleshooting                 || ✓    || ✓    ||      || ✓    || ✓    || ✓   || ✓    || ✓    ||      ||
 || Fix permissions                 || ✓    || ✓    ||      || ✓    || ✓    || ✓   || ✓    || ✓    ||      ||
 || Uninstall iKeyEx                || ✓    ||      ||      ||       || ✓    || ✓   ||      || ✓    ||      ||
+|| `SYSTEM_IS_FINE`                ||      ||      ||      ||       ||      ||      ||      ||      ||      ||
+|| Send                            ||      ||      ||      ||       ||      ||      ||      ||      ||      ||
+|| Send all crash reports          ||      ||      ||      ||       ||      ||      ||      ||      ||      ||
+|| Crash Report (iKeyEx)           ||      ||      ||      ||       ||      ||      ||      ||      ||      ||
+|| Additional Detail:\n\n          ||      ||      ||      ||       ||      ||      ||      ||      ||      ||
+|| Report issues                   ||      ||      ||      ||       ||      ||      ||      ||      ||      ||
+|| Email diagnosis info            ||      ||      ||      ||       ||      ||      ||      ||      ||      ||
 
 <wiki:comment>
 Note: the complete message of `CLEAR_IMAGE_CACHE_DESCRIPTION` is _"iKeyEx caches some generated images for performance. However, if you change theme you must clear the cache to sync with it."_
 </wiki:comment>
+
+Note: the complete message of `SYSTEM_IS_FINE` is _There are no recent crashes related to iKeyEx. Do you still want to send this email?_.
 
 = ℏClipboard =
 
