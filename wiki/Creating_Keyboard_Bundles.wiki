@@ -33,6 +33,8 @@ Keyboard bundles must reside in `/Library/iKeyEx/Keyboards/`, and have an extens
 
   Example: The keyboard bundle for ℏClipboard is placed in `/Library/iKeyEx/Keyboards/hClipboard.keyboard/`
 
+Note that the iPhoneOS file system is *case sensitive*. Make sure you follow the same capitalization for all files listed here.
+
 Together with the "iKeyEx:" prefix, the file name will become the *input mode name* of the keyboard extension. It does not have to match the display name, since the latter will be specified in the `Info.plist` file.
 
   The input mode name is used to uniquely identify a keyboard. For example, the English (US) keyboard's input mode name is `en_US`, Traditional Chinese Handwriting is `zh_Hant-HWR`, and ℏClipboard is `iKeyEx:hClipboard`. 
@@ -102,13 +104,15 @@ Referred means the layout of this keyboard will use an existing one. You fill in
 
 layout.plist means the layout will be dynamically generated using the file in this field. It will be further discussed in [Creating_layout_plist (Developers) How to create layout.plist].
 
-For total customization, you can write code yourself to manage the view. In this case, the CFBundleExecutable field must be filled, and the UIKeyboardLayout field must be a dictionary with 2 keys: Portrait and Landscape, each having the layout class name as value. 
+For total customization, you can write code yourself to manage the view. In this case, the CFBundleExecutable field should be filled, and the UIKeyboardLayout field should have a layout class name as value. 
 
-  In ℏClipboard, both the Portrait and Landscape layouts are implemented by the same class `hCLayout`. Therefore, this field would be written as
+You can assign different layouts to portrait and landscape layouts using a dictionary with keys Landscape and Portrait.
+
+  Take 5-Row QWERTY as an example, both the Portrait and Landscape layouts are implemented by the two different classes, this field would be written as
 {{{
 UIKeyboardLayoutClass = {
-  Portrait = "hCLayout";
-  Landscape = "hCLayout";
+  Portrait = "FiveRowQWERTYLayout";
+  Landscape = "FiveRowQWERTYLayoutLandscape";
 };
 }}}
 
@@ -131,9 +135,14 @@ If this field is missing, the standard QWERTY keyboard will be used as layout.
 	<td>Specification for dynamically generated standard keyboard (layout.plist).</td>
 </tr>
 <tr>
-	<td>dictionary</td>
-	<td>{`Landscape` = _class name_; `Portrait` = _class name_;}</td>
+	<td>string</td>
+	<td>_class name_</td>
 	<td>Code-generated layout.</td>
+</tr>
+<tr>
+	<td>dictionary</td>
+	<td>{`Landscape` = `<layout class>`; `Portrait` = `<layout class>`}</td>
+	<td>Use different layout class for landscape and portrait positions.</td>
 </tr>
 </table>
 
@@ -162,7 +171,7 @@ If this field is missing, no input managers will be used.
 
 == PSBundle ==
 
-Use the _PSBundle_ key to hook a preference pane. See source code of ℏClipboard for detail.
+Use the _PSBundle_ key to hook a preference pane. See source code of ℏClipboard and 5-Row QWERTY for detail.
 
   -- TO BE DONE --
 
@@ -185,6 +194,13 @@ On Firmware 2.2, the variants for A, C, E, I, L, N, O, S, U, Y and Z will be aut
 }
 }}}
 
+You can provide an array to split label and actual output, e.g.
+{{{
+{
+  "w" = (w, ("www.wikipedia.org", wiki), www)
+}
+}}}
+
   _pairs_ `<variants.plist>` ::
 <table border="1" bordercolor="#AAAAAA" cellpadding="5">
 <tr>
@@ -200,8 +216,25 @@ On Firmware 2.2, the variants for A, C, E, I, L, N, O, S, U, Y and Z will be aut
 <tr>
 	<td>*value*</td>
 	<td>array</td>
-	<td>...of strings</td>
+	<td>...of `<variant>`s</td>
 	<td>List of variants.</td>
+</tr>
+</table>
+
+  _union_ `<variant>` ::
+<table border="1" bordercolor="#AAAAAA" cellpadding="5">
+<tr>
+	<th colspan="2">type</th>
+	<th>meaning</th>
+</tr>
+<tr>
+	<td colspan="2">string</td>
+	<td>Simple variant. Both label and actual output will use this same string.</td>
+</tr>
+<tr>
+	<td>array</td>
+	<td>...of strings</td>
+	<td>Variant with label and actual output being distinct.</td>
 </tr>
 </table>
 
