@@ -38,6 +38,7 @@
 #import <stdlib.h>
 #import <UIKit3/UIMailComposeView.h>
 #import <UIKit3/UIUtilities.h>
+#import <UIKit2/UIAlert.h>
 #import <MailCrashLog.h>
 
 @interface iKeyExClearCacheListController : PSListController {}
@@ -92,14 +93,27 @@
 @end
 
 
+__attribute__((visibility("hidden")))
+@interface XDelegate : NSObject<UIAlertViewDelegate> {
+	@public
+	NSInteger buttonIndex;
+}
+-(void)alertView:(UIAlertView*)view clickedButtonAtIndex:(NSInteger)button;
+@end
+@implementation XDelegate
+-(void)alertView:(UIAlertView*)view clickedButtonAtIndex:(NSInteger)button { buttonIndex = button; }
+@end
 
-@interface iKeyExListController : PSListController {}
+
+
+@interface iKeyExListController : PSListController<UIActionSheetDelegate> {}
 -(NSArray*)specifiers;
 -(NSString*)keyboardsValue:(PSSpecifier*)spec;
 -(void)chmod;
 -(void)clearImageCache;
 -(void)gotoCydiaPackage;
 -(void)emailDiagnosisInfo;
+-(void)reportIssue;
 @end
 
 @implementation iKeyExListController
@@ -170,7 +184,7 @@
 }
 
 // Troubleshooting actions
--(void)chmod {
+-(void)chmod { 
 	iKeyEx_KBMan("fixperm", NULL);
 }
 
@@ -182,25 +196,54 @@
 	iKeyEx_KBMan("purgeall", NULL);
 }
 
+-(void)reportIssue {
+	[[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"http://code.google.com/p/networkpx/issues/entry"]];
+}
+
 #define LS2(x,v) [selfBundle localizedStringForKey:(x) value:(v) table:nil]
 #define LS(x) LS2(x,nil)
 -(void)emailDiagnosisInfo {
 	NSBundle* selfBundle = [self bundle];
 
-	// This should never happen...
-	/*
-	if ([MailComposeController isSetupForDelivery]) {
-		UIAlertView* errorInfo = [[UIAlertView alloc] initWithTitle:nil
-														    message:@"Cannot send mail with attachment!"
-														   delegate:nil
-											      cancelButtonTitle:UILocalizedString("OK")
-											      otherButtonTitles:nil];
-		[errorInfo show];
-		[errorInfo release];
-		return;
+	NSMutableArray* relevantCrashLogs = [[NSMutableArray alloc] init];
+	NSMutableArray* irrelevantCrashLogs = [[NSMutableArray alloc] init];
+	NSFileManager* fm = [NSFileManager defaultManager];
+	// crash logs...
+	[fm changeCurrentDirectoryPath:@"/User/Library/Logs/CrashReporter/"];
+	for (NSString* filename in [fm contentsOfDirectoryAtPath:@"." error:NULL]) {
+		// ignore symlinks
+		if (![NSFileTypeSymbolicLink isEqualToString:[[fm attributesOfItemAtPath:filename error:NULL] fileType]]) {
+			// ignore crash reports that are irrelevant to us.
+			if ([[NSString stringWithContentsOfFile:filename encoding:NSUTF8StringEncoding error:NULL] rangeOfString:@"iKeyEx.dylib  "].location != NSNotFound) {
+				[relevantCrashLogs addObject:filename];
+			} else 
+				[irrelevantCrashLogs addObject:filename];
+		}
 	}
-	*/
 
+	if ([relevantCrashLogs count] == 0) {
+		[relevantCrashLogs release];
+		relevantCrashLogs = nil;
+		
+		XDelegate* xdel = [[XDelegate alloc] init];
+		UIAlertView* noCrashLogAlert = [[UIAlertView alloc] initWithTitle:LS(@"Found No Crash Reports")
+																  message:LS2(@"SYSTEM_IS_FINE", @"There are no recent crashes related to iKeyEx. Do you still want to send this email?")
+																 delegate:xdel
+														cancelButtonTitle:UILocalizedString("Cancel")
+														otherButtonTitles:LS(@"Send"), LS(@"Send all crash reports"), nil];
+		noCrashLogAlert.runsModal = YES;
+		[noCrashLogAlert show];
+		[noCrashLogAlert release];
+		NSInteger buttonIndex = xdel->buttonIndex;
+		[xdel release];
+		if (buttonIndex == 0)
+			return;
+		else if (buttonIndex == 2)
+			relevantCrashLogs = [irrelevantCrashLogs retain];
+	}
+	[irrelevantCrashLogs release];
+	
+	
 	MailCrashLogManager* m = [[MailCrashLogManager alloc] initWithView:nil
 														  emailAddress:@"kennytm@gmail.com"
 															   subject:LS(@"Crash Report (iKeyEx)")
@@ -220,18 +263,10 @@
 	[m attachFile:@"/User/Library/Preferences/.GlobalPreferences.plist"];
 	// com.apple.Preferences.plist, for current active keyboard.
 	[m attachFile:@"/User/Library/Preferences/com.apple.Preferences.plist"];
-	NSFileManager* fm = [NSFileManager defaultManager];
-	// crash logs...
-	[fm changeCurrentDirectoryPath:@"/User/Library/Logs/CrashReporter/"];
-	for (NSString* filename in [fm contentsOfDirectoryAtPath:@"." error:NULL]) {
-		// ignore symlinks
-		if (![NSFileTypeSymbolicLink isEqualToString:[[fm attributesOfItemAtPath:filename error:NULL] fileType]]) {
-			// ignore crash reports that are irrelevant to us.
-			if ([[NSString stringWithContentsOfFile:filename encoding:NSUTF8StringEncoding error:NULL] rangeOfString:@"iKeyEx.dylib  "].location != NSNotFound) {
-				[m attachFile:filename];
-			}
-		}
-	}
+	for (NSString* filename in relevantCrashLogs)
+		[m attachFile:filename];
+	[relevantCrashLogs release];
+	
 	[m release];
 }
 #undef LS

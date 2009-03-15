@@ -13,11 +13,11 @@
 		},
 		{ cell = PSGroupCell; },
 		{ cell = PSButtonCell;
-			label = "Email Diagnosis Info";
+			label = "Email diagnosis info";
 			action = "emailDiagnosisInfo";
 		},
 		{ cell = PSButtonCell;
-			label = "Report Issue";
+			label = "Report issue";
 			action = "reportIssue";
 		},
 		{ cell = PSGroupCell; },

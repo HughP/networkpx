@@ -30,7 +30,7 @@
  
  */
 
-#import <UIKit3/UIEasyPickerView.h>
+#import <UIKit4/UIEasyPickerView.h>
 
 @implementation UIEasyPickerView 
 -(id)initWithComponents:(NSArray*)comps, ... {
