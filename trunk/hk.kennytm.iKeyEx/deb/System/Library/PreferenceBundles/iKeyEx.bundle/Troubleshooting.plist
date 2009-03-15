@@ -17,7 +17,7 @@
 			action = "emailDiagnosisInfo";
 		},
 		{ cell = PSButtonCell;
-			label = "Report issue";
+			label = "Report issues";
 			action = "reportIssue";
 		},
 		{ cell = PSGroupCell; },

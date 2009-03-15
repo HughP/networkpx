@@ -221,14 +221,31 @@ static NSString* lastLongPressedKey = nil;	// Record last long-pressed key.
 			// reset exp.
 			isExp = exp = 0;
 			halfCount = [actualArr count];
-			// increase the string width if necessary.
+			
+			NSMutableArray* dispArr = [[NSMutableArray alloc] initWithCapacity:halfCount];
+			NSMutableArray* actArr = [[NSMutableArray alloc] initWithCapacity:halfCount];
+			
 			UIFont* varFont = [UIFont boldSystemFontOfSize:12];
-			for (NSString* dispString in actualArr) {
+			for (NSString* obj in actualArr) {
+				NSString* dispString = obj;
+				if ([dispString isKindOfClass:[NSArray class]]) {
+					dispString = [obj objectAtIndex:0];
+					[actArr addObject:[obj objectAtIndex:1]];
+					[dispArr addObject:dispString];
+				} else {
+					[actArr addObject:obj];
+					[dispArr addObject:obj];
+				}
+				// increase the string width if necessary.
 				CGFloat thisWidth = [dispString sizeWithFont:varFont].width + 16;
 				if (thisWidth > newWidth)
 					newWidth = thisWidth;
 			}
-			actualArr = [actualArr arrayByAddingObjectsFromArray:actualArr];
+						
+			actualArr = [actArr arrayByAddingObjectsFromArray:dispArr];
+			[actArr release];
+			[dispArr release];
+			
 			// decrease the string width if necessary.
 			if (newWidth * halfCount > maxWidth)
 				newWidth = maxWidth / halfCount;
