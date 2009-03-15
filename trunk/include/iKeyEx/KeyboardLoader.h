@@ -77,8 +77,8 @@
 
 // Get the refered input mode names
 +(NSString*)referedManagerClassForMode:(NSString*)mode;
-+(NSString*)referedLayoutClassForMode:(NSString*)mode;
++(NSString*)referedLayoutClassForMode:(NSString*)mode landscape:(BOOL)landsc;
 
 // Get layout.plist, if any
--(NSDictionary*)layoutPlist;
+-(NSDictionary*)layoutPlistWithLandscape:(BOOL)landsc;
 @end

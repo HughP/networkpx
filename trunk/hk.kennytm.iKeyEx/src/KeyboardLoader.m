@@ -41,10 +41,29 @@ static NSMutableDictionary* kbcache = nil;	// Contains KeyboardBundle for all iK
 
 static NSMutableDictionary* referedManagerClasses = nil;
 static NSMutableDictionary* referedLayoutClasses = nil;
+static NSMutableDictionary* referedLayoutClassesLandscape = nil;
 
 //------------------------------------------------------------------------------
 //-- Implementations -----------------------------------------------------------
 //------------------------------------------------------------------------------
+
+static Class obtainLayoutClass (NSString* layoutStr, NSBundle* relatedBundle, NSString* mode, BOOL isLandscape) {
+	// refered layout class. fill in the "origLayoutClassXXX" variables for later reference.
+	if ([layoutStr hasPrefix:@"="]) {
+		NSString* origMode = [layoutStr substringFromIndex:1];
+		[(isLandscape?referedLayoutClassesLandscape:referedLayoutClasses) setObject:origMode forKey:mode];
+		[UIKeyboardInputManager sharedInstanceForInputMode:origMode];	// force to load .artwork file into memory.
+		return Nil;
+		
+	// layout class defined on a plist. Create a copy of UIKBStandardKeyboardLayout and let the plist be loaded on runtime.
+	} else if ([layoutStr hasSuffix:@".plist"]) {
+		return createSubclassCopy(isLandscape?[UIKBStandardKeyboardLayoutLandscape class]:[UIKBStandardKeyboardLayout class]);
+		
+	// actually defined classes in the executable
+	} else {
+		return [relatedBundle classNamed:layoutStr] ?: (isLandscape?[UIKeyboardLayoutQWERTYLandscape class]:[UIKeyboardLayout class]);
+	}
+}
 
 @implementation KeyboardBundle
 @synthesize manager, layoutClassPortrait, layoutClassLandscape, displayName, variants;
@@ -108,36 +127,15 @@ static NSMutableDictionary* referedLayoutClasses = nil;
 		// Fetch layout class.
 		id layoutInfo = [bundle objectForInfoDictionaryKey:@"UIKeyboardLayoutClass"];
 		if ([layoutInfo isKindOfClass:[NSString class]]) {
-			NSString* layoutStr = layoutInfo;
-			// refered layout class. fill in the "origLayoutClassXXX" variables for later reference.
-			if ([layoutStr hasPrefix:@"="]) {
-				NSString* origMode = [layoutStr substringFromIndex:1];
-				layoutClassPortrait = Nil;
-				layoutClassLandscape = Nil;
-				[referedLayoutClasses setObject:origMode forKey:mode];
-				[UIKeyboardInputManager sharedInstanceForInputMode:origMode];	// force to load .artwork file into memory.
-			// layout class defined on a plist. Create a copy of UIKBStandardKeyboardLayout and let the plist be loaded on runtime.
-			} else {
-				layoutClassPortrait = createSubclassCopy([UIKBStandardKeyboardLayout class]);
-				layoutClassLandscape = createSubclassCopy([UIKBStandardKeyboardLayoutLandscape class]);
-			}
-		// actually defined classes in the executable.
+			layoutClassPortrait = obtainLayoutClass(layoutInfo, bundle, mode, NO);
+			layoutClassLandscape = obtainLayoutClass(layoutInfo, bundle, mode, YES);
 		} else if ([layoutInfo isKindOfClass:[NSDictionary class]]) {
 			NSDictionary* layoutDict = layoutInfo;
 			NSString* portraitLayout = [layoutDict objectForKey:@"Portrait"];
 			NSString* landscapeLayout = [layoutDict objectForKey:@"Landscape"];
 			
-			if ([portraitLayout isKindOfClass:[NSString class]]) {
-				layoutClassPortrait = [bundle classNamed:portraitLayout];
-				if (layoutClassPortrait == Nil)
-					[self useDefaultLayoutClassWithLandscape:NO];
-			}
-			
-			if ([landscapeLayout isKindOfClass:[NSString class]]) {
-				layoutClassLandscape = [bundle classNamed:landscapeLayout];
-				if (layoutClassLandscape == Nil)
-					[self useDefaultLayoutClassWithLandscape:YES];
-			}
+			layoutClassPortrait = obtainLayoutClass(portraitLayout, bundle, mode, NO);
+			layoutClassLandscape = obtainLayoutClass(landscapeLayout, bundle, mode, YES);
 		} else {
 			[self useDefaultLayoutClassWithLandscape:NO];
 			[self useDefaultLayoutClassWithLandscape:YES];
@@ -163,6 +161,8 @@ static NSMutableDictionary* referedLayoutClasses = nil;
 			referedManagerClasses = [[NSMutableDictionary alloc] init];
 		if (referedLayoutClasses == nil)
 			referedLayoutClasses = [[NSMutableDictionary alloc] init];
+		if (referedLayoutClassesLandscape == nil)
+			referedLayoutClassesLandscape = [[NSMutableDictionary alloc] init];
 		retval = [[KeyboardBundle alloc] initWithModeName:mode];
 		[kbcache setObject:retval forKey:mode];
 		[retval release];
@@ -205,21 +205,24 @@ static NSMutableDictionary* referedLayoutClasses = nil;
 	kbcache = nil;
 	[referedManagerClasses release];
 	[referedLayoutClasses release];
+	[referedLayoutClassesLandscape release];
 }
 
 +(NSString*)referedManagerClassForMode:(NSString*)mode {
 	NSString* retval = [referedManagerClasses objectForKey:mode];
 	return retval ? retval : mode;
 }
-+(NSString*)referedLayoutClassForMode:(NSString*)mode {
-	NSString* retval = [referedLayoutClasses objectForKey:mode];
++(NSString*)referedLayoutClassForMode:(NSString*)mode landscape:(BOOL)landscape {
+	NSString* retval = [landscape?referedLayoutClassesLandscape:referedLayoutClasses objectForKey:mode];
 	return retval ? retval : mode;
 }
+// for backward-compatibilitiy.
++(NSString*)referedLayoutClassForMode:(NSString*)mode { return [self referedLayoutClassForMode:mode landscape:NO]; }
 
--(NSDictionary*)layoutPlist {
+-(NSDictionary*)layoutPlistWithLandscape:(BOOL)landsc {
 	NSString* layoutName = [bundle objectForInfoDictionaryKey:@"UIKeyboardLayoutClass"];
-	if (![layoutName isKindOfClass:[NSString class]])
-		return nil;
+	if ([layoutName isKindOfClass:[NSDictionary class]])
+		layoutName = [(NSDictionary*)layoutName objectForKey:(landsc?@"Landscape":@"Portrait")];
 	
 	NSString* layoutPath = [bundle pathForResource:layoutName ofType:nil];
 	if (layoutPath == nil)
@@ -227,5 +230,7 @@ static NSMutableDictionary* referedLayoutClasses = nil;
 	
 	return [NSDictionary dictionaryWithContentsOfFile:layoutPath];
 }
+// for backward-compatibility
+-(NSDictionary*)layoutPlist { return [self layoutPlistWithLandscape:NO]; }
 
 @end
