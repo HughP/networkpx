@@ -482,7 +482,7 @@ else \
 	return [[[UIKBStandardKeyboard alloc] initWithPlist:layoutDict name:name landscape:landsc appearance:appr] autorelease];
 }
 +(UIKBStandardKeyboard*)keyboardWithBundle:(KeyboardBundle*)bdl name:(NSString*)name landscape:(BOOL)landsc appearance:(UIKeyboardAppearance)appr {
-	return [[[UIKBStandardKeyboard alloc] initWithPlist:[bdl layoutPlist] name:name landscape:landsc appearance:appr] autorelease];
+	return [[[UIKBStandardKeyboard alloc] initWithPlist:[bdl layoutPlistWithLandscape:(BOOL)landsc] name:name landscape:landsc appearance:appr] autorelease];
 }
 
 

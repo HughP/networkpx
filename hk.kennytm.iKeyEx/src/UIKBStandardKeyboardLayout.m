@@ -271,7 +271,7 @@ void resizePopupImage (BOOL landscape, UIView* m_activeKeyView, UIKeyDefinition*
 			keyDefs[i] = NULL;
 			keyCounts[i] = 0;
 		}
-		plist = [[[KeyboardBundle activeBundle] layoutPlist] retain];
+		plist = [[[KeyboardBundle activeBundle] layoutPlistWithLandscape:NO] retain];
 	}
 	return self;
 }
@@ -316,7 +316,7 @@ CreateBuildMethods(EmailAddressAlt, NO, YES);
 			keyDefs[i] = NULL;
 			keyCounts[i] = 0;
 		}
-		plist = [[[KeyboardBundle activeBundle] layoutPlist] retain];
+		plist = [[[KeyboardBundle activeBundle] layoutPlistWithLandscape:YES] retain];
 	}
 	return self;
 }

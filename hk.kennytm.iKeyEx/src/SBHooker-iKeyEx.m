@@ -114,7 +114,7 @@ MSHook(Class, UIKeyboardLayoutClassForInputModeInOrientation, NSString* mode, NS
 	if ([mode hasPrefix:iKeyEx_Prefix]) {
 		KeyboardBundle* cont = [KeyboardBundle bundleWithModeName:mode];
 		BOOL landsc = [orient isEqualToString:@"Landscape"];
-		NSString* origMode = [KeyboardBundle referedLayoutClassForMode:mode];
+		NSString* origMode = [KeyboardBundle referedLayoutClassForMode:mode landscape:landsc];
 		if (origMode != mode) {
 			currentMode = [mode copy];
 			currentOrigMode = [origMode copy];
@@ -229,8 +229,8 @@ static NSString* lastLongPressedKey = nil;	// Record last long-pressed key.
 			for (NSString* obj in actualArr) {
 				NSString* dispString = obj;
 				if ([dispString isKindOfClass:[NSArray class]]) {
-					dispString = [obj objectAtIndex:0];
-					[actArr addObject:[obj objectAtIndex:1]];
+					dispString = [(NSArray*)obj objectAtIndex:0];
+					[actArr addObject:[(NSArray*)obj objectAtIndex:1]];
 					[dispArr addObject:dispString];
 				} else {
 					[actArr addObject:obj];
