@@ -12,7 +12,7 @@
 
 @interface UIKeyboardLayout : UIView <UIKeyboardLayoutProtocol> {}
 
-- (UIKeyboardLayout*)initWithFrame:(CGRect)frm;
+- (id)initWithFrame:(CGRect)frm;
 - (void)showKeyboardType:(UIKeyboardType)type withAppearance:(UIKeyboardAppearance)appr;
 
 // keys are no longer active -- remove any active images (e.g. popup views, touch down images, etc.)

@@ -1,6 +1,6 @@
 #import <objc/objc.h>
 
-@class UIImage, NSString, NSBundle;
+@class UIImage, NSString, NSBundle, NSArray;
 
 UIImage* _UIImageWithName(NSString* name);
 void UIKeyboardClearKeyCentroids();
@@ -16,3 +16,4 @@ NSString* UIKeyboardStaticUnigramsFile(NSString* mode);
 NSString* UIKeyboardStaticUnigramsFilePathForInputModeAndFileExtension(NSString* mode, NSString* ext);
 NSString* UIKeyboardDynamicDictionaryFile(NSString* mode);
 NSString* UIKeyboardUserDirectory();
+NSArray* UIKeyboardGetActiveInputModes();
