@@ -39,7 +39,7 @@ Together with the "iKeyEx:" prefix, the file name will become the *input mode na
 
   The input mode name is used to uniquely identify a keyboard. For example, the English (US) keyboard's input mode name is `en_US`, Traditional Chinese Handwriting is `zh_Hant-HWR`, and ℏClipboard is `iKeyEx:hClipboard`. 
 
-The input mode name should only contain alphanumeric symbols, `_` (underscore) and - (hyphen). iKeyEx uses input mode names starting with $ (dollar sign) for internal keyboards, so you should avoid using the dollar sign in the mode name.
+The input mode name should only contain alphanumeric symbols, `_` (underscore) and - (hyphen). iKeyEx uses input mode names starting with . (period) for internal keyboards, so you should avoid using periods in the mode name.
 
 == Info.plist ==
 `Info.plist` is the description of the keyboard extension. It is a [http://developer.apple.com/documentation/Cocoa/Conceptual/PropertyLists/Introduction/chapter_1_section_1.html property list]. Currently, iKeyEx recognizes the following keys:
