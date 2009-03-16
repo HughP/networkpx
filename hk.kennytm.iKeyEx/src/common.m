@@ -211,7 +211,7 @@ Class createSubclassCopy (Class superclass) {
 }
 
 
-extern NSString* iKeyExVersion () { return @"0.1-8"; }
+extern NSString* iKeyExVersion () { return @"0.1-10"; }
 
 extern void iKeyEx_KBMan(const char* restrict command, const char* restrict arg) {
 	// is there a non-fork solution?

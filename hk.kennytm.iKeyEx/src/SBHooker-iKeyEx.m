@@ -41,6 +41,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #import <iKeyEx/common.h>
 #import <iKeyEx/UIKBStandardKeyboardLayout.h>
 #import <iKeyEx/UIAccentedCharacterView-setStringWidth.h>
+#import <iKeyEx/KeyboardPickerView.h>
+#import <iKeyEx/UIKBSound.h>
 #import <substrate.h>
 
 //------------------------------------------------------------------------------
@@ -50,9 +52,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 @protocol IDisableWarnings
 @optional
--(id)old_initWithFrame:(CGRect)frame variants:(NSArray*)array expansion:(int)exp orientation:(int)ori;
--(void)old_showPopupVariantsForKey:(UIKeyDefinition*)keydef;
--(UIKeyDefinitionDownActionFlag)old_downActionFlagsForKey:(UIKeyDefinition*)key;
+-(id)kennytm_iKeyEx_old_initWithFrame:(CGRect)frame variants:(NSArray*)array expansion:(int)exp orientation:(int)ori;
+-(void)kennytm_iKeyEx_old_showPopupVariantsForKey:(UIKeyDefinition*)keydef;
+-(UIKeyDefinitionDownActionFlag)kennytm_iKeyEx_old_downActionFlagsForKey:(UIKeyDefinition*)key;
+-(void)kennytm_iKeyEx_old_setInputModeToNextInPreferredList;
+-(void)kennytm_iKeyEx_old_longPressAction;
 @end
 
 //------------------------------------------------------------------------------
@@ -62,21 +66,31 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // This class defines +sharedInstanceForInputMode: which will be swapped
 // with UIKeyboardInputManager's one for providing custom input manager.
+__attribute__((visibility("hidden")))
 @interface UIKeyboardInputManagerHooked : UIKeyboardInputManager
 +(UIKeyboardInputManager*)sharedInstanceForInputMode:(NSString*)mode;
 @end
 
 // This class defines -initWithFrame:variants:expansion:orientation: which will
 // be hooked to UIAccentedCharacterView's one for providing custom variants.
+__attribute__((visibility("hidden")))
 @interface UIAccentedCharacterViewHooked : UIAccentedCharacterView<IDisableWarnings>
 -(id)initWithFrame:(CGRect)frame variants:(NSArray*)array expansion:(int)exp orientation:(int)ori;
 @end
 
 // These classes provide custom variants.
+__attribute__((visibility("hidden")))
 @interface UIKeyboardLayoutRomanHooked : UIKeyboardLayoutRoman<IDisableWarnings>
 -(void)showPopupVariantsForKey:(UIKeyDefinition*)keydef;
 -(UIKeyDefinitionDownActionFlag)downActionFlagsForKey:(UIKeyDefinition*)key;
 @end
+
+// This class inject Keyboard Chooser into the list.
+__attribute__((visibility("hidden")))
+@interface UIKeyboardImplHooked : UIKeyboardImpl<IDisableWarnings>
+-(void)setInputModeToNextInPreferredList;
+@end
+
 
 
 //------------------------------------------------------------------------------
@@ -180,23 +194,33 @@ MSHook(NSString*, UIKeyboardDynamicDictionaryFile, NSString* mode) {
 //------------------------------------------------------------------------------
 
 static NSString* lastLongPressedKey = nil;	// Record last long-pressed key.
+static BOOL longPressedInternationalKey = NO;
 
 @implementation UIKeyboardLayoutRomanHooked
 // Save last long-pressed key.
 -(void)showPopupVariantsForKey:(UIKeyDefinition*)key {
 	lastLongPressedKey = [self inputStringForKey:key];
-	[self old_showPopupVariantsForKey:key];
+	[self kennytm_iKeyEx_old_showPopupVariantsForKey:key];
 }
 
 // Hook for allowing long-press actions when custom variants are present.
 -(UIKeyDefinitionDownActionFlag)downActionFlagsForKey:(UIKeyDefinition*)key {
-	UIKeyDefinitionDownActionFlag retFlag = [self old_downActionFlagsForKey:key];
+	UIKeyDefinitionDownActionFlag retFlag = [self kennytm_iKeyEx_old_downActionFlagsForKey:key];
 	NSString* mode = UIKeyboardGetCurrentInputMode();
-	if ([mode hasPrefix:iKeyEx_Prefix]) {
-		if ([[KeyboardBundle bundleWithModeName:mode] variantsForString:[self inputStringForKey:key]] != nil)
-			retFlag |= UIKeyFlagHasLongPressAction | UIKeyFlagURLDomainVariants;
-	}
+	
+	if (([mode hasPrefix:iKeyEx_Prefix] && [[KeyboardBundle bundleWithModeName:mode] variantsForString:[self inputStringForKey:key]] != nil) || key->key_type == UIKeyTypeInternational)
+		retFlag |= UIKeyFlagHasLongPressAction | UIKeyFlagURLDomainVariants;
+		
 	return retFlag;
+}
+
+-(void)longPressAction {
+	UIKeyDefinition* activeKey = [self activeKey];
+	if (activeKey != NULL && activeKey->key_type == UIKeyTypeInternational) {
+		[UIKBSound play];
+		longPressedInternationalKey = YES;
+	} else
+		[self kennytm_iKeyEx_old_longPressAction];
 }
 @end
 
@@ -279,7 +303,7 @@ static NSString* lastLongPressedKey = nil;	// Record last long-pressed key.
 	}
 	
 		
-	UIAccentedCharacterView* newSelf = [self old_initWithFrame:frame variants:actualArr expansion:isExp orientation:ori];
+	UIAccentedCharacterView* newSelf = [self kennytm_iKeyEx_old_initWithFrame:frame variants:actualArr expansion:isExp orientation:ori];
 	
 	if (is_iKeyExKeyboard) {
 		if (isExp != exp && isExp == 1)
@@ -296,13 +320,29 @@ static NSString* lastLongPressedKey = nil;	// Record last long-pressed key.
 }
 @end
 
+//------------------------------------------------------------------------------
+#pragma mark -
+#pragma mark Hookers for Keyboard Chooser
+//------------------------------------------------------------------------------
+
+@implementation UIKeyboardImplHooked
+-(void)setInputModeToNextInPreferredList {
+	if (longPressedInternationalKey) {
+		[self setInputModeLastChosenPreference];
+		[self setInputMode:@"iKeyEx:__KeyboardChooser"];
+		longPressedInternationalKey = NO;
+	} else
+		[self kennytm_iKeyEx_old_setInputModeToNextInPreferredList];
+}
+@end
+
 
 //------------------------------------------------------------------------------
 //-- DLLMain -------------------------------------------------------------------
 //------------------------------------------------------------------------------
 
 #define MSHookFunc(sym) MSHookFunction(&sym, &$##sym, (void**)&_##sym)
-#define MSHookMsg(clsName, sele) MSHookMessage([clsName class], @selector(sele), [clsName##Hooked instanceMethodForSelector:@selector(sele)], "old_")
+#define MSHookMsg(clsName, sele) MSHookMessage([clsName class], @selector(sele), [clsName##Hooked instanceMethodForSelector:@selector(sele)], "kennytm_iKeyEx_old_")
 
 void cleanup () {
 	[currentOrigMode release];
@@ -330,5 +370,7 @@ void installHook () {
 	
 	MSHookMsg(UIKeyboardLayoutRoman, showPopupVariantsForKey:);
 	MSHookMsg(UIKeyboardLayoutRoman, downActionFlagsForKey:);
+	MSHookMsg(UIKeyboardLayoutRoman, longPressAction);
 	MSHookMsg(UIAccentedCharacterView, initWithFrame:variants:expansion:orientation:);
+	MSHookMsg(UIKeyboardImpl, setInputModeToNextInPreferredList);
 }

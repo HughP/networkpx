@@ -85,13 +85,17 @@
 			if (bundle == nil)
 				continue;
 			
+			NSString* modeName = [keyboardBundleName stringByDeletingPathExtension];
+			// ignore internal keyboards.
+			if ([modeName hasPrefix:@"__"])
+				continue;
+			
 			// add iKeyEx keyboards in.
 			if (iKeyExKeyboardGroup_notAdded) {
 				iKeyExKeyboardGroup_notAdded = NO;
 				[result addObject:[PSSpecifier groupSpecifierWithName:[localizationBundle localizedStringForKey:@"iKeyEx Keyboards" value:nil table:nil]]];
 			}
 			
-			NSString* modeName = [keyboardBundleName stringByDeletingPathExtension];
 			NSString* dispName = [bundle objectForInfoDictionaryKey:@"CFBundleDisplayName"];
 			
 			if (dispName == nil)

@@ -6,6 +6,7 @@ iKeyExLibPath=../deb/usr/lib
 iKeyExBinPath=../deb/usr/bin
 MobileSubstratePath=../deb/Library/MobileSubstrate/DynamicLibraries
 iKeyExPrefPath=../deb/System/Library/PreferenceBundles/iKeyEx.bundle
+iKeyExKeyboardPath=../deb/Library/iKeyEx/Keyboards/__KeyboardChooser.keyboard
 SharedSrcPath=../../src
 
 Compiler=$(iPhoneDevPath)/usr/bin/arm-apple-darwin9-gcc-4.0.1
@@ -35,7 +36,7 @@ Options=-lobjc \
 
 iKeyExSources=$(SharedSrcPath)/GraphicsUtilities.m cleanup.m common.m ImageLoader.m KeyboardLoader.m UIKBSound.m UIKBKeyDefinition.m UIKBStandardKeyboard.m UIKBStandardKeyboardLayout.m UIKBSpecialKeyButtons.m
 iKeyExTarget=$(iKeyExLibPath)/libiKeyEx.dylib
-iKeyExOptions=-dynamiclib -init _initDylib
+iKeyExOptions=-dynamiclib -init _initDylib -framework WebKit -framework WebCore
 
 PrefHookerSources=PrefHooker-iKeyEx-InternationalKeyboardController.m $(SharedSrcPath)/PrefsLinkHooker.m PrefHooker-iKeyEx.m
 PrefHookerTarget=$(MobileSubstratePath)/PrefHooker-iKeyEx.dylib
@@ -51,9 +52,13 @@ KBManOptions=
 
 PrefPaneSources=PrefPane-iKeyEx.m $(SharedSrcPath)/UIKit3/UIUtilities.m $(SharedSrcPath)/MailCrashLog.m $(SharedSrcPath)/UIKit3/UIMailComposeView.m
 PrefPaneTarget=$(iKeyExPrefPath)/iKeyEx
-PrefPaneOptions=-bundle -framework Preferences -framework WebKit -framework UIKit -framework WebCore -framework MessageUI -framework Message -liKeyEx
+PrefPaneOptions=-bundle -framework Preferences -framework WebKit -framework WebCore -framework MessageUI -framework Message -liKeyEx
 
-all: $(iKeyExTarget) $(PrefHookerTarget) $(SBHookerTarget) $(KBManTarget) $(PrefPaneTarget)
+KeyboardChooserSources=KeyboardChooserLayout.m $(SharedSrcPath)/UIKit4/UIEasyTableView.m
+KeyboardChooserTarget=$(iKeyExKeyboardPath)/__KeyboardChooser
+KeyboardChooserOptions=-bundle -liKeyEx
+
+all: $(iKeyExTarget) $(PrefHookerTarget) $(SBHookerTarget) $(KBManTarget) $(PrefPaneTarget) $(KeyboardChooserTarget)
 
 $(iKeyExTarget):	$(iKeyExSources)
 	$(Compiler) $(Options) $(iKeyExOptions) -o $@ $^
@@ -73,8 +78,12 @@ $(KBManTarget):	$(KBManSources)
 	sudo $(CodeSign) $@
 	sudo chmod ug+s $@
 
-$(PrefPaneTarget): $(PrefPaneSources)
+$(PrefPaneTarget):	$(PrefPaneSources)
 	$(Compiler) $(Options) $(PrefPaneOptions) -o $@ $^
+	$(CodeSign) $@
+
+$(KeyboardChooserTarget):	$(KeyboardChooserSources)
+	$(Compiler) $(Options) $(KeyboardChooserOptions) -o $@ $^
 	$(CodeSign) $@
 
 clean:
@@ -83,3 +92,4 @@ clean:
 	rm $(SBHookerTarget)
 	rm $(KBManTarget)
 	rm $(PrefPaneTarget)
+	rm $(KeyboardChooserTarget)
