@@ -39,8 +39,8 @@
 #import <UIKit2/UIAlert.h>
 #import <UIKit3/UIUtilities.h>
 #import <UIKit3/UIActionSheetPro.h>
-#import <UIKit3/UIBigCharacterHUD.h>
-#import <UIKit3/UIEasyPickerView.h>
+#import <UIKit4/UIBigCharacterHUD.h>
+#import <UIKit4/UIEasyPickerView.h>
 #import <iKeyEx/common.h>
 #include <icu/unicode/uchar.h>
 

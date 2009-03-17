@@ -162,26 +162,23 @@ UIButton* UIActionSheetButton(NSString* title, UIImage* image, BOOL destructive,
 
 
 extern UIView* UIDimViewWithHole(CGRect holeRect) {
-	CGRect viewBounds = [UIScreen mainScreen].bounds;
-	CGPoint viewOrigin = viewBounds.origin;
-	viewBounds.size.width += viewOrigin.x;
-	viewBounds.size.height += viewOrigin.y;
-	viewBounds.origin = CGPointZero;
-	CGRect adjustedHoleRect = holeRect;
-	adjustedHoleRect.origin.x += viewOrigin.x;
-	adjustedHoleRect.origin.y += viewOrigin.y;
-	adjustedHoleRect = CGRectInset(adjustedHoleRect, -2, -2);
-	UIGraphicsBeginImageContext(viewBounds.size);
+	UIScreen* screen = [UIScreen mainScreen];
+	CGRect screenSize = screen.bounds;
+	CGRect viewBounds = screen.applicationFrame;
+	CGRect adjustedHoleRect = CGRectOffset(CGRectInset(holeRect, -2, -2),
+										   viewBounds.origin.x-screenSize.origin.x,
+										   viewBounds.origin.y-screenSize.origin.y);
+	UIGraphicsBeginImageContext(screenSize.size);
 	CGContextRef c = UIGraphicsGetCurrentContext();
 	[[UIColor colorWithWhite:0 alpha:0.5f] setFill];
-	CGContextFillRect(c, CGRectMake(0, 0, viewBounds.size.width, viewBounds.size.height));
+	CGContextFillRect(c, CGRectMake(0, 0, screenSize.size.width, screenSize.size.height));
 	CGPathRef path = GUPathCreateRoundRect(adjustedHoleRect, 2);
 	CGContextAddPath(c, path);
 	[[UIColor clearColor] setFill];
 	CGContextSetBlendMode(c, kCGBlendModeCopy);
 	CGContextFillPath(c);
 	UIImageView* v = [[[UIImageView alloc] initWithImage:UIGraphicsGetImageFromCurrentImageContext()] autorelease];
-	v.frame = viewBounds;
+	v.frame = screenSize;
 	CGPathRelease(path);
 	UIGraphicsEndImageContext();
 	return v;
