@@ -162,12 +162,6 @@ static const CGFloat UIKBColor_Gray37Percent[] = {0.375, 0.375, 0.375, 1};
 	[super update];
 }
 
--(void)timeForLongPress {
-	[self cancelTimeForLongPress];
-	activationDate = [[NSDate alloc] init];
-	longPressTimer = [[NSTimer scheduledTimerWithTimeInterval:1 target:[UIKBSound class] selector:@selector(play) userInfo:nil repeats:NO] retain];
-	
-}
 -(void)cancelTimeForLongPress {
 	[longPressTimer invalidate];
 	[longPressTimer release];
@@ -175,10 +169,15 @@ static const CGFloat UIKBColor_Gray37Percent[] = {0.375, 0.375, 0.375, 1};
 	[activationDate release];
 	activationDate = nil;
 }
+-(void)timeForLongPress {
+	[self cancelTimeForLongPress];
+	activationDate = [[NSDate alloc] init];
+	longPressTimer = [[NSTimer scheduledTimerWithTimeInterval:1 target:self selector:@selector(setInputModeToNextInPreferredList) userInfo:nil repeats:NO] retain];
+}
 
 -(void)setInputModeToNextInPreferredList {
 	UIKeyboardImpl* impl = [UIKeyboardImpl sharedInstance];
-	if ([activationDate timeIntervalSinceNow] <= -1) {
+	if ([activationDate timeIntervalSinceNow] <= -0.99) {
 		[impl setInputModeLastChosenPreference];
 		[impl setInputMode:iKeyEx_KeyboardChooser];
 	} else
