@@ -17,6 +17,8 @@
 
 = 0.1-10 =
 
+(As of 0.1-9b)
+
 == iKeyEx ==
  * Variants can use labels as well. (issue 68).
  * Added "Email diagnosis info" button in settings to ease bug reporting.
@@ -27,6 +29,9 @@
   * Arabic (thanks zomoo1)
 
 == 5-Row QWERTY Keyboard ==
+ * Customizations will be saved during upgrading (issue 74).
+ * Control keys while in NumPad mode will be persistent (issue 71). 
+ * The 5th row will remain in URL and Email layouts when shift key is pressed (r244).
  * Added localizations:
   * Arabic (thanks zomoo1)
   * Italian (thanks sagitt)
