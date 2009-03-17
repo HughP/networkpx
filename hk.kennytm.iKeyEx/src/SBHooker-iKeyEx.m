@@ -217,8 +217,8 @@ static BOOL longPressedInternationalKey = NO;
 -(void)longPressAction {
 	UIKeyDefinition* activeKey = [self activeKey];
 	if (activeKey != NULL && activeKey->key_type == UIKeyTypeInternational) {
-		[UIKBSound play];
 		longPressedInternationalKey = YES;
+		[self cancelTouchTracking];
 	} else
 		[self kennytm_iKeyEx_old_longPressAction];
 }
