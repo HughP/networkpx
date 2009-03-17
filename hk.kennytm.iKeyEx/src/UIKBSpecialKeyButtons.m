@@ -162,9 +162,41 @@ static const CGFloat UIKBColor_Gray37Percent[] = {0.375, 0.375, 0.375, 1};
 	[super update];
 }
 
+-(void)timeForLongPress {
+	[self cancelTimeForLongPress];
+	activationDate = [[NSDate alloc] init];
+	longPressTimer = [[NSTimer scheduledTimerWithTimeInterval:1 target:[UIKBSound class] selector:@selector(play) userInfo:nil repeats:NO] retain];
+	
+}
+-(void)cancelTimeForLongPress {
+	[longPressTimer invalidate];
+	[longPressTimer release];
+	longPressTimer = nil;
+	[activationDate release];
+	activationDate = nil;
+}
+
+-(void)setInputModeToNextInPreferredList {
+	UIKeyboardImpl* impl = [UIKeyboardImpl sharedInstance];
+	if ([activationDate timeIntervalSinceNow] <= -1) {
+		[impl setInputModeLastChosenPreference];
+		[impl setInputMode:iKeyEx_KeyboardChooser];
+	} else
+		[impl setInputModeToNextInPreferredList];
+		
+	[activationDate release];
+	activationDate = nil;
+}
+-(void)dealloc {
+	[self cancelTimeForLongPress];
+	[super dealloc];
+}
+
 -(UIKBInternationalButton*)init {
 	if ((self = (UIKBInternationalButton*)[super init])) {
-		[self addTarget:[UIKeyboardImpl sharedInstance] action:@selector(setInputModeToNextInPreferredList) forControlEvents:UIControlEventTouchUpInside];
+		[self addTarget:self action:@selector(timeForLongPress) forControlEvents:UIControlEventTouchDown];
+		[self addTarget:self action:@selector(setInputModeToNextInPreferredList) forControlEvents:UIControlEventTouchUpInside];
+		[self addTarget:self action:@selector(cancelTimeForLongPress) forControlEvents:UIControlEventTouchUpInside|UIControlEventTouchCancel|UIControlEventTouchDragOutside];
 		[self update];
 	}
 	return self;

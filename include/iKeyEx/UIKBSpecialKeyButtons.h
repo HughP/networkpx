@@ -60,7 +60,10 @@
 //------------------------------------------------------------------------------
 // The "international" (globe) button for switching input mode.
 
-@interface UIKBInternationalButton : UIKBSpecialKeyButton {}
+@interface UIKBInternationalButton : UIKBSpecialKeyButton {
+	NSDate* activationDate;
+	NSTimer* longPressTimer;
+}
 +(UIKBInternationalButton*)buttonWithLandscape:(BOOL)landsc appearance:(UIKeyboardAppearance)appr;
 @end
 

@@ -32,6 +32,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #import <iKeyEx/ImageLoader.h>
 #import <iKeyEx/UIKBSound.h>
+#import <iKeyEx/UIKBInfo.h>
 #import <UIKit/UIKit.h>
 #import <UIKit2/UIKeyboardLayout.h>
 #import <UIKit2/Functions.h>
@@ -43,6 +44,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	UIEasyTableView* table;
 	NSInteger checkedMode;
 	UIKeyboardImpl* impl;
+	UIView* blackLine;
 }
 -(id)initWithFrame:(CGRect)frm;
 -(void)showKeyboardType:(UIKeyboardType)kbtype withAppearance:(UIKeyboardAppearance)appr;
@@ -57,14 +59,16 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 -(id)initWithFrame:(CGRect)frm {
 	if ((self = [super initWithFrame:frm])) {
 		impl = [UIKeyboardImpl sharedInstance];
+		blackLine = [[UIView alloc] initWithFrame:CGRectMake(0, 0, frm.size.width, 1)];
+		blackLine.backgroundColor = [UIColor blackColor];
+		[self addSubview:blackLine];
+		[blackLine release];
+		self.backgroundColor = [UIColor clearColor];
 		[self refresh];
 	}
 	return self;
 }
 -(void)showKeyboardType:(UIKeyboardType)kbtype withAppearance:(UIKeyboardAppearance)appr {
-	int orient = impl.orientation;
-	BOOL isLandscape = (orient == 90 || orient == -90);
-	self.backgroundColor = [UIColor colorWithPatternImage:UIKBGetImage(UIKBImageBackground, appr, isLandscape)];
 	[self refresh];
 }
 -(void)refresh {
@@ -72,22 +76,31 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	inputModes = [UIKeyboardGetActiveInputModes() retain];
 	checkedMode = [inputModes indexOfObject:[impl inputModeLastChosen]];
 	[table removeFromSuperview];
-	table = [[UIEasyTableView alloc] initWithFrame:self.bounds
+	
+	NSMutableArray* titles = [[NSMutableArray alloc] init];
+	for (NSString* mode in inputModes)
+		[titles addObject:UIKBGetKeyboardDisplayName(mode)];
+	
+	CGRect bounds = self.bounds;
+	table = [[UIEasyTableView alloc] initWithFrame:CGRectMake(0, 1, bounds.size.width, bounds.size.height-1)
 											 style:UITableViewStyleGrouped
 										   headers:nil
-											  data:inputModes, nil];
-	table.backgroundColor = [UIColor clearColor];
+											  data:titles, nil];
+	[titles release];
+	
 	[table registerCellStyler:self action:@selector(tableView:styleCell:atIndexPath:)];
 	[table registerSelectionMonitor:self action:@selector(tableView:didSelectRowAtIndexPath:)];
 	[self addSubview:table];
 	[table release];
 	[table reloadData];
 	[table scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:checkedMode inSection:0]
-				 atScrollPosition:UITableViewScrollPositionTop
+				 atScrollPosition:UITableViewScrollPositionMiddle
 						 animated:NO];
 }
 -(void)layoutSubviews {
-	table.frame = self.bounds;
+	CGRect bounds = self.bounds;
+	table.frame = CGRectMake(0, 1, bounds.size.width, bounds.size.height-1);
+	blackLine.frame = CGRectMake(0, 0, bounds.size.width, 1);
 }
 -(void)dealloc {
 	[inputModes release];

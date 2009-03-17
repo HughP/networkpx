@@ -39,10 +39,13 @@ typedef enum UIKeyDefinitionDownActionFlag {
 typedef enum UIKeyDefinitionUpActionFlag {
 	UIKeyFlagOutputValue           = 2,		// do not set this field if the value is intended to be invisible, e.g. "shift", "delete", etc.
 	UIKeyFlagDeactivateKey         = 8,
+	UIKeyFlagAlternateSublayout    = 0x20,
 	UIKeyFlagSwitchPlane           = 0x100,
 	UIKeyFlagToggleShift           = 0x400,
 	UIKeyFlagStopAutoDelete        = 0x800,
 	UIKeyFlagChangeInputMode       = 0x1000,	// effective only for the intl key.
+	UIKeyFlagConfirmCandidate      = 0x2000,
+	UIKeyFlagNextCandidatesList    = 0x4000,
 	UIKeyFlagSkipCandidateList     = 0x10000
 } UIKeyDefinitionUpActionFlag;
 

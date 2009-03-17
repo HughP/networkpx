@@ -329,7 +329,7 @@ static BOOL longPressedInternationalKey = NO;
 -(void)setInputModeToNextInPreferredList {
 	if (longPressedInternationalKey) {
 		[self setInputModeLastChosenPreference];
-		[self setInputMode:@"iKeyEx:__KeyboardChooser"];
+		[self setInputMode:iKeyEx_KeyboardChooser];
 		longPressedInternationalKey = NO;
 	} else
 		[self kennytm_iKeyEx_old_setInputModeToNextInPreferredList];

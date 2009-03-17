@@ -34,7 +34,7 @@ Options=-lobjc \
 	-O3 \
 	-mthumb
 
-iKeyExSources=$(SharedSrcPath)/GraphicsUtilities.m cleanup.m common.m ImageLoader.m KeyboardLoader.m UIKBSound.m UIKBKeyDefinition.m UIKBStandardKeyboard.m UIKBStandardKeyboardLayout.m UIKBSpecialKeyButtons.m
+iKeyExSources=$(SharedSrcPath)/GraphicsUtilities.m cleanup.m common.m ImageLoader.m KeyboardLoader.m UIKBSound.m UIKBKeyDefinition.m UIKBStandardKeyboard.m UIKBStandardKeyboardLayout.m UIKBSpecialKeyButtons.m UIKBInfo.m
 iKeyExTarget=$(iKeyExLibPath)/libiKeyEx.dylib
 iKeyExOptions=-dynamiclib -init _initDylib -framework WebKit -framework WebCore
 

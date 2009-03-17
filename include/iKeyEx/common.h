@@ -55,6 +55,7 @@
 #define iKeyEx_InternalCachePrefix iKeyEx_CachePrefix@":iKeyEx:"
 #define iKeyEx_InternalCachePath iKeyEx_DataDirectory iKeyEx_InternalCachePrefix
 
+#define iKeyEx_KeyboardChooser iKeyEx_Prefix@"__KeyboardChooser"
 
 // draw text in the center of the rectangle.
 // The text size will be rescale to fit inside the rectangle totally.

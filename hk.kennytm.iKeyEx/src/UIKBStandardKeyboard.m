@@ -906,6 +906,8 @@ else \
 				keydef->up_flags |= UIKeyFlagURLDomainVariants;
 			} else if ([kvalue isEqualToString:@"."]) {
 				keydef->up_flags |= UIKeyFlagEmailDomainVariants;
+			} else if ([kvalue isEqualToString:@"'"]) {
+				keydef->up_flags |= UIKeyFlagSwitchPlane;
 			}
 			[retarr addObject:[[keydef copy] autorelease]];
 		}
