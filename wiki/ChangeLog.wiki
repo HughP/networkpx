@@ -20,7 +20,9 @@
 == iKeyEx ==
  * Variants can use labels as well. (issue 68).
  * Added "Email diagnosis info" button in settings to ease bug reporting.
- * Fixed issue 70.
+ * Portrait and Landscape layouts can be defined independently in all cases (referred, layout.plist and code)
+ * Keyboard chooser for quick keyboard mode selection (issue 53).
+ * Fixed issue 70 and issue 75.
  * Added localizations:
   * Arabic (thanks zomoo1)
 
