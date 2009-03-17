@@ -704,7 +704,7 @@ void clearCache () {
 			[shiftedTexts addObject:[Arrangements[i][3] componentsSeparatedByString:@"|"]];
 			[shiftedTexts addObject:[Arrangements[i][4] componentsSeparatedByString:@"|"]];
 			[shiftedTexts addObject:[Arrangements[i][5] componentsSeparatedByString:@"|"]];
-			[shiftedTexts addObject:[NSArray array]];
+			[shiftedTexts addObject:@"="];
 			
 			textsSet = YES;
 			break;
