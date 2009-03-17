@@ -6,6 +6,7 @@ iKeyExLibPath=../../hk.kennytm.iKeyEx/deb/usr/lib
 CMLSrcPath=../../hk.kennytm.Command/src
 SharedSrcPath=../../src
 UIKit3SrcPath=$(SharedSrcPath)/UIKit3
+UIKit4SrcPath=$(SharedSrcPath)/UIKit4
 
 Compiler=$(iPhoneDevPath)/usr/bin/arm-apple-darwin9-gcc-4.0.1
 CodeSign=ldid -S
@@ -37,7 +38,7 @@ LayoutSources=5RowQWERTY.m $(CMLSrcPath)/CMLSelection.m
 LayoutTarget=../deb/Library/iKeyEx/Keyboards/5RowQWERTY.keyboard/5RowQWERTY
 LayoutOptions=-liKeyEx -dynamiclib -init _init
 
-PrefSources=prefs.m $(SharedSrcPath)/GraphicsUtilities.m $(UIKit3SrcPath)/UIUtilities.m $(UIKit3SrcPath)/UIBigCharacterHUD.m $(UIKit3SrcPath)/UIActionSheetPro.m $(UIKit3SrcPath)/UIEasyPickerView.m
+PrefSources=prefs.m $(SharedSrcPath)/GraphicsUtilities.m $(UIKit3SrcPath)/UIUtilities.m $(UIKit4SrcPath)/UIBigCharacterHUD.m $(UIKit4SrcPath)/UIEasyPickerView.m $(UIKit3SrcPath)/UIActionSheetPro.m
 PrefTarget=../deb/Library/iKeyEx/Keyboards/5RowQWERTY.keyboard/Preferences.bundle/5RowQWERTY
 PrefOptions=-framework Preferences -framework CoreGraphics -framework WebKit -licucore -liKeyEx -bundle
 
@@ -52,4 +53,6 @@ $(PrefTarget):	$(PrefSources)
 	$(CodeSign) $@
 
 clean:
-	rm $(Target)
+	rm $(LayoutTarget)
+	rm $(PrefTarget)
+

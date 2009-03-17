@@ -38,13 +38,15 @@
 #import <UIKit/UIKit.h>
 #import <objc/runtime.h>
 
-@protocol TextInputHandlerHooked
+@protocol IDisableWarning
 @optional
--(void)old_insertText:(NSString*)str;
+-(void)handleInputFromMenu:(NSString*)menu;
+-(void)removeTextLoupe;
 @end
 
+static BOOL numpadInFront;
 static BOOL isMobileTerminal = NO;
-static id mobileTerminalApplication = nil;
+static id<IDisableWarning> mobileTerminalApplication = nil;
 static BOOL canSendActiveKey = NO, cancelNextAction = NO;
 
 // We replace the layout instead of the input manager because the input manager cannot catch all input strings.
@@ -52,7 +54,7 @@ static BOOL canSendActiveKey = NO, cancelNextAction = NO;
 //  then in the initializer (-initWithFrame:), fill in the content of layout.plist into the ivar "plist". 
 // You DON'T have to release this plist in -dealloc since the superclass will do it for you.
 
-@interface FiveRowQWERTYLayout : UIKBStandardKeyboardLayout { BOOL numpadInFront; }
+@interface FiveRowQWERTYLayout : UIKBStandardKeyboardLayout {}
 +(BOOL)sendControlAction:(NSString*)str;
 
 -(id)initWithFrame:(CGRect)frm;
@@ -61,19 +63,17 @@ static BOOL canSendActiveKey = NO, cancelNextAction = NO;
 -(void)deactivateActiveKeys;
 @end
 
-
-
 @implementation FiveRowQWERTYLayout
 +(BOOL)sendControlAction:(NSString*)str {
 	if (canSendActiveKey)
-		[FiveRowQWERTYLayout performSelector:_cmd withObject:str afterDelay:0.125];
+		[self performSelector:_cmd withObject:str afterDelay:0.125];
 	
 	if (isMobileTerminal) {
 		[mobileTerminalApplication handleInputFromMenu:str];
 		return YES;
 	} else {
 		UIKeyboardImpl* impl = [UIKeyboardImpl sharedInstance];
-		UIView<UIKeyboardInput>* del = impl.delegate;
+		UIView<UIKeyboardInput,IDisableWarning>* del = (UIView<UIKeyboardInput,IDisableWarning>*)impl.delegate;
 		
 		if ([str length] == 1) {
 			// esc
