@@ -1,0 +1,12 @@
+#!/bin/bash
+
+if [[ $1 == configure ]]; then
+	cd /Library/iKeyEx/Keyboards/5RowQWERTY.keyboard/;
+	if [[ -e ~layout.plist ]]; then
+		mv -f ~layout.plist layout.plist;
+		mv -f ~Info.plist Info.plist;
+	fi;
+	chmod a+w layout.plist;
+	chmod a+w Info.plist;
+	exit 0
+fi
