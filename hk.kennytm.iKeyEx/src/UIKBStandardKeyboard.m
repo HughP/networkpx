@@ -82,16 +82,28 @@ static BOOL betterDontCapitalize(unichar c) {
 	}
 }
 
+inline static NSString* getUppercaseCharacter(NSString* s) {
+	if ([s length] == 1 && !betterDontCapitalize([s characterAtIndex:0]))
+		return [s uppercaseString];
+	else
+		return s;
+}
+
 static NSArray* tryUppercase(NSString* key, NSArray* srcArr) {
 	if (srcArr == nil)
 		return nil;
 	if (keyRequiresUppercase[translateString(key)]) {
 		NSMutableArray* retArr = [[NSMutableArray alloc] init];
 		for (NSString* s in srcArr) {
-			if ([s length] == 1 && !betterDontCapitalize([s characterAtIndex:0]))
-				[retArr addObject:[s uppercaseString]];
-			else
-				[retArr addObject:s];
+			if ([s isKindOfClass:[NSDictionary class]]) {
+				NSMutableDictionary* dictCopy = [s mutableCopy];
+				NSString* upStr = getUppercaseCharacter([s objectForKey:@"text"]);
+				if (upStr)
+					[dictCopy setObject:upStr forKey:@"text"];
+				[retArr addObject:dictCopy];
+				[dictCopy release];
+			} else
+				[retArr addObject:getUppercaseCharacter(s)];
 		}
 		[srcArr release];
 		return retArr;
@@ -791,6 +803,10 @@ else \
 						
 			NSString* kvalue = [texts[i] objectAtIndex:j];
 			NSString* skvalue = [shiftedTexts[i] objectAtIndex:j];
+			if ([kvalue isKindOfClass:[NSDictionary class]])
+				kvalue = [kvalue objectForKey:@"text"];
+			if ([skvalue isKindOfClass:[NSDictionary class]])
+				skvalue = [skvalue objectForKey:@"text"];
 			if (![kvalue isKindOfClass:[NSString class]] || [kvalue length] == 0)
 				kvalue = nil;
 			if (![skvalue isKindOfClass:[NSString class]] || [skvalue length] == 0)
