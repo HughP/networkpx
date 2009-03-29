@@ -52,7 +52,7 @@ void AbstractARMDumbDisassembler::stmdb (unsigned Rd, unsigned reglist) throw() 
 	
 	for (int i = 0; i < 16; ++ i) {
 		if (reglist & (1<<i)) {
-			if (index <= StackSize)
+			if (index < StackSize)
 				stack[index] = r[i];
 			++ index;
 		}
@@ -65,7 +65,7 @@ void AbstractARMDumbDisassembler::stmia (unsigned Rd, unsigned reglist) throw() 
 	
 	for (int i = 0; i < 16; ++ i) {
 		if (reglist & (1<<i)) {
-			if (index <= StackSize)
+			if (index < StackSize)
 				stack[index] = r[i];
 			++ index;
 		}
@@ -79,7 +79,7 @@ void AbstractARMDumbDisassembler::ldmia (unsigned Rd, unsigned reglist) throw() 
 	// don't write back the pc register.
 	for (int i = 0; i < 15; ++ i) {
 		if (reglist & (1<<i)) {
-			if (index <= StackSize)
+			if (index < StackSize)
 				r[i] = stack[index];
 			++ index;
 		}
@@ -121,7 +121,7 @@ void AbstractARMDumbDisassembler::print_references(unsigned vm_address, unsigned
 	if (vm_address == 0)
 		return;
 	
-	if (vm_address/4 <= StackSize) {
+	if (vm_address/4 < StackSize) {
 		if (vm_address >= sp) {
 			fprintf(m_stream, "sp+%d -> ", vm_address-sp);
 			if (depth < MAX_DEPTH)
@@ -159,6 +159,8 @@ void AbstractARMDumbDisassembler::disassemble_in_range(unsigned start_at, size_t
 	
 	size_t bytes_scanned = 0;
 	unsigned cur_address = start_at;
+	
+	sp = StackSize-64;
 	
 	while (bytes_scanned < range_bytes) {
 		m_file.seek(cur_file_offset);
