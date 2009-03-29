@@ -9,5 +9,6 @@ Maintainer: KennyTM~ <kennytm+hClipboard@gmail.com>
 Author: KennyTM~ <kennytm+hClipboard@gmail.com>
 Section: System
 Depends: hk.kennytm.iKeyEx (>=0.1-5)
-Installed-Size: 332
+Installed-Size: 352
+Support: http://code.google.com/p/networkpx/wiki/FAQ
 dev: kennytm

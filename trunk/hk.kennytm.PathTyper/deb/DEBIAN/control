@@ -10,3 +10,4 @@ Maintainer: KennyTM~ <kennytm+PathTyper@gmail.com>
 Author: KennyTM~ <kennytm+PathTyper@gmail.com>
 Section: System
 Depends: hk.kennytm.iKeyEx (>=0.0-3)
+Support: http://code.google.com/p/networkpx/wiki/FAQ

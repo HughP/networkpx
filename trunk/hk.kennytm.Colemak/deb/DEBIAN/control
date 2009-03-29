@@ -10,4 +10,5 @@ Author: KennyTM~ <kennytm+Colemak@gmail.com>
 Section: System
 Depends: hk.kennytm.iKeyEx (>=0.1-3)
 Installed-Size: 12
+Support: http://code.google.com/p/networkpx/wiki/FAQ
 dev: kennytm
