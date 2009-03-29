@@ -9,4 +9,5 @@ Author: KennyTM~ <kennytm+MultiTap@gmail.com>
 Section: System
 Depends: hk.kennytm.iKeyEx (>=0.0-1)
 Installed-Size: 28
+Support: http://code.google.com/p/networkpx/wiki/FAQ
 dev: kennytm

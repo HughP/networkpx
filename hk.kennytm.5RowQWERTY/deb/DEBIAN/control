@@ -8,5 +8,6 @@ Maintainer: KennyTM~ <kennytm+5RowQWERTY@gmail.com>
 Author: KennyTM~ <kennytm+5RowQWERTY@gmail.com>
 Section: Keyboards
 Depends: hk.kennytm.iKeyEx (>=0.1-7)
-Installed-Size: 148
+Installed-Size: 156
+Support: http://code.google.com/p/networkpx/wiki/FAQ
 dev: kennytm
