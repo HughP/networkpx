@@ -138,6 +138,8 @@ static const char* const ops_dp5[] = {"and", "eor", "lsl", "lsr", "asr", "adc", 
 static const char* const ops_dp8[] = {"add", "cmp", "mov"};
 static const char* const ops_ls1[] = {"str", "ldr", "strb", "ldrb", "strh", "ldrh"};
 static const char* const ops_ls2[] = {"str", "strh", "strb", "ldrsb", "ldr", "ldrh", "ldrb", "ldrsh"};
+static const char* const ops_rev[] = {"rev", "rev16", "rev??", "revsh"};
+static const char* const ops_xt[] = {"sxth", "sxtb", "uxth", "uxtb"};
 
 void ThumbDumbDisassembler::print_raw_instruction(unsigned vm_address, unsigned instruction, const char* decoded, bool hasR, unsigned R) const {
 	fprintf(m_stream, "%08x\t%s%04x\t%-48s", vm_address, (instruction&0xFFFF0000?"":"    "), instruction, decoded);
@@ -494,8 +496,76 @@ unsigned ThumbDumbDisassembler::disassemble_at(unsigned vm_address) {
 		
 		if (reglist & (1 << 15))
 			fprintf(m_stream, "\n");
+	
+		// BKPT
+	} else if ( (instruction & _(1111,1111,____,____)) == _(1011,1110,____,____) ) {
+		snprintf(decoded, 80, "bkpt     %d", instruction & 0xFF);
+		PrintWithoutComments;
+	
+		// CPS
+	} else if ( (instruction & _(1111,1111,111_,1___)) == _(1011,0110,011_,0___) ) {
+		snprintf(decoded, 80, "cpsi%c    %s%s%s",
+				 (instruction&(1<<4))?'d':'e',
+				 (instruction&(1<<2))?"a":"",
+				 (instruction&(1<<1))?"i":"",
+				 (instruction&(1<<0))?"f":"");
+		PrintWithoutComments;
 		
-		// Exception-generating instructions, or undefined instructions.
+		// REV
+	} else if ( (instruction & _(1111,1111,____,____)) == _(1011,1010,____,____) ) {
+		op_code = (instruction & _(____,____,11__,____)) >> 6;
+		op = ops_rev[op_code];
+		
+		unsigned Rn = (instruction & _(____,____,__11,1___)) >> 3;
+		unsigned Rd = (instruction & _(____,____,____,_111));
+
+		snprintf(decoded, 80, "%-8s %s, %s", op, register_name(Rd), register_name(Rn));
+		
+		switch (op_code) {
+			case 0:
+				r[Rd] = (r[Rn]&0xFF)<<24 | (r[Rn]&0xFF00)<<8 | (r[Rn]&0xFF0000)>>8 | ((unsigned)(r[Rn]&0xFF000000))>>24;
+				break;
+			case 1:
+				r[Rd] = (r[Rn]&0xFF)<<8 | (r[Rn]&0xFF00)>>8 | (r[Rn]&0xFF0000)<<8 | ((unsigned)(r[Rn]&0xFF000000))>>8;
+				break;
+			case 3:
+				r[Rd] = (r[Rn]&0xFF)<<8 | (r[Rn]&0xFF00)>>8;
+				if (r[Rd]&0xF0000)
+					r[Rd] |= 0xFFFF0000;
+				break;
+		}
+		
+		Print(r[Rd]);
+	
+		// SETEND
+		// FIXME: We're ignoring it.
+	} else if ( (instruction & _(1111,1111,1111,_111)) == _(1011,0110,0101,_000) ) {
+		snprintf(decoded, 80, "setend   %ce", instruction&(1<<3)?'b':'l');
+		PrintWithoutComments;
+		
+		// SWI
+	} else if ( (instruction & _(1111,1111,____,____)) == _(1101,1111,____,____) ) {
+		snprintf(decoded, 80, "swi      %d", instruction & 0xFF);
+		PrintWithoutComments;
+		
+		// Signed/Unsigned extension.
+	} else if ( (instruction & _(1111,1111,____,____)) == _(1011,0010,____,____) ) {
+		op_code = (instruction & _(____,____,11__,____)) >> 6;
+		op = ops_xt[op_code];
+		
+		unsigned Rn = (instruction & _(____,____,__11,1___)) >> 3;
+		unsigned Rd = (instruction & _(____,____,____,_111));
+		
+		snprintf(decoded, 80, "%-8s %s, %s", op, register_name(Rd), register_name(Rn));
+		
+		unsigned mask = (op_code & 1) ? 0xFF : 0xFFFF;
+		r[Rd] = r[Rn] & mask;
+		if ((op_code & 2) && (r[Rd] & ((mask+1)>>1))) {
+			r[Rd] |= ~mask;
+		}
+		Print(r[Rd]);
+		
+	// Exception-generating instructions, or undefined instructions.	
 	} else {
 		snprintf(decoded, 80, "  ?");
 		PrintWithoutComments;

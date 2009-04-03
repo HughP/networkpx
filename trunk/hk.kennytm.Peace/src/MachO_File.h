@@ -28,10 +28,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <cstdio>
 #include <vector>
 #include <ext/hash_map>
+#include <ext/hash_set>
 #include <new>
 #include "DataFile.h"
 
 class MachO_File : public DataFile {
+public:
+	struct ObjCMethod{
+		const char* class_name;
+		const char* sel_name;
+		const char* types;
+	};
+	
 private:
 	std::vector<const load_command*> ma_load_commands;
 	std::vector<const segment_command*> ma_segments;
@@ -57,6 +65,10 @@ private:
 	__gnu_cxx::hash_map<unsigned,const char*> ma_cfstrings;
 	__gnu_cxx::hash_map<unsigned,const char*> ma_objc_classes;
 	__gnu_cxx::hash_map<unsigned,const char*> ma_objc_selectors;
+	
+	__gnu_cxx::hash_map<unsigned,ObjCMethod> ma_objc_methods;
+	
+	__gnu_cxx::hash_set<unsigned> ma_is_extern_symbol;
 	
 	bool m_is_valid;
 	
@@ -102,6 +114,12 @@ public:
 		if (m_is_valid)
 			for_each(ma_sections.begin(), ma_sections.end(), p_func);
 	}
+	
+	inline bool is_extern_symbol(unsigned vm_address) const throw() {
+		return ma_is_extern_symbol.find(vm_address) != ma_is_extern_symbol.end();
+	}
+	
+	const ObjCMethod* objc_method_at_vm_address(unsigned vm_address) const throw();
 };
 
 #endif

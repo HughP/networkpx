@@ -168,7 +168,14 @@ void AbstractARMDumbDisassembler::disassemble_in_range(unsigned start_at, size_t
 		if (m_file.valid()) {
 			const char* cursymbol = m_file.string_representation(cur_address);
 			if (cursymbol != NULL) {
-				fprintf(m_stream, "\n ;\n ; %s\n ;\n", cursymbol);
+				fprintf(m_stream, "\n ;\n ; %s:\n", cursymbol);
+				if (m_file.is_extern_symbol(cur_address))
+					fprintf(m_stream, " ; <extern>\n");
+				fprintf(m_stream, " ;\n");
+			} else {
+				const MachO_File::ObjCMethod* curmethod = m_file.objc_method_at_vm_address(cur_address);
+				if (curmethod != NULL)
+					fprintf(m_stream, "\n ;\n ; ?[%s %s]:\n ;\n", curmethod->class_name, curmethod->sel_name);
 			}
 		}
 		

@@ -125,11 +125,13 @@ MachO_File::MachO_File(const char* path) throw(bad_alloc,TRException) : DataFile
 	}
 	
 	for (unsigned i = 0; i < m_symbols_length; ++ i) {
-		ma_symbol_references[ma_symbols[i].n_value] = ma_strings + ma_symbols[i].n_un.n_strx;
+		ma_symbol_references[ma_symbols[i].n_value & ~1] = ma_strings + ma_symbols[i].n_un.n_strx;
+		if (ma_symbols[i].n_type & N_EXT)
+			ma_is_extern_symbol.insert(ma_symbols[i].n_value & ~1);
 	}
 	
 	for (unsigned i = 0; i < m_relocations_length; ++ i)
-		ma_symbol_references[ma_relocations[i].r_address] = ma_strings + ma_symbols[ma_relocations[i].r_symbolnum].n_un.n_strx;
+		ma_symbol_references[ma_relocations[i].r_address & ~1] = ma_strings + ma_symbols[ma_relocations[i].r_symbolnum].n_un.n_strx;
 	
 	// analyze the sections (to short-cut the indirect symbols)
 	for (vector<const section*>::const_iterator cit = ma_sections.begin(); cit != ma_sections.end(); ++ cit) {
@@ -143,7 +145,7 @@ MachO_File::MachO_File(const char* path) throw(bad_alloc,TRException) : DataFile
 				unsigned end_index = s->reserved1 + s->size/stride;
 				
 				for (unsigned i = s->reserved1, vm_address = s->addr; i < end_index; ++ i, vm_address += stride)
-					ma_symbol_references[vm_address] = ma_strings + ma_symbols[ma_indirect_symbols[i]].n_un.n_strx;
+					ma_symbol_references[vm_address & ~1] = ma_strings + ma_symbols[ma_indirect_symbols[i]].n_un.n_strx;
 				
 				break;
 			}
@@ -165,19 +167,34 @@ MachO_File::MachO_File(const char* path) throw(bad_alloc,TRException) : DataFile
 						ma_cfstrings[s->addr + i] = ma_cstrings + vm_address - m_cstring_vmaddr;
 					}
 				} else if (!strncmp(s->sectname, "__class_list", 16) || !strncmp(s->sectname, "__objc_classlist", 16)) {
+					int sid_data = 1, sid_text = 0;
 					this->seek(s->offset);
 					for (unsigned i = 0; i < s->size; i += 4) {
 						unsigned vm_address = this->read_integer();
 						off_t old_location = this->tell();
+
+						this->seek_vm_address(vm_address + 16, &sid_data);		// get to the data field class.
+						unsigned data_loc = this->read_integer();
+
+						this->seek_vm_address(data_loc + 16, &sid_data);		// get to the name field of the data.
+						this->seek_vm_address(this->read_integer(), &sid_text);	// resolve the location of the string.
 						
-						// get to the data field class.
-						this->seek_vm_address(vm_address + 16);
-						// get to the name field of the data.
-						this->seek_vm_address(this->read_integer() + 16);
-						// resolve the location of the string.
-						this->seek_vm_address(this->read_integer());
+						ObjCMethod m;
+						m.class_name = this->peek_data<char>();
+						ma_objc_classes[vm_address] = m.class_name;
 						
-						ma_objc_classes[vm_address] = this->peek_data<char>();
+						this->seek_vm_address(data_loc + 20, &sid_data);		// get to the baseMethod field of the data.
+						unsigned baseMethod_loc = this->read_integer();
+						if (baseMethod_loc != 0) {
+							this->seek_vm_address(baseMethod_loc + 4, &sid_data);	// get to the count field of the data.
+							unsigned count = this->read_integer();
+								
+							for (unsigned j = 0; j < count; ++ j) {
+								m.sel_name = this->peek_data_at_vm_address<char>(this->read_integer(), &sid_text);
+								m.types = this->peek_data_at_vm_address<char>(this->read_integer(), &sid_text);
+								ma_objc_methods[this->read_integer() & ~1] = m;
+							}
+						}
 						
 						this->seek(old_location);
 					}
@@ -314,4 +331,15 @@ const section* MachO_File::section_having_name (const char* segment_name, const 
 		}
 	}
 	return NULL;
+}
+
+const MachO_File::ObjCMethod* MachO_File::objc_method_at_vm_address(unsigned vm_address) const throw() {
+	if (m_is_valid) {
+		hash_map<unsigned,MachO_File::ObjCMethod>::const_iterator cit = ma_objc_methods.find(vm_address);
+		if (cit == ma_objc_methods.end())
+			return NULL;
+		else
+			return &(cit->second);
+	} else
+		return NULL;
 }
