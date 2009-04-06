@@ -362,7 +362,7 @@ The complete spec:
 <tr>
 	<td>dictionary</td>
 	<td>`<text with traits>`</td>
-	<td>String with style information. Ignored when used with _texts_ or _shiftedTexts_. <font color="red">Not implemented yet</font></td>
+	<td>String with style information. Ignored when used with _texts_ or _shiftedTexts_.</td>
 </tr>
 </table>
 
@@ -394,7 +394,7 @@ The complete spec:
 	<td>font</td>
 	<td>string</td>
 	<td>font name</td>
-	<td>Use the specified font to render the text. It has to be the full name, e.g. if you want to use a the bold Times font you should write `"TimesNewRomanPS-BoldMT"`.</td>
+	<td>Use the specified font to render the text. It has to be the full name, e.g. if you want to use a the bold Times font you should write `"TimesNewRomanPS-BoldMT"`.<br />A list of fonts can be found in http://www.latenightcode.com/devblog/iphone-fonts/.</td>
 	<td>_system font name_</td>
 	<td>_text_ ≠ _nil_</td>
 </tr>
@@ -509,5 +509,3 @@ NSDictionary* layout = [NSDictionary dictionaryWithContentsOfFile:[someBundle pa
 UIKBStandardKeyboard* keyboard = [UIKBStandardKeyboard keyboardWithPlist:layout name:@"Alphabet" landscape:NO appearance:UIKeyboardAppearanceDefault];
 }}}
 Then you can use the read-only properties `image`, `fgImage`, `shiftedImage`, `fgShiftedImage` and `keyDefinitions` for the `UIKeyboardSublayout`s. There is also a vast number of less complex properties you mean need. Check the header file for detail.
-
-
