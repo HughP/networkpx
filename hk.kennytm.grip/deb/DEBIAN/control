@@ -1,0 +1,13 @@
+Package: hk.kennytm.grip
+Name: GriP - Growl for iPhoneOS
+Version: 0.1-11a
+Architecture: iphoneos-arm
+Description: GriP = Growl for iPhoneOS. GriP lets iPhoneOS applications and extensions unintrusively tell you when things happen. 
+Homepage: http://code.google.com/p/networkpx/
+Maintainer: KennyTM~ <kennytm+GriP@gmail.com>
+Author: KennyTM~ <kennytm+GriP@gmail.com>
+Section: System
+Depends: mobilesubstrate (>=0.9-0)
+Installed-Size: 92
+Support: http://code.google.com/p/networkpx/wiki/FAQ
+dev: kennytm

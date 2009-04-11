@@ -291,7 +291,7 @@ CreateBuildMethods(EmailAddressAlt, NO, YES);
 // fix the flexible popup to make it really flexible.
 // Can we hide the frame change?
 -(void)activateCompositeKey:(UIKeyDefinition*)keydef {
-	if ([self inputStringForKey:keydef] == nil)
+	if (keydef == NULL || [self inputStringForKey:keydef] == nil)
 		return;	
 	[super activateCompositeKey:keydef];
 	if (keydef->pop_type == NSFileAppendOnly)
@@ -334,7 +334,7 @@ CreateBuildMethods(EmailAddressAlt, YES, YES);
 
 // fix the flexible popup to make it really flexible.
 -(void)activateCompositeKey:(UIKeyDefinition*)keydef {
-	if ([self inputStringForKey:keydef] == nil)
+	if (key == NULL || [self inputStringForKey:keydef] == nil)
 		return;
 	[super activateCompositeKey:keydef];
 	if (keydef->pop_type == NSFileAppendOnly)

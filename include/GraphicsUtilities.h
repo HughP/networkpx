@@ -67,6 +67,8 @@ CGContextRef GUCreateContextWithImage(CGImageRef img, CGRect* rect) {
 }
 #define GUCreateContextWithImageAuto(img) CGRect imgRect; CGContextRef c = GUCreateContextWithImage(img, &imgRect)
 
+#define GULuminance(red,green,blue) (0.2126*(red) + 0.7152*(green) + 0.0722*(blue))
+
 // The return values of all CGImageRef's must be CGImageRelease'd in the caller side.
 
 

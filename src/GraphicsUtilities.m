@@ -270,7 +270,7 @@ float GUAverageLuminance (CGImageRef img) {
 	}
 	
 	if (A != 0) {
-		retval = (0.2126*R + 0.7152*G + 0.0722*B)/A;
+		retval = GULuminance(R,G,B)/A;
 	}
 	
 	CGContextRelease(c);
