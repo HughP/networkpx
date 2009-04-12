@@ -1,6 +1,6 @@
 /*
 
-SBHooker-GriP ... GriP Hook to SpringBoard
+XXHooker-GriP ... GriP Hook to SpringBoard & Preferences.
  
 Copyright (c) 2009, KennyTM~
 All rights reserved.
@@ -38,7 +38,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #import <GriP/common.h>
 #import <GriP/GrowlApplicationBridge.h>
 #import <GriP/GPTheme.h>
-
+#import <PrefHooker/PrefsLinkHooker.h>
 
 static NSObject<GPTheme>* activeTheme = nil;
 
@@ -57,8 +57,12 @@ static CFDataRef GriPCallback (CFMessagePortRef serverPort, SInt32 type, CFDataR
 				if (themeType == nil || [@"OBJC" isEqualToString:themeType])
 					activeTheme = [[[activeThemeBundle principalClass] alloc] init];
 			}
-			if ([activeTheme respondsToSelector:@selector(display:)])
-				[activeTheme display:[NSPropertyListSerialization propertyListFromData:(NSData*)data mutabilityOption:NSPropertyListImmutable format:NULL errorDescription:NULL]];
+			if ([activeTheme respondsToSelector:@selector(display:)]) {
+				NSMutableDictionary* messageDict = [NSPropertyListSerialization propertyListFromData:(NSData*)data mutabilityOption:NSPropertyListMutableContainersAndLeaves format:NULL errorDescription:NULL];
+				GPModifyMessageForUserPreference(messageDict);
+				if ([messageDict count] != 0)
+					[activeTheme display:messageDict];
+			}
 			break;
 			
 		case GriPMessage_ClickedNotification:
@@ -73,6 +77,17 @@ static CFDataRef GriPCallback (CFMessagePortRef serverPort, SInt32 type, CFDataR
 					CFMessagePortSendRequest(clientPort, type, context, 1, 0, NULL, NULL);
 					CFRelease(clientPort);
 				}
+			}
+			break;
+		}
+			
+		case GriPMessage_UpdateTicket: {
+			NSArray* array = [NSPropertyListSerialization propertyListFromData:(NSData*)data mutabilityOption:NSPropertyListImmutable format:NULL errorDescription:NULL];
+			if ([array isKindOfClass:[NSArray class]] && [array count] >= 2) {
+				NSString* appName = [array objectAtIndex:0];
+				NSDictionary* regDictionary = [array objectAtIndex:1];
+				if ([appName isKindOfClass:[NSString class]] && [regDictionary isKindOfClass:[NSDictionary class]])
+					GPUpdateRegistrationDictionaryForAppName(appName, regDictionary);
 			}
 			break;
 		}
@@ -94,20 +109,33 @@ static void terminate () {
 	
 	 
 void initialize () {
-	if (GPStartServer() != 0) {
-		NSLog(@"Cannot start GriP server -- probably another instance of GriP is already running.");
-		return;
-	}
-	
-	GPSetAlternateHandler(&GriPCallback, GriPMessage__Start, GriPMessage__End);
-	
+	CFStringRef bundleID = CFBundleGetIdentifier(CFBundleGetMainBundle());
+	if
 #if TARGET_IPHONE_SIMULATOR
-	activeTheme = [[objc_getClass("GPDefaultTheme") alloc] init];
+		(1)
+#else
+		(kCFCompareEqualTo == CFStringCompare(bundleID, CFSTR("com.apple.springboard"), 0))
 #endif
+	{
 	
-	atexit(&terminate);
+		if (GPStartServer() != 0) {
+			NSLog(@"Cannot start GriP server -- probably another instance of GriP is already running.");
+			return;
+		}
+		
+		GPSetAlternateHandler(&GriPCallback, GriPMessage__Start, GriPMessage__End);
+		
+#if TARGET_IPHONE_SIMULATOR
+		activeTheme = [[objc_getClass("GPDefaultTheme") alloc] init];
+#endif
+		
+		atexit(&terminate);
 	
-	NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
-	[GPMessageWindow _initialize];
-	[pool drain];
+		NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
+		[GPMessageWindow _initialize];
+		[pool drain];
+		
+	} else {
+		PrefsListController_hook();
+	}
 }

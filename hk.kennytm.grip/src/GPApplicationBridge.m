@@ -51,19 +51,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 }
 -(id)init {
 	if ((self = [super init])) {
-		NSBundle* mainBundle = [NSBundle mainBundle];
-		if (cachedRegistrationDictionary == nil) {
-			NSString* regDictPath = [mainBundle pathForResource:@"Growl Registration Ticket" ofType:@"growlRegDict"];
-			if (regDictPath != nil) 
-				cachedRegistrationDictionary = [[NSDictionary alloc] initWithContentsOfFile:regDictPath];
-		}
-		if (appName == nil) {
-			appName = [[mainBundle objectForInfoDictionaryKey:@"CFBundleExecutableName"] retain];
-			if (![appName isKindOfClass:[NSString class]]) {
-				[appName release];
-				appName = nil;
-			}
-		}
 		if (duplex == nil) {
 			duplex = [[GPDuplexClient alloc] init];
 			if (duplex == nil) {
@@ -72,6 +59,20 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 				[duplex addObserver:self selector:@selector(messageClickedOrIgnored:type:) forMessage:GriPMessage_ClickedNotification];
 				[duplex addObserver:self selector:@selector(messageClickedOrIgnored:type:) forMessage:GriPMessage_IgnoredNotification];
 			}
+		}
+		
+		NSBundle* mainBundle = [NSBundle mainBundle];
+		if (appName == nil) {
+			appName = [[mainBundle objectForInfoDictionaryKey:@"CFBundleExecutableName"] retain];
+			if (![appName isKindOfClass:[NSString class]]) {
+				[appName release];
+				appName = nil;
+			}
+		}
+		if (cachedRegistrationDictionary == nil) {
+			NSString* regDictPath = [mainBundle pathForResource:@"Growl Registration Ticket" ofType:@"growlRegDict"];
+			if (regDictPath != nil) 
+				[self registerWithDictionary:[NSDictionary dictionaryWithContentsOfFile:regDictPath]];
 		}
 	}
 	return self;
@@ -93,7 +94,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 @dynamic installed, running;
 -(BOOL)isGrowlInstalled {
 	// FIXME: Find some SDK-compatible check to give an accurate result.
-	return [self isGrowlRunning];
+	return [self isGrowlInstalled];
 }
 -(BOOL)isGrowlRunning {
 	// FIXME: Currently this check relies on the fact that only GriP has implemented the GPDuplexClient class.
@@ -110,10 +111,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		sharedDelegate = [inDelegate retain];
 	}
 	
-	// try to replace the reg dict.
-	if ([inDelegate respondsToSelector:@selector(registrationDictionaryForGrowl)])
-		[self registerWithDictionary:[inDelegate registrationDictionaryForGrowl]];
-	
 	// try to replace app name.
 	if ([inDelegate respondsToSelector:@selector(applicationNameForGrowl)]) {
 		NSString* potentialAppName = [inDelegate applicationNameForGrowl];
@@ -122,6 +119,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 			appName = [potentialAppName retain];
 		}
 	}
+	
+	// try to replace the reg dict.
+	if ([inDelegate respondsToSelector:@selector(registrationDictionaryForGrowl)])
+		[self registerWithDictionary:[inDelegate registrationDictionaryForGrowl]];
+	
 	
 	// we don't care about the app icon.
 	
@@ -135,11 +137,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 }
 
 -(void)notifyWithTitle:(NSString*)title description:(NSString*)description notificationName:(NSString*)notifName iconData:(NSObject*)iconData priority:(signed)priority isSticky:(BOOL)isSticky clickContext:(NSObject*)clickContext identifier:(NSString*)identifier {
-	if (duplex == nil)
+	if (duplex == nil || appName == nil)
 		return;
 	
 	NSMutableDictionary* filteredDictionary = [[NSMutableDictionary alloc] init];
 	[filteredDictionary setObject:duplex.name forKey:GRIP_PID];
+	[filteredDictionary setObject:appName forKey:GRIP_APPNAME];
 	
 	if ([title isKindOfClass:[NSString class]])
 		[filteredDictionary setObject:title forKey:GRIP_TITLE];
@@ -159,7 +162,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		NSString* errorDescription = nil;
 		NSData* contextData = [NSPropertyListSerialization dataFromPropertyList:clickContext format:NSPropertyListBinaryFormat_v1_0 errorDescription:&errorDescription];
 		if (contextData == nil) {
-			NSLog(@"clickContext cannot be serialized into property list data: %@.", errorDescription);
+			NSLog(@"clickContext cannot be serialized into property list data: %@. It will be ignored.", errorDescription);
 			[errorDescription release];
 		} else
 			[filteredDictionary setObject:contextData forKey:GRIP_CONTEXT];
@@ -173,6 +176,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 }
 
 -(void)notifyWithDictionary:(NSDictionary*)userInfo {
+	if (![userInfo isKindOfClass:[NSDictionary class]])
+		return;
+	
 	NSNumber* priority = [userInfo objectForKey:GROWL_NOTIFICATION_PRIORITY];
 	signed numericPriority = 0;
 	if ([priority respondsToSelector:@selector(integerValue)])
@@ -194,16 +200,38 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 }
 
 -(BOOL)registerWithDictionary:(NSDictionary*)potentialDictionary {
-	if ([potentialDictionary isKindOfClass:[NSDictionary class]] &&
-		[[potentialDictionary objectForKey:GROWL_NOTIFICATIONS_ALL] isKindOfClass:[NSArray class]] &&
-		[[potentialDictionary objectForKey:GROWL_NOTIFICATIONS_DEFAULT] isKindOfClass:[NSArray class]]) {
+	if ([potentialDictionary isKindOfClass:[NSDictionary class]]) {
+		NSString* newAppName = [potentialDictionary objectForKey:GROWL_APP_NAME];
+		if (appName != newAppName && [newAppName isKindOfClass:[NSString class]]) {
+			[appName release];
+			appName = [newAppName retain];
+		}
+		
+		NSObject* tmp = [potentialDictionary objectForKey:GROWL_NOTIFICATIONS_ALL];
+		if (![tmp isKindOfClass:[NSArray class]])
+			return NO;
+		tmp = [potentialDictionary objectForKey:GROWL_NOTIFICATIONS_DEFAULT];
+		if (![tmp isKindOfClass:[NSArray class]])
+			return NO;
+		tmp = [potentialDictionary objectForKey:GROWL_NOTIFICATIONS_HUMAN_READABLE_NAMES];
+		if (tmp != nil && ![tmp isKindOfClass:[NSDictionary class]])
+			return NO;
+		tmp = [potentialDictionary objectForKey:GROWL_NOTIFICATIONS_DESCRIPTIONS];
+		if (tmp != nil && ![tmp isKindOfClass:[NSDictionary class]])
+			return NO;
+		
+		NSData* updateData = [NSPropertyListSerialization dataFromPropertyList:[NSArray arrayWithObjects:appName, potentialDictionary, nil]
+																		format:NSPropertyListBinaryFormat_v1_0 errorDescription:NULL];
+		if (updateData == nil)
+			return NO;
+		
 		[cachedRegistrationDictionary release];
 		cachedRegistrationDictionary = [potentialDictionary retain];
+		[duplex sendMessage:GriPMessage_UpdateTicket data:updateData];
 		return YES;
 	}
 	return NO;
 }
-
 @end
 
 

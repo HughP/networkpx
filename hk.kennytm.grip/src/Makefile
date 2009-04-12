@@ -17,6 +17,7 @@ Options=-arch armv6 \
 	-L/usr/local/lib \
 	-Wall \
 	-L../deb/usr/lib \
+	-L/usr/lib/ \
 	-mcpu=arm1176jzf-s \
 	-O2
 
@@ -24,9 +25,9 @@ libGriP_Sources=Duplex/Client.o GPMessageWindow.o GPPreferences.o GPGetSmallAppI
 libGriP_Target=../deb/usr/lib/libGriP.dylib
 libGriP_Options=-lobjc -dynamiclib -install_name /usr/lib/libGriP.dylib -framework Foundation -framework CoreFoundation -framework UIKit -framework CoreGraphics
 
-SBHooker_GriP_Sources=SBHooker-GriP.o Duplex/Server.o
-SBHooker_GriP_Target=$(MobileSubstratePath)/SBHooker-GriP.dylib
-SBHooker_GriP_Options=-lobjc -lGriP -dynamiclib -framework Foundation -framework CoreFoundation -init _initialize
+XXHooker_GriP_Sources=XXHooker-GriP.o Duplex/Server.o ../../src/PrefsLinkHooker.o
+XXHooker_GriP_Target=$(MobileSubstratePath)/XXHooker-GriP.dylib
+XXHooker_GriP_Options=-lobjc -lGriP -lsubstrate -dynamiclib -framework Foundation -framework CoreFoundation -framework Preferences -init _initialize
 
 DefaultTheme_Sources=GPDefaultTheme.o
 DefaultTheme_Target=$(ThemesPath)/Default.griptheme/Default
@@ -39,7 +40,7 @@ GriPTest_Options=-framework Foundation -framework CoreFoundation -framework UIKi
 # NotificationTestSources=test-notif.o NSDistributedNotificationCenter.o
 # NotificationTestTarget=test-notif
 
-all: $(libGriP_Target) $(DefaultTheme_Target) $(SBHooker_GriP_Target) $(GriPTest_Target)
+all: $(libGriP_Target) $(DefaultTheme_Target) $(XXHooker_GriP_Target) $(GriPTest_Target)
 
 %.o:	%.m
 	$(Compiler) -c $(Options) -o $@ $^
@@ -51,8 +52,8 @@ $(libGriP_Target):	$(libGriP_Sources)
 	$(Compiler) $(Options) $(libGriP_Options) -o $@ $^
 	$(CodeSign) $@
 
-$(SBHooker_GriP_Target):	$(SBHooker_GriP_Sources)
-	$(Compiler) $(Options) $(SBHooker_GriP_Options) -o $@ $^
+$(XXHooker_GriP_Target):	$(XXHooker_GriP_Sources)
+	$(Compiler) $(Options) $(XXHooker_GriP_Options) -o $@ $^
 	$(CodeSign) $@
 
 $(DefaultTheme_Target):	$(DefaultTheme_Sources)

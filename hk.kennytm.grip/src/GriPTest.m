@@ -53,7 +53,14 @@ main
 		if (argc >= 4) url = [NSURL URLWithString:[NSString stringWithUTF8String:argv[3]]];
 		if (argc >= 5) icon = [NSString stringWithUTF8String:argv[4]];
 		
+		NSDictionary* regDict = [NSDictionary dictionaryWithObjectsAndKeys:
+								 [NSArray arrayWithObject:@"whatever"], GROWL_NOTIFICATIONS_ALL,
+								 [NSArray arrayWithObject:@"whatever"], GROWL_NOTIFICATIONS_DEFAULT,
+								 @"hehehaha", GROWL_APP_NAME,
+								 nil];
+		
 		if ([GrowlApplicationBridge isGrowlRunning]) {
+			[GrowlApplicationBridge registerWithDictionary:regDict];
 			[GrowlApplicationBridge setGrowlDelegate:url];
 			[GrowlApplicationBridge notifyWithTitle:title description:detail notificationName:@"whatever" iconData:icon priority:0 isSticky:NO clickContext:@""];
 		} else

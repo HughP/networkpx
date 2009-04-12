@@ -35,13 +35,18 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 static GPApplicationBridge* sharedBridge = nil;
 
+@interface GrowlApplicationBridge ()
++(GPApplicationBridge*)sharedInstance;
+@end
+
 static void GPTryTerminate () {
 	[sharedBridge release];
 	sharedBridge = nil;
 }
 
-static GPApplicationBridge* GPGetSharedBridge () {
-	@synchronized([GrowlApplicationBridge class]) {
+@implementation GrowlApplicationBridge
++(GPApplicationBridge*)sharedInstance {
+	@synchronized(self) {
 		if (sharedBridge == nil) {
 			atexit(&GPTryTerminate);
 			sharedBridge = [[GPApplicationBridge alloc] init];
@@ -50,19 +55,18 @@ static GPApplicationBridge* GPGetSharedBridge () {
 	return sharedBridge;
 }
 
-@implementation GrowlApplicationBridge
-+(BOOL)isGrowlInstalled { return [GPGetSharedBridge() isGrowlInstalled]; }
-+(BOOL)isGrowlRunning { return [GPGetSharedBridge() isGrowlRunning]; }
-+(void)setGrowlDelegate:(NSObject<GrowlApplicationBridgeDelegate>*)inDelegate { return [GPGetSharedBridge() setGrowlDelegate:inDelegate]; }
-+(NSObject<GrowlApplicationBridgeDelegate>*)growlDelegate { return [GPGetSharedBridge() growlDelegate]; }
++(BOOL)isGrowlInstalled { return [[self sharedInstance] isGrowlInstalled]; }
++(BOOL)isGrowlRunning { return [[self sharedInstance] isGrowlRunning]; }
++(void)setGrowlDelegate:(NSObject<GrowlApplicationBridgeDelegate>*)inDelegate { return [[self sharedInstance] setGrowlDelegate:inDelegate]; }
++(NSObject<GrowlApplicationBridgeDelegate>*)growlDelegate { return [[self sharedInstance] growlDelegate]; }
 +(void)notifyWithTitle:(NSString*)title description:(NSString*)description notificationName:(NSString*)notifName iconData:(NSObject*)iconData priority:(signed)priority isSticky:(BOOL)isSticky clickContext:(NSObject*)clickContext {
-	[GPGetSharedBridge() notifyWithTitle:title description:description notificationName:notifName iconData:iconData priority:priority isSticky:isSticky clickContext:clickContext];
+	[[self sharedInstance] notifyWithTitle:title description:description notificationName:notifName iconData:iconData priority:priority isSticky:isSticky clickContext:clickContext];
 }
 +(void)notifyWithTitle:(NSString*)title description:(NSString*)description notificationName:(NSString*)notifName iconData:(NSObject*)iconData priority:(signed)priority isSticky:(BOOL)isSticky clickContext:(NSObject*)clickContext identifier:(NSString*)identifier {
-	[GPGetSharedBridge() notifyWithTitle:title description:description notificationName:notifName iconData:iconData priority:priority isSticky:isSticky clickContext:clickContext identifier:identifier];
+	[[self sharedInstance] notifyWithTitle:title description:description notificationName:notifName iconData:iconData priority:priority isSticky:isSticky clickContext:clickContext identifier:identifier];
 }
 
-+(void)notifyWithDictionary:(NSDictionary*)userInfo { [GPGetSharedBridge() notifyWithDictionary:userInfo]; }
-+(BOOL)registerWithDictionary:(NSDictionary*)potentialDictionary { return [GPGetSharedBridge() registerWithDictionary:potentialDictionary]; }
++(void)notifyWithDictionary:(NSDictionary*)userInfo { [[self sharedInstance] notifyWithDictionary:userInfo]; }
++(BOOL)registerWithDictionary:(NSDictionary*)potentialDictionary { return [[self sharedInstance] registerWithDictionary:potentialDictionary]; }
 
 @end

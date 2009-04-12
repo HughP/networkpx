@@ -30,7 +30,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  
 */
 
-@class NSDictionary;
+@class NSDictionary, NSString, NSMutableDictionary;
 
 #ifdef __cplusplus
 extern "C" {
@@ -38,6 +38,9 @@ extern "C" {
 
 NSDictionary* GPPreferences();
 void GPFlushPreferences();
+	
+void GPUpdateRegistrationDictionaryForAppName(NSString* appName, NSDictionary* registrationDictionary);
+void GPModifyMessageForUserPreference(NSMutableDictionary* message);
 
 #ifdef __cplusplus
 }
