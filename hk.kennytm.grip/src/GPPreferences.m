@@ -92,6 +92,7 @@ void GPUpdateRegistrationDictionaryForAppName(NSString* appName, NSDictionary* r
 			if (desc != nil)
 				[messageDict setObject:desc forKey:@"description"];
 			
+			
 			[currentNotifs setObject:messageDict forKey:name];
 			[messageDict release];
 		}
@@ -131,6 +132,6 @@ void GPModifyMessageForUserPreference(NSMutableDictionary* message) {
 		[message removeObjectForKey:GRIP_CONTEXT];
 	
 	NSInteger newPriority = [[msgDict objectForKey:@"priority"] integerValue];
-	if (newPriority >= -2 && newPriority <= 2)
-		[message setObject:[NSNumber numberWithInteger:newPriority] forKey:GRIP_PRIORITY];
+	if (newPriority > 0 && newPriority <= 5)
+		[message setObject:[NSNumber numberWithInteger:newPriority-3] forKey:GRIP_PRIORITY];
 }

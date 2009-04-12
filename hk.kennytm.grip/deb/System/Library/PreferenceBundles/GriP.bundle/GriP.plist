@@ -1,0 +1,53 @@
+{
+title = GriP;
+items = (
+	{ cell = PSGroupCell; },
+	{ cell = PSButtonCell;
+		label = Preview;
+		action = preview;
+	},
+	{ cell = PSGroupCell; },
+	{ cell = PSLinkListCell;
+		detail = PSListItemsController;
+		label = Location;
+		id = Location;
+		validTitles = (
+			"\UE237 Top left",
+			"\UE236 Top right",
+			"\UE239 Bottom left",
+			"\UE238 Bottom right"
+		);
+		validValues = (0,1,2,3);
+		get = "get:";
+		set = "set:with:";
+	},
+	{ cell = PSLinkListCell;
+		detail = PSListItemsController;
+		label = "Stay on screen";
+		id = Sticky;
+		validTitles = (
+			"App decides",
+			Always,
+			Never
+		);
+		validValues = (0,1,2);
+		get = "get:";
+		set = "set:with:";
+	},
+	{ cell = PSSliderCell;
+		get = "get:";
+		set = "set:with:";
+		id = HideTimer;
+		min = 0;
+		max = 10;
+		showValue = YES;
+		leftImage = Duration.png;
+	},
+	{ cell = PSLinkCell;
+		label = "Background colors";
+		detail = BackgroundColorsController;
+	},
+	{ cell = PSGroupCell; label = "Per-App Settings"; }
+	
+);
+}

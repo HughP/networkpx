@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>context</key>
+	<integer>0</integer>
+	<key>enabled</key>
+	<true/>
+	<key>messages</key>
+	<dict>
+		<key>Message ignored</key>
+		<dict>
+			<key>description</key>
+			<string>Ignored or closed the preview message.</string>
+			<key>enabled</key>
+			<true/>
+		</dict>
+		<key>Message touched</key>
+		<dict>
+			<key>description</key>
+			<string>Touched the preview message.</string>
+			<key>enabled</key>
+			<true/>
+		</dict>
+		<key>Preview</key>
+		<dict>
+			<key>description</key>
+			<string>Preview a GriP message.</string>
+			<key>enabled</key>
+			<true/>
+		</dict>
+	</dict>
+	<key>sticky</key>
+	<integer>0</integer>
+</dict>
+</plist>
