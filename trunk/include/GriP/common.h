@@ -39,6 +39,7 @@ enum {
 	GriPMessage_IgnoredNotification,
 	GriPMessage_ShowMessage,
 	GriPMessage_FlushPreferences,
+	GriPMessage_UpdateTicket,
 	GriPMessage__End = 1010
 };
 
@@ -51,5 +52,6 @@ enum {
 #define GRIP_STICKY   @"s"
 #define GRIP_CONTEXT  @"c"
 #define GRIP_ID       @"="
+#define GRIP_APPNAME  @"a"
 
 #endif
