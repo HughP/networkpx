@@ -3,6 +3,7 @@ iPhoneSDKPath=$(iPhoneDevPath)/SDKs/iPhoneOS3.0.sdk
 MobileSubstratePath=../deb/Library/MobileSubstrate/DynamicLibraries
 ThemesPath=../deb/Library/GriP/Themes
 SharedSrcPath=../../src
+PrefsBundlePath=../deb/System/Library/PreferenceBundles
 
 Compiler=$(iPhoneDevPath)/usr/bin/gcc-4.2
 CodeSign=ldid -S
@@ -37,10 +38,12 @@ GriPTest_Sources=GriPTest.o GrowlApplicationBridge.o Duplex/Client.o GPApplicati
 GriPTest_Target=GriPTest
 GriPTest_Options=-framework Foundation -framework CoreFoundation -framework UIKit -framework CoreGraphics 
 
-# NotificationTestSources=test-notif.o NSDistributedNotificationCenter.o
-# NotificationTestTarget=test-notif
+Preferences_Sources=Preferences.o Duplex/Client.o
+Preferences_Target=$(PrefsBundlePath)/GriP.bundle/GriP
+Preferences_Options=-lGriP -framework Preferences -framework Foundation -framework UIKit -bundle
 
-all: $(libGriP_Target) $(DefaultTheme_Target) $(XXHooker_GriP_Target) $(GriPTest_Target)
+
+all: $(libGriP_Target) $(DefaultTheme_Target) $(XXHooker_GriP_Target) $(GriPTest_Target) $(Preferences_Target)
 
 %.o:	%.m
 	$(Compiler) -c $(Options) -o $@ $^
@@ -64,9 +67,9 @@ $(GriPTest_Target):	$(GriPTest_Sources)
 	$(Compiler) $(Options) $(GriPTest_Options) -o $@ $^
 	$(CodeSign) $@
 
-# $(NotificationTestTarget):	$(NotificationTestSources)
-#	$(Compiler) $(Options) -framework Foundation -framework CoreFoundation -o $@ $^
-#	$(CodeSign) $@
+$(Preferences_Target):	$(Preferences_Sources)
+	$(Compiler) $(Options) $(Preferences_Options) -o $@ $^
+	$(CodeSign) $@
 
 clean:
 	rm -f *.o

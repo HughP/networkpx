@@ -155,7 +155,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	else if ([iconData isKindOfClass:[NSData class]] || [iconData isKindOfClass:[NSString class]])
 		[filteredDictionary setObject:iconData forKey:GRIP_ICON];
 	if (priority < -2) priority = -2;
-	if (priority > 2) priority = 2;
+	else if (priority > 2) priority = 2;
 	[filteredDictionary setObject:[NSNumber numberWithInteger:priority] forKey:GRIP_PRIORITY];
 	[filteredDictionary setObject:[NSNumber numberWithBool:isSticky] forKey:GRIP_STICKY];
 	if (clickContext != nil) {
