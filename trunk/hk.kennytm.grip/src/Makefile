@@ -44,8 +44,8 @@ Preferences_Target=$(PrefsBundlePath)/GriP.bundle/GriP
 Preferences_Options=-lGriP -framework Preferences -framework Foundation -framework UIKit -bundle
 
 MemWatcher_Sources=Extensions/MemWatcher.o
-MemWatcher_Target=$(GriPExtPath)/MemWatcher.gripext/MemWatcher
-MemWatcher_Options=-lGriP -framework Foundation -bundle
+MemWatcher_Target=$(MobileSubstratePath)/MemoryWatcher.dylib
+MemWatcher_Options=-lGriP -framework Foundation -dynamiclib -init _first_initializer
 
 YouveGotMail_Sources=Extensions/YouveGotMail.o
 YouveGotMail_Target=$(MobileSubstratePath)/YouveGotMail.dylib

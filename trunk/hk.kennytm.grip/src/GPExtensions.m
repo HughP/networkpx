@@ -1,6 +1,6 @@
 /*
 
-GPExtensions.m ... SpringBoard Extensions Loader/Unloader for GriP.
+GPExtensions.m ... Useful functions for Mobile Substrate Extensions on SpringBoard using GriP.
  
 Copyright (c) 2009, KennyTM~
 All rights reserved.
@@ -30,68 +30,23 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  
 */
 
-#include <pthread.h>
-#import <Foundation/Foundation.h>
-#import <GriP/GPPreferences.h>
-#import <GriP/GPExtensions.h>
+#include <CoreFoundation/CoreFoundation.h>
 
-static pthread_mutex_t deLock = PTHREAD_MUTEX_INITIALIZER, reLock = PTHREAD_MUTEX_INITIALIZER;
-static NSSet* disabledExtensions = nil;
-static NSMutableDictionary* registeredExtensions = nil;
-
-static NSSet* GPTryLoadListOfDisabledExtensions() {
-	pthread_mutex_lock(&deLock);
-	if (disabledExtensions == nil) {
-		disabledExtensions = [[NSSet alloc] initWithArray:[GPPreferences() objectForKey:@"DisabledExtensions"]];
-		atexit(&GPReleaseListOfDisabledExtensions);
-	}
-	pthread_mutex_unlock(&deLock);
-	return disabledExtensions;
+static void GPGriPIsReadyCallback(CFNotificationCenterRef center, void(*initializer)(), CFStringRef name, const void* object, CFDictionaryRef userInfo) {
+	CFNotificationCenterRemoveEveryObserver(center, initializer);
+	initializer();
 }
 
-void GPReleaseListOfDisabledExtensions() {
-	pthread_mutex_lock(&deLock);
-	[disabledExtensions release];
-	disabledExtensions = nil;
-	pthread_mutex_unlock(&deLock);
-}
-
-void GPUnloadAllExtensions () {
-	pthread_mutex_lock(&reLock);
-	[registeredExtensions release];
-	registeredExtensions = nil;
-	pthread_mutex_unlock(&reLock);
-}
-
-void GPUnloadExtension (NSString* subpath) {
-//	NSLog(@"GriP: Unloading SpringBoard Extension \"%@\".", subpath);
-	pthread_mutex_lock(&reLock);
-	[registeredExtensions removeObjectForKey:subpath];
-	pthread_mutex_unlock(&reLock);
-}
-
-void GPLoadExtension (NSString* subpath) {
-	if ([GPTryLoadListOfDisabledExtensions() containsObject:subpath])
-		return;
+extern void GPStartWhenGriPIsReady(void(*initializer)()) {
+	CFMessagePortRef serverPort = CFMessagePortCreateRemote(NULL, CFSTR("hk.kennytm.GriP.server"));
 	
-	id extObj = [[[[NSBundle bundleWithPath:[@"/Library/GriP/Extensions/" stringByAppendingPathComponent:subpath]] principalClass] alloc] init];
-//	NSLog(@"GriP: Loading SpringBoard Extension \"%@\", which gives me a \"%@\" of class %@.", subpath, extObj, prinCls);
-	
-	if (extObj != nil) {
-		pthread_mutex_lock(&reLock);
-		if (registeredExtensions == nil) {
-			registeredExtensions = [[NSMutableDictionary alloc] initWithObjects:&extObj forKeys:&subpath count:1];
-		} else
-			[registeredExtensions setObject:extObj forKey:subpath];
-		pthread_mutex_unlock(&reLock);
-		[extObj release];
-	}
-}
-
-void GPLoadAllExtensions () {
-	NSFileManager* man = [NSFileManager defaultManager];
-	for (NSString* subpath in [man contentsOfDirectoryAtPath:@"/Library/GriP/Extensions/" error:NULL]) {
-		if ([subpath hasSuffix:@".gripext"])
-			GPLoadExtension(subpath);
+	if (serverPort != NULL) {
+		// GriP is already running. call the initializer directly.
+		initializer();
+		CFRelease(serverPort);
+		
+	} else {
+		// GriP is not running. register for the notification and set the initializer as callback.
+		CFNotificationCenterAddObserver(CFNotificationCenterGetLocalCenter(), initializer, &GPGriPIsReadyCallback, CFSTR("hk.kennytm.GriP.ready"), NULL, CFNotificationSuspensionBehaviorCoalesce);
 	}
 }

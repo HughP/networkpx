@@ -63,11 +63,6 @@ items = (
 		label = "Background colors";
 		detail = BackgroundColorsController;
 	},
-	{ cell = PSGroupCell; },
-	{ cell = PSLinkCell;
-		label = "Extensions";
-		detail = ExtensionsController;
-	},
 	{ cell = PSGroupCell; label = "Per-App Settings"; }
 );
 }

@@ -31,6 +31,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #import <GriP/GriP.h>
+#import <GriP/GPExtensions.h>
 #include <sys/sysctl.h>
 #include <libkern/OSMemoryNotification.h>
 #include <CoreFoundation/CoreFoundation.h>
@@ -63,10 +64,12 @@ void ReceivedMemoryWarningCallback (CFNotificationCenterRef center, MemoryWatche
 												  [NSArray arrayWithObjects:(names+1) count:2], GROWL_NOTIFICATIONS_DEFAULT,
 												  nil]];
 		if (memWatcherBridge.enabled) {
-			NSBundle* thisBundle = [NSBundle bundleForClass:[self class]];
-			thisIcon = [[NSData alloc] initWithContentsOfFile:[thisBundle pathForResource:@"icon" ofType:@"png"]];
+			NSDictionary* thisDictionary = [NSDictionary dictionaryWithContentsOfFile:@"/Library/MobileSubstrate/DynamicLibraries/MemoryWatcher.plist"];
+			thisIcon = [[thisDictionary objectForKey:@"Icon"] retain];
+			NSDictionary* localizationDictionary = [thisDictionary objectForKey:@"Localizations"];
+			NSDictionary* localization = [localizationDictionary objectForKey:[[NSBundle preferredLocalizationsFromArray:[localizationDictionary allKeys]] objectAtIndex:0]];
 			for (int i = 0; i < 3; ++ i)
-				formats[i] = [[thisBundle localizedStringForKey:englishFormats[i] value:nil table:nil] retain];
+				formats[i] = [([localization objectForKey:englishFormats[i]] ?: englishFormats[i]) retain];
 			
 			CFStringRef notifName = CFStringCreateWithCString(NULL, kOSMemoryNotificationName, kCFStringEncodingUTF8);
 			CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), self, (CFNotificationCallback)&ReceivedMemoryWarningCallback, notifName, NULL, 0);
@@ -109,3 +112,23 @@ void ReceivedMemoryWarningCallback (CFNotificationCenterRef center, MemoryWatche
 						 clickContext:nil];
 }
 @end
+
+
+
+static MemoryWatcher* memoryWatcher = nil;
+
+static void terminator () {
+	[memoryWatcher release];
+	memoryWatcher = nil;
+}
+
+static void second_initializer () {
+	NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
+	atexit(&terminator);
+	memoryWatcher = [[MemoryWatcher alloc] init];
+	[pool drain];
+}
+
+void first_initializer () {
+	GPStartWhenGriPIsReady(&second_initializer);
+}

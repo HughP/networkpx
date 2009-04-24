@@ -1,5 +1,7 @@
 #!/bin/bash
 
+rm -f ../../*.deb;
+
 for PackageName in `ls -d hk.*/`; do
 	if [[ -e "${PackageName%%/}/src/Makefile" ]]; then
 		cd "${PackageName%%/}/src/";

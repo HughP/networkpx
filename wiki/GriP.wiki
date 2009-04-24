@@ -168,17 +168,26 @@ All the details can be thrown into the description. And because the description 
 
 Another thing is that, *do not use GriP for important messages that require user feedback*, because GriP messages can be easily ignored. A `UIAlertView` or `UIActionSheet` is more suitable in this case.
 
-= GriP Extensions for !SpringBoard =
+== Extensions of !SpringBoard using GriP ==
 
 The GriP server is actually a Mobile Substrate extension of !SpringBoard, therefore, if you are writing another Mobile Substrate extension that uses GriP, it must load after it. GriP has made this easy by putting itself very early in the queue (by naming itself `%GriP.dylib`).
 
-However, if you want to be sure your extension loads after GriP is _fully_ loaded, you should write a *GriP extension for !SpringBoard*.
+However, if you want to be sure your extension loads after GriP is _fully_ loaded, you should write a 2-tier initilizer like this:
 
-GriP extensions are a bundles located in `/Library/GriP/Extensions/`. They must have a path extension of `.gripext`. Inside the bundle there should be an executable file with one principal class which can be instantiated. This is different from a Mobile Substrate extension.
+{{{
+#include <GriP/GPExtensions.h>
 
-When loaded, a GriP extension will have access to !SpringBoard.app. *Make sure your extension is free of crash and memory leaks, as crashing !SpringBoard will bring down the whole system and enter Safe Mode*.
+static void real_initializer () {
+  // do your actual initialization here
+}
+void proxy_initializer () {
+  GPStartWhenGriPIsReady(&real_initializer);
+}
+}}}
 
-You should *not* write a GriP extension if your extension is not targeting !SpringBoard.
+and set `_proxy_initializer` as the initializer of the dylib. The `GPStartWhenGriPIsReady` function ensures its parameter will be call only after GriP is ready.
+
+You should *not* do this if your extension is not targeting !SpringBoard. If the extension also hooks on multiple applications, always check if the host is !SpringBoard before calling the function.
 
 = Theming =
 
