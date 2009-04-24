@@ -31,8 +31,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include <stdio.h>
+#include <unistd.h>
 #import <Foundation/Foundation.h>
-#import <GriP/GrowlApplicationBridge.h>
+#import <GriP/GriP.h>
 
 int
 #if TARGET_IPHONE_SIMULATOR
@@ -41,31 +42,80 @@ xmain
 main
 #endif
 (int argc, char* argv[]) {
-	if (argc < 2) {
-		printf("Usage: GriPTest <title> [<detail>] [<url>] [<icon>]\n");
+	if (argc == 1) {
+		printf("Usage: GriP [<options>]\n"
+			   "	where options are:\n"
+			   "		-t	<title>        Title of message.\n"
+			   "		-d  <description>  Description of message.\n"
+			   "		-i  <icon>         File name or bundle identifier to use for the icon.\n"
+			   "		-u  <url>          URL to launch when touched.\n"
+			   "		-p  <priority>     Priority of message. Must be \"-2\" to \"2\"\n"
+			   "		-s	               Set message as sticky.\n");
 	} else {
+		// get options.
 		NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
-		NSString* title = [NSString stringWithUTF8String:argv[1]];
-		NSString* detail = nil;
-		NSString* icon = nil;
+		
+		BOOL sticky = NO;
+		NSString* title = nil;
+		NSString* desc = nil;
+		NSObject* icon = nil;
 		NSURL* url = nil;
-		if (argc >= 3) detail = [NSString stringWithUTF8String:argv[2]];
-		if (argc >= 4) url = [NSURL URLWithString:[NSString stringWithUTF8String:argv[3]]];
-		if (argc >= 5) icon = [NSString stringWithUTF8String:argv[4]];
+		int priority = 0;
 		
-		NSDictionary* regDict = [NSDictionary dictionaryWithObjectsAndKeys:
-								 [NSArray arrayWithObject:@"whatever"], GROWL_NOTIFICATIONS_ALL,
-								 [NSArray arrayWithObject:@"whatever"], GROWL_NOTIFICATIONS_DEFAULT,
-								 @"hehehaha", GROWL_APP_NAME,
-								 nil];
+		int c;
+		while ((c = getopt(argc, argv, "t:d:i:u:p:s")) != -1) {
+			switch (c) {
+				case 't':
+					title = [NSString stringWithUTF8String:optarg];
+					break;
+					
+				case 'd':
+					desc = [NSString stringWithUTF8String:optarg];
+					break;
+					
+				case 'i':
+					icon = [NSString stringWithUTF8String:optarg];
+					icon = [NSData dataWithContentsOfFile:(NSString*)icon] ?: icon;
+					break;
+					
+				case 'u':
+					url = [NSURL URLWithString:[NSString stringWithUTF8String:optarg]];
+					break;
+					
+				case 'p':
+					sscanf(optarg, "%d", &priority);
+					if (priority < -2) priority = -2;
+					if (priority > 2) priority = 2;
+					break;
+					
+				case 's':
+					sticky = YES;
+					break;
+			}
+		}
 		
-		if ([GrowlApplicationBridge isGrowlRunning]) {
-			[GrowlApplicationBridge registerWithDictionary:regDict];
-			[GrowlApplicationBridge setGrowlDelegate:url];
-			[GrowlApplicationBridge notifyWithTitle:title description:detail notificationName:@"whatever" iconData:icon priority:0 isSticky:NO clickContext:@""];
-		} else
-			printf("GriP is not running!\n");
+		GPApplicationBridge* bridge = [[GPApplicationBridge alloc] init];
 		
+		if (bridge == nil) {
+			printf("Error: GPApplicationBridge is not initialized. Please make sure GriP is running.\n");
+			goto cleanup;
+		}
+		
+		[bridge registerWithDictionary:[NSDictionary dictionaryWithObjectsAndKeys:
+										[NSArray arrayWithObject:@"Command line message"], GROWL_NOTIFICATIONS_ALL,
+										[NSArray array], GROWL_NOTIFICATIONS_DEFAULT,
+										@"GriP Command line utility", GROWL_APP_NAME,
+										nil]];
+		if (![bridge enabledForName:@"Command line message"]) {
+			printf("Error: I am being disabled. Nothing can be shown.\n"
+				   "Please go to \"Settings\" -> \"GriP\" -> \"GriP Command line utility\" -> \"GriP Command line utility\" and turn ON \"Enabled\".\n");
+			goto cleanup;
+		}
+		
+		[bridge notifyWithTitle:title description:desc notificationName:@"Command line message" iconData:icon priority:priority isSticky:sticky clickContext:url];
+		
+cleanup:
+		[bridge release];
 		[pool drain];
 	}
 	
