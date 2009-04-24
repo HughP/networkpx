@@ -136,14 +136,14 @@ NSArray* supportedMessages = [NSArray arrayWithObject:@"Test Message"];
                                 supportedMessages, GROWL_NOTIFICATIONS_DEFAULT,
                                 nil]];
 
-// Display a new message with title "Hello world!" and an icon of your application. 
+// Display a new message with title "Hello world!" and an icon of your application, which will launch Google when tapped.
 [bridge notifyWithTitle:@"Hello world!"
             description:@"Fill in some detail here."
        notificationName:@"Test Message"
                iconData:@"com.yourcompany.testApp"
                priority:0
                isSticky:NO
-           clickContext:nil];
+           clickContext:[NSURL URLWithString:@"http://www.google.com/"]];
 
 [bridge release];
 }}}
