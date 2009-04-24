@@ -1,0 +1,165 @@
+#summary Users' and Developers' guide to GriP – Growl for iPhone.
+#labels Phase-Implementation, Phase-Support
+
+<wiki:toc/>
+
+= Introducation =
+
+ http://xa3.xanga.com/6adf263363732240945373/w190716389.png
+
+GriP (Growl for iPhone) is an unobstructive notification extension written for iPhone and iPod Touch. 
+
+== GriP vs. Traditional Notification Methods ==
+
+There are currently 2 methods to announce a piece of information to you on the iPhone – either to show an alert box (e.g. the 3.0 Push Notification), or just play a sound (e.g. receiving new emails) or vibration. However, alert box is a very rude way to notify something trivial, as an alert box will steal your focus and disrupt your workflow. On the other hand, playing a sound is too hideous, as there are many places you don't want to turn on sound, and iPod Touches don't have a vibration unit.
+
+GriP tries to strike a balance between being unobstructive while still being able to give out clear information. With GriP, messages are (by default) shown as small floating windows in a corner, which will automatically disappear if you ignore it. In this way, you can still continue your process without missing anything.
+
+However, you should not completely replace every alert box with GriP messages. Because GriP messages _favor_ to be ignored by users, they should not be used for critical decision making (e.g. saving a file while quitting).
+
+= Installing GriP =
+
+You should first Jailbreak your device. GriP cannot function without Jailbreaking. Please refer to http://thebigboss.org/guides/quickpwn-guide/ for how to Jailbreak and http://thebigboss.org/why-jailbreak-iphone/ for myths/concerns of Jailbreaking.
+
+You can install the latest stable version of GriP from the !BigBoss repository (http://www.thebigboss.org/). Legitimate `dpkg` implementations like Cydia, `apt-get` and `aptitude` are recommended.
+
+The beta versions can be found from this site's download page. You will obtain a `.deb` file, which can be installed on your device with the following steps:
+
+ # Create an SSH session to your device and login as `root`. You can follow this page for instruction: http://cydia.saurik.com/openssh.html
+ # Upload the `.deb` file to `/var/root/`.
+ # Start a command prompt. In there, type `cd ~ ; dpkg -i «filename.deb»`, where you have to replace `«filename.deb»` with the file name of the uploaded file (without the guillemets).
+   * If it prompts Mobile Substrate is not installed, make sure you have installed it. You can install it with the command `apt-get install mobilesubstrate`.
+ # Respring your device. If you don't what is respring, simply type `killall SpringBoard`.
+
+= Using GriP =
+
+GriP messages are shown, by default, as a small rounded box in a corner like this:
+
+ http://x1f.xanga.com/6fbf2b3b11632240945666/w190716633.png
+
+From left to right, the components of a GriP messages are:
+ * Close button “×”: Tap on this to immediately ignore the message.
+ * Application icon: Figuratively tells you which app created this message, or what is going on.
+ * The message.
+ * Disclosure button “▼”: Tap on this to display further details.
+
+Some messages allow user feedback by tapping on the icon/message. When you hold on it, the border of the GriP message thickens.
+
+ http://x8a.xanga.com/d1af273511632240945665/w190716632.png
+
+If you don't really mean to tap on the message, just drag your finger outside until the border returns to normal. You can also use this technique to extend the lifetime of this GriP message before it disappears. 
+
+After you have tapped the disclosure button “▼”, the message box will expand the some further detail will be shown:
+
+ http://x57.xanga.com/659f513358435240945667/w190716634.png
+
+You can scroll the lower box for these further details.
+
+The background color can be different depending on the emergency of the GriP message. 
+
+= Configuring GriP =
+
+You can change GriP settings in Settings → GriP (the option is at the bottom). 
+
+|| *Preview* || Clicking this button will display one GriP message based on your current settings. Another GriP message will also show after you have ignored or tapped on this message. ||
+|| *Location* || On which corner should the GriP message appear. ||
+|| *Sticky* || While most GriP message will automatically dismiss, some will choose to “stick” on screen until you explicitly close it, or tap on it. These are known as _sticky_ messages. You can override the application decision in this setting. ||
+|| *Duration* || How long should a GriP message live before it auto-close. The range is between 0 to 10 seconds. ||
+|| *Minimum priority* || The lowest priority a GriP message should have before it can be presented. You can raise the settings to ignore some lower-priority messages you don't want to deal with. ||
+|| *Background colors* || The background colors for each priority level. In each group, there are 3 sliders representing the red, green and blue components of the color in RGB space. ||
+|| *Extensions* || Enable or disable GriP extentions for !SpringBoard. ||
+
+== Per-App Settings ==
+
+More fine-grained settings for each application/extension. If a per-app setting conflicts with the global settings, the per-app setting takes priority.
+
+(In Growl, they are also known as _tickets_.)
+
+|| *Enabled* || Turn OFF to disable this app from showing any GriP messages. (This overrides the per-message settings). ||
+|| *Sticky* || Like the global one, but for apps. ||
+|| *Messages* || List of messages that this app will display. The link provides even more fine-grained per-message settings. Like the higher level, per-message settings trumps per-app settings, _except_ “enabled”. <br /><br />The per-message settings you can override are: “Enabled”, “Sticky” and “Priority”. ||
+|| *Remove Settings* || Click on this button to remove the settings of this app from GriP. This is equivalent to restoring to the factory settings for that app. ||
+
+= Programming for GriP =
+
+== !AppStore (SDK) developers ==
+
+While GriP requires Jailbreaking to function, the application side that talks to GriP (“GriP client”) is perfectly SDK-compatible. Of course, it is up to Apple Inc. to decide whether GriP-supporting source codes are acceptable, but the GriP client uses only documented API so technically it should be allowed.
+
+To add GriP client to your app, simply download http://code.google.com/p/networkpx/downloads/detail?name=GriP-for-SDK-developers.zip from this site, extract the content and drag the folder into your project. The source code included are:
+
+|| `GriP/GPApplicationBridge.[mh]` || An almost Growl-compatible interface (instance-method-based) to display messages. ||
+|| `GriP/GrowlApplicationBridge.[mh]` || A Growl-comptible interface (class-method-based) to display messages. ||
+|| `GriP/Duplex/Client.[mh]` || The low-level code for actual communication with the GriP server. ||
+|| `GriP/common.h` || GriP-specific definitions. ||
+|| `GriP/GrowlDefines.h` || Growl-specific definitions. ||
+|| `GriP/NSString-stringByEscapingXMLEntities.[mh]` || A convenient method added for NSString to escape XML entities (`<`, `>` and `&`). ||
+|| `GriP/GriP.h` || Imports all necessary headers for GriP to function (except `NSString-stringByEscapingXMLEntities.h`. ||
+
+You may have to add a header search path. Suppose you have extracted the zip file to `/path/to/your/project/`, then you should configure your project like this:
+
+  http://x99.xanga.com/7f9f2b3535c32240946853/w190717574.png 
+
+== Open toolchain developers or Developers for Jailbroken Devices ==
+
+The !AppStore method is still applicable to these apps, but since the Apple censorship is nonexistent here, we have one more option.
+
+If GriP is a requirement for your app, you can directly link to `libGriP.dylib`, and use the `GPApplicationBridge` class included in `libGriP`. (If you want to use `GrowlApplicationBridge`, you still have to compile the .m file – it is not included in `libGriP`.) This reduces bloat in your code.
+
+== APIs ==
+
+GriP implements all the _documented_ API of Growl on http://growl.info/documentation/developer/implementing-growl.php?lang=cocoa. 
+
+There are a few changes to GriP compared with the Growl API in the `notifyWithTitle:...` method:
+ * The `description` cannot be attributed string (RTF strings) because the iPhoneOS does not support it. However, you can pass an HTML string and have it shown as rendered HTML. Because of this, if you have any &lt;, &gt; or &amp; in the description that are not intended for HTML use, you must replace them into &amp;lt;, &amp;gt; and &amp;amp;.
+ * Besides being the `NSData` of the whole image, `iconData` accepts a `UIImage` and a bundle identifier (`NSString`) too. When an bundle identifier is given, the icon for that app will be used as `iconData`. 
+ * `clickContext` accepts an `NSURL` alongside with property list objects. When an `NSURL` is given, the message will launch the URL when the user tap on it. This works even without a delegate, and across process termination. (The `growlNotificationWasClicked:` and `growlNotificationTimedOut:` methods will still be invoked if a delegate is present.)
+
+If you are writing a Mobile Substrate extension, we strongly recommend you *not* to use the `GrowlApplicationBridge` class methods, as this may cause the structures of the same object be shared between extensions undesirably. Instead, you should explicitly create an instance of `GPApplicationBridge` and work on it. If you have already used `GrowlApplicationBridge` and want to turn back, you can create a global variable named `GrowlApplicationBridge` initialized as `[[GPApplicationBridge alloc] init]` and call `[GrowlApplicationBridge release]` at termination.
+
+== Example ==
+
+{{{
+#import <GriP/GriP.h>
+
+...
+
+// Initiate a new application bridge.
+GPApplicationBridge* bridge = [[GPApplicationBridge alloc] init];
+
+// register your app.
+// (of course, both auto-registration and register with a delegate can be used instead.)
+NSArray* supportedMessages = [NSArray arrayWithObject:@"Test Message"];
+[bridge registerWithDictionary:[NSDictionary dictionaryWithObjectsAndKeys:
+                                @"Test App",       GROWL_APP_NAME,
+                                supportedMessages, GROWL_NOTIFICATIONS_ALL,
+                                supportedMessages, GROWL_NOTIFICATIONS_DEFAULT,
+                                nil]];
+
+// Display a new message with title "Hello world!" and an icon of your application. 
+[bridge notifyWithTitle:@"Hello world!"
+            description:@"Fill in some detail here."
+       notificationName:@"Test Message"
+               iconData:@"com.yourcompany.testApp"
+               priority:0
+               isSticky:NO
+           clickContext:nil];
+
+[bridge release];
+}}}
+
+= GriP Extensions for !SpringBoard =
+
+The GriP server is actually a Mobile Substrate extension of !SpringBoard, therefore, if you are writing another Mobile Substrate extension that uses GriP, it must load after it. GriP has made this easy by putting itself very early in the queue (by naming itself `%GriP.dylib`).
+
+However, if you want to be sure your extension loads after GriP is _fully_ loaded, you should write a *GriP extension for !SpringBoard*.
+
+GriP extensions are a bundles located in `/Library/GriP/Extensions/`. They must have a path extension of `.gripext`. Inside the bundle there should be an executable file with one principal class which can be instantiated. This is different from a Mobile Substrate extension.
+
+When loaded, a GriP extension will have access to !SpringBoard.app. *Make sure your extension is free of crash and memory leaks, as crashing !SpringBoard will bring down the whole system and enter Safe Mode*.
+
+You should *not* write a GriP extension if your extension is not targeting !SpringBoard.
+
+= Theming =
+
+GriP supports theming, but the detail is not settled down yet.
