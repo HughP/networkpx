@@ -35,9 +35,9 @@ DefaultTheme_Sources=GPDefaultTheme.o
 DefaultTheme_Target=$(ThemesPath)/Default.griptheme/Default
 DefaultTheme_Options=-lobjc -bundle -lGriP -framework Foundation -framework CoreFoundation -framework UIKit -framework CoreGraphics
 
-GriPTest_Sources=GriPTest.o GrowlApplicationBridge.o Duplex/Client.o GPApplicationBridge.o
-GriPTest_Target=GriPTest
-GriPTest_Options=-framework Foundation -framework CoreFoundation -framework UIKit -framework CoreGraphics 
+GriPTest_Sources=GriPTest.o
+GriPTest_Target=../deb/usr/bin/GriP
+GriPTest_Options=-lGriP -framework Foundation
 
 Preferences_Sources=Preferences.o Duplex/Client.o
 Preferences_Target=$(PrefsBundlePath)/GriP.bundle/GriP

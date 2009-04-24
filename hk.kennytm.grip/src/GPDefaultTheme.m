@@ -90,7 +90,8 @@ __attribute__((visibility("hidden")))
 
 #define VIEW_WIDTH 160
 #define LEFT_PADDING 3	// == TOP_PADDING
-#define RIGHT_PADDING 9	// == BOTTOM_PADDING
+#define RIGHT_PADDING 3
+#define BOTTOM_PADDING 6
 
 @implementation GPDefaultThemeView
 -(void)showActiveView { activeView.hidden = NO; [(GPMessageWindow*)self.superview stopTimer]; }
@@ -135,7 +136,7 @@ __attribute__((visibility("hidden")))
 	else if (titleSize.height < 25)
 		titleSize.height = 25;
 	
-	if ((self = [super initWithFrame:CGRectMake(0, 0, VIEW_WIDTH, LEFT_PADDING+RIGHT_PADDING+titleSize.height)])) {		
+	if ((self = [super initWithFrame:CGRectMake(0, 0, VIEW_WIDTH, LEFT_PADDING+BOTTOM_PADDING+titleSize.height)])) {		
 		self.backgroundColor = [UIColor clearColor];
 		
 		// the icon is referring to an app icon. Dereference it.
@@ -158,7 +159,7 @@ __attribute__((visibility("hidden")))
 		
 		[frameColor setStroke];
 		[bgColor setFill];
-		CGContextSetShadow(c, CGSizeMake(2,-2), 2);
+		CGContextSetShadow(c, CGSizeMake(1,-1), 2);
 		CGContextSetLineWidth(c, 1);
 		CGContextStrokeEllipseInRect(c, CGRectMake(1, 1, 11, 11));
 		CGContextFillEllipseInRect(c, CGRectMake(1, 1, 11, 11));
@@ -176,13 +177,13 @@ __attribute__((visibility("hidden")))
 		
 		// add background view.
 		backgroundView = [[UIImageView alloc] initWithImage:backgroundImage];
-		backgroundView.frame = CGRectMake(0, 0, VIEW_WIDTH, LEFT_PADDING+RIGHT_PADDING + titleSize.height);
+		backgroundView.frame = CGRectMake(0, 0, VIEW_WIDTH, LEFT_PADDING+BOTTOM_PADDING + titleSize.height);
 		[self addSubview:backgroundView];
 		[backgroundView release];
 
 		// add (hidden) active image.
 		activeView = [[UIImageView alloc] initWithImage:activeImage];
-		activeView.frame = CGRectMake(0, 0, VIEW_WIDTH, LEFT_PADDING+RIGHT_PADDING + titleSize.height);
+		activeView.frame = CGRectMake(0, 0, VIEW_WIDTH, LEFT_PADDING+BOTTOM_PADDING + titleSize.height);
 		activeView.hidden = YES;
 		[self addSubview:activeView];
 		[activeView release];
