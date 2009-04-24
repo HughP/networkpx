@@ -1,5 +1,0 @@
-{
-CFBundleIdentifier="hk.kennytm.GriP.extensions.MemoryWatcher";
-CFBundleDisplayName="Memory Watcher";
-NSPrincipalClass=MemoryWatcher;
-}

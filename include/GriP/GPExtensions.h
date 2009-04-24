@@ -1,6 +1,6 @@
 /*
 
-GPPreferences.h ... Obtain preferences for GriP.
+GPExtensions.h ... Useful functions for Mobile Substrate Extensions on SpringBoard using GriP.
  
 Copyright (c) 2009, KennyTM~
 All rights reserved.
@@ -34,13 +34,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 extern "C" {
 #endif
 
-	@class NSString;
-	
-	void GPReleaseListOfDisabledExtensions();
-	void GPUnloadAllExtensions();
-	void GPUnloadExtension(NSString* subpath);
-	void GPLoadExtension(NSString* subpath);
-	void GPLoadAllExtensions();
+	void GPStartWhenGriPIsReady(void(*initializer)());
 	
 #ifdef __cplusplus
 }

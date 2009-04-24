@@ -39,7 +39,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #import <GriP/common.h>
 #import <GriP/GrowlApplicationBridge.h>
 #import <GriP/GPTheme.h>
-#import <GriP/GPExtensions.h>
 #import <PrefHooker/PrefsLinkHooker.h>
 #import <UIKit/UIApplication.h>
 
@@ -54,7 +53,6 @@ static NSObject<GPTheme>* activeTheme = nil;
 static CFDataRef GriPCallback (CFMessagePortRef serverPort, SInt32 type, CFDataRef data, void* info) {
 	switch (type) {
 		case GriPMessage_FlushPreferences:
-			GPReleaseListOfDisabledExtensions();
 			GPFlushPreferences();
 			pthread_mutex_lock(&atLock);
 			[activeTheme release];
@@ -142,16 +140,7 @@ static CFDataRef GriPCallback (CFMessagePortRef serverPort, SInt32 type, CFDataR
 			}
 			return CFDataCreate(NULL, (const UInt8*)&retval, sizeof(BOOL));
 		}
-			
-		case GriPMessage_ReloadExtensions: {
-			NSArray* extensionSubpaths = [NSPropertyListSerialization propertyListFromData:(NSData*)data mutabilityOption:NSPropertyListImmutable format:NULL errorDescription:NULL];
-			for (NSString* subpath in extensionSubpaths) {
-				GPUnloadExtension(subpath);
-				GPLoadExtension(subpath);
-			}
-			break;
-		}
-				
+
 		default:
 			break;
 	}
@@ -161,8 +150,6 @@ static CFDataRef GriPCallback (CFMessagePortRef serverPort, SInt32 type, CFDataR
 
  
 static void terminate () {
-	GPReleaseListOfDisabledExtensions();
-	GPUnloadAllExtensions();
 	GPStopServer();
 	[GPMessageWindow _cleanup];
 	[activeTheme release];
@@ -196,8 +183,11 @@ void initialize () {
 		NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
 		
 		[GPMessageWindow _initialize];
-		GPLoadAllExtensions();
+		
 		[pool drain];
+		
+		// Notify any waiting MS extensions that GriP is ready.
+		CFNotificationCenterPostNotification(CFNotificationCenterGetLocalCenter(), CFSTR("hk.kennytm.GriP.ready"), NULL, NULL, false);
 		
 	} else {
 		PrefsListController_hook();
