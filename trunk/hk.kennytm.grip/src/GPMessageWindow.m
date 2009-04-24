@@ -47,8 +47,8 @@ void UILogViewHierarchyWithDots(UIView* v, NSString* dots) {
 extern void UILogViewHierarchy (UIView* v) { UILogViewHierarchyWithDots(v, @""); }
 
 __attribute__((visibility("hidden")))
-@interface SBUIController : NSObject
-+(SBUIController*)sharedInstance;
+@interface SBStatusBarController : NSObject
++(SBStatusBarController*)sharedStatusBarController;
 -(UIWindow*)statusBarWindow;
 @end
 
@@ -59,7 +59,7 @@ __attribute__((visibility("hidden")))
 
 static NSMutableArray* occupiedGaps = nil;
 static NSMutableSet* unreleasedMessageWindows = nil;
-static Class $SBUIController = Nil;
+static Class $SBStatusBarController = Nil;
 
 static const int _oriented_locations_matrix[4][4] = {
 {2, 0, 3, 1},  // -90 (status bar on the left)
@@ -75,7 +75,7 @@ static const int _orientation_angles[4] = {0, 180, 90, -90};
 +(void)_initialize {
 	occupiedGaps = [[NSMutableArray alloc] init];
 	unreleasedMessageWindows = [[NSMutableSet alloc] init];
-	$SBUIController = objc_getClass("SBUIController");
+	$SBStatusBarController = objc_getClass("SBStatusBarController");
 }
 +(void)_cleanup {
 	[occupiedGaps release];
@@ -122,9 +122,10 @@ static const int _orientation_angles[4] = {0, 180, 90, -90};
 	
 	// obtain the current screen size & subtract the status bar from the screen.
 	CGRect currentScreenFrame = [UIScreen mainScreen].bounds;
-	UIWindow* statusBar = [[$SBUIController sharedInstance] statusBarWindow];
+	UIWindow* statusBar = [[$SBStatusBarController sharedStatusBarController] statusBarWindow];
 	if (statusBar != nil) {
 		CGRect statusFrame = statusBar.frame;
+		NSLog(NSStringFromCGRect(statusFrame));
 		if (statusFrame.size.width == currentScreenFrame.size.width) {
 			if (statusFrame.origin.y == 0)
 				currentScreenFrame.origin.y = statusFrame.size.height;
