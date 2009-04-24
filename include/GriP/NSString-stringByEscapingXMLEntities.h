@@ -1,6 +1,6 @@
 /*
 
-GPMessageWindow.h ... Message Window for typical GriP styles.
+NSString-stringByEscapingXMLEntities.m ... Category to add the stringByEscapingXMLEntities method to NSString.
  
 Copyright (c) 2009, KennyTM~
 All rights reserved.
@@ -30,43 +30,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  
 */
 
-#import <UIKit/UIKit.h>
+#import <Foundation/NSString.h>
 
-typedef struct GPGap {
-	CGFloat y;
-	CGFloat h;
-} GPGap;
-
-
-@interface GPMessageWindow : UIWindow {
-	GPGap currentGap;
-	NSTimer* hideTimer;
-	UIView* view;
-	BOOL sticky;
-	NSString* pid;
-	NSObject* context;
-	BOOL isURL;
-}
-+(GPMessageWindow*)windowWithView:(UIView*)view_ message:(NSDictionary*)message;
--(void)layoutSubviews;	// in additional to resizing the subviews, this method will also adopt the subview's boundary.
-
-@property(retain,readonly) NSString* pid;
-@property(retain,readonly) NSObject* context;
-
--(void)hide:(BOOL)ignored;
-
--(void)stopTimer;
--(void)restartTimer;
--(void)dealloc;
-@end
-
-@interface GPMessageWindow ()
-+(void)_initialize;
-+(void)_cleanup;
-
--(id)initWithView:(UIView*)view_ message:(NSDictionary*)message;
-+(void)_removeGap:(GPGap)gap;
-+(GPGap)_createGapWithHeight:(CGFloat)height;
--(void)_layoutWithAnimation:(BOOL)animate;
--(void)_releaseMyself;
+@interface NSString (stringByEscapingXMLEntities)
+-(NSString*)stringByEscapingXMLEntities;
 @end

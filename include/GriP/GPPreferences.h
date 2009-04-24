@@ -30,17 +30,19 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  
 */
 
-@class NSDictionary, NSString, NSMutableDictionary;
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+#import <Foundation/Foundation.h>
+	
 NSDictionary* GPPreferences();
 void GPFlushPreferences();
 	
 void GPUpdateRegistrationDictionaryForAppName(NSString* appName, NSDictionary* registrationDictionary);
 void GPModifyMessageForUserPreference(NSMutableDictionary* message);
+	
+BOOL GPCheckEnabled(NSString* appName, NSString* msgName);
 
 #ifdef __cplusplus
 }

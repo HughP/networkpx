@@ -40,6 +40,9 @@ enum {
 	GriPMessage_ShowMessage,
 	GriPMessage_FlushPreferences,
 	GriPMessage_UpdateTicket,
+	GriPMessage_LaunchURL,
+	GriPMessage_CheckEnabled,
+	GriPMessage_ReloadExtensions,
 	GriPMessage__End = 1010
 };
 
@@ -53,5 +56,6 @@ enum {
 #define GRIP_CONTEXT  @"c"
 #define GRIP_ID       @"="
 #define GRIP_APPNAME  @"a"
+#define GRIP_ISURL    @"u"
 
 #endif

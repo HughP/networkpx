@@ -174,8 +174,8 @@ static const int _orientation_angles[4] = {0, 180, 90, -90};
 		[UIView commitAnimations];
 }
 
-+(GPMessageWindow*)windowWithView:(UIView*)view_ sticky:(BOOL)sticky_ {
-	GPMessageWindow* window = [[self alloc] initWithView:view_ sticky:sticky_];
++(GPMessageWindow*)windowWithView:(UIView*)view_ message:(NSDictionary*)message {
+	GPMessageWindow* window = [[self alloc] initWithView:view_ message:message];
 	if (window != nil) {
 		[unreleasedMessageWindows addObject:window];
 		[window release];
@@ -183,16 +183,18 @@ static const int _orientation_angles[4] = {0, 180, 90, -90};
 	return window;
 }
 
--(id)initWithView:(UIView*)view_ sticky:(BOOL)sticky_ {
+-(id)initWithView:(UIView*)view_ message:(NSDictionary*)message {
 	if ((self = [super initWithFrame:CGRectZero])) {
 		[self addSubview:view_];
 		view = view_;
 		[self _layoutWithAnimation:NO];
-		sticky = sticky_;
+		sticky = [[message objectForKey:GRIP_STICKY] boolValue];
 		if (!sticky)
 			hideTimer = [[NSTimer scheduledTimerWithTimeInterval:[[GPPreferences() objectForKey:@"HideTimer"] floatValue] target:self selector:@selector(hide) userInfo:nil repeats:NO] retain];
+		pid = [[message objectForKey:GRIP_PID] retain];
+		context = [[message objectForKey:GRIP_CONTEXT] retain];
+		isURL = [[message objectForKey:GRIP_ISURL] boolValue];
 		self.windowLevel = UIWindowLevelStatusBar*2;
-		self.clipsToBounds = NO;
 		[self makeKeyAndVisible];
 	}
 	return self;
@@ -220,7 +222,7 @@ static const int _orientation_angles[4] = {0, 180, 90, -90};
 -(void)hide { [self hide:YES]; }
 
 -(void)hide:(BOOL)ignored {
-	NSData* portAndContext = [NSPropertyListSerialization dataFromPropertyList:[NSArray arrayWithObjects:pid, context, nil] format:NSPropertyListBinaryFormat_v1_0 errorDescription:NULL];
+	NSData* portAndContext = [NSPropertyListSerialization dataFromPropertyList:[NSArray arrayWithObjects:pid, context, [NSNumber numberWithBool:isURL], nil] format:NSPropertyListBinaryFormat_v1_0 errorDescription:NULL];
 	[GPDuplexClient sendMessage:(ignored?GriPMessage_IgnoredNotification:GriPMessage_ClickedNotification) data:portAndContext];
 	
 	[self stopTimer];

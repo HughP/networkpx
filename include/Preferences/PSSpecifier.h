@@ -33,7 +33,9 @@ extern NSString* const PSIDKey;	// @"id"
     id target;	// 4 = 0x4
     SEL getter;	// 8 = 0x8
     SEL setter;	// 12 = 0xc
+	@package
     SEL action;	// 16 = 0x10
+	@protected
     Class detailControllerClass;	// 20 = 0x14
 	@package
     PSSpecifierType cellType;	// 24 = 0x18

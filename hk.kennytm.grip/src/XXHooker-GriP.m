@@ -30,6 +30,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  
 */
 
+#include <pthread.h>
 #import <CoreFoundation/CoreFoundation.h>
 #import <Foundation/Foundation.h>
 #import <GriP/GPPreferences.h>
@@ -38,44 +39,80 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #import <GriP/common.h>
 #import <GriP/GrowlApplicationBridge.h>
 #import <GriP/GPTheme.h>
+#import <GriP/GPExtensions.h>
 #import <PrefHooker/PrefsLinkHooker.h>
+#import <UIKit/UIApplication.h>
 
+@interface SpringBoard : UIApplication
+-(void)applicationOpenURL:(NSURL*)url publicURLsOnly:(BOOL)publicsOnly;	// only in >=3.0
+-(void)applicationOpenURL:(NSURL*)url asPanel:(BOOL)asPanel publicURLsOnly:(BOOL)publicsOnly;	// only in <3.0
+@end
+
+static pthread_mutex_t atLock = PTHREAD_MUTEX_INITIALIZER;
 static NSObject<GPTheme>* activeTheme = nil;
 
 static CFDataRef GriPCallback (CFMessagePortRef serverPort, SInt32 type, CFDataRef data, void* info) {
 	switch (type) {
 		case GriPMessage_FlushPreferences:
+			GPReleaseListOfDisabledExtensions();
 			GPFlushPreferences();
+			pthread_mutex_lock(&atLock);
 			[activeTheme release];
 			activeTheme = nil;
+			pthread_mutex_unlock(&atLock);
 			break;
 			
-		case GriPMessage_ShowMessage:
+		case GriPMessage_ShowMessage: {
+			pthread_mutex_lock(&atLock);
 			if (activeTheme == nil) {
 				NSBundle* activeThemeBundle = [NSBundle bundleWithPath:[@"/Library/GriP/Themes/" stringByAppendingPathComponent:[GPPreferences() objectForKey:@"ActiveTheme"]]];
 				NSString* themeType = [activeThemeBundle objectForInfoDictionaryKey:@"GPThemeType"];
 				if (themeType == nil || [@"OBJC" isEqualToString:themeType])
 					activeTheme = [[[activeThemeBundle principalClass] alloc] init];
 			}
-			if ([activeTheme respondsToSelector:@selector(display:)]) {
-				NSMutableDictionary* messageDict = [NSPropertyListSerialization propertyListFromData:(NSData*)data mutabilityOption:NSPropertyListMutableContainersAndLeaves format:NULL errorDescription:NULL];
+			BOOL willDisplay = [activeTheme respondsToSelector:@selector(display:)];
+			pthread_mutex_unlock(&atLock);
+			
+			NSMutableDictionary* messageDict = [NSPropertyListSerialization propertyListFromData:(NSData*)data mutabilityOption:NSPropertyListMutableContainersAndLeaves format:NULL errorDescription:NULL];
+			
+			if (willDisplay) {
 				GPModifyMessageForUserPreference(messageDict);
-				if ([messageDict count] != 0)
+				if ([messageDict count] != 0) {
 					[activeTheme display:messageDict];
+					break;
+				}
 			}
-			break;
+			
+			// fall through as an ignored message if it remained unhandled.
+			type = GriPMessage_IgnoredNotification;
+			data = (CFDataRef)[NSPropertyListSerialization dataFromPropertyList:[NSArray arrayWithObjects:
+																				 [messageDict objectForKey:GRIP_PID],
+																				 [messageDict objectForKey:GRIP_CONTEXT],
+																				 [messageDict objectForKey:GRIP_ISURL], nil]
+																		 format:NSPropertyListBinaryFormat_v1_0 errorDescription:NULL];
+		}
 			
 		case GriPMessage_ClickedNotification:
 		case GriPMessage_IgnoredNotification: {
 			NSArray* array = [NSPropertyListSerialization propertyListFromData:(NSData*)data mutabilityOption:NSPropertyListImmutable format:NULL errorDescription:NULL];
-			if ([array isKindOfClass:[NSArray class]] && [array count] >= 2) {
+			if ([array isKindOfClass:[NSArray class]] && [array count] >= 3) {
 				CFStringRef pid = (CFStringRef)[array objectAtIndex:0];
-				CFDataRef context = (CFDataRef)[array objectAtIndex:1];
+				CFDataRef context = (CFDataRef)[NSPropertyListSerialization dataFromPropertyList:[array objectAtIndex:1] format:NSPropertyListBinaryFormat_v1_0 errorDescription:NULL];
+				BOOL isURL = (type == GriPMessage_ClickedNotification) && [[array objectAtIndex:2] boolValue];
 				
 				CFMessagePortRef clientPort = CFMessagePortCreateRemote(NULL, pid);
 				if (clientPort != NULL) {
 					CFMessagePortSendRequest(clientPort, type, context, 1, 0, NULL, NULL);
+					if (isURL)
+						CFMessagePortSendRequest(clientPort, GriPMessage_LaunchURL, context, 1, 0, NULL, NULL);
 					CFRelease(clientPort);
+				} else if (isURL) {
+					SpringBoard* springBoard = (SpringBoard*)[UIApplication sharedApplication];
+					NSURL* url = [NSURL URLWithString:(NSString*)[array objectAtIndex:1]];
+					if ([springBoard respondsToSelector:@selector(applicationOpenURL:asPanel:publicURLsOnly:)])
+						[springBoard applicationOpenURL:url asPanel:NO publicURLsOnly:NO];
+					else if ([springBoard respondsToSelector:@selector(applicationOpenURL:publicURLsOnly:)])
+						[springBoard applicationOpenURL:url publicURLsOnly:NO];
 				}
 			}
 			break;
@@ -91,6 +128,29 @@ static CFDataRef GriPCallback (CFMessagePortRef serverPort, SInt32 type, CFDataR
 			}
 			break;
 		}
+			
+		case GriPMessage_CheckEnabled: {
+			NSArray* array = [NSPropertyListSerialization propertyListFromData:(NSData*)data mutabilityOption:NSPropertyListImmutable format:NULL errorDescription:NULL];
+			BOOL retval = NO;
+			if ([array isKindOfClass:[NSArray class]]) {
+				NSUInteger arrCount = [array count];
+				if (arrCount >= 1) {
+					NSString* appName = [array objectAtIndex:0];
+					NSString* appMsg = arrCount >= 2 ? [array objectAtIndex:1] : nil;
+					retval = GPCheckEnabled(appName, appMsg);
+				}
+			}
+			return CFDataCreate(NULL, (const UInt8*)&retval, sizeof(BOOL));
+		}
+			
+		case GriPMessage_ReloadExtensions: {
+			NSArray* extensionSubpaths = [NSPropertyListSerialization propertyListFromData:(NSData*)data mutabilityOption:NSPropertyListImmutable format:NULL errorDescription:NULL];
+			for (NSString* subpath in extensionSubpaths) {
+				GPUnloadExtension(subpath);
+				GPLoadExtension(subpath);
+			}
+			break;
+		}
 				
 		default:
 			break;
@@ -101,6 +161,8 @@ static CFDataRef GriPCallback (CFMessagePortRef serverPort, SInt32 type, CFDataR
 
  
 static void terminate () {
+	GPReleaseListOfDisabledExtensions();
+	GPUnloadAllExtensions();
 	GPStopServer();
 	[GPMessageWindow _cleanup];
 	[activeTheme release];
@@ -132,7 +194,9 @@ void initialize () {
 		atexit(&terminate);
 	
 		NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
+		
 		[GPMessageWindow _initialize];
+		GPLoadAllExtensions();
 		[pool drain];
 		
 	} else {

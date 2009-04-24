@@ -38,9 +38,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #import <GraphicsUtilities.h>
 #import <GriP/GPGetSmallAppIcon.h>
 
-// from SpringBoardServices.framework. 3.0-compatible.
-extern NSString* SBSCopyIconImagePathForDisplayIdentifier(NSString* iden);
-
 // from UIKit.framework. 3.0-compatible
 @interface UITextView ()
 -(void)setContentToHTMLString:(NSString*)html;
@@ -87,9 +84,13 @@ __attribute__((visibility("hidden")))
 @end
 
 // Rule: Max size should be 240x120.
-#define CLOSE_BUTTON_SIZE 25
-#define DISCLOSURE_BUTTON_SIZE 25
+#define CLOSE_BUTTON_SIZE 20
+#define DISCLOSURE_BUTTON_SIZE 20
 #define ICON_PADDING 5
+
+#define VIEW_WIDTH 160
+#define LEFT_PADDING 3	// == TOP_PADDING
+#define RIGHT_PADDING 9	// == BOTTOM_PADDING
 
 @implementation GPDefaultThemeView
 -(void)showActiveView { activeView.hidden = NO; [(GPMessageWindow*)self.superview stopTimer]; }
@@ -108,14 +109,14 @@ __attribute__((visibility("hidden")))
 	oldBounds.size.width += DISCLOSURE_BUTTON_SIZE;
 	clickingContext.frame = oldBounds;
 	[self.superview layoutSubviews];
-	[(GPMessageWindow*)self.superview restartTimer];
+	[(GPMessageWindow*)self.superview stopTimer];
 	[sender removeFromSuperview];
 }
 -(void)fire { [(GPMessageWindow*)self.superview hide:NO]; }
 
 -(id)initWithTitle:(NSString*)title detail:(NSString*)detail icon:(NSObject*)iconData backgroundColor:(UIColor*)bgColor frameColor:(UIColor*)frameColor {
 	CGFloat occupiedWidth = CLOSE_BUTTON_SIZE;		// for the close button (×).
-	CGFloat titleLeftPadding = 30;
+	CGFloat titleLeftPadding = CLOSE_BUTTON_SIZE+LEFT_PADDING;
 	if (detail != nil)
 		occupiedWidth += DISCLOSURE_BUTTON_SIZE;	// for the detail disclosure button (▼).
 	if (iconData != nil) {
@@ -124,18 +125,17 @@ __attribute__((visibility("hidden")))
 	}
 	
 	UIFont* titleFont = [UIFont boldSystemFontOfSize:[UIFont systemFontSize]];
-	CGSize titleSize = (title != nil) ? [title sizeWithFont:titleFont constrainedToSize:CGSizeMake(240-10-occupiedWidth, INFINITY)] : CGSizeZero;
+	CGSize titleSize = (title != nil) ? [title sizeWithFont:titleFont constrainedToSize:CGSizeMake(VIEW_WIDTH-(LEFT_PADDING+RIGHT_PADDING)-occupiedWidth, INFINITY)] : CGSizeZero;
 	// No more than 60px please.
 	if (titleSize.height > 60)
 		titleSize.height = 60;
 	// But at least big enough to enclose the icon.
-	if (iconData != nil && titleSize.height < 30)
-		titleSize.height = 30;
+	if (iconData != nil && titleSize.height < 29)
+		titleSize.height = 29;
 	else if (titleSize.height < 25)
 		titleSize.height = 25;
 	
-	// "14" are due to the 5px external paddings & 2px internal paddings.
-	if ((self = [super initWithFrame:CGRectMake(0, 0, 14 + occupiedWidth + titleSize.width, 14 + titleSize.height)])) {		
+	if ((self = [super initWithFrame:CGRectMake(0, 0, VIEW_WIDTH, LEFT_PADDING+RIGHT_PADDING+titleSize.height)])) {		
 		self.backgroundColor = [UIColor clearColor];
 		
 		// the icon is referring to an app icon. Dereference it.
@@ -176,20 +176,20 @@ __attribute__((visibility("hidden")))
 		
 		// add background view.
 		backgroundView = [[UIImageView alloc] initWithImage:backgroundImage];
-		backgroundView.frame = CGRectMake(5, 5, 9 + occupiedWidth + titleSize.width, 9 + titleSize.height);
+		backgroundView.frame = CGRectMake(0, 0, VIEW_WIDTH, LEFT_PADDING+RIGHT_PADDING + titleSize.height);
 		[self addSubview:backgroundView];
 		[backgroundView release];
 
 		// add (hidden) active image.
 		activeView = [[UIImageView alloc] initWithImage:activeImage];
-		activeView.frame = CGRectMake(5, 5, 9 + occupiedWidth + titleSize.width, 9 + titleSize.height);
+		activeView.frame = CGRectMake(0, 0, VIEW_WIDTH, LEFT_PADDING+RIGHT_PADDING + titleSize.height);
 		activeView.hidden = YES;
 		[self addSubview:activeView];
 		[activeView release];
 		
 		// add clicking context.
 		clickingContext = [UIButton buttonWithType:UIButtonTypeCustom];
-		clickingContext.frame = CGRectMake(7+CLOSE_BUTTON_SIZE, 7, (iconData!=nil?30:0)+titleSize.width, titleSize.height);
+		clickingContext.frame = CGRectMake(LEFT_PADDING+CLOSE_BUTTON_SIZE, LEFT_PADDING, VIEW_WIDTH-LEFT_PADDING-RIGHT_PADDING-occupiedWidth+(iconImage==nil?0:29+ICON_PADDING), titleSize.height);
 		[clickingContext addTarget:self action:@selector(showActiveView) forControlEvents:UIControlEventTouchDown|UIControlEventTouchDragEnter];
 		[clickingContext addTarget:self action:@selector(hideActiveView) forControlEvents:UIControlEventTouchDragOutside|UIControlEventTouchDragExit|UIControlEventTouchUpOutside|UIControlEventTouchCancel];
 		[clickingContext addTarget:self action:@selector(fire) forControlEvents:UIControlEventTouchUpInside];
@@ -198,13 +198,13 @@ __attribute__((visibility("hidden")))
 		// add icon.
 		if (iconImage != nil) {
 			UIImageView* iconView = [[UIImageView alloc] initWithImage:iconImage];
-			iconView.frame = CGRectMake(7+CLOSE_BUTTON_SIZE, 7, 29, 29);
+			iconView.frame = CGRectMake(LEFT_PADDING+CLOSE_BUTTON_SIZE, LEFT_PADDING, 29, 29);
 			[self addSubview:iconView];
 			[iconView release];
 		}
 
 		// add title.
-		UILabel* titleLabel = [[UILabel alloc] initWithFrame:CGRectMake(titleLeftPadding, 5, titleSize.width, titleSize.height)];
+		UILabel* titleLabel = [[UILabel alloc] initWithFrame:CGRectMake(titleLeftPadding, LEFT_PADDING, titleSize.width, titleSize.height)];
 		titleLabel.font = titleFont;
 		titleLabel.numberOfLines = 0;
 		titleLabel.textColor = frameColor;
@@ -215,7 +215,7 @@ __attribute__((visibility("hidden")))
 				
 		// add close button.
 		UIButton* closeButton = [UIButton buttonWithType:UIButtonTypeCustom];
-		closeButton.frame = CGRectMake(7, 7, CLOSE_BUTTON_SIZE, 25);
+		closeButton.frame = CGRectMake(LEFT_PADDING, LEFT_PADDING, CLOSE_BUTTON_SIZE, titleSize.height);
 		closeButton.showsTouchWhenHighlighted = YES;
 		[closeButton setTitle:@"×" forState:UIControlStateNormal];
 		[closeButton setTitleColor:frameColor forState:UIControlStateNormal];
@@ -225,7 +225,7 @@ __attribute__((visibility("hidden")))
 		if (detail != nil) {
 			// add disclosure button.
 			UIButton* disclosureButton = [UIButton buttonWithType:UIButtonTypeCustom];
-			disclosureButton.frame = CGRectMake(7+occupiedWidth+titleSize.width-DISCLOSURE_BUTTON_SIZE, 7+titleSize.height-25, DISCLOSURE_BUTTON_SIZE, 25);
+			disclosureButton.frame = CGRectMake(VIEW_WIDTH-DISCLOSURE_BUTTON_SIZE-RIGHT_PADDING, LEFT_PADDING, DISCLOSURE_BUTTON_SIZE, titleSize.height);
 			disclosureButton.showsTouchWhenHighlighted = YES;
 			[disclosureButton setTitle:@"▼" forState:UIControlStateNormal];
 			[disclosureButton setTitleColor:frameColor forState:UIControlStateNormal];
@@ -233,7 +233,7 @@ __attribute__((visibility("hidden")))
 			[self addSubview:disclosureButton];
 			
 			// add (hidden) detail text view.
-			detailTextView = [[UITextViewForGPDefaultTheme alloc] initWithFrame:CGRectMake(7, 6+titleSize.height, occupiedWidth+titleSize.width, 1)];
+			detailTextView = [[UITextViewForGPDefaultTheme alloc] initWithFrame:CGRectMake(LEFT_PADDING, LEFT_PADDING+titleSize.height, VIEW_WIDTH-LEFT_PADDING-RIGHT_PADDING, 1)];
 			detailTextView.font = [UIFont systemFontOfSize:[UIFont smallSystemFontSize]];
 			detailTextView.textColor = frameColor;
 			detailTextView.editable = NO;
@@ -274,11 +274,7 @@ __attribute__((visibility("hidden")))
 														 backgroundColor:displayColor
 															  frameColor:frameColor];
 	 
-	GPMessageWindow* window = [GPMessageWindow windowWithView:view sticky:[[message objectForKey:GRIP_STICKY] boolValue]];
-	
-	window.pid = [message objectForKey:GRIP_PID];
-	window.context = [message objectForKey:GRIP_CONTEXT];
-	
+	[GPMessageWindow windowWithView:view message:message];
 	[view release];
 }
 
