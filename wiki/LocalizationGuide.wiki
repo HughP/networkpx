@@ -123,7 +123,6 @@ For GriP, the _lproj_'s are in `/svn/trunk/hk.kennytm.grip/deb/System/Library/Pr
 || Never                                                            || 
 || Background colors                                                || 
 || Per-App Settings                                                 ||
-|| Extensions                                                       ||
 || Minimum priority                                                 ||
 || Ignore all                                                       ||
 || Enabled                                                          ||
@@ -148,14 +147,14 @@ For GriP, the _lproj_'s are in `/svn/trunk/hk.kennytm.grip/deb/System/Library/Pr
 || Cannot remove settings for %@                                    ||
 || `Error: %@<br/><br/>Please delete <code>%@</code> manually.`     ||
 
-For !MemoryWatcher, the _lproj_'s are in `/svn/trunk/hk.kennytm.grip/deb/Library/GriP/Extensions/MemWatcher.gripext/`.
+For !MemoryWatcher, the localizations are located directly inside `/svn/trunk/hk.kennytm.grip/Lbrary/MobileSubstrate/DynamicLibraries/MemoryWatcher.plist`. This is unlike the other projects that _lproj_'s are used. The file is saved as a binary plist, so you may need to convert it into XML, or edit it by Property List Editor.
 
 || *Key*                  || 
 || Memory Warning (%d%%)  || 
 || Memory Urgent (%d%%)   || 
 || Memory Critical (%d%%) || 
 
-For You've Got Mail, the localizations are located directly inside `/svn/trunk/hk.kennytm.grip/Lbrary/MobileSubstrate/DynamicLibraries/YouveGotMail.plist`. This is unlike the other projects that _lproj_'s are used. 
+For You've Got Mail, the localizations are located directly inside `/svn/trunk/hk.kennytm.grip/Lbrary/MobileSubstrate/DynamicLibraries/YouveGotMail.plist`.
 
 || *Key*        || 
 || 1 new mail   || 
