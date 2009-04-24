@@ -38,6 +38,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 @interface GPApplicationBridge ()
 -(void)messageClickedOrIgnored:(NSData*)contextData type:(SInt32)type;
+-(void)launchURL:(NSData*)urlData;
 @end
 
 
@@ -58,6 +59,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 			} else {
 				[duplex addObserver:self selector:@selector(messageClickedOrIgnored:type:) forMessage:GriPMessage_ClickedNotification];
 				[duplex addObserver:self selector:@selector(messageClickedOrIgnored:type:) forMessage:GriPMessage_IgnoredNotification];
+				[duplex addObserver:self selector:@selector(launchURL:) forMessage:GriPMessage_LaunchURL];
 			}
 		}
 		
@@ -79,7 +81,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 }
 
 -(void)messageClickedOrIgnored:(NSData*)contextData type:(SInt32)type {
-	NSObject* context = [NSPropertyListSerialization propertyListFromData:contextData mutabilityOption:kCFPropertyListImmutable format:NULL errorDescription:NULL];
+	NSObject* context = [NSPropertyListSerialization propertyListFromData:contextData mutabilityOption:NSPropertyListImmutable format:NULL errorDescription:NULL];
 	if (context != nil) {
 		if (type == GriPMessage_ClickedNotification) {
 			if ([sharedDelegate respondsToSelector:@selector(growlNotificationWasClicked:)])
@@ -89,6 +91,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 				[sharedDelegate growlNotificationTimedOut:context];
 		}
 	}
+}
+
+-(void)launchURL:(NSData*)urlData {
+	NSString* urlString = [NSPropertyListSerialization propertyListFromData:urlData mutabilityOption:NSPropertyListImmutable format:NULL errorDescription:NULL];
+	if ([urlString isKindOfClass:[NSString class]])
+		[[UIApplication sharedApplication] openURL:[NSURL URLWithString:urlString]];
 }
 
 @dynamic installed, running;
@@ -135,7 +143,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 -(void)notifyWithTitle:(NSString*)title description:(NSString*)description notificationName:(NSString*)notifName iconData:(NSObject*)iconData priority:(signed)priority isSticky:(BOOL)isSticky clickContext:(NSObject*)clickContext {
 	[self notifyWithTitle:title description:description notificationName:notifName iconData:iconData priority:priority isSticky:isSticky clickContext:clickContext identifier:nil];
 }
-
 -(void)notifyWithTitle:(NSString*)title description:(NSString*)description notificationName:(NSString*)notifName iconData:(NSObject*)iconData priority:(signed)priority isSticky:(BOOL)isSticky clickContext:(NSObject*)clickContext identifier:(NSString*)identifier {
 	if (duplex == nil || appName == nil)
 		return;
@@ -159,13 +166,16 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	[filteredDictionary setObject:[NSNumber numberWithInteger:priority] forKey:GRIP_PRIORITY];
 	[filteredDictionary setObject:[NSNumber numberWithBool:isSticky] forKey:GRIP_STICKY];
 	if (clickContext != nil) {
-		NSString* errorDescription = nil;
-		NSData* contextData = [NSPropertyListSerialization dataFromPropertyList:clickContext format:NSPropertyListBinaryFormat_v1_0 errorDescription:&errorDescription];
-		if (contextData == nil) {
-			NSLog(@"clickContext cannot be serialized into property list data: %@. It will be ignored.", errorDescription);
-			[errorDescription release];
-		} else
-			[filteredDictionary setObject:contextData forKey:GRIP_CONTEXT];
+		if ([clickContext isKindOfClass:[NSURL class]]) {
+			[filteredDictionary setObject:[(NSURL*)clickContext absoluteString] forKey:GRIP_CONTEXT];
+			[filteredDictionary setObject:[NSNumber numberWithBool:YES] forKey:GRIP_ISURL];
+		} else {
+			if ([NSPropertyListSerialization propertyList:clickContext isValidForFormat:NSPropertyListBinaryFormat_v1_0])
+				[filteredDictionary setObject:clickContext forKey:GRIP_CONTEXT];
+			else {
+				NSLog(@"clickContext is not a property list object. It will be ignored.");
+			}
+		}
 	}
 	if ([identifier isKindOfClass:[NSString class]])
 		[filteredDictionary setObject:identifier forKey:GRIP_ID];
@@ -232,14 +242,24 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	}
 	return NO;
 }
-@end
 
-
-@implementation NSURL (GriP_DelegateSupport)
--(void)growlNotificationWasClicked:(NSObject*)context {
-	UIApplication* app = [UIApplication sharedApplication];
-	if (app == nil)
-		app = [[[UIApplication alloc] init] autorelease];
-	[app openURL:self];
+@dynamic enabled;
+-(BOOL)enabled { return [self enabledForName:nil]; }
+-(BOOL)enabledForName:(NSString*)notifName {
+	if (appName == nil)
+		return NO;
+	NSArray* arrayToSend;
+	if (notifName == nil)
+		arrayToSend = [NSArray arrayWithObject:appName];
+	else
+		arrayToSend = [NSArray arrayWithObjects:appName, notifName, nil];
+	
+	NSData* data = [duplex sendMessage:GriPMessage_CheckEnabled
+								  data:[NSPropertyListSerialization dataFromPropertyList:arrayToSend format:NSPropertyListBinaryFormat_v1_0 errorDescription:NULL]
+						 expectsReturn:YES];
+	if (data != nil)
+		return *(BOOL*)[data bytes];
+	else
+		return NO;
 }
 @end

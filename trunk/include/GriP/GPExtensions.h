@@ -1,6 +1,6 @@
 /*
 
-GPMessageWindow.h ... Message Window for typical GriP styles.
+GPPreferences.h ... Obtain preferences for GriP.
  
 Copyright (c) 2009, KennyTM~
 All rights reserved.
@@ -30,43 +30,18 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  
 */
 
-#import <UIKit/UIKit.h>
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-typedef struct GPGap {
-	CGFloat y;
-	CGFloat h;
-} GPGap;
-
-
-@interface GPMessageWindow : UIWindow {
-	GPGap currentGap;
-	NSTimer* hideTimer;
-	UIView* view;
-	BOOL sticky;
-	NSString* pid;
-	NSObject* context;
-	BOOL isURL;
+	@class NSString;
+	
+	void GPReleaseListOfDisabledExtensions();
+	void GPUnloadAllExtensions();
+	void GPUnloadExtension(NSString* subpath);
+	void GPLoadExtension(NSString* subpath);
+	void GPLoadAllExtensions();
+	
+#ifdef __cplusplus
 }
-+(GPMessageWindow*)windowWithView:(UIView*)view_ message:(NSDictionary*)message;
--(void)layoutSubviews;	// in additional to resizing the subviews, this method will also adopt the subview's boundary.
-
-@property(retain,readonly) NSString* pid;
-@property(retain,readonly) NSObject* context;
-
--(void)hide:(BOOL)ignored;
-
--(void)stopTimer;
--(void)restartTimer;
--(void)dealloc;
-@end
-
-@interface GPMessageWindow ()
-+(void)_initialize;
-+(void)_cleanup;
-
--(id)initWithView:(UIView*)view_ message:(NSDictionary*)message;
-+(void)_removeGap:(GPGap)gap;
-+(GPGap)_createGapWithHeight:(CGFloat)height;
--(void)_layoutWithAnimation:(BOOL)animate;
--(void)_releaseMyself;
-@end
+#endif

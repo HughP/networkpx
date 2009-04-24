@@ -67,7 +67,7 @@ void GPUpdateRegistrationDictionaryForAppName(NSString* appName, NSDictionary* r
 		hasModification = YES;
 		ticket = [[NSMutableDictionary alloc] initWithObjectsAndKeys:
 				  [NSNumber numberWithBool:YES], @"enabled",
-				  [NSNumber numberWithInteger:0], @"context",	// 0 = application defined, 1 = enable if possible, else = always disable.
+//				  [NSNumber numberWithInteger:0], @"context",	// 0 = application defined, 1 = enable if possible, else = always disable.
 				  [NSNumber numberWithInteger:0], @"sticky",	// 0 = application defined, 1 = always sticky, else = always hide.
 				  [NSMutableDictionary dictionary], @"messages",
 				  nil];
@@ -85,13 +85,15 @@ void GPUpdateRegistrationDictionaryForAppName(NSString* appName, NSDictionary* r
 			BOOL enabled = [defaultNotifs containsObject:name];
 			NSString* hrName = [humanReadableNames objectForKey:name];
 			NSString* desc = [descriptions objectForKey:name];
-			NSMutableDictionary* messageDict = [[NSMutableDictionary alloc] initWithCapacity:3];
-			[messageDict setObject:[NSNumber numberWithBool:enabled] forKey:@"enabled"];
+			NSMutableDictionary* messageDict = [[NSMutableDictionary alloc] initWithObjectsAndKeys:
+												[NSNumber numberWithBool:enabled], @"enabled",
+												[NSNumber numberWithInteger:0], @"sticky",
+												[NSNumber numberWithInteger:0], @"priority",
+												nil];
 			if (hrName != nil)
 				[messageDict setObject:hrName forKey:@"friendlyName"];
 			if (desc != nil)
 				[messageDict setObject:desc forKey:@"description"];
-			
 			
 			[currentNotifs setObject:messageDict forKey:name];
 			[messageDict release];
@@ -102,16 +104,26 @@ void GPUpdateRegistrationDictionaryForAppName(NSString* appName, NSDictionary* r
 	[ticket release];
 }
 
+static BOOL GPCheckEnabledWithTicket(NSDictionary* ticket, NSString* msgName, NSDictionary** pMsgDict) {
+	if (ticket == nil || ![[ticket objectForKey:@"enabled"] boolValue])
+		return NO;
+	if (msgName == nil)
+		return YES;
+	NSDictionary* msgDict = [[ticket objectForKey:@"messages"] objectForKey:msgName];
+	if (pMsgDict != NULL)
+		*pMsgDict = msgDict;
+	if (msgDict == nil || ![[msgDict objectForKey:@"enabled"] boolValue])
+		return NO;
+	return YES;
+}
+
 void GPModifyMessageForUserPreference(NSMutableDictionary* message) {
 	NSString* appName = [message objectForKey:GRIP_APPNAME];
 	NSDictionary* ticket = [NSDictionary dictionaryWithContentsOfFile:GPTicketPathForAppName(appName)];
-	if (ticket == nil || ![[ticket objectForKey:@"enabled"] boolValue]) {
-		[message removeAllObjects];
-		return;
-	}
-	
-	NSDictionary* msgDict = [[ticket objectForKey:@"messages"] objectForKey:[message objectForKey:GRIP_NAME]];
-	if (msgDict == nil || ![[msgDict objectForKey:@"enabled"] boolValue]) {
+	NSString* msgName = [message objectForKey:GRIP_NAME];
+	NSDictionary* msgDict;
+
+	if (appName == nil || msgName == nil || !GPCheckEnabledWithTicket(ticket, msgName, &msgDict)) {
 		[message removeAllObjects];
 		return;
 	}
@@ -119,19 +131,34 @@ void GPModifyMessageForUserPreference(NSMutableDictionary* message) {
 	NSInteger stickyEnabled = [[msgDict objectForKey:@"sticky"] integerValue];
 	if (stickyEnabled == 0)
 		stickyEnabled = [[ticket objectForKey:@"sticky"] integerValue];
+	if (stickyEnabled == 0)
+		stickyEnabled = [[GPPreferences() objectForKey:@"Sticky"] integerValue];
 	
 	if (stickyEnabled == 1)
-		[message setObject:[NSNumber numberWithBool:NO] forKey:GRIP_STICKY];
-	else if (stickyEnabled != 0)
 		[message setObject:[NSNumber numberWithBool:YES] forKey:GRIP_STICKY];
+	else if (stickyEnabled != 0)
+		[message setObject:[NSNumber numberWithBool:NO] forKey:GRIP_STICKY];
 	
+	/*
 	NSInteger contextEnabled = [[msgDict objectForKey:@"context"] integerValue];
 	if (contextEnabled == 0)
 		contextEnabled = [[msgDict objectForKey:@"context"] integerValue];
 	if (contextEnabled != 0 && contextEnabled != 1)
 		[message removeObjectForKey:GRIP_CONTEXT];
+	*/
 	
 	NSInteger newPriority = [[msgDict objectForKey:@"priority"] integerValue];
-	if (newPriority > 0 && newPriority <= 5)
-		[message setObject:[NSNumber numberWithInteger:newPriority-3] forKey:GRIP_PRIORITY];
+	if (newPriority >= 1 && newPriority <= 5) {
+		newPriority -= 3;
+		[message setObject:[NSNumber numberWithInteger:newPriority] forKey:GRIP_PRIORITY];
+	} else
+		newPriority = [[message objectForKey:GRIP_PRIORITY] integerValue];
+	
+	// Disable this message if the priority is not high enough.
+	if (newPriority < [[GPPreferences() objectForKey:@"MinPriority"] integerValue])
+		[message removeAllObjects];
+}
+
+BOOL GPCheckEnabled(NSString* appName, NSString* msgName) {
+	return appName != nil && GPCheckEnabledWithTicket([NSDictionary dictionaryWithContentsOfFile:GPTicketPathForAppName(appName)], msgName, NULL);
 }

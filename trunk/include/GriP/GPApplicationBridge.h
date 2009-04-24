@@ -55,9 +55,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 -(BOOL)registerWithDictionary:(NSDictionary*)potentialDictionary;
 
-@end
+// Addition for GriP
+// Check if GriP is enabled for this application.
+@property(readonly,assign,nonatomic) BOOL enabled;
+-(BOOL)enabledForName:(NSString*)notifName;
 
-// Allows a URL to be passed as a GriP delegate.
-@interface NSURL (GriP_DelegateSupport) <GrowlApplicationBridgeDelegate>
--(void)growlNotificationWasClicked:(NSObject*)context;
 @end

@@ -33,8 +33,8 @@
 - (void)setPrompt:(NSString*)fp8;	// IMP=0x31765e34
 - (void)navigationBarButtonClicked:(int)fp8;	// IMP=0x31765e60
 @property(readonly) UIView* view;
-@property(assign) PSRootController* parentController;
-@property(assign) id<PSBaseView> rootController;
+@property(assign) id<PSBaseView> parentController;
+@property(assign) PSRootController* rootController;
 - (void)setPreferenceValue:(id)fp8 specifier:(PSSpecifier*)fp12;	// IMP=0x31765ec4
 - (id)readPreferenceValue:(id)fp8;	// IMP=0x31765ef0
 - (void)viewDidBecomeVisible;	// IMP=0x31765f1c
