@@ -1,5 +1,5 @@
 #summary Users' and Developers' guide to GriP – Growl for iPhone.
-#labels Phase-Implementation, Phase-Support
+#labels Phase-Implementation,Phase-Support
 
 <wiki:toc/>
 
@@ -111,7 +111,7 @@ If GriP is a requirement for your app, you can directly link to `libGriP.dylib`,
 GriP implements all the _documented_ API of Growl on http://growl.info/documentation/developer/implementing-growl.php?lang=cocoa. 
 
 There are a few changes to GriP compared with the Growl API in the `notifyWithTitle:...` method:
- * The `description` cannot be attributed string (RTF strings) because the iPhoneOS does not support it. However, you can pass an HTML string and have it shown as rendered HTML. Because of this, if you have any &lt;, &gt; or &amp; in the description that are not intended for HTML use, you must replace them into &amp;lt;, &amp;gt; and &amp;amp;.
+ * The `description` cannot be attributed string (RTF strings) because the iPhoneOS does not support it. However, you can pass an HTML string and have it shown as rendered HTML. Because of this, if you have any `<`, `>` or `&` in the description that are not intended for HTML use, you must replace them as `&lt;`, `&gt;` and `&amp;`. You may use the `-[NSString stringByEscapingXMLEntities]` method provided by the category that comes along with the GriP client.
  * Besides being the `NSData` of the whole image, `iconData` accepts a `UIImage` and a bundle identifier (`NSString`) too. When an bundle identifier is given, the icon for that app will be used as `iconData`. 
  * `clickContext` accepts an `NSURL` alongside with property list objects. When an `NSURL` is given, the message will launch the URL when the user tap on it. This works even without a delegate, and across process termination. (The `growlNotificationWasClicked:` and `growlNotificationTimedOut:` methods will still be invoked if a delegate is present.)
 
