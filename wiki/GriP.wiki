@@ -148,6 +148,26 @@ NSArray* supportedMessages = [NSArray arrayWithObject:@"Test Message"];
 [bridge release];
 }}}
 
+== Guidelines ==
+
+Growl recommends you to use concise text, and in GriP it is the strongest utmost important guideline. Because the iPhone screen is extremely small, even a sentence of title would be _too long_.
+
+In GriP, the rule of thumb is to limit your title to *three words* (or 15 CJK characters). So instead of 
+
+  `Downloaded http://www.example.com/softwares/iphone/2/themes/the_best_theme_v1.0.deb to /var/mobile/dpkg_collections/themes/the_best_theme_v1.0.deb of size 1,893,229 bytes in 16.492 seconds at an average speed of 112.106 kibibytes per seconds`
+
+or even
+
+  `Downloaded the_best_theme_v1.0.deb (1.81 MiB) in 16 seconds`
+
+please just say
+
+  `Download completed.`
+
+All the details can be thrown into the description. And because the description is normally hidden, you can give as much detail as you want there. Of course, you should _still_ make the description concise, no one wants to read a novel in a 160x60 box.
+
+Another thing is that, *do not use GriP for important messages that require user feedback*, because GriP messages can be easily ignored. A `UIAlertView` or `UIActionSheet` is more suitable in this case.
+
 = GriP Extensions for !SpringBoard =
 
 The GriP server is actually a Mobile Substrate extension of !SpringBoard, therefore, if you are writing another Mobile Substrate extension that uses GriP, it must load after it. GriP has made this easy by putting itself very early in the queue (by naming itself `%GriP.dylib`).
