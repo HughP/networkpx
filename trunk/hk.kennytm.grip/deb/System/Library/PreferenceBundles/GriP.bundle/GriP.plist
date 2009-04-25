@@ -52,7 +52,7 @@ items = (
 			Emergency,
 			High,
 			Normal,
-			Low,
+			Moderate,
 			"Very low"
 		);
 		validValues = (3,2,1,0,-1,-2);
