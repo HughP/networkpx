@@ -4,7 +4,8 @@ MobileSubstratePath=../deb/Library/MobileSubstrate/DynamicLibraries
 ThemesPath=../deb/Library/GriP/Themes
 SharedSrcPath=../../src
 PrefsBundlePath=../deb/System/Library/PreferenceBundles
-GriPExtPath=../deb/Library/GriP/Extensions
+
+GriPIncPath=../../include/GriP
 
 Compiler=$(iPhoneDevPath)/usr/bin/gcc-4.2
 CodeSign=ldid -S
@@ -24,6 +25,27 @@ Options=-arch armv6 \
 	-O2 \
 	-DGRIP_JAILBROKEN=1
 
+SDKOptionsARM=-arch armv6 \
+	-std=c99 \
+	-isysroot $(iPhoneSDKPath) \
+	-I$(iPhoneDevPath)/usr/include/gcc/darwin/default \
+	-I$(iPhoneSDKPath)/usr/lib/gcc/arm-apple-darwin9/4.2.1/include \
+	-I../../include \
+	-O2 \
+	-mcpu=arm1176jzf-s \
+	-UGRIP_JAILBROKEN
+
+iPhoneSimDevPath=/Developer/Platforms/iPhoneSimulator.platform/Developer
+iPhoneSimSDKPath=$(iPhoneSimDevPath)/SDKs/iPhoneSimulator3.0.sdk
+SDKOptionsSim=-arch i686 \
+	-std=c99 \
+	-isysroot $(iPhoneSimSDKPath) \
+	-I$(iPhoneSimDevPath)/usr/include/gcc/darwin/default \
+	-I$(iPhoneSimSDKPath)/usr/lib/gcc/i686-apple-darwin9/4.2.1/include \
+	-I../../include \
+	-O2 \
+	-UGRIP_JAILBROKEN
+
 libGriP_Sources=Duplex/Client.o GPMessageWindow.o GPPreferences.o GPGetSmallAppIcon.o GPApplicationBridge.o GPExtensions.o NSString-stringByEscapingXMLEntities.o GPNibTheme.o
 libGriP_Target=../deb/usr/lib/libGriP.dylib
 libGriP_Options=-lobjc -dynamiclib -install_name /usr/lib/libGriP.dylib -framework Foundation -framework CoreFoundation -framework UIKit -framework CoreGraphics
@@ -40,7 +62,7 @@ GriPTest_Sources=GriPTest.o
 GriPTest_Target=../deb/usr/bin/GriP
 GriPTest_Options=-lGriP -framework Foundation
 
-Preferences_Sources=Preferences.o Duplex/Client.o
+Preferences_Sources=Preferences.o
 Preferences_Target=$(PrefsBundlePath)/GriP.bundle/GriP
 Preferences_Options=-lGriP -framework Preferences -framework Foundation -framework UIKit -bundle
 
@@ -52,8 +74,30 @@ YouveGotMail_Sources=Extensions/YouveGotMail.o
 YouveGotMail_Target=$(MobileSubstratePath)/YouveGotMail.dylib
 YouveGotMail_Options=-lGriP -framework Foundation -framework Message -framework UIKit -dynamiclib -init _initialize
 
+SDK_libGriP_Sources=Duplex/Client.sdk.o GPApplicationBridge.sdk.o
+SDK_libGriP_Target=../sdk/libGriP.a
+SDK_libGriP_Options=-framework Foundation -static
 
-all: $(libGriP_Target) $(DefaultTheme_Target) $(ThemesPath)/Default.griptheme/GriPView.nib $(XXHooker_GriP_Target) $(GriPTest_Target) $(Preferences_Target) $(MemWatcher_Target) $(YouveGotMail_Target)
+SDK_libGriPServer_Sources=Duplex/Client.sdk.o GPMessageWindow.sdk.o GPPreferences.sdk.o GPGetSmallAppIcon.sdk.o GPNibTheme.sdk.o GriPServer.sdk.o Duplex/Server.sdk.o GPDefaultTheme.sdk.o $(SharedSrcPath)/GraphicsUtilities.sdk.o
+SDK_libGriPServer_Target=../sdk/libGriPServer.a
+SDK_libGriPServer_Options=-framework Foundation -framework UIKit -framework CoreGraphics -static
+
+SDK_Headers=$(GriPIncPath)/GPApplicationBridge.h $(GriPIncPath)/GrowlApplicationBridge.h $(GriPIncPath)/Duplex/Client.h $(GriPIncPath)/common.h $(GriPIncPath)/GrowlDefines.h $(GriPIncPath)/NSString-stringByEscapingXMLEntities.h $(GriPIncPath)/GriP.h $(GriPIncPath)/GriPServer.h
+SDK_Sources=NSString-stringByEscapingXMLEntities.m GrowlApplicationBridge.m GriPView.xib ../deb/Library/GriP/GPPreferences.plist
+
+all: $(libGriP_Target) $(DefaultTheme_Target) $(ThemesPath)/Default.griptheme/GriPView.nib $(XXHooker_GriP_Target) $(GriPTest_Target) $(Preferences_Target) $(MemWatcher_Target) $(YouveGotMail_Target) $(SDK_libGriP_Target) $(SDK_libGriPServer_Target) SDKEtc
+
+%.sdk.o:	%.m
+	$(Compiler) -c $(SDKOptionsSim) -o $@.i686 $^
+	$(Compiler) -c $(SDKOptionsARM) -o $@.arm $^
+	lipo -create $@.i686 $@.arm -output $@
+	rm $@.i686 $@.arm
+
+%.sdk.o:	%.c
+	$(Compiler) -c $(SDKOptionsSim) -o $@.i686 $^
+	$(Compiler) -c $(SDKOptionsARM) -o $@.arm $^
+	lipo -create $@.i686 $@.arm -output $@
+	rm $@.i686 $@.arm
 
 %.o:	%.m
 	$(Compiler) -c $(Options) -o $@ $^
@@ -91,6 +135,16 @@ $(MemWatcher_Target):	$(MemWatcher_Sources)
 $(YouveGotMail_Target):	$(YouveGotMail_Sources)
 	$(Compiler) $(Options) $(YouveGotMail_Options) -o $@ $^
 	$(CodeSign) $@
+
+$(SDK_libGriP_Target): $(SDK_libGriP_Sources)
+	libtool -static -o $@ $^
+
+$(SDK_libGriPServer_Target): $(SDK_libGriPServer_Sources)
+	libtool -static -o $@ $^
+
+SDKEtc:	$(SDK_Headers) $(SDK_Sources)
+	cp $(SDK_Sources) ../sdk/
+	cp $(SDK_Headers) ../sdk/GriP/
 
 clean:
 	rm -f *.o
