@@ -42,7 +42,7 @@ enum {
 	GriPMessage_UpdateTicket,
 	GriPMessage_LaunchURL,
 	GriPMessage_CheckEnabled,
-	GriPMessage_ReloadExtensions,
+	GriPMessage_DisposeIdentifier,
 	GriPMessage__End = 1010
 };
 

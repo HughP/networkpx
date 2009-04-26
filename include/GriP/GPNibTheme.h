@@ -1,6 +1,6 @@
 /*
 
-GPExtensions.m ... Useful functions for Mobile Substrate Extensions on SpringBoard using GriP.
+GPNibTheme.h ... GriP Theme using .nib file to render the content.
  
 Copyright (c) 2009, KennyTM~
 All rights reserved.
@@ -30,23 +30,37 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  
 */
 
-#include <CoreFoundation/CoreFoundation.h>
+#import <GriP/GPTheme.h>
+#import <Foundation/NSObject.h>
 
-static void GPGriPIsReadyCallback(CFNotificationCenterRef center, void(*initializer)(), CFStringRef name, const void* object, CFDictionaryRef userInfo) {
-	CFNotificationCenterRemoveEveryObserver(center, initializer);
-	initializer();
-}
+@class NSDictionary, UIView, NSMutableDictionary, NSBundle;
 
-extern void GPStartWhenGriPIsReady(void(*initializer)()) {
-	CFMessagePortRef serverPort = CFMessagePortCreateRemote(NULL, CFSTR("hk.kennytm.GriP.server"));
-	
-	if (serverPort != NULL) {
-		// GriP is already running. call the initializer directly.
-		initializer();
-		CFRelease(serverPort);
-		
-	} else {
-		// GriP is not running. register for the notification and set the initializer as callback.
-		CFNotificationCenterAddObserver(CFNotificationCenterGetLocalCenter(), initializer, (CFNotificationCallback)&GPGriPIsReadyCallback, CFSTR("hk.kennytm.GriP.ready"), NULL, CFNotificationSuspensionBehaviorCoalesce);
-	}
+enum GPNibThemeTags {
+	GPTheme_CloseButton = 2000,
+	GPTheme_DisclosureButton = 2001,
+	GPTheme_Icon = 2002,
+	GPTheme_Title = 2003,
+	GPTheme_ClickContext = 2004,
+	GPTheme_Background = 2005,
+	GPTheme_TitleAndViews = 2006,
+	GPTheme_Detail = 2007,
+	GPTheme_ActivationBackground = 2008
+};
+
+@interface GPNibTheme : NSObject<GPTheme> {
+	NSMutableDictionary* identifiedViews;
+	NSBundle* selfBundle;
 }
+-(id)initWithBundle:(NSBundle*)bundle;
+-(void)dealloc;
+
+-(void)display:(NSDictionary*)message;
+-(void)disposeIdentifier:(NSString*)identifier;
+
+// subclasses can override these methods for custom behaviors.
++(UIView*)modifyView:(UIView*)view_ asNew:(BOOL)asNew forMessage:(NSDictionary*)message;
++(void)updateViewForDisclosure:(UIView*)view_;
++(void)activateView:(UIView*)view;
++(void)deactivateView:(UIView*)view;
+
+@end

@@ -36,7 +36,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <libkern/OSAtomic.h>
 
 static int clientPortID = 0;
-//static CFMutableSetRef clientPorts = NULL;
 static CFMessagePortRef serverPort = NULL;
 static CFRunLoopSourceRef serverSource = NULL;
 struct GPAlternativeHandler {
@@ -57,19 +56,7 @@ static CFDataRef GPServerCallback (CFMessagePortRef serverPort_, SInt32 type, CF
 		CFDataRef retdata = CFDataCreate(NULL, (const UInt8*)clientName, MaxStringLength+1);
 #undef MaxStringLength
 		return retdata;
-	}
-	
-	/*
-	else if (type == GPMessage_RegisterClientPort) {
-		CFStringRef portName = CFStringCreateFromExternalRepresentation(NULL, data, kCFStringEncodingUnicode);
-		if (portName != NULL) {
-			CFSetAddValue(clientPorts, portName);
-			CFRelease(portName);
-		}
-	}
-	 */
-	
-	else {
+	} else {
 		for (int i = CFArrayGetCount(alternateHandlers)-1; i >= 0; -- i) {
 			struct GPAlternativeHandler* altHandler = (struct GPAlternativeHandler*)CFDataGetBytePtr( (CFDataRef)CFArrayGetValueAtIndex(alternateHandlers, i) );
 			if (type >= altHandler->start && type <= altHandler->end)
@@ -100,8 +87,6 @@ int GPStartServer() {
 }
 
 void GPStopServer() {
-	// if (clientPorts != NULL)
-	//	CFRelease(clientPorts);
 	if (serverPort != NULL) {
 		CFMessagePortInvalidate(serverPort);
 		if (serverSource != NULL)

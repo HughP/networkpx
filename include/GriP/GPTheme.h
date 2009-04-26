@@ -30,6 +30,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  
 */
 
+@class NSBundle, NSDictionary, NSString;
+
 @protocol GPTheme
+-(id)initWithBundle:(NSBundle*)bundle;
 -(void)display:(NSDictionary*)message;
+-(void)disposeIdentifier:(NSString*)identifier;
 @end

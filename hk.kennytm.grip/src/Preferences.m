@@ -40,7 +40,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #import <GriP/GPApplicationBridge.h>
 #include <notify.h>
 
-#define PREFDICT @"/Library/GriP/Preferences.plist"
+#define PREFDICT @"/Library/GriP/GPPreferences.plist"
 
 static GPApplicationBridge* bridge = nil;
 

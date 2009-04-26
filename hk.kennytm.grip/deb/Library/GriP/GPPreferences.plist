@@ -5,5 +5,4 @@ HideTimer = 4;
 Sticky = 0;
 ActiveTheme = "Default.griptheme";
 MinPriority = -1;
-DisabledExtensions = ();
 }

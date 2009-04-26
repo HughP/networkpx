@@ -36,16 +36,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #import <GriP/Duplex/Client.h>
 #import <GriP/common.h>
 
-void UILogViewHierarchyWithDots(UIView* v, NSString* dots) {
-	NSLog(@"%@%@\t(frame=%@, retainCount=%d)", dots, v, NSStringFromCGRect(v.frame), [v retainCount]);
-	NSString* moreDots = [dots stringByAppendingString:@".."];
-	for (UIView* w in v.subviews) {
-		UILogViewHierarchyWithDots(w, moreDots);
-	}
-}
-
-extern void UILogViewHierarchy (UIView* v) { UILogViewHierarchyWithDots(v, @""); }
-
+#if GRIP_JAILBROKEN
 __attribute__((visibility("hidden")))
 @interface SBStatusBarController : NSObject
 +(SBStatusBarController*)sharedStatusBarController;
@@ -56,10 +47,13 @@ __attribute__((visibility("hidden")))
 @interface SpringBoard : UIApplication
 -(int)UIOrientation;
 @end
+#endif
 
 static NSMutableArray* occupiedGaps = nil;
 static NSMutableSet* unreleasedMessageWindows = nil;
+#if GRIP_JAILBROKEN
 static Class $SBStatusBarController = Nil;
+#endif
 
 static const int _oriented_locations_matrix[4][4] = {
 {2, 0, 3, 1},  // -90 (status bar on the left)
@@ -70,12 +64,14 @@ static const int _oriented_locations_matrix[4][4] = {
 static const int _orientation_angles[4] = {0, 180, 90, -90};
 
 @implementation GPMessageWindow
-@synthesize pid, context;
+@synthesize pid, context, view;
 
 +(void)_initialize {
 	occupiedGaps = [[NSMutableArray alloc] init];
 	unreleasedMessageWindows = [[NSMutableSet alloc] init];
+#if GRIP_JAILBROKEN
 	$SBStatusBarController = objc_getClass("SBStatusBarController");
+#endif
 }
 +(void)_cleanup {
 	[occupiedGaps release];
@@ -107,13 +103,17 @@ static const int _orientation_angles[4] = {0, 180, 90, -90};
 	return potentialGap;
 }
 -(void)_releaseMyself {
-	self.hidden = YES;
-	[GPMessageWindow _removeGap:currentGap];
-	[unreleasedMessageWindows removeObject:self];
+	[self release];
+	if (hiding) {
+		self.hidden = YES;
+		[view removeFromSuperview];
+		[GPMessageWindow _removeGap:currentGap];
+		[unreleasedMessageWindows removeObject:self];
+	}
 }
 
 -(void)_layoutWithAnimation:(BOOL)animate {
-	CGSize viewSize = view.bounds.size;
+	CGSize viewSize = view.frame.size;
 	[GPMessageWindow _removeGap:currentGap];
 	currentGap = [GPMessageWindow _createGapWithHeight:viewSize.height];
 	
@@ -121,6 +121,9 @@ static const int _orientation_angles[4] = {0, 180, 90, -90};
 	CGRect estimatedFrame = CGRectMake(0, currentGap.y, viewSize.width, viewSize.height);
 	
 	// obtain the current screen size & subtract the status bar from the screen.
+	// (can't use [UIScreen mainScreen].applicationFrame because that returns
+	//  SpringBoard's application frame and that's clearly not what we want.)
+#if GRIP_JAILBROKEN
 	CGRect currentScreenFrame = [UIScreen mainScreen].bounds;
 	UIWindow* statusBar = [[$SBStatusBarController sharedStatusBarController] statusBarWindow];
 	if (statusBar != nil) {
@@ -136,20 +139,25 @@ static const int _orientation_angles[4] = {0, 180, 90, -90};
 			currentScreenFrame.size.width -= statusFrame.size.width;
 		}
 	}
+#else
+	CGRect currentScreenFrame = [UIScreen mainScreen].applicationFrame;	
+#endif	
 	
-	SpringBoard* app = (SpringBoard*)[UIApplication sharedApplication];
+	UIApplication* app = [UIApplication sharedApplication];
 	int uiOrientation;
+#if GRIP_JAILBROKEN
 	if ([app respondsToSelector:@selector(UIOrientation)])
-		uiOrientation = [app UIOrientation];
+		uiOrientation = [(SpringBoard*)app UIOrientation];
 	else
+#endif
 		uiOrientation = _orientation_angles[app.statusBarOrientation-1];
+	
 	NSInteger location = [[GPPreferences() objectForKey:@"Location"] integerValue];
-	BOOL isLandscape = uiOrientation == 90 || uiOrientation == -90;
 	
 	// switch estimation box orientation if necessary.
-	if (isLandscape) {
+	if (uiOrientation == 90 || uiOrientation == -90) {
 		estimatedFrame = CGRectMake(estimatedFrame.origin.y, estimatedFrame.origin.x, estimatedFrame.size.height, estimatedFrame.size.width);
-		//currentScreenFrame = CGRectMake(currentScreenFrame.origin.y, currentScreenFrame.origin.x, currentScreenFrame.size.height, currentScreenFrame.size.width);
+		// currentScreenFrame = CGRectMake(currentScreenFrame.origin.y, currentScreenFrame.origin.x, currentScreenFrame.size.height, currentScreenFrame.size.width);
 	}
 	
 	NSInteger adjustedLocation = _oriented_locations_matrix[uiOrientation/90+1][location];
@@ -166,16 +174,22 @@ static const int _orientation_angles[4] = {0, 180, 90, -90};
 	estimatedFrame.origin.y += currentScreenFrame.origin.y;
 		
 	// change frame smoothly, if required.
-	if (animate)
-		[UIView beginAnimations:@"GPMW-Move" context:NULL];
+	// frankly speaking... I don't know what I'm doing here.
 	self.frame = estimatedFrame;
-	view.center = CGPointMake(estimatedFrame.size.width/2, estimatedFrame.size.height/2);
-	view.transform = CGAffineTransformMakeRotation(uiOrientation*M_PI/180);
+	UIView* transformerView = [self.subviews objectAtIndex:0];
+	transformerView.bounds = CGRectMake(0, 0, viewSize.width, viewSize.height);
+	transformerView.center = CGPointMake(estimatedFrame.size.width/2, estimatedFrame.size.height/2);
+	transformerView.transform = CGAffineTransformMakeRotation(uiOrientation*M_PI/180);
+	view.frame = CGRectMake(0, 0, viewSize.width, viewSize.height);
+	
 	if (animate)
 		[UIView commitAnimations];
+	
+	
+	
 }
 
-+(GPMessageWindow*)windowWithView:(UIView*)view_ message:(NSDictionary*)message {
++(GPMessageWindow*)registerWindowWithView:(UIView*)view_ message:(NSDictionary*)message {
 	GPMessageWindow* window = [[self alloc] initWithView:view_ message:message];
 	if (window != nil) {
 		[unreleasedMessageWindows addObject:window];
@@ -185,32 +199,51 @@ static const int _orientation_angles[4] = {0, 180, 90, -90};
 }
 
 -(id)initWithView:(UIView*)view_ message:(NSDictionary*)message {
-	if ((self = [super initWithFrame:CGRectZero])) {
-		[self addSubview:view_];
+	if ((self = [super init])) {
+		UIView* transformerView = [[UIView alloc] init];
+		[transformerView addSubview:view_];
+		[self addSubview:transformerView];
+		[transformerView release];
 		view = view_;
 		[self _layoutWithAnimation:NO];
-		sticky = [[message objectForKey:GRIP_STICKY] boolValue];
-		if (!sticky)
-			hideTimer = [[NSTimer scheduledTimerWithTimeInterval:[[GPPreferences() objectForKey:@"HideTimer"] floatValue] target:self selector:@selector(hide) userInfo:nil repeats:NO] retain];
-		pid = [[message objectForKey:GRIP_PID] retain];
-		context = [[message objectForKey:GRIP_CONTEXT] retain];
-		isURL = [[message objectForKey:GRIP_ISURL] boolValue];
+		[self refreshWithMessage:message];
 		self.windowLevel = UIWindowLevelStatusBar*2;
-		[self makeKeyAndVisible];
+		self.hidden = NO;
+		identifier = [[message objectForKey:GRIP_ID] retain];
 	}
 	return self;
 }
 
--(void)layoutSubviews {
-	[self _layoutWithAnimation:YES];
-	[super layoutSubviews];
+-(void)refreshWithMessage:(NSDictionary*)message {
+	[self stopHiding];
+	
+	if (!forceSticky) {
+		[self stopTimer];
+		sticky = [[message objectForKey:GRIP_STICKY] boolValue];
+		[self _startTimer];
+	}
+	
+	[pid release];
+	pid = [[message objectForKey:GRIP_PID] retain];
+	
+	[context release];
+	context = [[message objectForKey:GRIP_CONTEXT] retain];
+	
+	isURL = [[message objectForKey:GRIP_ISURL] boolValue];
 }
 
+-(void)prepareForResizing {
+	[UIView beginAnimations:@"GPMW-Move" context:NULL];
+}
+-(void)resize { [self _layoutWithAnimation:YES]; }
+
 -(void)restartTimer {
-	if (!sticky) {
-		[self stopTimer];
+	[self stopTimer];
+	[self _startTimer];
+}
+-(void)_startTimer {
+	if (!sticky)
 		hideTimer = [[NSTimer scheduledTimerWithTimeInterval:[[GPPreferences() objectForKey:@"HideTimer"] floatValue] target:self selector:@selector(hide) userInfo:nil repeats:NO] retain];
-	}
 }
 -(void)stopTimer {
 	if (!sticky) {
@@ -220,6 +253,12 @@ static const int _orientation_angles[4] = {0, 180, 90, -90};
 	}
 }
 
+-(void)stopHiding {
+	hiding = NO;
+	self.hidden = NO;
+	self.alpha = 1;
+}
+
 -(void)hide { [self hide:YES]; }
 
 -(void)hide:(BOOL)ignored {
@@ -227,18 +266,27 @@ static const int _orientation_angles[4] = {0, 180, 90, -90};
 	[GPDuplexClient sendMessage:(ignored?GriPMessage_IgnoredNotification:GriPMessage_ClickedNotification) data:portAndContext];
 	
 	[self stopTimer];
+	hiding = YES;
+	[self retain];
 	
 	[UIView beginAnimations:@"GPMW-Hide" context:NULL];
 	[UIView setAnimationDelegate:self];
 	[UIView setAnimationDidStopSelector:@selector(_releaseMyself)];
 	[UIView setAnimationDuration:0.5];
-	view.alpha = 0;
+	self.alpha = 0;
 	[UIView commitAnimations];
+}
+
+-(void)forceSticky {
+	sticky = YES;
+	forceSticky = YES;
+	[self stopTimer];
 }
 
 -(void)dealloc {
 	[self stopTimer];
-	[self resignKeyWindow];
+	if (identifier != nil)
+		[GPDuplexClient sendMessage:GriPMessage_DisposeIdentifier data:[identifier dataUsingEncoding:NSUTF8StringEncoding]];
 	[super dealloc];
 }
 
