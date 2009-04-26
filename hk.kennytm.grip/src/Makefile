@@ -82,7 +82,7 @@ SDK_libGriPServer_Sources=Duplex/Client.sdk.o GPMessageWindow.sdk.o GPPreference
 SDK_libGriPServer_Target=../sdk/libGriPServer.a
 SDK_libGriPServer_Options=-framework Foundation -framework UIKit -framework CoreGraphics -static
 
-SDK_Headers=$(GriPIncPath)/GPApplicationBridge.h $(GriPIncPath)/GrowlApplicationBridge.h $(GriPIncPath)/Duplex/Client.h $(GriPIncPath)/common.h $(GriPIncPath)/GrowlDefines.h $(GriPIncPath)/NSString-stringByEscapingXMLEntities.h $(GriPIncPath)/GriP.h $(GriPIncPath)/GriPServer.h
+SDK_Headers=$(GriPIncPath)/GPApplicationBridge.h $(GriPIncPath)/GrowlApplicationBridge.h $(GriPIncPath)/common.h $(GriPIncPath)/GrowlDefines.h $(GriPIncPath)/NSString-stringByEscapingXMLEntities.h $(GriPIncPath)/GriP.h $(GriPIncPath)/GriPServer.h
 SDK_Sources=NSString-stringByEscapingXMLEntities.m GrowlApplicationBridge.m GriPView.xib ../deb/Library/GriP/GPPreferences.plist
 
 all: $(libGriP_Target) $(DefaultTheme_Target) $(ThemesPath)/Default.griptheme/GriPView.nib $(XXHooker_GriP_Target) $(GriPTest_Target) $(Preferences_Target) $(MemWatcher_Target) $(YouveGotMail_Target)
@@ -147,6 +147,7 @@ $(SDK_libGriPServer_Target): $(SDK_libGriPServer_Sources)
 SDKEtc:	$(SDK_Headers) $(SDK_Sources)
 	cp $(SDK_Sources) ../sdk/
 	cp $(SDK_Headers) ../sdk/GriP/
+	cp $(GriPIncPath)/Duplex/Client.h ../sdk/GriP/Duplex/
 	tar --exclude=".*" -cjf ../GriP-for-SDK-developers.tar.bz2 -C .. sdk
 
 clean:

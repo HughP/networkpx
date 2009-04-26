@@ -1,6 +1,6 @@
 /*
 
-GPApplicationBridge.h ... GriP Application Bridge
+GriPServer.h ... GriP Display Server (SDK-Compatible)
  
 Copyright (c) 2009, KennyTM~
 All rights reserved.
