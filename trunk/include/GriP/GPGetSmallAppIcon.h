@@ -32,3 +32,5 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 @class UIImage, NSString;
 UIImage* GPGetSmallAppIcon(NSString* identifier);
+
+UIImage* GPGetSmallAppIconFromObject(NSObject* object);

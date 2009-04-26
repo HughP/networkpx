@@ -45,12 +45,14 @@ main
 	if (argc == 1) {
 		printf("Usage: GriP [<options>]\n"
 			   "	where options are:\n"
-			   "		-t	<title>        Title of message.\n"
+			   "		-t  <title>        Title of message.\n"
 			   "		-d  <description>  Description of message.\n"
 			   "		-i  <icon>         File name or bundle identifier to use for the icon.\n"
 			   "		-u  <url>          URL to launch when touched.\n"
 			   "		-p  <priority>     Priority of message. Must be \"-2\" to \"2\"\n"
-			   "		-s	               Set message as sticky.\n");
+			   "		-s	               Set message as sticky.\n"
+			   "		-e  <id>           Identifier (for coalescing).\n"
+		);
 	} else {
 		// get options.
 		NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
@@ -61,9 +63,10 @@ main
 		NSObject* icon = nil;
 		NSURL* url = nil;
 		int priority = 0;
+		NSString* identifier = nil;
 		
 		int c;
-		while ((c = getopt(argc, argv, "t:d:i:u:p:s")) != -1) {
+		while ((c = getopt(argc, argv, "t:d:i:u:p:se:")) != -1) {
 			switch (c) {
 				case 't':
 					title = [NSString stringWithUTF8String:optarg];
@@ -91,6 +94,10 @@ main
 				case 's':
 					sticky = YES;
 					break;
+					
+				case 'e':
+					identifier = [NSString stringWithUTF8String:optarg];
+					break;
 			}
 		}
 		
@@ -112,7 +119,7 @@ main
 			goto cleanup;
 		}
 		
-		[bridge notifyWithTitle:title description:desc notificationName:@"Command line message" iconData:icon priority:priority isSticky:sticky clickContext:url];
+		[bridge notifyWithTitle:title description:desc notificationName:@"Command line message" iconData:icon priority:priority isSticky:sticky clickContext:url identifier:identifier];
 		
 cleanup:
 		[bridge release];

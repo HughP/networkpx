@@ -46,14 +46,22 @@ typedef struct GPGap {
 	NSString* pid;
 	NSObject* context;
 	BOOL isURL;
+	BOOL hiding;
+	NSString* identifier;
+	BOOL forceSticky;
 }
-+(GPMessageWindow*)windowWithView:(UIView*)view_ message:(NSDictionary*)message;
--(void)layoutSubviews;	// in additional to resizing the subviews, this method will also adopt the subview's boundary.
++(GPMessageWindow*)registerWindowWithView:(UIView*)view_ message:(NSDictionary*)message;
+-(void)refreshWithMessage:(NSDictionary*)message;
+-(void)prepareForResizing;
+-(void)resize;
 
 @property(retain,readonly) NSString* pid;
 @property(retain,readonly) NSObject* context;
+@property(retain,readonly) UIView* view;
 
+-(void)stopHiding;
 -(void)hide:(BOOL)ignored;
+-(void)forceSticky;
 
 -(void)stopTimer;
 -(void)restartTimer;
@@ -69,4 +77,5 @@ typedef struct GPGap {
 +(GPGap)_createGapWithHeight:(CGFloat)height;
 -(void)_layoutWithAnimation:(BOOL)animate;
 -(void)_releaseMyself;
+-(void)_startTimer;
 @end

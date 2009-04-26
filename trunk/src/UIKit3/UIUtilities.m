@@ -1,6 +1,6 @@
 /*
  
- GraphicsUtilities.m ... Convenient functions for UI elements
+ UIUtilities.m ... Convenient functions for UI elements
  
  Copyright (c) 2009, KennyTM~
  All rights reserved.
@@ -80,7 +80,7 @@ NSString* UITextOf(UIView* v) {
 
 
 void UILogViewHierarchyWithDots(UIView* v, NSString* dots) {
-	NSLog(@"%@%@\t(frame=%@, text=%@)", dots, v, NSStringFromCGRect(v.frame), UITextOf(v));
+	NSLog(@"%@%@\t(frame=%@, text=%@, tag=%d)", dots, v, NSStringFromCGRect(v.frame), UITextOf(v), v.tag);
 	NSString* moreDots = [dots stringByAppendingString:@".."];
 	for (UIView* w in v.subviews) {
 		UILogViewHierarchyWithDots(w, moreDots);
@@ -93,7 +93,7 @@ extern void UILogSuperviews (UIView* v) {
 	NSMutableString* tildes = [NSMutableString string];
 	UIView* w = v;
 	while (w != nil) {
-		NSLog(@"%@%@\t(frame=%@, text=%@)", tildes, w, NSStringFromCGRect(w.frame), UITextOf(w));
+		NSLog(@"%@%@\t(frame=%@, text=%@, tag=%d)", tildes, w, NSStringFromCGRect(w.frame), UITextOf(w), w.tag);
 		w = w.superview;
 		[tildes appendString:@"~~"];
 	}

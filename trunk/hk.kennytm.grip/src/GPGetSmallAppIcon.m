@@ -33,6 +33,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #import <UIKit/UIKit.h>
 #import <Foundation/Foundation.h>
 
+#if GRIP_JAILBROKEN
+
 @interface SBApplication : NSObject
 -(NSString*)pathForIcon;	// safe
 -(BOOL)isSystemApplication;	// safe
@@ -50,12 +52,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 -(UIImage*)_smallApplicationIconImagePrecomposed:(BOOL)precomposed;	// safe
 @end
 
+typedef struct __CGImageSource* CGImageSourceRef;
+CGImageSourceRef CGImageSourceCreateWithData(CFDataRef data, CFDictionaryRef options);
+CGImageRef CGImageSourceCreateImageAtIndex(CGImageSourceRef isrc, size_t index, CFDictionaryRef options);
+
 static CFDictionaryRef settingIcons = NULL;
 static void GPReleaseSettingIcons () { if (settingIcons != NULL) { CFRelease(settingIcons); settingIcons = NULL; } }
 
 UIImage* GPGetSmallAppIcon (NSString* bundleIdentifier) {
-	//NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
-	
 	if (settingIcons == nil) {
 		// For some unknown reason... if I create the settingIcons dictionary as an NSDictionary* instead of CFDictionaryRef, 
 		// SpringBoard crashes.
@@ -125,8 +129,23 @@ UIImage* GPGetSmallAppIcon (NSString* bundleIdentifier) {
 			retimg = [[[UIImage imageWithContentsOfFile:[app pathForIcon]] _smallApplicationIconImagePrecomposed:isPrerendered] retain];
 		}
 	}
-	
-	//[pool drain];
-	//NSLog(@"%@ = %d", retimg, [retimg retainCount]);
 	return [retimg autorelease];
+}
+
+#else
+
+// This won't return a 29x29 icon, but it's sufficient since the theme should resize it to 29x29 anyway.
+UIImage* GPGetSmallAppIcon(NSString* bundleIdentifier) {
+	return [UIImage imageWithContentsOfFile:[[NSBundle bundleWithIdentifier:bundleIdentifier] pathForResource:@"icon" ofType:@"png"]];
+}
+
+#endif
+
+UIImage* GPGetSmallAppIconFromObject(NSObject* object) {
+	if ([object isKindOfClass:[NSString class]])
+		return GPGetSmallAppIcon((NSString*)object);
+	else if ([object isKindOfClass:[NSData class]])
+		return [UIImage imageWithData:(NSData*)object];
+	else
+		return nil;
 }

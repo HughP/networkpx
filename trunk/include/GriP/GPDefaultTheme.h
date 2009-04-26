@@ -1,6 +1,6 @@
 /*
 
-GPExtensions.m ... Useful functions for Mobile Substrate Extensions on SpringBoard using GriP.
+GPNibTheme.h ... GriP Theme using .nib file to render the content.
  
 Copyright (c) 2009, KennyTM~
 All rights reserved.
@@ -30,23 +30,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  
 */
 
-#include <CoreFoundation/CoreFoundation.h>
+#import <GriP/GPNibTheme.h>
 
-static void GPGriPIsReadyCallback(CFNotificationCenterRef center, void(*initializer)(), CFStringRef name, const void* object, CFDictionaryRef userInfo) {
-	CFNotificationCenterRemoveEveryObserver(center, initializer);
-	initializer();
-}
-
-extern void GPStartWhenGriPIsReady(void(*initializer)()) {
-	CFMessagePortRef serverPort = CFMessagePortCreateRemote(NULL, CFSTR("hk.kennytm.GriP.server"));
-	
-	if (serverPort != NULL) {
-		// GriP is already running. call the initializer directly.
-		initializer();
-		CFRelease(serverPort);
-		
-	} else {
-		// GriP is not running. register for the notification and set the initializer as callback.
-		CFNotificationCenterAddObserver(CFNotificationCenterGetLocalCenter(), initializer, (CFNotificationCallback)&GPGriPIsReadyCallback, CFSTR("hk.kennytm.GriP.ready"), NULL, CFNotificationSuspensionBehaviorCoalesce);
-	}
-}
+@interface GPDefaultTheme : GPNibTheme<GPTheme> {}
++(UIView*)modifyView:(UIView*)view_ asNew:(BOOL)asNew forMessage:(NSDictionary*)message;
+@end

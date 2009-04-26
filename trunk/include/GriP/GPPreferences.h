@@ -34,7 +34,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 extern "C" {
 #endif
 
-#import <Foundation/Foundation.h>
+#include <objc/objc.h>
+@class UIColor, NSDictionary, NSString, NSMutableDictionary;
 	
 NSDictionary* GPPreferences();
 void GPFlushPreferences();
@@ -44,6 +45,8 @@ void GPModifyMessageForUserPreference(NSMutableDictionary* message);
 	
 BOOL GPCheckEnabled(NSString* appName, NSString* msgName);
 
+void GPGetColorsForPriority(int priority, UIColor** outBGColor, UIColor** outFGColor);
+	
 #ifdef __cplusplus
 }
 #endif

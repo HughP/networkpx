@@ -1,6 +1,6 @@
 /*
 
-XXHooker-GriP ... GriP Hook to SpringBoard & Preferences.
+GriPServer ... GriP Server / GriP Hook to SpringBoard & Preferences.
  
 Copyright (c) 2009, KennyTM~
 All rights reserved.
@@ -42,10 +42,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #import <PrefHooker/PrefsLinkHooker.h>
 #import <UIKit/UIApplication.h>
 
+#if GRIP_JAILBROKEN
 @interface SpringBoard : UIApplication
 -(void)applicationOpenURL:(NSURL*)url publicURLsOnly:(BOOL)publicsOnly;	// only in >=3.0
 -(void)applicationOpenURL:(NSURL*)url asPanel:(BOOL)asPanel publicURLsOnly:(BOOL)publicsOnly;	// only in <3.0
 @end
+#else
+#import <GriP/GPDefaultTheme.h>
+#endif
 
 static pthread_mutex_t atLock = PTHREAD_MUTEX_INITIALIZER;
 static NSObject<GPTheme>* activeTheme = nil;
@@ -63,10 +67,14 @@ static CFDataRef GriPCallback (CFMessagePortRef serverPort, SInt32 type, CFDataR
 		case GriPMessage_ShowMessage: {
 			pthread_mutex_lock(&atLock);
 			if (activeTheme == nil) {
+#if GRIP_JAILBROKEN
 				NSBundle* activeThemeBundle = [NSBundle bundleWithPath:[@"/Library/GriP/Themes/" stringByAppendingPathComponent:[GPPreferences() objectForKey:@"ActiveTheme"]]];
 				NSString* themeType = [activeThemeBundle objectForInfoDictionaryKey:@"GPThemeType"];
 				if (themeType == nil || [@"OBJC" isEqualToString:themeType])
-					activeTheme = [[[activeThemeBundle principalClass] alloc] init];
+					activeTheme = [[[activeThemeBundle principalClass] alloc] initWithBundle:activeThemeBundle];
+#else
+				activeTheme = [[GPDefaultTheme alloc] initWithBundle:[NSBundle mainBundle]];
+#endif
 			}
 			BOOL willDisplay = [activeTheme respondsToSelector:@selector(display:)];
 			pthread_mutex_unlock(&atLock);
@@ -105,12 +113,16 @@ static CFDataRef GriPCallback (CFMessagePortRef serverPort, SInt32 type, CFDataR
 						CFMessagePortSendRequest(clientPort, GriPMessage_LaunchURL, context, 1, 0, NULL, NULL);
 					CFRelease(clientPort);
 				} else if (isURL) {
-					SpringBoard* springBoard = (SpringBoard*)[UIApplication sharedApplication];
 					NSURL* url = [NSURL URLWithString:(NSString*)[array objectAtIndex:1]];
+#if GRIP_JAILBROKEN
+					SpringBoard* springBoard = (SpringBoard*)[UIApplication sharedApplication];
 					if ([springBoard respondsToSelector:@selector(applicationOpenURL:asPanel:publicURLsOnly:)])
 						[springBoard applicationOpenURL:url asPanel:NO publicURLsOnly:NO];
 					else if ([springBoard respondsToSelector:@selector(applicationOpenURL:publicURLsOnly:)])
 						[springBoard applicationOpenURL:url publicURLsOnly:NO];
+#else
+					[[UIApplication sharedApplication] openURL:url];
+#endif
 				}
 			}
 			break;
@@ -140,6 +152,14 @@ static CFDataRef GriPCallback (CFMessagePortRef serverPort, SInt32 type, CFDataR
 			}
 			return CFDataCreate(NULL, (const UInt8*)&retval, sizeof(BOOL));
 		}
+			
+		case GriPMessage_DisposeIdentifier:
+			if ([activeTheme respondsToSelector:@selector(disposeIdentifier:)]) {
+				NSString* iden = [[NSString alloc] initWithData:(NSData*)data encoding:NSUTF8StringEncoding];
+				[activeTheme disposeIdentifier:iden];
+				[iden release];
+			}
+			break;
 
 		default:
 			break;
@@ -157,15 +177,11 @@ static void terminate () {
 }
 	
 	 
-void initialize () {
+void GPStartGriPServer () {
+#if GRIP_JAILBROKEN
 	CFStringRef bundleID = CFBundleGetIdentifier(CFBundleGetMainBundle());
-	if
-#if TARGET_IPHONE_SIMULATOR
-		(1)
-#else
-		(kCFCompareEqualTo == CFStringCompare(bundleID, CFSTR("com.apple.springboard"), 0))
+	if (kCFCompareEqualTo == CFStringCompare(bundleID, CFSTR("com.apple.springboard"), 0)) {
 #endif
-	{
 	
 		if (GPStartServer() != 0) {
 			NSLog(@"Cannot start GriP server -- probably another instance of GriP is already running.");
@@ -173,10 +189,6 @@ void initialize () {
 		}
 		
 		GPSetAlternateHandler(&GriPCallback, GriPMessage__Start, GriPMessage__End);
-		
-#if TARGET_IPHONE_SIMULATOR
-		activeTheme = [[objc_getClass("GPDefaultTheme") alloc] init];
-#endif
 		
 		atexit(&terminate);
 	
@@ -189,7 +201,9 @@ void initialize () {
 		// Notify any waiting MS extensions that GriP is ready.
 		CFNotificationCenterPostNotification(CFNotificationCenterGetLocalCenter(), CFSTR("hk.kennytm.GriP.ready"), NULL, NULL, false);
 		
+#if GRIP_JAILBROKEN
 	} else {
 		PrefsListController_hook();
 	}
+#endif
 }

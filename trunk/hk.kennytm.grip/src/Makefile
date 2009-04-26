@@ -21,19 +21,20 @@ Options=-arch armv6 \
 	-L../deb/usr/lib \
 	-L/usr/lib/ \
 	-mcpu=arm1176jzf-s \
-	-O2
+	-O2 \
+	-DGRIP_JAILBROKEN=1
 
-libGriP_Sources=Duplex/Client.o GPMessageWindow.o GPPreferences.o GPGetSmallAppIcon.o GPApplicationBridge.o GPExtensions.o NSString-stringByEscapingXMLEntities.o
+libGriP_Sources=Duplex/Client.o GPMessageWindow.o GPPreferences.o GPGetSmallAppIcon.o GPApplicationBridge.o GPExtensions.o NSString-stringByEscapingXMLEntities.o GPNibTheme.o
 libGriP_Target=../deb/usr/lib/libGriP.dylib
 libGriP_Options=-lobjc -dynamiclib -install_name /usr/lib/libGriP.dylib -framework Foundation -framework CoreFoundation -framework UIKit -framework CoreGraphics
 
-XXHooker_GriP_Sources=XXHooker-GriP.o Duplex/Server.o ../../src/PrefsLinkHooker.o
+XXHooker_GriP_Sources=GriPServer.o Duplex/Server.o ../../src/PrefsLinkHooker.o
 XXHooker_GriP_Target=$(MobileSubstratePath)/%GriP.dylib
-XXHooker_GriP_Options=-lobjc -lGriP -lsubstrate -dynamiclib -framework Foundation -framework CoreFoundation -framework Preferences -framework UIKit -init _initialize
+XXHooker_GriP_Options=-lobjc -lGriP -lsubstrate -dynamiclib -framework Foundation -framework CoreFoundation -framework Preferences -framework UIKit -init _GPStartGriPServer
 
-DefaultTheme_Sources=GPDefaultTheme.o
+DefaultTheme_Sources=GPDefaultTheme.o $(SharedSrcPath)/GraphicsUtilities.o
 DefaultTheme_Target=$(ThemesPath)/Default.griptheme/Default
-DefaultTheme_Options=-lobjc -bundle -lGriP -framework Foundation -framework CoreFoundation -framework UIKit -framework CoreGraphics
+DefaultTheme_Options=-lGriP -framework UIKit -framework Foundation -framework CoreGraphics -bundle
 
 GriPTest_Sources=GriPTest.o
 GriPTest_Target=../deb/usr/bin/GriP
@@ -52,13 +53,16 @@ YouveGotMail_Target=$(MobileSubstratePath)/YouveGotMail.dylib
 YouveGotMail_Options=-lGriP -framework Foundation -framework Message -framework UIKit -dynamiclib -init _initialize
 
 
-all: $(libGriP_Target) $(DefaultTheme_Target) $(XXHooker_GriP_Target) $(GriPTest_Target) $(Preferences_Target) $(MemWatcher_Target) $(YouveGotMail_Target)
+all: $(libGriP_Target) $(DefaultTheme_Target) $(ThemesPath)/Default.griptheme/GriPView.nib $(XXHooker_GriP_Target) $(GriPTest_Target) $(Preferences_Target) $(MemWatcher_Target) $(YouveGotMail_Target)
 
 %.o:	%.m
 	$(Compiler) -c $(Options) -o $@ $^
 
 %.o:	%.c
 	$(Compiler) -c $(Options) -o $@ $^
+
+$(ThemesPath)/%.griptheme/GriPView.nib:	%.xib
+	ibtool --compile $@ $^
 
 $(libGriP_Target):	$(libGriP_Sources)
 	$(Compiler) $(Options) $(libGriP_Options) -o $@ $^
@@ -68,7 +72,7 @@ $(XXHooker_GriP_Target):	$(XXHooker_GriP_Sources)
 	$(Compiler) $(Options) $(XXHooker_GriP_Options) -o $@ $^
 	$(CodeSign) $@
 
-$(DefaultTheme_Target):	$(DefaultTheme_Sources)
+$(DefaultTheme_Target):	$(DefaultTheme_Sources) 
 	$(Compiler) $(Options) $(DefaultTheme_Options) -o $@ $^
 	$(CodeSign) $@
 

@@ -1,6 +1,6 @@
 /*
 
-GPExtensions.m ... Useful functions for Mobile Substrate Extensions on SpringBoard using GriP.
+GPApplicationBridge.h ... GriP Application Bridge
  
 Copyright (c) 2009, KennyTM~
 All rights reserved.
@@ -30,23 +30,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  
 */
 
-#include <CoreFoundation/CoreFoundation.h>
+#ifndef GRIPSERVER_H
+#define GRIPSERVER_H
 
-static void GPGriPIsReadyCallback(CFNotificationCenterRef center, void(*initializer)(), CFStringRef name, const void* object, CFDictionaryRef userInfo) {
-	CFNotificationCenterRemoveEveryObserver(center, initializer);
-	initializer();
-}
+#ifdef __cplusplus
+extern "C"
+#endif
 
-extern void GPStartWhenGriPIsReady(void(*initializer)()) {
-	CFMessagePortRef serverPort = CFMessagePortCreateRemote(NULL, CFSTR("hk.kennytm.GriP.server"));
-	
-	if (serverPort != NULL) {
-		// GriP is already running. call the initializer directly.
-		initializer();
-		CFRelease(serverPort);
-		
-	} else {
-		// GriP is not running. register for the notification and set the initializer as callback.
-		CFNotificationCenterAddObserver(CFNotificationCenterGetLocalCenter(), initializer, (CFNotificationCallback)&GPGriPIsReadyCallback, CFSTR("hk.kennytm.GriP.ready"), NULL, CFNotificationSuspensionBehaviorCoalesce);
-	}
-}
+void GPStartGriPServer();
+
+#endif
