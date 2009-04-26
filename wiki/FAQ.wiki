@@ -16,6 +16,13 @@ T9 is a [http://www.google.com/patents?id=PmgCAAAAEBAJ patented] technology and 
 = _«some keyboard»_ does not work! Pressing the Globe brings me nothing new. =
 Please go to Settings → iKeyEx → International Keyboards, and turn on _«some keyboard»_.
 
+= It still doesn't work. And now only the original keyboards remain. =
+Have you disabled any of those original keyboards? There is a bug in 2.x that needs you to be very careful when you disable any original keyboards. Please follow these steps:
+ # Go to Settings and turn on your new keyboard. Don't turn off any old ones.
+ # Close Settings and launch Notes. Select your new keyboard there.
+ # Quit Notes and start Settings again.
+ # Now you can safely turn off the original keyboards.
+
 = My favorite theme is not applied to _«some keyboard»_. =
 For performance iKeyEx will generate cache to images used in keyboards. However, this cache is kept even after you have changed the !WinterBoard theme. The new and old theme will mix strangely as a result.
 
