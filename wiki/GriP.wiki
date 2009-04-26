@@ -67,7 +67,6 @@ You can change GriP settings in Settings → GriP (the option is at the bottom).
 || *Duration* || How long should a GriP message live before it auto-close. The range is between 0 to 10 seconds. ||
 || *Minimum priority* || The lowest priority a GriP message should have before it can be presented. You can raise the settings to ignore some lower-priority messages you don't want to deal with. ||
 || *Background colors* || The background colors for each priority level. In each group, there are 3 sliders representing the red, green and blue components of the color in RGB space. ||
-|| *Extensions* || Enable or disable GriP extentions for !SpringBoard. ||
 
 == Per-App Settings ==
 
@@ -84,21 +83,56 @@ More fine-grained settings for each application/extension. If a per-app setting 
 
 == !AppStore (SDK) developers ==
 
-While GriP requires Jailbreaking to function, the application side that talks to GriP (“GriP client”) is perfectly SDK-compatible. Of course, it is up to Apple Inc. to decide whether GriP-supporting source codes are acceptable, but the GriP client uses only documented API so technically it should be allowed.
+While GriP requires Jailbreaking for maximal function, it can also be made SDK-compatible. Of course, it is up to Apple Inc. to decide whether GriP-supporting source codes are acceptable, but GriP uses only documented API so technically it should be allowed.
 
-To add GriP client to your app, simply download http://code.google.com/p/networkpx/downloads/detail?name=GriP-for-SDK-developers.zip from this site, extract the content and drag the folder into your project. The source code included are:
+There are two levels of GriP support you may use. The 1st level is simply add a GriP client, and on the 2nd level you may embed the display server as well. The GriP client can communicate with the external server and display GriP messages. If you embed the display server into your application also, then your application will manage the GriP messages. This ensures the GriP messages can be shown even if GriP is not installed. (But the official GriP server will take over yours if present).
 
-|| `GriP/GPApplicationBridge.[mh]` || An almost Growl-compatible interface (instance-method-based) to display messages. ||
-|| `GriP/GrowlApplicationBridge.[mh]` || A Growl-comptible interface (class-method-based) to display messages. ||
-|| `GriP/Duplex/Client.[mh]` || The low-level code for actual communication with the GriP server. ||
-|| `GriP/common.h` || GriP-specific definitions. ||
-|| `GriP/GrowlDefines.h` || Growl-specific definitions. ||
-|| `GriP/NSString-stringByEscapingXMLEntities.[mh]` || A convenient method added for NSString to escape XML entities (`<`, `>` and `&`). ||
-|| `GriP/GriP.h` || Imports all necessary headers for GriP to function (except `NSString-stringByEscapingXMLEntities.h`. ||
+We recommend you just to include the GriP client.
 
-You may have to add a header search path. Suppose you have extracted the zip file to `/path/to/your/project/`, then you should configure your project like this:
+To install, 
 
-  http://x99.xanga.com/7f9f2b3535c32240946853/w190717574.png 
+ # Download http://code.google.com/p/networkpx/downloads/detail?name=GriP-for-SDK-developers.tar.bz2 from this site.
+ # Extract the bz2 file anywhere. You should see this directory structure:
+   {{{
+sdk/
+  GriP/
+    common.h
+    Duplex/
+      Client.h
+    GPApplicationBridge.h
+    GriP.h
+    GriPServer.h
+    GrowlApplicationBridge.h
+    GrowlDefines.h
+    NSString-stringByEscapingXMLEntities.h
+  GriPView.xib
+  GrowlApplicationBridge.m
+  libGriP.a
+  libGriPServer.a
+  NSString-stringByEscapingXMLEntities.m
+   }}}
+ # *Copy* the content of the `sdk` folder into your project, like this:
+   http://xc1.xanga.com/d1df36f536033241257650/w190986365.png
+ # There 4 files you have to decide to compile or not:
+|| `libGriP.a` || Static library for the GriP client. ||
+|| `libGriPServer.a` || Static library for the GriP display server. ||
+|| `GrowlApplicationBridge.m` || A Growl-compatible API wrapper. ||
+|| `NSString-stringByEscapingXMLEntities.m` || Category for escaping XML entities. ||
+   We recommend you to *check `libGriP.a` only*, and leave the others excluded.
+
+If you include the GriP server, please modify your `main.m` to read
+{{{
+#import <UIKit/UIKit.h>
+#import <GriP/GriPServer.h>    /// <--- new
+
+int main(int argc, char *argv[]) {
+    NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
+    GPStartGriPServer();       /// <--- new
+    int retVal = UIApplicationMain(argc, argv, nil, nil);
+    [pool release];
+    return retVal;
+}
+}}}
 
 == Open toolchain developers or Developers for Jailbroken Devices ==
 
@@ -166,7 +200,16 @@ please just say
 
 All the details can be thrown into the description. And because the description is normally hidden, you can give as much detail as you want there. Of course, you should _still_ make the description concise, no one wants to read a novel in a 160x60 box.
 
-Another thing is that, *do not use GriP for important messages that require user feedback*, because GriP messages can be easily ignored. A `UIAlertView` or `UIActionSheet` is more suitable in this case.
+Another thing is that, *do not use GriP for important messages that require user feedback*, because GriP messages can be easily ignored. A `UIAlertView` or `UIActionSheet` is more suitable in this case. Also, *always assume your message will be ignored.*
+
+== Known issues of the embedded server ==
+
+To play nice with the SDK restriction, there are a few features not found on the embedded server:
+ * HTML description cannot be used since `-[UITextView setContentToHTMLString:]` is a private API.
+ * You cannot use other applications' icons with a bundle identifier. This is because your application is sandboxed.
+ * Application tickets are currently ignored. This may give a false success even if your registration dictionary has fault.
+
+There are some settings but you may tweak `GPPreferences.plist` to suit your need. You may even change `GriPView.xib` to suit your need.
 
 == Extensions of !SpringBoard using GriP ==
 
@@ -191,4 +234,4 @@ You should *not* do this if your extension is not targeting !SpringBoard. If the
 
 = Theming =
 
-GriP supports theming, but the detail is not settled down yet.
+GriP supports theming through .nib files, and we will explain how soon.
