@@ -100,7 +100,10 @@ static CFDataRef GriPCallback (CFMessagePortRef serverPort, SInt32 type, CFDataR
 			
 			// fall through as an ignored message if it remained unhandled.
 			type = GriPMessage_IgnoredNotification;
-			array = [messageDict objectsForKeys:[NSArray arrayWithObjects:GRIP_PID, GRIP_CONTEXT, GRIP_ISURL, nil] notFoundMarker:[NSNull null]];
+			NSObject* context = [messageDict objectForKey:GRIP_CONTEXT];
+			if (context == nil)
+				break;
+			array = [messageDict objectsForKeys:[NSArray arrayWithObjects:GRIP_PID, GRIP_CONTEXT, GRIP_ISURL, nil] notFoundMarker:@""];
 			
 			goto ignored_message;
 		}
