@@ -230,6 +230,8 @@ static const int _orientation_angles[4] = {0, 180, 90, -90};
 	context = [[message objectForKey:GRIP_CONTEXT] retain];
 	
 	isURL = [[message objectForKey:GRIP_ISURL] boolValue];
+	
+	priority = [[message objectForKey:GRIP_PRIORITY] integerValue];
 }
 
 -(void)prepareForResizing {
@@ -243,7 +245,8 @@ static const int _orientation_angles[4] = {0, 180, 90, -90};
 }
 -(void)_startTimer {
 	if (!sticky)
-		hideTimer = [[NSTimer scheduledTimerWithTimeInterval:[[GPPreferences() objectForKey:@"HideTimer"] floatValue] target:self selector:@selector(hide) userInfo:nil repeats:NO] retain];
+		hideTimer = [[NSTimer scheduledTimerWithTimeInterval:[[[[GPPreferences() objectForKey:@"PerPrioritySettings"] objectAtIndex:priority+2] objectAtIndex:GPPrioritySettings_Timer] doubleValue]
+													  target:self selector:@selector(hide) userInfo:nil repeats:NO] retain];
 }
 -(void)stopTimer {
 	if (!sticky) {

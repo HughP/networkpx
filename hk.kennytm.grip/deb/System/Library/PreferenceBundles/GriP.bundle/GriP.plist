@@ -4,8 +4,7 @@ items = (
 	{ cell = PSGroupCell; },
 	{ cell = PSButtonCell;
 		label = Preview;
-		action = preview;
-	},
+		action = preview; },
 	{ cell = PSGroupCell; },
 	{ cell = PSLinkListCell;
 		detail = PSListItemsController;
@@ -19,50 +18,38 @@ items = (
 		);
 		validValues = (0,1,2,3);
 		get = "get:";
-		set = "set:with:";
-	},
+		set = "set:with:"; },
 	{ cell = PSLinkListCell;
 		detail = PSListItemsController;
-		label = Sticky;
-		id = Sticky;
-		validTitles = (
-			"App decides",
-			Always,
-			Never
-		);
-		validValues = (0,1,2);
+		label = Theme;
+		id = ActiveTheme;
+		titlesDataSource = allThemeTitles;
+		valuesDataSource = allThemeValues;
 		get = "get:";
-		set = "set:with:";
-	},
-	{ cell = PSSliderCell;
-		get = "get:";
-		set = "set:with:";
-		id = HideTimer;
-		min = 0;
-		max = 10;
-		showValue = YES;
-		leftImage = Duration.png;
-	},
-	{ cell = PSLinkListCell;
-		detail = PSListItemsController;
-		label = "Minimum priority";
-		id = MinPriority;
-		validTitles = (
-			"Ignore all",
-			Emergency,
-			High,
-			Normal,
-			Moderate,
-			"Very low"
-		);
-		validValues = (3,2,1,0,-1,-2);
-		get = "get:";
-		set = "set:with:";
-	},
+		set = "set:with:"; },
+
+	{ cell = PSGroupCell; label = "Per-Priority Settings"; },
 	{ cell = PSLinkCell;
-		label = "Background colors";
-		detail = BackgroundColorsController;
-	},
+		label = Emergency;
+		priorityLevel = 4;
+		detail = GPPerPrioritySettingsController; },
+	{ cell = PSLinkCell;
+		label = High;
+		priorityLevel = 3;
+		detail = GPPerPrioritySettingsController; },
+	{ cell = PSLinkCell;
+		label = Normal;
+		priorityLevel = 2;
+		detail = GPPerPrioritySettingsController; },
+	{ cell = PSLinkCell;
+		label = Moderate;
+		priorityLevel = 1;
+		detail = GPPerPrioritySettingsController; },
+	{ cell = PSLinkCell;
+		label = "Very low";
+		priorityLevel = 0;
+		detail = GPPerPrioritySettingsController; },
+
 	{ cell = PSGroupCell; label = "Per-App Settings"; }
 );
 }

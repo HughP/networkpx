@@ -65,7 +65,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		
 		NSBundle* mainBundle = [NSBundle mainBundle];
 		if (appName == nil) {
-			appName = [[mainBundle objectForInfoDictionaryKey:@"CFBundleExecutableName"] retain];
+			appName = [([mainBundle objectForInfoDictionaryKey:@"CFBundleExecutableName"] ?: [[[mainBundle bundlePath] lastPathComponent] stringByDeletingPathExtension]) retain];
 			if (![appName isKindOfClass:[NSString class]]) {
 				[appName release];
 				appName = nil;

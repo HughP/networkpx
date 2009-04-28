@@ -87,8 +87,11 @@ static void GPSetFGColor(UIView* view, UIColor* fgColor) {
 	
 	[self modifyView:newView asNew:asNew withMessage:message];
 	
-	if (identifier != nil)
-		[identifiedViews setObject:newView forKey:identifier];
+	if (identifier != nil) {
+		@synchronized(identifiedViews) {
+			[identifiedViews setObject:newView forKey:identifier];
+		}
+	}
 		
 	if (window == nil) {
 		[GPMessageWindow registerWindowWithView:newView message:message];
@@ -102,7 +105,9 @@ static void GPSetFGColor(UIView* view, UIColor* fgColor) {
 }
 
 -(void)messageClosed:(NSString*)identifier {
-	[identifiedViews removeObjectForKey:identifier];
+	@synchronized(identifiedViews) {
+		[identifiedViews removeObjectForKey:identifier];
+	}
 }
 
 -(void)dealloc {

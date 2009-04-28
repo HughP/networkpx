@@ -49,10 +49,61 @@ static GPApplicationBridge* bridge = nil;
 //------------------------------------------------------------------------------
 #pragma mark -
 
-@interface BackgroundColorsController : PSListController {}
+@interface GPPerPrioritySettingsController : PSListController {
+	int j;
+}
+-(NSArray*)specifiers;
+-(NSNumber*)getComponent:(PSSpecifier*)spec;
+-(void)set:(NSNumber*)obj forComponent:(PSSpecifier*)spec;
+-(void)updateColor:(NSArray*)colorArray;
 @end
-@implementation BackgroundColorsController
+@implementation GPPerPrioritySettingsController
+-(NSArray*)specifiers {
+	if (_specifiers == nil) {
+		_specifiers = [[self loadSpecifiersFromPlistName:@"Priority" target:self] retain];
+		PSSpecifier* spec = self.specifier;
+		j = [[spec propertyForKey:@"priorityLevel"] integerValue];
+		self.title = spec.name;
+	}
+	return _specifiers;
+}
+-(NSNumber*)getComponent:(PSSpecifier*)spec {
+	int val = [spec.identifier integerValue];
+	NSArray* color = [[[NSDictionary dictionaryWithContentsOfFile:PREFDICT] objectForKey:@"PerPrioritySettings"] objectAtIndex:j];
+	[self updateColor:color];
+	return [color objectAtIndex:val];
+}
+-(void)set:(NSNumber*)obj forComponent:(PSSpecifier*)spec {
+	int val = [spec.identifier integerValue];
+	NSMutableDictionary* dict = [NSMutableDictionary dictionaryWithContentsOfFile:PREFDICT];
+	NSMutableArray* color = [[dict objectForKey:@"PerPrioritySettings"] objectAtIndex:j];
+	[color replaceObjectAtIndex:val withObject:obj];
+	[self updateColor:color];
+	[dict writeToFile:PREFDICT atomically:NO];
+	[GPDuplexClient sendMessage:GriPMessage_FlushPreferences data:nil];
+}
+-(void)updateColor:(NSArray*)colorArray {
+	UIView* cell = [[self lastController] cachedCellForSpecifierID:@"previewBoxHere"];
+	UIView* previewBox = [cell.subviews lastObject];
+	BOOL newPreviousBox = previewBox.tag != 42;
+	if (newPreviousBox)
+		previewBox = [[UIView alloc] initWithFrame:CGRectMake(280, 20, 30, 15)];
+	
+	previewBox.backgroundColor = [UIColor colorWithRed:[[colorArray objectAtIndex:0] floatValue]
+												 green:[[colorArray objectAtIndex:1] floatValue]
+												  blue:[[colorArray objectAtIndex:2] floatValue]
+												 alpha:[[colorArray objectAtIndex:3] floatValue]];
+	previewBox.tag = 42;
+	
+	if (newPreviousBox) {
+		[cell addSubview:previewBox];
+		[previewBox release];
+	}
+}
 @end
+
+//------------------------------------------------------------------------------
+#pragma mark -
 
 __attribute__((visibility("hidden")))
 @interface MessageController : PSListController {
@@ -173,7 +224,6 @@ __attribute__((visibility("hidden")))
 -(NSArray*)specifiers;
 -(NSObject*)get:(PSSpecifier*)spec;
 -(void)set:(NSObject*)obj with:(PSSpecifier*)spec;
--(void)updateColor:(NSArray*)colorArray atIndex:(int)x;
 -(void)preview;
 
 -(NSDictionary*)registrationDictionaryForGrowl;
@@ -219,42 +269,21 @@ __attribute__((visibility("hidden")))
 	[dict writeToFile:PREFDICT atomically:NO];
 	[GPDuplexClient sendMessage:GriPMessage_FlushPreferences data:nil];
 }
+-(NSArray*)allThemeValues {
+	NSFileManager* fman = [NSFileManager defaultManager];
+	[fman changeCurrentDirectoryPath:@"/Library/GriP/Themes/"];
+	return [[fman contentsOfDirectoryAtPath:@"." error:NULL] pathsMatchingExtensions:[NSArray arrayWithObjects:@"griptheme", nil]];
+}
+-(NSArray*)allThemeTitles {
+	NSArray* allThemeValues = [self allThemeValues];
+	NSMutableArray* resArray = [NSMutableArray arrayWithCapacity:[allThemeValues count]];
+	
+	for (NSString* path in allThemeValues)
+		[resArray addObject:([[NSBundle bundleWithPath:path] objectForInfoDictionaryKey:@"CFBundleDisplayName"] ?: [path stringByDeletingPathExtension])];
+	
+	return resArray;
+}
 
--(void)updateColor:(NSArray*)colorArray atIndex:(int)x {
-	UIView* cell = [[self lastController] cachedCellForSpecifierID:[NSString stringWithFormat:@"x%d", x]];
-	UIView* previewBox = [cell.subviews lastObject];
-	BOOL newPreviousBox = previewBox.tag != 42;
-	if (newPreviousBox)
-		previewBox = [[UIView alloc] initWithFrame:CGRectMake(280, 20, 30, 15)];
-	
-	previewBox.backgroundColor = [UIColor colorWithRed:[[colorArray objectAtIndex:0] floatValue]
-												 green:[[colorArray objectAtIndex:1] floatValue]
-												  blue:[[colorArray objectAtIndex:2] floatValue] alpha:1];
-	previewBox.tag = 42;
-	
-	if (newPreviousBox) {
-		[cell addSubview:previewBox];
-		[previewBox release];
-	}
-	
-}
--(NSNumber*)getComponent:(PSSpecifier*)spec {
-	int val = [spec.identifier integerValue];
-	int j = 4-val/3;
-	NSArray* color = [[[NSDictionary dictionaryWithContentsOfFile:PREFDICT] objectForKey:@"BackgroundColors"] objectAtIndex:j];
-	[self updateColor:color atIndex:j];
-	return [color objectAtIndex:(val%3)];
-}
--(void)set:(NSNumber*)obj forComponent:(PSSpecifier*)spec {
-	int val = [spec.identifier integerValue];
-	NSMutableDictionary* dict = [NSMutableDictionary dictionaryWithContentsOfFile:PREFDICT];
-	int j = 4-val/3;
-	NSMutableArray* color = [[dict objectForKey:@"BackgroundColors"] objectAtIndex:j];
-	[color replaceObjectAtIndex:(val%3) withObject:obj];
-	[self updateColor:color atIndex:j];
-	[dict writeToFile:PREFDICT atomically:NO];
-	[GPDuplexClient sendMessage:GriPMessage_FlushPreferences data:nil];
-}
 -(void)preview {
 	NSBundle* myBundle = self.bundle;
 	[bridge notifyWithTitle:LS(@"GriP Message Preview")

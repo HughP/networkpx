@@ -1,8 +1,21 @@
 {
-BackgroundColors = ((0.4,0.4,0.4), (0.1,0.4,0.1), (0.1,0.1,0.1), (0.5,0.1,0.1), (1,0.1,0.1));
+
+// Per-priority settings
+// (R, G, B, A, enabled, sticky, timer)
+// for sticky: 0 = App decides, 1 = Always, 2 = Never.
+PerPrioritySettings = (
+	(0.400, 0.400, 0.400, 0.50, 0, 0,  0),	// Very low priorty
+	(0.188, 0.290, 0.663, 0.63, 1, 0,  2),	// Moderate
+	(0.098, 0.098, 0.098, 0.75, 1, 0,  4),	// Normal
+	(0.349, 0.024, 0.016, 0.80, 1, 0,  7),	// High priority
+	(0.698, 0.047, 0.031, 0.85, 1, 0, 10) 	// Emergency
+);
+
+// At which corner should a GriP message appear.
+// 0 = Top left, 1 = Top right, 2 = Bottom left, 3 = Bottom right.
 Location = 1;
-HideTimer = 4;
-Sticky = 0;
+
+// Which theme to use.
+// Ignored in embedded server.
 ActiveTheme = "Default.griptheme";
-MinPriority = -1;
 }

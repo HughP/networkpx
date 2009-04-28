@@ -60,14 +60,15 @@ void GPFlushPreferences() {
 	pthread_mutex_unlock(&prefLock);
 }
 
-#if GRIP_JAILBROKEN
 static NSString* GPTicketPathForAppName(NSString* appName) {
+#if GRIP_JAILBROKEN
 	return [@"/Library/GriP/Tickets/" stringByAppendingPathComponent:[appName stringByAppendingPathExtension:@"ticket"]];
-}
+#else
+	return [[[[NSBundle mainBundle] bundlePath] stringByDeletingLastPathComponent] stringByAppendingPathComponent:[NSString stringWithFormat:@"Documents/%@.ticket", appName]];
 #endif
+}
 
 void GPUpdateRegistrationDictionaryForAppName(NSString* appName, NSDictionary* registrationDictionary) {
-#if GRIP_JAILBROKEN
 	NSString* appPath = GPTicketPathForAppName(appName);
 	NSMutableDictionary* ticket = [[NSMutableDictionary alloc] initWithContentsOfFile:appPath];
 	BOOL hasModification = NO;
@@ -110,11 +111,9 @@ void GPUpdateRegistrationDictionaryForAppName(NSString* appName, NSDictionary* r
 	if (hasModification)
 		[ticket writeToFile:appPath atomically:YES];
 	[ticket release];
-#endif
 }
 
 static BOOL GPCheckEnabledWithTicket(NSDictionary* ticket, NSString* msgName, NSDictionary** pMsgDict) {
-#if GRIP_JAILBROKEN
 	if (ticket == nil || ![[ticket objectForKey:@"enabled"] boolValue])
 		return NO;
 	if (msgName == nil)
@@ -124,12 +123,10 @@ static BOOL GPCheckEnabledWithTicket(NSDictionary* ticket, NSString* msgName, NS
 		*pMsgDict = msgDict;
 	if (msgDict == nil || ![[msgDict objectForKey:@"enabled"] boolValue])
 		return NO;
-#endif
 	return YES;
 }
 
 void GPModifyMessageForUserPreference(NSMutableDictionary* message) {
-#if GRIP_JAILBROKEN
 	NSString* appName = [message objectForKey:GRIP_APPNAME];
 	NSDictionary* ticket = [NSDictionary dictionaryWithContentsOfFile:GPTicketPathForAppName(appName)];
 	NSString* msgName = [message objectForKey:GRIP_NAME];
@@ -140,17 +137,6 @@ void GPModifyMessageForUserPreference(NSMutableDictionary* message) {
 		return;
 	}
 	
-	NSInteger stickyEnabled = [[msgDict objectForKey:@"sticky"] integerValue];
-	if (stickyEnabled == 0)
-		stickyEnabled = [[ticket objectForKey:@"sticky"] integerValue];
-	if (stickyEnabled == 0)
-		stickyEnabled = [[GPPreferences() objectForKey:@"Sticky"] integerValue];
-	
-	if (stickyEnabled == 1)
-		[message setObject:[NSNumber numberWithBool:YES] forKey:GRIP_STICKY];
-	else if (stickyEnabled != 0)
-		[message setObject:[NSNumber numberWithBool:NO] forKey:GRIP_STICKY];
-	
 	NSInteger newPriority = [[msgDict objectForKey:@"priority"] integerValue];
 	if (newPriority >= 1 && newPriority <= 5) {
 		newPriority -= 3;
@@ -158,31 +144,41 @@ void GPModifyMessageForUserPreference(NSMutableDictionary* message) {
 	} else
 		newPriority = [[message objectForKey:GRIP_PRIORITY] integerValue];
 	
-	// Disable this message if the priority is not high enough.
-	if (newPriority < [[GPPreferences() objectForKey:@"MinPriority"] integerValue])
+	NSArray* priorityArray = [[GPPreferences() objectForKey:@"PerPrioritySettings"] objectAtIndex:newPriority+2];
+	// Disable this message the priority is disabled.
+	if (![[priorityArray objectAtIndex:GPPrioritySettings_Enabled] boolValue]) {
 		[message removeAllObjects];
-#endif
+		return;
+	}
+	
+	NSInteger stickyEnabled = [[msgDict objectForKey:@"sticky"] integerValue];
+	if (stickyEnabled == 0)
+		stickyEnabled = [[ticket objectForKey:@"sticky"] integerValue];
+	if (stickyEnabled == 0)
+		stickyEnabled = [[priorityArray objectAtIndex:GPPrioritySettings_Sticky] integerValue];
+	
+	if (stickyEnabled == 1)
+		[message setObject:[NSNumber numberWithBool:YES] forKey:GRIP_STICKY];
+	else if (stickyEnabled != 0)
+		[message setObject:[NSNumber numberWithBool:NO] forKey:GRIP_STICKY];
 }
 
 BOOL GPCheckEnabled(NSString* appName, NSString* msgName) {
-#if GRIP_JAILBROKEN
 	return appName != nil && GPCheckEnabledWithTicket([NSDictionary dictionaryWithContentsOfFile:GPTicketPathForAppName(appName)], msgName, NULL);
-#else
-	return YES;
-#endif
 }
 
 void GPCopyColorsForPriority(int priority, UIColor** outBGColor, UIColor** outFGColor) {
 	if (priority < -2) priority = -2;
 	if (priority > 2) priority = 2;
 	
-	NSArray* colorArray = [[GPPreferences() objectForKey:@"BackgroundColors"] objectAtIndex:(priority+2)];
-	CGFloat red = [[colorArray objectAtIndex:0] floatValue];
-	CGFloat green = [[colorArray objectAtIndex:1] floatValue];
-	CGFloat blue = [[colorArray objectAtIndex:2] floatValue];
+	NSArray* colorArray = [[GPPreferences() objectForKey:@"PerPrioritySettings"] objectAtIndex:(priority+2)];
+	CGFloat red = [[colorArray objectAtIndex:GPPrioritySettings_Red] floatValue];
+	CGFloat green = [[colorArray objectAtIndex:GPPrioritySettings_Green] floatValue];
+	CGFloat blue = [[colorArray objectAtIndex:GPPrioritySettings_Blue] floatValue];
+	CGFloat alpha = [[colorArray objectAtIndex:GPPrioritySettings_Alpha] floatValue];
 	
 	if (outBGColor != NULL)
-		*outBGColor = [[UIColor alloc] initWithRed:red green:green blue:blue alpha:1];
+		*outBGColor = [[UIColor alloc] initWithRed:red green:green blue:blue alpha:alpha];
 	
 	if (outFGColor != NULL) {
 		CGFloat luminance = GULuminance(red, green, blue);

@@ -1,0 +1,67 @@
+{
+title = "";
+items = (
+	{ cell = PSGroupCell; },
+	{ cell = PSSwitchCell;
+		get = "getComponent:";
+		set = "set:forComponent:";
+		id = 4;
+		label = Enabled; },
+	{ cell = PSLinkListCell;
+		detail = PSListItemsController;
+		label = Sticky;
+		id = 5;
+		validTitles = (
+			"App decides",
+			Always,
+			Never
+		);
+		validValues = (0,1,2);
+		get = "getComponent:";
+		set = "set:forComponent:"; },
+	{ cell = PSSliderCell;
+		get = "getComponent:";
+		set = "set:forComponent:";
+		id = 6;
+		min = 0;
+		max = 10;
+		showValue = YES;
+		leftImage = Duration.png; },
+
+	{ cell = PSGroupCell;
+		label = "Background color";
+		id = previewBoxHere; },
+	{ cell = PSSliderCell;
+		id = 0;
+		get = "getComponent:";
+		set = "set:forComponent:";
+		min = 0;
+		max = 1;
+		showValue = YES;
+		leftImage = red.png; },
+	{ cell = PSSliderCell;
+		id = 1;
+		get = "getComponent:";
+		set = "set:forComponent:";
+		min = 0;
+		max = 1;
+		showValue = YES;
+		leftImage = green.png; },
+	{ cell = PSSliderCell;
+		id = 2;
+		get = "getComponent:";
+		set = "set:forComponent:";
+		min = 0;
+		max = 1;
+		showValue = YES;
+		leftImage = blue.png; },
+	{ cell = PSSliderCell;
+		id = 3;
+		get = "getComponent:";
+		set = "set:forComponent:";
+		min = 0;
+		max = 1;
+		showValue = YES;
+		leftImage = alpha.png; }
+);
+}

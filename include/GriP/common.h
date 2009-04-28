@@ -58,4 +58,14 @@ enum {
 #define GRIP_APPNAME  @"a"
 #define GRIP_ISURL    @"u"
 
+enum {
+	GPPrioritySettings_Red,
+	GPPrioritySettings_Green,
+	GPPrioritySettings_Blue,
+	GPPrioritySettings_Alpha,
+	GPPrioritySettings_Enabled,
+	GPPrioritySettings_Sticky,
+	GPPrioritySettings_Timer
+};
+
 #endif
