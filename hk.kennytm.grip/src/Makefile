@@ -7,6 +7,10 @@ PrefsBundlePath=../deb/System/Library/PreferenceBundles
 
 GriPIncPath=../../include/GriP
 
+libVersion               =1.11.4
+libGriPCompatVersion     =1.11.4
+libGriPExtraCompatVersion=1.11.4
+
 Compiler=$(iPhoneDevPath)/usr/bin/gcc-4.2
 CodeSign=ldid -S
 
@@ -46,17 +50,21 @@ SDKOptionsSim=-arch i686 \
 	-O2 \
 	-UGRIP_JAILBROKEN
 
-libGriP_Sources=Duplex/Client.o GPMessageWindow.o GPPreferences.o GPGetSmallAppIcon.o GPApplicationBridge.o GPExtensions.o NSString-stringByEscapingXMLEntities.o GPUIViewTheme.o
+libGriP_Sources=Duplex/Client.o GPApplicationBridge.o GPExtensions.o NSString-stringByEscapingXMLEntities.o
 libGriP_Target=../deb/usr/lib/libGriP.dylib
-libGriP_Options=-lobjc -dynamiclib -install_name /usr/lib/libGriP.dylib -framework Foundation -framework CoreFoundation -framework UIKit -framework CoreGraphics
+libGriP_Options=-dynamiclib -install_name /usr/lib/libGriP.dylib -compatibility_version $(libGriPCompatVersion) -current_version $(libVersion) -framework Foundation -framework CoreFoundation -framework UIKit
+
+libGriPExtra_Sources=GPMessageWindow.o GPPreferences.o GPGetSmallAppIcon.o GPUIViewTheme.o
+libGriPExtra_Target=../deb/usr/lib/libGriPExtra.dylib
+libGriPExtra_Options=-lGriP -dynamiclib -install_name /usr/lib/libGriPExtra.dylib -compatibility_version $(libGriPExtraCompatVersion) -current_version $(libVersion) -framework Foundation -framework CoreFoundation -framework UIKit -framework CoreGraphics
 
 XXHooker_GriP_Sources=GriPServer.o Duplex/Server.o ../../src/PrefsLinkHooker.o
 XXHooker_GriP_Target=$(MobileSubstratePath)/%GriP.dylib
-XXHooker_GriP_Options=-lobjc -lGriP -lsubstrate -dynamiclib -framework Foundation -framework CoreFoundation -framework Preferences -framework UIKit -init _GPStartGriPServer
+XXHooker_GriP_Options=-lobjc -lGriPExtra -lsubstrate -dynamiclib -framework Foundation -framework CoreFoundation -framework Preferences -framework UIKit -init _GPStartGriPServer
 
 DefaultTheme_Sources=GPDefaultTheme.o $(SharedSrcPath)/GraphicsUtilities.o
 DefaultTheme_Target=$(ThemesPath)/Default.griptheme/Default
-DefaultTheme_Options=-lGriP -framework UIKit -framework Foundation -framework CoreGraphics -bundle
+DefaultTheme_Options=-lGriPExtra -framework UIKit -framework Foundation -framework CoreGraphics -bundle
 
 GriPTest_Sources=GriPTest.o
 GriPTest_Target=../deb/usr/bin/GriP
@@ -78,7 +86,7 @@ SDK_libGriP_Sources=Duplex/Client.sdk.o GPApplicationBridge.sdk.o
 SDK_libGriP_Target=../sdk/libGriP.a
 SDK_libGriP_Options=-framework Foundation -static
 
-SDK_libGriPServer_Sources=Duplex/Client.sdk.o GPMessageWindow.sdk.o GPPreferences.sdk.o GPGetSmallAppIcon.sdk.o GPUIViewTheme.sdk.o GriPServer.sdk.o Duplex/Server.sdk.o 
+SDK_libGriPServer_Sources=GPMessageWindow.sdk.o GPPreferences.sdk.o GPGetSmallAppIcon.sdk.o GPUIViewTheme.sdk.o GriPServer.sdk.o Duplex/Server.sdk.o 
 SDK_libGriPServer_Target=../sdk/libGriPServer.a
 SDK_libGriPServer_Options=-framework Foundation -framework UIKit -framework CoreGraphics -static
 
@@ -89,7 +97,7 @@ SDK_libGPDefaultTheme_Options=-framework Foundation -framework UIKit -framework 
 SDK_Headers=$(GriPIncPath)/GPApplicationBridge.h $(GriPIncPath)/GrowlApplicationBridge.h $(GriPIncPath)/common.h $(GriPIncPath)/GrowlDefines.h $(GriPIncPath)/NSString-stringByEscapingXMLEntities.h $(GriPIncPath)/GriP.h $(GriPIncPath)/GriPServer.h $(GriPIncPath)/GPTheme.h $(GriPIncPath)/GPUIViewTheme.h
 SDK_Sources=NSString-stringByEscapingXMLEntities.m GrowlApplicationBridge.m ../deb/Library/GriP/GPPreferences.plist
 
-all: $(libGriP_Target) $(DefaultTheme_Target) $(XXHooker_GriP_Target) $(GriPTest_Target) $(Preferences_Target) $(MemWatcher_Target) $(YouveGotMail_Target)
+all: $(libGriP_Target) $(libGriPExtra_Target) $(DefaultTheme_Target) $(XXHooker_GriP_Target) $(GriPTest_Target) $(Preferences_Target) $(MemWatcher_Target) $(YouveGotMail_Target)
 
 %.sdk.o:	%.m
 	$(Compiler) -c $(SDKOptionsSim) -o $@.i686 $^
@@ -114,6 +122,10 @@ $(ThemesPath)/%.griptheme/GriPView.nib:	%.xib
 
 $(libGriP_Target):	$(libGriP_Sources)
 	$(Compiler) $(Options) $(libGriP_Options) -o $@ $^
+	$(CodeSign) $@
+
+$(libGriPExtra_Target):	$(libGriPExtra_Sources)
+	$(Compiler) $(Options) $(libGriPExtra_Options) -o $@ $^
 	$(CodeSign) $@
 
 $(XXHooker_GriP_Target):	$(XXHooker_GriP_Sources)
