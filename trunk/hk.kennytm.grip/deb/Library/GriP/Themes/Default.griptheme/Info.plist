@@ -1,5 +1,6 @@
 {
-	CFBundleIdentifier = "hk.kennytm.GriP.themes.Default";
+	CFBundleIdentifier = "hk.kennytm.GriP.theme.Default";
+	CFBundleDisplayName = "Default";
 	NSPrincipalClass = GPDefaultTheme;
 	GPThemeType = OBJC;
 }

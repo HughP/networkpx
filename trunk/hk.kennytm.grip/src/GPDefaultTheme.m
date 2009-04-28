@@ -129,6 +129,7 @@ __attribute__((visibility("hidden")))
 		[disclosureButton release];
 		
 		// the description UITextView.
+		// argh. we really need to find a replacement of this UITextView. it bloats up the memory a lot.
 		descriptionView = [[UITextView alloc] initWithFrame:CGRectMake(0, 0, 1, 1)];
 		descriptionView.contentMode = UIViewContentModeScaleToFill;
 		descriptionView.autoresizingMask = UIViewAutoresizingFlexibleHeight;
@@ -168,8 +169,8 @@ __attribute__((visibility("hidden")))
 	CGFloat actualTitleHeight = (title_ == nil) ? 31 : [title_ sizeWithFont:titleFont constrainedToSize:CGSizeMake(titleWidth, 54) lineBreakMode:UILineBreakModeMiddleTruncation].height;
 	CGFloat titleHeight = MAX(actualTitleHeight, 31);
 	
-	CGFloat iconTop = ceilf((titleHeight - 29)/2);
-	CGFloat titleTop = ceilf((titleHeight - actualTitleHeight)/2);
+	CGFloat iconTop = ceilf((titleHeight - 29)/2)+1;
+	CGFloat titleTop = ceilf((titleHeight - actualTitleHeight)/2)+1;
 	
 	staticView->iconRect = CGRectMake(20, iconTop, 29, 29);
 	staticView->titleRect = CGRectMake(titleLeft, titleTop, titleWidth, actualTitleHeight);
@@ -178,11 +179,11 @@ __attribute__((visibility("hidden")))
 	CFShow(NSStringFromCGRect(descriptionFrame));
 	
 	self.autoresizesSubviews = NO;
-	self.frame = backgroundView.frame = staticView.frame = CGRectMake(0, 0, 160, titleHeight+6+descriptionFrame.size.height);
-	clickContext.frame = CGRectMake(0, 0, 160, titleHeight+6);
+	self.frame = backgroundView.frame = staticView.frame = CGRectMake(0, 0, 160, titleHeight+5+descriptionFrame.size.height);
+	clickContext.frame = CGRectMake(0, 0, 160, titleHeight+5);
 	closeButton.frame = CGRectMake(0, 0, 20, titleHeight);
 	if (!(disclosureButton.hidden = (disclosed || description == nil)))
-		disclosureButton.frame = CGRectMake(134, 0, 20, titleHeight);
+		disclosureButton.frame = CGRectMake(134, 0, 26, titleHeight);
 	descriptionView.frame = CGRectMake(0, titleHeight, 154, descriptionFrame.size.height);
 	self.autoresizesSubviews = YES;
 	
@@ -211,28 +212,25 @@ __attribute__((visibility("hidden")))
 	if ((self = [super initWithBundle:bundle])) {
 		UIGraphicsBeginImageContext(CGSizeMake(16, 16));
 		CGContextRef c = UIGraphicsGetCurrentContext();
-		CGPathRef roundRectPath = GUPathCreateRoundRect(CGRectMake(1, 1, 11, 11), 4);
-		CGContextSetShadow(c, CGSizeMake(3,-3), 3);
+		CGContextSetShadow(c, CGSizeMake(2.5f,-2.5f), 2.5f);
 		
 		for (int i = 0; i < 5; ++ i) {
 			CGContextClearRect(c, CGRectMake(0, 0, 16, 16));
 			CGContextSetLineWidth(c, 0.5);
 			[fgColors[i] setStroke];
 			[bgColors[i] setFill];
-			CGContextAddPath(c, roundRectPath);
+			CGContextAddEllipseInRect(c, CGRectMake(1, 1, 10, 10));
 			CGContextDrawPath(c, kCGPathFillStroke);
 			
 			bgImages[i] = [[UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:6 topCapHeight:6] retain];
 			
 			CGContextClearRect(c, CGRectMake(0, 0, 16, 16));
 			CGContextSetLineWidth(c, 2);
-			CGContextAddPath(c, roundRectPath);
-			CGContextStrokePath(c);
+			CGContextStrokeEllipseInRect(c, CGRectMake(1, 1, 10, 10));
 			
 			activeImages[i] = [[UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:6 topCapHeight:6] retain];
 		}
 		
-		CGPathRelease(roundRectPath);
 		UIGraphicsEndImageContext();
 	}
 	return self;

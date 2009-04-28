@@ -115,15 +115,17 @@ ignored_message:
 			if ([array isKindOfClass:[NSArray class]] && [array count] >= 3) {
 				CFStringRef pid = (CFStringRef)[array objectAtIndex:0];
 				CFDataRef context = (CFDataRef)[NSPropertyListSerialization dataFromPropertyList:[array objectAtIndex:1] format:NSPropertyListBinaryFormat_v1_0 errorDescription:NULL];
-				BOOL isURL = (type == GriPMessage_ClickedNotification) && [[array objectAtIndex:2] boolValue];
+				BOOL isURL = [[array objectAtIndex:2] boolValue];
 				
 				CFMessagePortRef clientPort = CFMessagePortCreateRemote(NULL, pid);
 				if (clientPort != NULL) {
-					CFMessagePortSendRequest(clientPort, type, context, 1, 0, NULL, NULL);
-					if (isURL)
-						CFMessagePortSendRequest(clientPort, GriPMessage_LaunchURL, context, 1, 0, NULL, NULL);
+					if (isURL) {
+						if (type == GriPMessage_ClickedNotification)
+							CFMessagePortSendRequest(clientPort, GriPMessage_LaunchURL, context, 1, 0, NULL, NULL);
+					} else
+						CFMessagePortSendRequest(clientPort, type, context, 1, 0, NULL, NULL);
 					CFRelease(clientPort);
-				} else if (isURL) {
+				} else if (isURL && type == GriPMessage_ClickedNotification) {
 					NSURL* url = [NSURL URLWithString:(NSString*)[array objectAtIndex:1]];
 #if GRIP_JAILBROKEN
 					SpringBoard* springBoard = (SpringBoard*)[UIApplication sharedApplication];

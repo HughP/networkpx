@@ -49,6 +49,7 @@ typedef struct GPGap {
 	BOOL hiding;
 	NSString* identitifer;
 	BOOL forceSticky;
+	int priority;
 }
 +(GPMessageWindow*)registerWindowWithView:(UIView*)view_ message:(NSDictionary*)message;
 -(void)refreshWithMessage:(NSDictionary*)message;
