@@ -67,11 +67,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 @end
 
 
-#define GPAssignUIControlAsClickContext(ctrl) ({ \
-	Class rootClass = [self class]; \
+#define GPAssignUIControlAsClickContextForTheme(ctrl, theme) ({ \
+	Class rootClass = [theme class]; \
 	[(ctrl) addTarget:rootClass action:@selector(fire:) forControlEvents:UIControlEventTouchUpInside]; \
 	[(ctrl) addTarget:rootClass action:@selector(activate:) forControlEvents:UIControlEventTouchDown|UIControlEventTouchDragEnter]; \
 	[(ctrl) addTarget:rootClass action:@selector(deactivate:) forControlEvents:UIControlEventTouchDragOutside|UIControlEventTouchDragExit|UIControlEventTouchUpOutside|UIControlEventTouchCancel]; \
 })
-#define GPAssignUIControlAsCloseButton(ctrl) [(ctrl) addTarget:[self class] action:@selector(close:) forControlEvents:UIControlEventTouchUpInside]
-#define GPAssignUIControlAsDisclosureButton(ctrl) [(ctrl) addTarget:[self class] action:@selector(disclose:) forControlEvents:UIControlEventTouchUpInside]
+#define GPAssignUIControlAsCloseButtonForTheme(ctrl, theme) [(ctrl) addTarget:[theme class] action:@selector(close:) forControlEvents:UIControlEventTouchUpInside]
+#define GPAssignUIControlAsDisclosureButtonForTheme(ctrl, theme) [(ctrl) addTarget:[theme class] action:@selector(disclose:) forControlEvents:UIControlEventTouchUpInside]
+#define GPAssignUIControlAsClickContext(ctrl) GPAssignUIControlAsClickContextForTheme(ctrl,self)
+#define GPAssignUIControlAsCloseButton(ctrl) GPAssignUIControlAsCloseButtonForTheme(ctrl,self)
+#define GPAssignUIControlAsDisclosureButton(ctrl) GPAssignUIControlAsDisclosureButtonForTheme(ctrl,self)
