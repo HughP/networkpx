@@ -209,7 +209,7 @@ static const int _orientation_angles[4] = {0, 180, 90, -90};
 		[self refreshWithMessage:message];
 		self.windowLevel = UIWindowLevelStatusBar*2;
 		self.hidden = NO;
-		identifier = [[message objectForKey:GRIP_ID] retain];
+		identitifer = [[message objectForKey:GRIP_ID] retain];
 	}
 	return self;
 }
@@ -285,8 +285,10 @@ static const int _orientation_angles[4] = {0, 180, 90, -90};
 
 -(void)dealloc {
 	[self stopTimer];
-	if (identifier != nil)
-		[GPDuplexClient sendMessage:GriPMessage_DisposeIdentifier data:[identifier dataUsingEncoding:NSUTF8StringEncoding]];
+	[pid release];
+	[context release];
+	[GPDuplexClient sendMessage:GriPMessage_DisposeIdentifier data:[identitifer dataUsingEncoding:NSUTF8StringEncoding]];
+	[identitifer release];
 	[super dealloc];
 }
 

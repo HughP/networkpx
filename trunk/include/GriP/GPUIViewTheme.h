@@ -1,6 +1,6 @@
 /*
 
-GPNibTheme.h ... GriP Theme using .nib file to render the content.
+GPUIViewTheme.h ... GriP Theme using a UIView to render the content.
  
 Copyright (c) 2009, KennyTM~
 All rights reserved.
@@ -33,34 +33,45 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #import <GriP/GPTheme.h>
 #import <Foundation/NSObject.h>
 
-@class NSDictionary, UIView, NSMutableDictionary, NSBundle;
+@class NSDictionary, NSMutableDictionary, UIView, NSBundle, UIColor, NSString, UIButton;
 
-enum GPNibThemeTags {
-	GPTheme_CloseButton = 2000,
-	GPTheme_DisclosureButton = 2001,
-	GPTheme_Icon = 2002,
-	GPTheme_Title = 2003,
-	GPTheme_ClickContext = 2004,
-	GPTheme_Background = 2005,
-	GPTheme_TitleAndViews = 2006,
-	GPTheme_Detail = 2007,
-	GPTheme_ActivationBackground = 2008
-};
-
-@interface GPNibTheme : NSObject<GPTheme> {
+@interface GPUIViewTheme : NSObject<GPTheme> {
 	NSMutableDictionary* identifiedViews;
 	NSBundle* selfBundle;
+	UIColor* fgColors[5];
+	UIColor* bgColors[5];
 }
 -(id)initWithBundle:(NSBundle*)bundle;
 -(void)dealloc;
 
+// these two should be "final".
 -(void)display:(NSDictionary*)message;
--(void)disposeIdentifier:(NSString*)identifier;
+-(void)messageClosed:(NSString*)identifier;
 
 // subclasses can override these methods for custom behaviors.
-+(UIView*)modifyView:(UIView*)view_ asNew:(BOOL)asNew forMessage:(NSDictionary*)message;
+-(void)modifyView:(UIView*)inoutView asNew:(BOOL)asNew withMessage:(NSDictionary*)message;
+
 +(void)updateViewForDisclosure:(UIView*)view_;
 +(void)activateView:(UIView*)view;
 +(void)deactivateView:(UIView*)view;
-
 @end
+
+
+
+@interface GPUIViewTheme (TargetActions)
++(void)close:(UIButton*)button;
++(void)disclose:(UIButton*)button;
++(void)activate:(UIButton*)clickContext;
++(void)deactivate:(UIButton*)clickContext;
++(void)fire:(UIButton*)clickContext;
+@end
+
+
+#define GPAssignUIControlAsClickContextForTheme(ctrl, theme) ({ \
+	Class rootClass = [theme class]; \
+	[(ctrl) addTarget:rootClass action:@selector(fire:) forControlEvents:UIControlEventTouchUpInside]; \
+	[(ctrl) addTarget:rootClass action:@selector(activate:) forControlEvents:UIControlEventTouchDown|UIControlEventTouchDragEnter]; \
+	[(ctrl) addTarget:rootClass action:@selector(deactivate:) forControlEvents:UIControlEventTouchDragOutside|UIControlEventTouchDragExit|UIControlEventTouchUpOutside|UIControlEventTouchCancel]; \
+})
+#define GPAssignUIControlAsCloseButtonForTheme(ctrl, theme) [(ctrl) addTarget:[theme class] action:@selector(close:) forControlEvents:UIControlEventTouchUpInside]
+#define GPAssignUIControlAsDisclosureButtonForTheme(ctrl, theme) [(ctrl) addTarget:[theme class] action:@selector(disclose:) forControlEvents:UIControlEventTouchUpInside]

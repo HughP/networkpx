@@ -33,77 +33,239 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #import <GriP/GPDefaultTheme.h>
 #import <UIKit/UIKit.h>
 #import <GriP/common.h>
+#import <GriP/GPGetSmallAppIcon.h>
 #import <GraphicsUtilities.h>
 
-#define PADDING 3
-#define PADDING_BOTTOM 5
-#define ICON_SIZE 29
+#if GRIP_JAILBROKEN
+@interface UITextView ()
+-(void)setContentToHTMLString:(NSString*)html;
+@end
+#endif
+
+__attribute__((visibility("hidden")))
+@interface GPDTStaticView : UIView {
+	NSString* title;
+	UIImage* icon;
+	UIColor* fgColor;
+@package
+	CGRect iconRect, titleRect;
+}
+@property(retain) NSString* title;
+@property(retain) UIImage* icon;
+@property(retain) UIColor* fgColor;
+-(void)drawRect:(CGRect)rect;
+-(void)dealloc;
+@end
+@implementation GPDTStaticView
+@synthesize title, icon, fgColor;
+-(void)drawRect:(CGRect)rect {
+	if (icon != nil) {
+		[icon drawInRect:iconRect];
+	}
+	if (title != nil) {
+		[fgColor setFill];
+		[title drawInRect:titleRect withFont:[UIFont boldSystemFontOfSize:[UIFont systemFontSize]] lineBreakMode:UILineBreakModeMiddleTruncation];
+	}
+}
+-(void)dealloc {
+	[title release];
+	[icon release];
+	[fgColor release];
+	[super dealloc];
+}
+@end
+
+
+__attribute__((visibility("hidden")))
+@interface GPDTWrapperView : UIView {
+	UIButton* clickContext, *closeButton, *disclosureButton;
+	UITextView* descriptionView;
+	UIImageView* backgroundView;
+	GPDTStaticView* staticView;
+	BOOL disclosed;
+}
+-(id)init;
+-(void)setTitle:(NSString*)title icon:(UIImage*)icon description:(NSString*)description fgColor:(UIColor*)fgColor activeImage:(UIImage*)activeImage bgImage:(UIImage*)bgImage;
+-(void)disclose;
+@end
+@implementation GPDTWrapperView
+-(id)init {
+	if ((self = [super init])) {
+		self.backgroundColor = [UIColor clearColor];
+		
+		backgroundView = [[UIImageView alloc] init];
+		backgroundView.contentMode = UIViewContentModeScaleToFill;
+		backgroundView.autoresizingMask = UIViewAutoresizingFlexibleHeight;
+		[self addSubview:backgroundView];
+		[backgroundView release];
+		
+		// activeView is the border that appears when pressing on the title / icon.
+		clickContext = [[UIButton alloc] init];
+		GPAssignUIControlAsClickContextForTheme(clickContext, GPDefaultTheme);
+		[self addSubview:clickContext];
+		[clickContext release];
+		
+		// staticView is the icon + string.
+		staticView = [[GPDTStaticView alloc] init];
+		staticView.backgroundColor = [UIColor clearColor];
+		staticView.userInteractionEnabled = NO;
+		[self addSubview:staticView];
+		[staticView release];
+		
+		// close button
+		closeButton = [[UIButton alloc] init];
+		GPAssignUIControlAsCloseButtonForTheme(closeButton, GPDefaultTheme);
+		[closeButton setTitle:@"\u00D7" forState:UIControlStateNormal];
+		closeButton.showsTouchWhenHighlighted = YES;
+		[self addSubview:closeButton];
+		[closeButton release];
+		
+		// disclosure button
+		disclosureButton = [[UIButton alloc] init];
+		GPAssignUIControlAsDisclosureButtonForTheme(disclosureButton, GPDefaultTheme);
+		[disclosureButton setTitle:@"\u25BC" forState:UIControlStateNormal];
+		disclosureButton.showsTouchWhenHighlighted = YES;
+		[self addSubview:disclosureButton];
+		[disclosureButton release];
+		
+		// the description UITextView.
+		descriptionView = [[UITextView alloc] initWithFrame:CGRectMake(0, 0, 1, 1)];
+		descriptionView.contentMode = UIViewContentModeScaleToFill;
+		descriptionView.autoresizingMask = UIViewAutoresizingFlexibleHeight;
+		descriptionView.backgroundColor = [UIColor clearColor];
+		descriptionView.editable = NO;
+		[self addSubview:descriptionView];
+		[descriptionView release];
+	}
+	return self;
+}
+
+-(void)setTitle:(NSString*)title_ icon:(UIImage*)icon_ description:(NSString*)description fgColor:(UIColor*)fgColor_ activeImage:(UIImage*)activeImage bgImage:(UIImage*)bgImage {
+	// horizontally,
+	//   0 --  20 == close button
+	//  20 --  49 == icon
+	//  54 -- 134 == title
+	// 134 -- 154 == disclosure button.
+	
+	staticView.title = title_;
+	staticView.icon = icon_;
+	staticView.fgColor = fgColor_;
+	
+	backgroundView.image = bgImage;
+	[clickContext setBackgroundImage:activeImage forState:UIControlStateHighlighted];
+	
+	CGFloat titleWidth = 80;
+	CGFloat titleLeft = 54;
+	if (icon_ == nil) {
+		titleWidth = 114;
+		titleLeft = 20;
+	}
+	if (description == nil)
+		titleWidth += 20;
+	
+	// measure the height required by the title.
+	UIFont* titleFont = [UIFont boldSystemFontOfSize:[UIFont systemFontSize]];
+	CGFloat actualTitleHeight = (title_ == nil) ? 31 : [title_ sizeWithFont:titleFont constrainedToSize:CGSizeMake(titleWidth, 54) lineBreakMode:UILineBreakModeMiddleTruncation].height;
+	CGFloat titleHeight = MAX(actualTitleHeight, 31);
+	
+	CGFloat iconTop = ceilf((titleHeight - 29)/2);
+	CGFloat titleTop = ceilf((titleHeight - actualTitleHeight)/2);
+	
+	staticView->iconRect = CGRectMake(20, iconTop, 29, 29);
+	staticView->titleRect = CGRectMake(titleLeft, titleTop, titleWidth, actualTitleHeight);
+	
+	CGRect descriptionFrame = descriptionView.frame;
+	CFShow(NSStringFromCGRect(descriptionFrame));
+	
+	self.autoresizesSubviews = NO;
+	self.frame = backgroundView.frame = staticView.frame = CGRectMake(0, 0, 160, titleHeight+6+descriptionFrame.size.height);
+	clickContext.frame = CGRectMake(0, 0, 160, titleHeight+6);
+	closeButton.frame = CGRectMake(0, 0, 20, titleHeight);
+	if (!(disclosureButton.hidden = (disclosed || description == nil)))
+		disclosureButton.frame = CGRectMake(134, 0, 20, titleHeight);
+	descriptionView.frame = CGRectMake(0, titleHeight, 154, descriptionFrame.size.height);
+	self.autoresizesSubviews = YES;
+	
+	descriptionView.textColor = fgColor_;
+#if GRIP_JAILBROKEN
+	[descriptionView setContentToHTMLString:description];
+#else
+	descriptionView.text = description;
+#endif
+	
+	[staticView setNeedsDisplay];
+}
+
+-(void)disclose {
+	disclosed = YES;
+	disclosureButton.hidden = YES;
+	CGRect myFrame = self.frame;
+	myFrame.size.height += 60;
+	self.frame = myFrame;
+}
+@end
+
 
 @implementation GPDefaultTheme
-+(UIView*)modifyView:(UIView*)view asNew:(BOOL)asNew forMessage:(NSDictionary*)message {
-	view = [GPNibTheme modifyView:view asNew:asNew forMessage:message];
-	
-	UILabel* titleLabel = (UILabel*)[view viewWithTag:GPTheme_Title];
-	
-	// resize the frame's height to fit all title text.
-	CGFloat actualHeight = [[message objectForKey:GRIP_TITLE] sizeWithFont:titleLabel.font constrainedToSize:CGSizeMake(titleLabel.bounds.size.width, 60)].height;
-	if (actualHeight < ICON_SIZE + PADDING + PADDING_BOTTOM)
-		actualHeight = ICON_SIZE;
-	
-	UITextView* detailView = (UITextView*)[view viewWithTag:GPTheme_Detail];
-	detailView.font = [UIFont systemFontOfSize:[UIFont smallSystemFontSize]];
-	CGRect detailFrame = detailView.frame;
-	
-	CGRect oldFrame = view.frame;
-	oldFrame.size.height = actualHeight + PADDING + PADDING_BOTTOM + detailFrame.size.height - 1;
-	view.frame = oldFrame;
-	
-	UIView* titleAndViews = [view viewWithTag:GPTheme_TitleAndViews];
-	oldFrame = titleAndViews.frame;
-	oldFrame.size.height = actualHeight; 
-	titleAndViews.frame = oldFrame;
-	
-	detailFrame.origin.y = actualHeight + PADDING - 1;
-	detailView.frame = detailFrame;
+-(id)initWithBundle:(NSBundle*)bundle {
+	if ((self = [super initWithBundle:bundle])) {
+		UIGraphicsBeginImageContext(CGSizeMake(16, 16));
+		CGContextRef c = UIGraphicsGetCurrentContext();
+		CGPathRef roundRectPath = GUPathCreateRoundRect(CGRectMake(1, 1, 11, 11), 4);
+		CGContextSetShadow(c, CGSizeMake(3,-3), 3);
 		
-	UIImageView* bgView = (UIImageView*)[view viewWithTag:GPTheme_Background];
-	
-	UIColor* bgColor = [bgView.backgroundColor colorWithAlphaComponent:0.8f];
-	UIColor* frameColor = titleLabel.textColor;
-	bgView.backgroundColor = [UIColor clearColor];
+		for (int i = 0; i < 5; ++ i) {
+			CGContextClearRect(c, CGRectMake(0, 0, 16, 16));
+			CGContextSetLineWidth(c, 0.5);
+			[fgColors[i] setStroke];
+			[bgColors[i] setFill];
+			CGContextAddPath(c, roundRectPath);
+			CGContextDrawPath(c, kCGPathFillStroke);
+			
+			bgImages[i] = [[UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:6 topCapHeight:6] retain];
+			
+			CGContextClearRect(c, CGRectMake(0, 0, 16, 16));
+			CGContextSetLineWidth(c, 2);
+			CGContextAddPath(c, roundRectPath);
+			CGContextStrokePath(c);
+			
+			activeImages[i] = [[UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:6 topCapHeight:6] retain];
+		}
 		
-	UIGraphicsBeginImageContext(CGSizeMake(16, 16));
-	CGContextRef c = UIGraphicsGetCurrentContext();
+		CGPathRelease(roundRectPath);
+		UIGraphicsEndImageContext();
+	}
+	return self;
+}
+-(void)dealloc {
+	for (int i = 0; i < 5; ++ i) {
+		[bgImages[i] release];
+		[activeImages[i] release];
+	}
+	[super dealloc];
+}
+
+
+-(void)modifyView:(UIView*)view asNew:(BOOL)asNew withMessage:(NSDictionary*)message {
+	[super modifyView:view asNew:asNew withMessage:message];
 	
-	// draw background.
-	[frameColor setStroke];
-	[bgColor setFill];
-	CGContextSetShadow(c, CGSizeMake(2,-2), 2);
-	CGContextSetLineWidth(c, 0.5);
+	NSString* title = [message objectForKey:GRIP_TITLE];
+	NSString* description = [message objectForKey:GRIP_DETAIL];
+	UIImage* icon = GPGetSmallAppIconFromObject([message objectForKey:GRIP_ICON]);
+	int priorityIndex = [[message objectForKey:GRIP_PRIORITY] integerValue]+2;
 	
-	CGPathRef roundRectPath = GUPathCreateRoundRect(CGRectMake(1, 1, 11, 11), 4);
-	CGContextAddPath(c, roundRectPath);
-	CGContextDrawPath(c, kCGPathFillStroke);
+	if (asNew) {
+		[view addSubview:[[[GPDTWrapperView alloc] init] autorelease]];
+	}
 	
-	bgView.image = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:6 topCapHeight:6];
-	bgView.frame = bgView.superview.bounds;	// meh. "Disabling autoresizing subviews not available prior to iPhoneOS 3.0". This causes a disturbing "enlarging" effect in <3.x.
-	
-	CGContextClearRect(c, CGRectMake(0, 0, 15, 15));
-	
-	// draw the hover frame.
-	CGContextSetLineWidth(c, 2);
-	
-	CGContextAddPath(c, roundRectPath);
-	CGContextStrokePath(c);
-	
-	UIImageView* activeView = (UIImageView*)[view viewWithTag:GPTheme_ActivationBackground];
-	activeView.image = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:6 topCapHeight:6];
-	activeView.frame = CGRectInset(activeView.superview.bounds, -PADDING, -PADDING);
-	
-	CGPathRelease(roundRectPath);
-	
-	UIGraphicsEndImageContext();
-		
-	return view;
+	GPDTWrapperView* v = [view.subviews objectAtIndex:0];
+	[v setTitle:title icon:icon description:description fgColor:fgColors[priorityIndex] activeImage:activeImages[priorityIndex] bgImage:bgImages[priorityIndex]];
+	view.frame = v.frame;
+}
+
++(void)updateViewForDisclosure:(UIView*)view {
+	GPDTWrapperView* v = [view.subviews objectAtIndex:0];
+	[v disclose];
+	view.frame = v.frame;	
 }
 @end

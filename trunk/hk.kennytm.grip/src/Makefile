@@ -46,7 +46,7 @@ SDKOptionsSim=-arch i686 \
 	-O2 \
 	-UGRIP_JAILBROKEN
 
-libGriP_Sources=Duplex/Client.o GPMessageWindow.o GPPreferences.o GPGetSmallAppIcon.o GPApplicationBridge.o GPExtensions.o NSString-stringByEscapingXMLEntities.o GPNibTheme.o
+libGriP_Sources=Duplex/Client.o GPMessageWindow.o GPPreferences.o GPGetSmallAppIcon.o GPApplicationBridge.o GPExtensions.o NSString-stringByEscapingXMLEntities.o GPUIViewTheme.o
 libGriP_Target=../deb/usr/lib/libGriP.dylib
 libGriP_Options=-lobjc -dynamiclib -install_name /usr/lib/libGriP.dylib -framework Foundation -framework CoreFoundation -framework UIKit -framework CoreGraphics
 
@@ -78,14 +78,18 @@ SDK_libGriP_Sources=Duplex/Client.sdk.o GPApplicationBridge.sdk.o
 SDK_libGriP_Target=../sdk/libGriP.a
 SDK_libGriP_Options=-framework Foundation -static
 
-SDK_libGriPServer_Sources=Duplex/Client.sdk.o GPMessageWindow.sdk.o GPPreferences.sdk.o GPGetSmallAppIcon.sdk.o GPNibTheme.sdk.o GriPServer.sdk.o Duplex/Server.sdk.o GPDefaultTheme.sdk.o $(SharedSrcPath)/GraphicsUtilities.sdk.o
+SDK_libGriPServer_Sources=Duplex/Client.sdk.o GPMessageWindow.sdk.o GPPreferences.sdk.o GPGetSmallAppIcon.sdk.o GPUIViewTheme.sdk.o GriPServer.sdk.o Duplex/Server.sdk.o 
 SDK_libGriPServer_Target=../sdk/libGriPServer.a
 SDK_libGriPServer_Options=-framework Foundation -framework UIKit -framework CoreGraphics -static
 
-SDK_Headers=$(GriPIncPath)/GPApplicationBridge.h $(GriPIncPath)/GrowlApplicationBridge.h $(GriPIncPath)/common.h $(GriPIncPath)/GrowlDefines.h $(GriPIncPath)/NSString-stringByEscapingXMLEntities.h $(GriPIncPath)/GriP.h $(GriPIncPath)/GriPServer.h
-SDK_Sources=NSString-stringByEscapingXMLEntities.m GrowlApplicationBridge.m GriPView.xib ../deb/Library/GriP/GPPreferences.plist
+SDK_libGPDefaultTheme_Sources=GPDefaultTheme.sdk.o $(SharedSrcPath)/GraphicsUtilities.sdk.o
+SDK_libGPDefaultTheme_Target=../sdk/libGPDefaultTheme.a
+SDK_libGPDefaultTheme_Options=-framework Foundation -framework UIKit -framework CoreGraphics -static
 
-all: $(libGriP_Target) $(DefaultTheme_Target) $(ThemesPath)/Default.griptheme/GriPView.nib $(XXHooker_GriP_Target) $(GriPTest_Target) $(Preferences_Target) $(MemWatcher_Target) $(YouveGotMail_Target)
+SDK_Headers=$(GriPIncPath)/GPApplicationBridge.h $(GriPIncPath)/GrowlApplicationBridge.h $(GriPIncPath)/common.h $(GriPIncPath)/GrowlDefines.h $(GriPIncPath)/NSString-stringByEscapingXMLEntities.h $(GriPIncPath)/GriP.h $(GriPIncPath)/GriPServer.h $(GriPIncPath)/GPTheme.h $(GriPIncPath)/GPUIViewTheme.h
+SDK_Sources=NSString-stringByEscapingXMLEntities.m GrowlApplicationBridge.m ../deb/Library/GriP/GPPreferences.plist
+
+all: $(libGriP_Target) $(DefaultTheme_Target) $(XXHooker_GriP_Target) $(GriPTest_Target) $(Preferences_Target) $(MemWatcher_Target) $(YouveGotMail_Target)
 
 %.sdk.o:	%.m
 	$(Compiler) -c $(SDKOptionsSim) -o $@.i686 $^
@@ -136,12 +140,15 @@ $(YouveGotMail_Target):	$(YouveGotMail_Sources)
 	$(Compiler) $(Options) $(YouveGotMail_Options) -o $@ $^
 	$(CodeSign) $@
 
-sdk: $(SDK_libGriP_Target) $(SDK_libGriPServer_Target) SDKEtc
+sdk: $(SDK_libGriP_Target) $(SDK_libGriPServer_Target) $(SDK_libGPDefaultTheme_Target) SDKEtc
 
 $(SDK_libGriP_Target): $(SDK_libGriP_Sources)
 	libtool -static -o $@ $^
 
 $(SDK_libGriPServer_Target): $(SDK_libGriPServer_Sources)
+	libtool -static -o $@ $^
+
+$(SDK_libGPDefaultTheme_Target): $(SDK_libGPDefaultTheme_Sources)
 	libtool -static -o $@ $^
 
 SDKEtc:	$(SDK_Headers) $(SDK_Sources)

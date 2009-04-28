@@ -172,7 +172,7 @@ BOOL GPCheckEnabled(NSString* appName, NSString* msgName) {
 #endif
 }
 
-void GPGetColorsForPriority(int priority, UIColor** outBGColor, UIColor** outFGColor) {
+void GPCopyColorsForPriority(int priority, UIColor** outBGColor, UIColor** outFGColor) {
 	if (priority < -2) priority = -2;
 	if (priority > 2) priority = 2;
 	
@@ -182,10 +182,10 @@ void GPGetColorsForPriority(int priority, UIColor** outBGColor, UIColor** outFGC
 	CGFloat blue = [[colorArray objectAtIndex:2] floatValue];
 	
 	if (outBGColor != NULL)
-		*outBGColor = [UIColor colorWithRed:red green:green blue:blue alpha:1];
+		*outBGColor = [[UIColor alloc] initWithRed:red green:green blue:blue alpha:1];
 	
 	if (outFGColor != NULL) {
 		CGFloat luminance = GULuminance(red, green, blue);
-		*outFGColor = (luminance > 0.5) ? [UIColor blackColor] : [UIColor whiteColor];
+		*outFGColor = [(luminance > 0.5f ? [UIColor blackColor] : [UIColor whiteColor]) retain];
 	}
 }
