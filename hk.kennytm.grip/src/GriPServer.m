@@ -53,15 +53,24 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 static pthread_mutex_t atLock = PTHREAD_MUTEX_INITIALIZER;
 static NSObject<GPTheme>* activeTheme = nil;
+static const int MemoryAlertObserver = 12345678;
+
+static void GPMemoryAlert (CFNotificationCenterRef center, void* observer, CFStringRef name, const void* object, CFDictionaryRef userInfo) {
+	GPFlushPreferences();
+	pthread_mutex_lock(&atLock);
+	[activeTheme release];
+	activeTheme = nil;
+	pthread_mutex_unlock(&atLock);
+}
 
 static CFDataRef GriPCallback (CFMessagePortRef serverPort, SInt32 type, CFDataRef data, void* info) {
+	CFDataRef retData = NULL;
+	NSArray* array = nil;
+	
 	switch (type) {
 		case GriPMessage_FlushPreferences:
-			GPFlushPreferences();
-			pthread_mutex_lock(&atLock);
-			[activeTheme release];
-			activeTheme = nil;
-			pthread_mutex_unlock(&atLock);
+			// basically the same action.
+			GPMemoryAlert(NULL, NULL, NULL, NULL, NULL);
 			break;
 			
 		case GriPMessage_ShowMessage: {
@@ -79,7 +88,7 @@ static CFDataRef GriPCallback (CFMessagePortRef serverPort, SInt32 type, CFDataR
 			BOOL willDisplay = [activeTheme respondsToSelector:@selector(display:)];
 			pthread_mutex_unlock(&atLock);
 			
-			NSMutableDictionary* messageDict = [NSPropertyListSerialization propertyListFromData:(NSData*)data mutabilityOption:NSPropertyListMutableContainersAndLeaves format:NULL errorDescription:NULL];
+			NSMutableDictionary* messageDict = [NSPropertyListSerialization propertyListFromData:(NSData*)data mutabilityOption:NSPropertyListMutableContainers format:NULL errorDescription:NULL];
 			
 			if (willDisplay) {
 				GPModifyMessageForUserPreference(messageDict);
@@ -91,16 +100,15 @@ static CFDataRef GriPCallback (CFMessagePortRef serverPort, SInt32 type, CFDataR
 			
 			// fall through as an ignored message if it remained unhandled.
 			type = GriPMessage_IgnoredNotification;
-			data = (CFDataRef)[NSPropertyListSerialization dataFromPropertyList:[NSArray arrayWithObjects:
-																				 [messageDict objectForKey:GRIP_PID],
-																				 [messageDict objectForKey:GRIP_CONTEXT],
-																				 [messageDict objectForKey:GRIP_ISURL], nil]
-																		 format:NSPropertyListBinaryFormat_v1_0 errorDescription:NULL];
+			array = [messageDict objectsForKeys:[NSArray arrayWithObjects:GRIP_PID, GRIP_CONTEXT, GRIP_ISURL, nil] notFoundMarker:[NSNull null]];
+			
+			goto ignored_message;
 		}
 			
 		case GriPMessage_ClickedNotification:
-		case GriPMessage_IgnoredNotification: {
-			NSArray* array = [NSPropertyListSerialization propertyListFromData:(NSData*)data mutabilityOption:NSPropertyListImmutable format:NULL errorDescription:NULL];
+		case GriPMessage_IgnoredNotification:
+			array = [NSPropertyListSerialization propertyListFromData:(NSData*)data mutabilityOption:NSPropertyListImmutable format:NULL errorDescription:NULL];
+ignored_message:
 			if ([array isKindOfClass:[NSArray class]] && [array count] >= 3) {
 				CFStringRef pid = (CFStringRef)[array objectAtIndex:0];
 				CFDataRef context = (CFDataRef)[NSPropertyListSerialization dataFromPropertyList:[array objectAtIndex:1] format:NSPropertyListBinaryFormat_v1_0 errorDescription:NULL];
@@ -126,10 +134,9 @@ static CFDataRef GriPCallback (CFMessagePortRef serverPort, SInt32 type, CFDataR
 				}
 			}
 			break;
-		}
 			
-		case GriPMessage_UpdateTicket: {
-			NSArray* array = [NSPropertyListSerialization propertyListFromData:(NSData*)data mutabilityOption:NSPropertyListImmutable format:NULL errorDescription:NULL];
+		case GriPMessage_UpdateTicket:
+			array = [NSPropertyListSerialization propertyListFromData:(NSData*)data mutabilityOption:NSPropertyListImmutable format:NULL errorDescription:NULL];
 			if ([array isKindOfClass:[NSArray class]] && [array count] >= 2) {
 				NSString* appName = [array objectAtIndex:0];
 				NSDictionary* regDictionary = [array objectAtIndex:1];
@@ -137,10 +144,9 @@ static CFDataRef GriPCallback (CFMessagePortRef serverPort, SInt32 type, CFDataR
 					GPUpdateRegistrationDictionaryForAppName(appName, regDictionary);
 			}
 			break;
-		}
 			
 		case GriPMessage_CheckEnabled: {
-			NSArray* array = [NSPropertyListSerialization propertyListFromData:(NSData*)data mutabilityOption:NSPropertyListImmutable format:NULL errorDescription:NULL];
+			array = [NSPropertyListSerialization propertyListFromData:(NSData*)data mutabilityOption:NSPropertyListImmutable format:NULL errorDescription:NULL];
 			BOOL retval = NO;
 			if ([array isKindOfClass:[NSArray class]]) {
 				NSUInteger arrCount = [array count];
@@ -150,14 +156,15 @@ static CFDataRef GriPCallback (CFMessagePortRef serverPort, SInt32 type, CFDataR
 					retval = GPCheckEnabled(appName, appMsg);
 				}
 			}
-			return CFDataCreate(NULL, (const UInt8*)&retval, sizeof(BOOL));
+			retData = CFDataCreate(NULL, (const UInt8*)&retval, sizeof(BOOL));
+			break;
 		}
 			
 		case GriPMessage_DisposeIdentifier:
-			if ([activeTheme respondsToSelector:@selector(disposeIdentifier:)]) {
-				NSString* iden = [[NSString alloc] initWithData:(NSData*)data encoding:NSUTF8StringEncoding];
-				[activeTheme disposeIdentifier:iden];
-				[iden release];
+			if ([activeTheme respondsToSelector:@selector(messageClosed:)]) {
+				NSString* identifier = [[NSString alloc] initWithData:(NSData*)data encoding:NSUTF8StringEncoding];
+				[activeTheme messageClosed:identifier];
+				[identifier release];
 			}
 			break;
 
@@ -165,11 +172,13 @@ static CFDataRef GriPCallback (CFMessagePortRef serverPort, SInt32 type, CFDataR
 			break;
 	}
 
-	return NULL;
+	return retData;
 }
 
  
 static void terminate () {
+	CFNotificationCenterRemoveObserver(CFNotificationCenterGetLocalCenter(), &MemoryAlertObserver,
+									   (CFStringRef)UIApplicationDidReceiveMemoryWarningNotification, NULL);
 	GPStopServer();
 	[GPMessageWindow _cleanup];
 	[activeTheme release];
@@ -184,22 +193,25 @@ void GPStartGriPServer () {
 #endif
 	
 		if (GPStartServer() != 0) {
-			NSLog(@"Cannot start GriP server -- probably another instance of GriP is already running.");
+			CFShow(CFSTR("Cannot start GriP server -- probably another instance of GriP is already running."));
 			return;
 		}
 		
 		GPSetAlternateHandler(&GriPCallback, GriPMessage__Start, GriPMessage__End);
-		
 		atexit(&terminate);
-	
-		NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
 		
+		NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
 		[GPMessageWindow _initialize];
 		
-		[pool drain];
-		
 		// Notify any waiting MS extensions that GriP is ready.
-		CFNotificationCenterPostNotification(CFNotificationCenterGetLocalCenter(), CFSTR("hk.kennytm.GriP.ready"), NULL, NULL, false);
+		CFNotificationCenterRef localCenter = CFNotificationCenterGetLocalCenter();
+		
+		CFNotificationCenterPostNotification(localCenter, CFSTR("hk.kennytm.GriP.ready"), NULL, NULL, false);
+		CFNotificationCenterAddObserver(localCenter, &MemoryAlertObserver, &GPMemoryAlert,
+										(CFStringRef)UIApplicationDidReceiveMemoryWarningNotification,
+										NULL, CFNotificationSuspensionBehaviorDeliverImmediately);
+		
+		[pool drain];
 		
 #if GRIP_JAILBROKEN
 	} else {

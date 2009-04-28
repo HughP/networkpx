@@ -45,7 +45,7 @@ void GPModifyMessageForUserPreference(NSMutableDictionary* message);
 	
 BOOL GPCheckEnabled(NSString* appName, NSString* msgName);
 
-void GPGetColorsForPriority(int priority, UIColor** outBGColor, UIColor** outFGColor);
+void GPCopyColorsForPriority(int priority, UIColor** outBGColor, UIColor** outFGColor);
 	
 #ifdef __cplusplus
 }

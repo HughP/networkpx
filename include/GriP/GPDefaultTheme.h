@@ -30,8 +30,15 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  
 */
 
-#import <GriP/GPNibTheme.h>
+#import <GriP/GPUIViewTheme.h>
 
-@interface GPDefaultTheme : GPNibTheme<GPTheme> {}
-+(UIView*)modifyView:(UIView*)view_ asNew:(BOOL)asNew forMessage:(NSDictionary*)message;
+@class UIImage, NSBundle, UIView, NSDictionary;
+
+@interface GPDefaultTheme : GPUIViewTheme<GPTheme> {
+	UIImage* bgImages[5];
+	UIImage* activeImages[5];
+}
+-(id)initWithBundle:(NSBundle*)bundle;
+-(void)dealloc;
+-(void)modifyView:(UIView*)inoutView asNew:(BOOL)asNew withMessage:(NSDictionary*)message;
 @end

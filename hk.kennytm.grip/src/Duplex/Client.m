@@ -83,6 +83,7 @@ static CFDataRef GPClientCallback (CFMessagePortRef serverPort_, SInt32 type, CF
 			if (pidData != NULL)
 				CFRelease(pidData);
 			[self release];
+			return nil;
 		}
 		
 		// (3) Create client port from UID.
@@ -110,8 +111,8 @@ static CFDataRef GPClientCallback (CFMessagePortRef serverPort_, SInt32 type, CF
 		errorCode = CFMessagePortSendRequest(serverPort, GPMessage_RegisterClientPort, pidData, 1, 0, NULL, NULL);
 		if (errorCode != kCFMessagePortSuccess)
 			NSLog(@"-[GPDuplexClient initWithCFRunLoop:]: Cannot register client port to the server. You may need to release this duplix client. Error code = %d", errorCode);
-		CFRelease(pidData);
 		 */
+		CFRelease(pidData);
 	}
 	return self;
 }
@@ -180,7 +181,9 @@ static CFDataRef GPClientCallback (CFMessagePortRef serverPort_, SInt32 type, CF
 		observerSet = [NSMutableSet setWithObject:observerObject];
 	else
 		[observerSet addObject:observerObject];
-	[observers setObject:observerSet forKey:typeNumber];
+	@synchronized(observers) {
+		[observers setObject:observerSet forKey:typeNumber];
+	}
 }
 -(void)removeObserver:(id)observer selector:(SEL)selector {
 	// use -allKeys to allow us to modify observers.
@@ -191,12 +194,14 @@ static CFDataRef GPClientCallback (CFMessagePortRef serverPort_, SInt32 type, CF
 	[self removeObserver:observer selector:selector forMessageNumber:[NSNumber numberWithInteger:type]];
 }
 -(void)removeObserver:(id)observer selector:(SEL)selector forMessageNumber:(NSNumber*)typeNumber {
-	NSMutableSet* observerSet = [observers objectForKey:typeNumber];
-	GPObserver obs = {observer, selector};
-	[observerSet removeObject:[NSValue valueWithBytes:&obs objCType:@encode(GPObserver)]];
-	if ([observerSet count] == 0)
-		[observers removeObjectForKey:typeNumber];
-	else
-		[observers setObject:observerSet forKey:typeNumber];
+	@synchronized(observers) {
+		NSMutableSet* observerSet = [observers objectForKey:typeNumber];
+		GPObserver obs = {observer, selector};
+		[observerSet removeObject:[NSValue valueWithBytes:&obs objCType:@encode(GPObserver)]];
+		if ([observerSet count] == 0)
+			[observers removeObjectForKey:typeNumber];
+		else
+			[observers setObject:observerSet forKey:typeNumber];
+	}
 }
 @end

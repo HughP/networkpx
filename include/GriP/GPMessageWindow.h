@@ -47,7 +47,7 @@ typedef struct GPGap {
 	NSObject* context;
 	BOOL isURL;
 	BOOL hiding;
-	NSString* identifier;
+	NSString* identitifer;
 	BOOL forceSticky;
 }
 +(GPMessageWindow*)registerWindowWithView:(UIView*)view_ message:(NSDictionary*)message;
