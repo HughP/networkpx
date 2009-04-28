@@ -35,6 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #import <GriP/GPMessageWindow.h>
 #import <GriP/Duplex/Client.h>
 #import <GriP/common.h>
+#import <GriP/GPRawThemeHelper.h>
 
 #if GRIP_JAILBROKEN
 __attribute__((visibility("hidden")))
@@ -64,7 +65,7 @@ static const int _oriented_locations_matrix[4][4] = {
 static const int _orientation_angles[4] = {0, 180, 90, -90};
 
 @implementation GPMessageWindow
-@synthesize pid, context, view;
+@synthesize view;
 
 +(void)_initialize {
 	occupiedGaps = [[NSMutableArray alloc] init];
@@ -200,6 +201,7 @@ static const int _orientation_angles[4] = {0, 180, 90, -90};
 
 -(id)initWithView:(UIView*)view_ message:(NSDictionary*)message {
 	if ((self = [super init])) {
+		helper = [[GPRawThemeHelper alloc] init];
 		UIView* transformerView = [[UIView alloc] init];
 		[transformerView addSubview:view_];
 		[self addSubview:transformerView];
@@ -223,14 +225,7 @@ static const int _orientation_angles[4] = {0, 180, 90, -90};
 		[self _startTimer];
 	}
 	
-	[pid release];
-	pid = [[message objectForKey:GRIP_PID] retain];
-	
-	[context release];
-	context = [[message objectForKey:GRIP_CONTEXT] retain];
-	
-	isURL = [[message objectForKey:GRIP_ISURL] boolValue];
-	
+	helperUID = [helper registerMessage:message];
 	priority = [[message objectForKey:GRIP_PRIORITY] integerValue];
 }
 
@@ -265,8 +260,10 @@ static const int _orientation_angles[4] = {0, 180, 90, -90};
 -(void)hide { [self hide:YES]; }
 
 -(void)hide:(BOOL)ignored {
-	NSData* portAndContext = [NSPropertyListSerialization dataFromPropertyList:[NSArray arrayWithObjects:pid, context, [NSNumber numberWithBool:isURL], nil] format:NSPropertyListBinaryFormat_v1_0 errorDescription:NULL];
-	[GPDuplexClient sendMessage:(ignored?GriPMessage_IgnoredNotification:GriPMessage_ClickedNotification) data:portAndContext];
+	if (ignored)
+		[helper ignoredMessageID:helperUID];
+	else
+		[helper touchedMessageID:helperUID];
 	
 	[self stopTimer];
 	hiding = YES;
@@ -288,8 +285,7 @@ static const int _orientation_angles[4] = {0, 180, 90, -90};
 
 -(void)dealloc {
 	[self stopTimer];
-	[pid release];
-	[context release];
+	[helper release];
 	[GPDuplexClient sendMessage:GriPMessage_DisposeIdentifier data:[identitifer dataUsingEncoding:NSUTF8StringEncoding]];
 	[identitifer release];
 	[super dealloc];

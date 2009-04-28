@@ -1,6 +1,6 @@
 /*
 
-GPMessageWindow.h ... Message Window for typical GriP styles.
+GPRawThemeHelper.h ... Helper class for raw themes.
  
 Copyright (c) 2009, KennyTM~
 All rights reserved.
@@ -30,52 +30,19 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  
 */
 
-#import <UIKit/UIKit.h>
+#import <Foundation/NSObject.h>
 
-@class GPRawThemeHelper;
+@class NSMutableDictionary, NSDictionary;
 
-typedef struct GPGap {
-	CGFloat y;
-	CGFloat h;
-} GPGap;
-
-
-@interface GPMessageWindow : UIWindow {
-	GPGap currentGap;
-	NSTimer* hideTimer;
-	UIView* view;
-	BOOL sticky;
-	GPRawThemeHelper* helper;
-	int helperUID;
-	BOOL hiding;
-	NSString* identitifer;
-	BOOL forceSticky;
-	int priority;
+@interface GPRawThemeHelper : NSObject {
+@private
+	int uid;
+	NSMutableDictionary* registeredMessages;
 }
-+(GPMessageWindow*)registerWindowWithView:(UIView*)view_ message:(NSDictionary*)message;
--(void)refreshWithMessage:(NSDictionary*)message;
--(void)prepareForResizing;
--(void)resize;
-
-@property(retain,readonly) UIView* view;
-
--(void)stopHiding;
--(void)hide:(BOOL)ignored;
--(void)forceSticky;
-
--(void)stopTimer;
--(void)restartTimer;
+-(id)init;
 -(void)dealloc;
-@end
 
-@interface GPMessageWindow ()
-+(void)_initialize;
-+(void)_cleanup;
-
--(id)initWithView:(UIView*)view_ message:(NSDictionary*)message;
-+(void)_removeGap:(GPGap)gap;
-+(GPGap)_createGapWithHeight:(CGFloat)height;
--(void)_layoutWithAnimation:(BOOL)animate;
--(void)_releaseMyself;
--(void)_startTimer;
+-(int)registerMessage:(NSDictionary*)message;
+-(void)ignoredMessageID:(int)uid;
+-(void)touchedMessageID:(int)uid;
 @end

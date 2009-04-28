@@ -101,7 +101,7 @@ __attribute__((visibility("hidden")))
 		
 		// activeView is the border that appears when pressing on the title / icon.
 		clickContext = [[UIButton alloc] init];
-		GPAssignUIControlAsClickContextForTheme(clickContext, GPDefaultTheme);
+		GPAssignUIControlAsClickContext(clickContext);
 		[self addSubview:clickContext];
 		[clickContext release];
 		
@@ -114,7 +114,7 @@ __attribute__((visibility("hidden")))
 		
 		// close button
 		closeButton = [[UIButton alloc] init];
-		GPAssignUIControlAsCloseButtonForTheme(closeButton, GPDefaultTheme);
+		GPAssignUIControlAsCloseButton(closeButton);
 		[closeButton setTitle:@"\u00D7" forState:UIControlStateNormal];
 		closeButton.showsTouchWhenHighlighted = YES;
 		[self addSubview:closeButton];
@@ -122,7 +122,7 @@ __attribute__((visibility("hidden")))
 		
 		// disclosure button
 		disclosureButton = [[UIButton alloc] init];
-		GPAssignUIControlAsDisclosureButtonForTheme(disclosureButton, GPDefaultTheme);
+		GPAssignUIControlAsDisclosureButton(disclosureButton);
 		[disclosureButton setTitle:@"\u25BC" forState:UIControlStateNormal];
 		disclosureButton.showsTouchWhenHighlighted = YES;
 		[self addSubview:disclosureButton];

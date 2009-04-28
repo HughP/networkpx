@@ -77,6 +77,7 @@ void GPUpdateRegistrationDictionaryForAppName(NSString* appName, NSDictionary* r
 		hasModification = YES;
 		ticket = [[NSMutableDictionary alloc] initWithObjectsAndKeys:
 				  [NSNumber numberWithBool:YES], @"enabled",
+				  [NSNumber numberWithBool:NO], @"stealth",
 				  [NSNumber numberWithInteger:0], @"sticky",	// 0 = application defined, 1 = always sticky, else = always hide.
 				  [NSMutableDictionary dictionary], @"messages",
 				  nil];
@@ -96,6 +97,7 @@ void GPUpdateRegistrationDictionaryForAppName(NSString* appName, NSDictionary* r
 			NSString* desc = [descriptions objectForKey:name];
 			NSMutableDictionary* messageDict = [[NSMutableDictionary alloc] initWithObjectsAndKeys:
 												[NSNumber numberWithBool:enabled], @"enabled",
+												[NSNumber numberWithBool:NO], @"stealth",
 												[NSNumber numberWithInteger:0], @"sticky",
 												[NSNumber numberWithInteger:0], @"priority",
 												nil];
@@ -113,18 +115,20 @@ void GPUpdateRegistrationDictionaryForAppName(NSString* appName, NSDictionary* r
 	[ticket release];
 }
 
-static BOOL GPCheckEnabledWithTicket(NSDictionary* ticket, NSString* msgName, NSDictionary** pMsgDict) {
-	if (ticket == nil || ![[ticket objectForKey:@"enabled"] boolValue])
+#define EnabledWithStealth(dict) ([[(dict) objectForKey:@"enabled"] boolValue] || (respectStealth && [[(dict) objectForKey:@"stealth"] boolValue]))
+static BOOL GPCheckEnabledWithTicket(NSDictionary* ticket, NSString* msgName, NSDictionary** pMsgDict, BOOL respectStealth) {
+	if (ticket == nil || !EnabledWithStealth(ticket))
 		return NO;
 	if (msgName == nil)
 		return YES;
 	NSDictionary* msgDict = [[ticket objectForKey:@"messages"] objectForKey:msgName];
 	if (pMsgDict != NULL)
 		*pMsgDict = msgDict;
-	if (msgDict == nil || ![[msgDict objectForKey:@"enabled"] boolValue])
+	if (msgDict == nil || !EnabledWithStealth(msgDict))
 		return NO;
 	return YES;
 }
+#undef EnabledWithStealth
 
 void GPModifyMessageForUserPreference(NSMutableDictionary* message) {
 	NSString* appName = [message objectForKey:GRIP_APPNAME];
@@ -132,7 +136,7 @@ void GPModifyMessageForUserPreference(NSMutableDictionary* message) {
 	NSString* msgName = [message objectForKey:GRIP_NAME];
 	NSDictionary* msgDict;
 
-	if (appName == nil || msgName == nil || !GPCheckEnabledWithTicket(ticket, msgName, &msgDict)) {
+	if (appName == nil || msgName == nil || !GPCheckEnabledWithTicket(ticket, msgName, &msgDict, NO)) {
 		[message removeAllObjects];
 		return;
 	}
@@ -164,7 +168,7 @@ void GPModifyMessageForUserPreference(NSMutableDictionary* message) {
 }
 
 BOOL GPCheckEnabled(NSString* appName, NSString* msgName) {
-	return appName != nil && GPCheckEnabledWithTicket([NSDictionary dictionaryWithContentsOfFile:GPTicketPathForAppName(appName)], msgName, NULL);
+	return appName != nil && GPCheckEnabledWithTicket([NSDictionary dictionaryWithContentsOfFile:GPTicketPathForAppName(appName)], msgName, NULL, YES);
 }
 
 void GPCopyColorsForPriority(int priority, UIColor** outBGColor, UIColor** outFGColor) {
