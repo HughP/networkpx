@@ -108,9 +108,13 @@ static GPApplicationBridge* bridge = nil;
 __attribute__((visibility("hidden")))
 @interface MessageController : PSListController {
 	NSMutableDictionary* msgdict;
+	PSSpecifier* stealthSpec;
 }
 -(NSArray*)specifiers;
 -(NSObject*)getMessage:(PSSpecifier*)spec;
+-(void)set:(NSObject*)obj message:(PSSpecifier*)spec;
+-(void)dealloc;
+-(void)updateStealthSpec;
 @end
 @implementation MessageController
 -(NSArray*)specifiers {
@@ -120,11 +124,30 @@ __attribute__((visibility("hidden")))
 		msgdict = [spec propertyForKey:@"msgdict"];
 		[self specifierForID:@"description"].name = [msgdict objectForKey:@"description"];
 		self.title = spec.name;
+		
+		stealthSpec = [[self specifierForID:@"stealth"] retain];
+		if ([[msgdict objectForKey:@"enabled"] boolValue])
+			[self removeSpecifier:stealthSpec];
 	}
 	return _specifiers;
 }
 -(NSObject*)getMessage:(PSSpecifier*)spec { return [msgdict objectForKey:spec.identifier] ?: [NSNumber numberWithInteger:0]; }
--(void)set:(NSObject*)obj message:(PSSpecifier*)spec { [msgdict setObject:obj forKey:spec.identifier]; }
+-(void)set:(NSObject*)obj message:(PSSpecifier*)spec {
+	NSString* iden = spec.identifier;
+	[msgdict setObject:obj forKey:iden];
+	if ([@"enabled" isEqualToString:iden])
+		[self updateStealthSpec];
+}
+-(void)dealloc {
+	[stealthSpec release];
+	[super dealloc];
+}
+-(void)updateStealthSpec {
+	if ([[msgdict objectForKey:@"enabled"] boolValue])
+		[self removeSpecifier:stealthSpec animated:YES];
+	else
+		[self insertSpecifier:stealthSpec afterSpecifierID:@"enabled" animated:YES];
+}
 @end
 
 //------------------------------------------------------------------------------
@@ -133,11 +156,14 @@ __attribute__((visibility("hidden")))
 __attribute__((visibility("hidden")))
 @interface TicketController : PSListController {
 	NSMutableDictionary* dict;
+	PSSpecifier* stealthSpec;
 }
 -(NSArray*)specifiers;
 -(void)dealloc;
 -(NSObject*)getTicket:(PSSpecifier*)spec;
 -(void)set:(NSObject*)obj ticket:(PSSpecifier*)spec;
+-(void)removeSettings;
+-(void)updateStealthSpec;
 @end
 
 @implementation TicketController
@@ -176,19 +202,27 @@ __attribute__((visibility("hidden")))
 		}
 		
 		self.title = mySpec.name;
+		
+		stealthSpec = [[self specifierForID:@"stealth"] retain];
+		if ([[dict objectForKey:@"enabled"] boolValue])
+			[self removeSpecifier:stealthSpec];
 	}
 	return _specifiers;
 }
 -(void)dealloc {
 	[dict writeToFile:[self.specifier propertyForKey:@"fn"] atomically:NO];
 	[dict release];
+	[stealthSpec release];
 	[super dealloc];
 }
 -(NSObject*)getTicket:(PSSpecifier*)spec {
 	return [dict objectForKey:spec.identifier] ?: [NSNumber numberWithInteger:0];
 }
 -(void)set:(NSObject*)obj ticket:(PSSpecifier*)spec {
-	[dict setObject:obj forKey:spec.identifier];
+	NSString* iden = spec.identifier;
+	[dict setObject:obj forKey:iden];
+	if ([@"enabled" isEqualToString:iden])
+		[self updateStealthSpec];
 }
 -(void)removeSettings {
 	PSSpecifier* mySpec = self.specifier;
@@ -212,6 +246,12 @@ __attribute__((visibility("hidden")))
 		[ctrler removeSpecifier:mySpec];
 		[ctrler popController];
 	}
+}
+-(void)updateStealthSpec {
+	if ([[dict objectForKey:@"enabled"] boolValue])
+		[self removeSpecifier:stealthSpec animated:YES];
+	else
+		[self insertSpecifier:stealthSpec afterSpecifierID:@"enabled" animated:YES];
 }
 @end
 

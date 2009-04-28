@@ -30,6 +30,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  
 */
 
+#ifndef GPDEFAULTTHEME_H
+#define GPDEFAULTTHEME_H
 #import <GriP/GPUIViewTheme.h>
 
 @class UIImage, NSBundle, UIView, NSDictionary;
@@ -42,3 +44,5 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 -(void)dealloc;
 -(void)modifyView:(UIView*)inoutView asNew:(BOOL)asNew withMessage:(NSDictionary*)message;
 @end
+
+#endif

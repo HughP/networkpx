@@ -7,9 +7,9 @@ PrefsBundlePath=../deb/System/Library/PreferenceBundles
 
 GriPIncPath=../../include/GriP
 
-libVersion               =1.11.4
+libVersion               =1.11.5
 libGriPCompatVersion     =1.11.4
-libGriPExtraCompatVersion=1.11.4
+libGriPExtraCompatVersion=1.11.5
 
 Compiler=$(iPhoneDevPath)/usr/bin/gcc-4.2
 CodeSign=ldid -S
@@ -54,7 +54,7 @@ libGriP_Sources=Duplex/Client.o GPApplicationBridge.o GPExtensions.o NSString-st
 libGriP_Target=../deb/usr/lib/libGriP.dylib
 libGriP_Options=-dynamiclib -install_name /usr/lib/libGriP.dylib -compatibility_version $(libGriPCompatVersion) -current_version $(libVersion) -framework Foundation -framework CoreFoundation -framework UIKit
 
-libGriPExtra_Sources=GPMessageWindow.o GPPreferences.o GPGetSmallAppIcon.o GPUIViewTheme.o
+libGriPExtra_Sources=GPMessageWindow.o GPPreferences.o GPGetSmallAppIcon.o GPUIViewTheme.o GPRawThemeHelper.o
 libGriPExtra_Target=../deb/usr/lib/libGriPExtra.dylib
 libGriPExtra_Options=-lGriP -dynamiclib -install_name /usr/lib/libGriPExtra.dylib -compatibility_version $(libGriPExtraCompatVersion) -current_version $(libVersion) -framework Foundation -framework CoreFoundation -framework UIKit -framework CoreGraphics
 
@@ -86,7 +86,7 @@ SDK_libGriP_Sources=Duplex/Client.sdk.o GPApplicationBridge.sdk.o
 SDK_libGriP_Target=../sdk/libGriP.a
 SDK_libGriP_Options=-framework Foundation -static
 
-SDK_libGriPServer_Sources=GPMessageWindow.sdk.o GPPreferences.sdk.o GPGetSmallAppIcon.sdk.o GPUIViewTheme.sdk.o GriPServer.sdk.o Duplex/Server.sdk.o 
+SDK_libGriPServer_Sources=GPMessageWindow.sdk.o GPPreferences.sdk.o GPGetSmallAppIcon.sdk.o GPUIViewTheme.sdk.o GriPServer.sdk.o Duplex/Server.sdk.o GPRawThemeHelper.sdk.o
 SDK_libGriPServer_Target=../sdk/libGriPServer.a
 SDK_libGriPServer_Options=-framework Foundation -framework UIKit -framework CoreGraphics -static
 
@@ -94,7 +94,7 @@ SDK_libGPDefaultTheme_Sources=GPDefaultTheme.sdk.o $(SharedSrcPath)/GraphicsUtil
 SDK_libGPDefaultTheme_Target=../sdk/libGPDefaultTheme.a
 SDK_libGPDefaultTheme_Options=-framework Foundation -framework UIKit -framework CoreGraphics -static
 
-SDK_Headers=$(GriPIncPath)/GPApplicationBridge.h $(GriPIncPath)/GrowlApplicationBridge.h $(GriPIncPath)/common.h $(GriPIncPath)/GrowlDefines.h $(GriPIncPath)/NSString-stringByEscapingXMLEntities.h $(GriPIncPath)/GriP.h $(GriPIncPath)/GriPServer.h $(GriPIncPath)/GPTheme.h $(GriPIncPath)/GPUIViewTheme.h
+SDK_Headers=$(GriPIncPath)/GPApplicationBridge.h $(GriPIncPath)/GrowlApplicationBridge.h $(GriPIncPath)/common.h $(GriPIncPath)/GrowlDefines.h $(GriPIncPath)/NSString-stringByEscapingXMLEntities.h $(GriPIncPath)/GriP.h $(GriPIncPath)/GriPServer.h $(GriPIncPath)/GPTheme.h $(GriPIncPath)/GPUIViewTheme.h $(GriPIncPath)/GPRawThemeHelper.h $(GriPIncPath)/GPGetSmallAppIcon.h
 SDK_Sources=NSString-stringByEscapingXMLEntities.m GrowlApplicationBridge.m ../deb/Library/GriP/GPPreferences.plist
 
 all: $(libGriP_Target) $(libGriPExtra_Target) $(DefaultTheme_Target) $(XXHooker_GriP_Target) $(GriPTest_Target) $(Preferences_Target) $(MemWatcher_Target) $(YouveGotMail_Target)

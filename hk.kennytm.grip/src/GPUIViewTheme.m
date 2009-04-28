@@ -122,8 +122,8 @@ static void GPSetFGColor(UIView* view, UIColor* fgColor) {
 @end
 
 @implementation GPUIViewTheme (TargetActions)
-+(void)close:(UIButton*)button { [(GPMessageWindow*)button.window hide:YES]; }
-+(void)disclose:(UIButton*)button {
++(void)close:(UIView*)button { [(GPMessageWindow*)button.window hide:YES]; }
++(void)disclose:(UIView*)button {
 	GPMessageWindow* window = (GPMessageWindow*)button.window;
 	[window stopHiding];
 	[window stopTimer];
@@ -132,15 +132,15 @@ static void GPSetFGColor(UIView* view, UIColor* fgColor) {
 	[self updateViewForDisclosure:window.view];
 	[window resize];
 }
-+(void)activate:(UIButton*)clickContext {
++(void)activate:(UIView*)clickContext {
 	GPMessageWindow* window = (GPMessageWindow*)clickContext.window;
 	[window stopTimer];
 	[self activateView:window.view]; 
 }
-+(void)deactivate:(UIButton*)clickContext {
++(void)deactivate:(UIView*)clickContext {
 	GPMessageWindow* window = (GPMessageWindow*)clickContext.window;
 	[window restartTimer];
 	[self deactivateView:window.view]; 	
 }
-+(void)fire:(UIButton*)clickContext { [(GPMessageWindow*)clickContext.window hide:NO]; }
++(void)fire:(UIView*)clickContext { [(GPMessageWindow*)clickContext.window hide:NO]; }
 @end

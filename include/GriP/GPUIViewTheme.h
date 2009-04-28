@@ -59,19 +59,19 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 @interface GPUIViewTheme (TargetActions)
-+(void)close:(UIButton*)button;
-+(void)disclose:(UIButton*)button;
-+(void)activate:(UIButton*)clickContext;
-+(void)deactivate:(UIButton*)clickContext;
-+(void)fire:(UIButton*)clickContext;
++(void)close:(UIView*)button;
++(void)disclose:(UIView*)button;
++(void)activate:(UIView*)clickContext;
++(void)deactivate:(UIView*)clickContext;
++(void)fire:(UIView*)clickContext;
 @end
 
 
-#define GPAssignUIControlAsClickContextForTheme(ctrl, theme) ({ \
-	Class rootClass = [theme class]; \
+#define GPAssignUIControlAsClickContext(ctrl) ({ \
+	Class rootClass = [self class]; \
 	[(ctrl) addTarget:rootClass action:@selector(fire:) forControlEvents:UIControlEventTouchUpInside]; \
 	[(ctrl) addTarget:rootClass action:@selector(activate:) forControlEvents:UIControlEventTouchDown|UIControlEventTouchDragEnter]; \
 	[(ctrl) addTarget:rootClass action:@selector(deactivate:) forControlEvents:UIControlEventTouchDragOutside|UIControlEventTouchDragExit|UIControlEventTouchUpOutside|UIControlEventTouchCancel]; \
 })
-#define GPAssignUIControlAsCloseButtonForTheme(ctrl, theme) [(ctrl) addTarget:[theme class] action:@selector(close:) forControlEvents:UIControlEventTouchUpInside]
-#define GPAssignUIControlAsDisclosureButtonForTheme(ctrl, theme) [(ctrl) addTarget:[theme class] action:@selector(disclose:) forControlEvents:UIControlEventTouchUpInside]
+#define GPAssignUIControlAsCloseButton(ctrl) [(ctrl) addTarget:[self class] action:@selector(close:) forControlEvents:UIControlEventTouchUpInside]
+#define GPAssignUIControlAsDisclosureButton(ctrl) [(ctrl) addTarget:[self class] action:@selector(disclose:) forControlEvents:UIControlEventTouchUpInside]
