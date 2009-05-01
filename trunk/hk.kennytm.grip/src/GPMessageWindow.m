@@ -129,7 +129,6 @@ static const int _orientation_angles[4] = {0, 180, 90, -90};
 	UIWindow* statusBar = [[$SBStatusBarController sharedStatusBarController] statusBarWindow];
 	if (statusBar != nil) {
 		CGRect statusFrame = statusBar.frame;
-		NSLog(NSStringFromCGRect(statusFrame));
 		if (statusFrame.size.width == currentScreenFrame.size.width) {
 			if (statusFrame.origin.y == 0)
 				currentScreenFrame.origin.y = statusFrame.size.height;

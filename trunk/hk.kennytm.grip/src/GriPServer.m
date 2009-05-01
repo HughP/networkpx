@@ -118,14 +118,7 @@ ignored_message:
 				BOOL isURL = [[array objectAtIndex:2] boolValue];
 				
 				CFMessagePortRef clientPort = CFMessagePortCreateRemote(NULL, pid);
-				if (clientPort != NULL) {
-					if (isURL) {
-						if (type == GriPMessage_ClickedNotification)
-							CFMessagePortSendRequest(clientPort, GriPMessage_LaunchURL, context, 1, 0, NULL, NULL);
-					} else
-						CFMessagePortSendRequest(clientPort, type, context, 1, 0, NULL, NULL);
-					CFRelease(clientPort);
-				} else if (isURL && type == GriPMessage_ClickedNotification) {
+				if (isURL && type == GriPMessage_ClickedNotification) {
 					NSURL* url = [NSURL URLWithString:(NSString*)[array objectAtIndex:1]];
 #if GRIP_JAILBROKEN
 					SpringBoard* springBoard = (SpringBoard*)[UIApplication sharedApplication];
@@ -136,6 +129,9 @@ ignored_message:
 #else
 					[[UIApplication sharedApplication] openURL:url];
 #endif
+				} else if (clientPort != NULL) {
+					CFMessagePortSendRequest(clientPort, type, context, 1, 0, NULL, NULL);
+					CFRelease(clientPort);
 				}
 			}
 			break;

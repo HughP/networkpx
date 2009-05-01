@@ -2,6 +2,10 @@
 title = "";
 items = (
 	{ cell = PSGroupCell; },
+	{ cell = PSButtonCell; 
+		action = preview; 
+		label = Preview; },
+	{ cell = PSGroupCell; },
 	{ cell = PSSwitchCell;
 		get = "getComponent:";
 		set = "set:forComponent:";
@@ -62,6 +66,12 @@ items = (
 		min = 0;
 		max = 1;
 		showValue = YES;
-		leftImage = alpha.png; }
+		leftImage = alpha.png; },
+	{ cell = PSGroupCell; },
+	{ cell = PSButtonCell; 
+		action = reset; 
+		label = Reset;
+		confirmation = { okTitle = Reset; cancelTitle = Cancel; };
+		isDestructive = YES; }
 );
 }

@@ -43,19 +43,37 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define PREFDICT @"/Library/GriP/GPPreferences.plist"
 
 static GPApplicationBridge* bridge = nil;
+static const float perPriorityDefaultSettings[5][7] = {
+	{0.400f, 0.400f, 0.400f, 0.75f, 0, 0,  0},
+	{0.188f, 0.663f, 0.290f, 0.75f, 1, 0,  2},
+	{0.098f, 0.098f, 0.098f, 0.75f, 1, 0,  4},
+	{0.349f, 0.024f, 0.016f, 0.80f, 1, 0,  7},
+	{0.698f, 0.047f, 0.031f, 0.85f, 1, 0, 10}
+};
 
 #define LS(str) [myBundle localizedStringForKey:str value:nil table:nil]
 
 //------------------------------------------------------------------------------
 #pragma mark -
 
+@interface GPCustomizationController : PSListController {} @end
+@implementation GPCustomizationController @end
+
+//------------------------------------------------------------------------------
+
 @interface GPPerPrioritySettingsController : PSListController {
+	NSMutableArray* components;
 	int j;
 }
 -(NSArray*)specifiers;
 -(NSNumber*)getComponent:(PSSpecifier*)spec;
 -(void)set:(NSNumber*)obj forComponent:(PSSpecifier*)spec;
 -(void)updateColor:(NSArray*)colorArray;
+-(void)preview;
+-(void)reset;
+-(void)dealloc;
+-(void)suspend;
+-(void)flushPreferences;
 @end
 @implementation GPPerPrioritySettingsController
 -(NSArray*)specifiers {
@@ -64,23 +82,19 @@ static GPApplicationBridge* bridge = nil;
 		PSSpecifier* spec = self.specifier;
 		j = [[spec propertyForKey:@"priorityLevel"] integerValue];
 		self.title = spec.name;
+		components = [[[[NSDictionary dictionaryWithContentsOfFile:PREFDICT] objectForKey:@"PerPrioritySettings"] objectAtIndex:j] mutableCopy];
 	}
 	return _specifiers;
 }
 -(NSNumber*)getComponent:(PSSpecifier*)spec {
 	int val = [spec.identifier integerValue];
-	NSArray* color = [[[NSDictionary dictionaryWithContentsOfFile:PREFDICT] objectForKey:@"PerPrioritySettings"] objectAtIndex:j];
-	[self updateColor:color];
-	return [color objectAtIndex:val];
+	[self updateColor:components];
+	return [components objectAtIndex:val];
 }
 -(void)set:(NSNumber*)obj forComponent:(PSSpecifier*)spec {
 	int val = [spec.identifier integerValue];
-	NSMutableDictionary* dict = [NSMutableDictionary dictionaryWithContentsOfFile:PREFDICT];
-	NSMutableArray* color = [[dict objectForKey:@"PerPrioritySettings"] objectAtIndex:j];
-	[color replaceObjectAtIndex:val withObject:obj];
-	[self updateColor:color];
-	[dict writeToFile:PREFDICT atomically:NO];
-	[GPDuplexClient sendMessage:GriPMessage_FlushPreferences data:nil];
+	[components replaceObjectAtIndex:val withObject:obj];
+	[self updateColor:components];
 }
 -(void)updateColor:(NSArray*)colorArray {
 	UIView* cell = [[self lastController] cachedCellForSpecifierID:@"previewBoxHere"];
@@ -99,6 +113,36 @@ static GPApplicationBridge* bridge = nil;
 		[cell addSubview:previewBox];
 		[previewBox release];
 	}
+}
+-(void)preview {
+	[self flushPreferences];
+	NSBundle* myBundle = self.bundle;
+	[bridge notifyWithTitle:LS(@"GriP Message Preview")
+				description:[NSString stringWithFormat:LS(@"This is a preview of a <strong>%@</strong> GriP message."), self.title]
+		   notificationName:@"Preview"
+				   iconData:@"com.apple.Preferences"
+				   priority:j-2
+				   isSticky:NO
+			   clickContext:nil];
+}
+-(void)flushPreferences {
+	NSMutableDictionary* dict = [NSMutableDictionary dictionaryWithContentsOfFile:PREFDICT];
+	[[dict objectForKey:@"PerPrioritySettings"] replaceObjectAtIndex:j withObject:components];
+	[dict writeToFile:PREFDICT atomically:NO];
+	[GPDuplexClient sendMessage:GriPMessage_FlushPreferences data:nil];
+}
+-(void)suspend {
+	[self flushPreferences];
+	[super suspend];
+}
+-(void)reset {
+	for (int i = 0; i < 7; ++ i)
+		[components replaceObjectAtIndex:i withObject:[NSNumber numberWithFloat:perPriorityDefaultSettings[j][i]]];
+	[self reloadSpecifiers];
+}
+-(void)dealloc {
+	[components release];
+	[super dealloc];
 }
 @end
 
@@ -159,6 +203,7 @@ __attribute__((visibility("hidden")))
 	PSSpecifier* stealthSpec;
 }
 -(NSArray*)specifiers;
+-(void)suspend;
 -(void)dealloc;
 -(NSObject*)getTicket:(PSSpecifier*)spec;
 -(void)set:(NSObject*)obj ticket:(PSSpecifier*)spec;
@@ -210,10 +255,13 @@ __attribute__((visibility("hidden")))
 	return _specifiers;
 }
 -(void)dealloc {
-	[dict writeToFile:[self.specifier propertyForKey:@"fn"] atomically:NO];
 	[dict release];
 	[stealthSpec release];
 	[super dealloc];
+}
+-(void)suspend {
+	[dict writeToFile:[self.specifier propertyForKey:@"fn"] atomically:NO];
+	[super suspend];
 }
 -(NSObject*)getTicket:(PSSpecifier*)spec {
 	return [dict objectForKey:spec.identifier] ?: [NSNumber numberWithInteger:0];
@@ -327,7 +375,7 @@ __attribute__((visibility("hidden")))
 -(void)preview {
 	NSBundle* myBundle = self.bundle;
 	[bridge notifyWithTitle:LS(@"GriP Message Preview")
-				description:LS(@"This is a preview of a normal <strong>GriP</strong> message.")
+				description:[NSString stringWithFormat:LS(@"This is a preview of a <strong>%@</strong> GriP message."), [[myBundle localizedStringForKey:@"Normal" value:nil table:@"GriP"] lowercaseString]]
 		   notificationName:@"Preview"
 				   iconData:@"com.apple.Preferences"
 				   priority:0
