@@ -176,7 +176,6 @@ __attribute__((visibility("hidden")))
 	staticView->titleRect = CGRectMake(titleLeft, titleTop, titleWidth, actualTitleHeight);
 	
 	CGRect descriptionFrame = descriptionView.frame;
-	CFShow(NSStringFromCGRect(descriptionFrame));
 	
 	self.autoresizesSubviews = NO;
 	self.frame = backgroundView.frame = staticView.frame = CGRectMake(0, 0, 160, titleHeight+5+descriptionFrame.size.height);

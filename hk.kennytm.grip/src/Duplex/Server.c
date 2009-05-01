@@ -31,7 +31,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include <CoreFoundation/CoreFoundation.h>
-#include <GriP/Duplex/Client.h>
+#include <GriP/Duplex/ClientC.h>
 #include <stdio.h>
 #include <libkern/OSAtomic.h>
 

@@ -4,8 +4,8 @@
 // (R, G, B, A, enabled, sticky, timer)
 // for sticky: 0 = App decides, 1 = Always, 2 = Never.
 PerPrioritySettings = (
-	(0.400, 0.400, 0.400, 0.50, 0, 0,  0),	// Very low priorty
-	(0.188, 0.290, 0.663, 0.63, 1, 0,  2),	// Moderate
+	(0.400, 0.400, 0.400, 0.75, 0, 0,  0),	// Very low priorty
+	(0.188, 0.663, 0.290, 0.75, 1, 0,  2),	// Moderate
 	(0.098, 0.098, 0.098, 0.75, 1, 0,  4),	// Normal
 	(0.349, 0.024, 0.016, 0.80, 1, 0,  7),	// High priority
 	(0.698, 0.047, 0.031, 0.85, 1, 0, 10) 	// Emergency

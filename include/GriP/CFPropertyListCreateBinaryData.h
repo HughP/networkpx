@@ -1,6 +1,6 @@
 /*
 
-GPApplicationBridge.h ... GriP Application Bridge
+FILE_NAME ... DESCRIPTION
  
 Copyright (c) 2009, KennyTM~
 All rights reserved.
@@ -30,32 +30,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  
 */
 
-#import <Foundation/NSObject.h>
-#import <GriP/GPApplicationBridgeC.h>
-
-@protocol GrowlApplicationBridgeDelegate;
-@class NSDictionary, NSString;
-
-@interface GPApplicationBridge : NSObject {
-	GPApplicationBridgeRef bridge;
-}
-
--(void)dealloc;
--(id)init;
-
-@property(readonly,assign,nonatomic,getter=isGrowlInstalled) BOOL installed;
-@property(readonly,assign,nonatomic,getter=isGrowlRunning) BOOL running;
-@property(assign,nonatomic) NSObject<GrowlApplicationBridgeDelegate>* growlDelegate;
-
--(void)notifyWithTitle:(NSString*)title description:(NSString*)description notificationName:(NSString*)notifName iconData:(id)iconData priority:(signed)priority isSticky:(BOOL)isSticky clickContext:(NSObject*)clickContext;
--(void)notifyWithTitle:(NSString*)title description:(NSString*)description notificationName:(NSString*)notifName iconData:(id)iconData priority:(signed)priority isSticky:(BOOL)isSticky clickContext:(NSObject*)clickContext identifier:(NSString*)identifier;
--(void)notifyWithDictionary:(NSDictionary*)userInfo;
-
--(BOOL)registerWithDictionary:(NSDictionary*)potentialDictionary;
-
-// Addition for GriP
-// Check if GriP is enabled for this application.
-@property(readonly,assign,nonatomic) BOOL enabled;
--(BOOL)enabledForName:(NSString*)notifName;
-
-@end
+#ifndef CFPropertyListCreateBinaryData_H
+#define CFPropertyListCreateBinaryData_H
+#include <CoreFoundation/CoreFoundation.h>
+#if __cplusplus
+extern "C"
+#endif
+CFDataRef CFPropertyListCreateBinaryData(CFPropertyListRef obj);
+#endif

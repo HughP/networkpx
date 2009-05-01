@@ -1,6 +1,6 @@
 /*
 
-Client.h ... GriP Duplex Link Client.
+Client.h ... GriP Duplex Link Client (Objective-C wrapper).
  
 Copyright (c) 2009, KennyTM~
 All rights reserved.
@@ -33,21 +33,15 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef GRIP_DUPLEX_CLIENT_H
 #define GRIP_DUPLEX_CLIENT_H
 
-enum {
-	GPMessage_GetClientPortID,
-	GPMessage_RegisterClientPort,
-};
+#include <GriP/Duplex/ClientC.h>
 
 #ifdef __OBJC__
 
-#import <CoreFoundation/CFMessagePort.h>
 #import <Foundation/NSObject.h>
 @class NSMutableDictionary, NSData;
 
 @interface GPDuplexClient : NSObject {
-	CFMessagePortRef clientPort, serverPort;
-	CFRunLoopSourceRef clientSource;
-	NSMutableDictionary* observers;
+	GPDuplexClientRef client;
 }
 -(id)init;
 -(void)dealloc;

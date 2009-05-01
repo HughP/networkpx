@@ -46,17 +46,23 @@ enum {
 	GriPMessage__End = 1010
 };
 
-#define GRIP_TITLE    @"t"
-#define GRIP_PID      @"p"
-#define GRIP_DETAIL   @"d"
-#define GRIP_NAME     @"n"
-#define GRIP_ICON     @"i"
-#define GRIP_PRIORITY @"!"
-#define GRIP_STICKY   @"s"
-#define GRIP_CONTEXT  @"c"
-#define GRIP_ID       @"="
-#define GRIP_APPNAME  @"a"
-#define GRIP_ISURL    @"u"
+#if __OBJC__
+#define GPSTR(s) @#s
+#else
+#define GPSTR(s) CFSTR(#s)
+#endif
+
+#define GRIP_TITLE    GPSTR(t)
+#define GRIP_PID      GPSTR(p)
+#define GRIP_DETAIL   GPSTR(d)
+#define GRIP_NAME     GPSTR(n)
+#define GRIP_ICON     GPSTR(i)
+#define GRIP_PRIORITY GPSTR(!)
+#define GRIP_STICKY   GPSTR(s)
+#define GRIP_CONTEXT  GPSTR(c)
+#define GRIP_ID       GPSTR(=)
+#define GRIP_APPNAME  GPSTR(a)
+#define GRIP_ISURL    GPSTR(u)
 
 enum {
 	GPPrioritySettings_Red,

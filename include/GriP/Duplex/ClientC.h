@@ -1,6 +1,6 @@
 /*
 
-GPApplicationBridge.h ... GriP Application Bridge
+ClientC.h ... GriP Duplex Link Client
  
 Copyright (c) 2009, KennyTM~
 All rights reserved.
@@ -30,32 +30,31 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  
 */
 
-#import <Foundation/NSObject.h>
-#import <GriP/GPApplicationBridgeC.h>
+#ifndef GRIP_DUPLEX_CLIENTC_H
+#define GRIP_DUPLEX_CLIENTC_H
+#include <CoreFoundation/CoreFoundation.h>
 
-@protocol GrowlApplicationBridgeDelegate;
-@class NSDictionary, NSString;
-
-@interface GPApplicationBridge : NSObject {
-	GPApplicationBridgeRef bridge;
+#ifdef __cplusplus
+extern "C" {
+#endif
+	
+	enum {
+		GPMessage_GetClientPortID = 0
+	};
+	
+	typedef void(*GPDuplexClientCallback)(void* object, void* unused, CFDataRef data, SInt32 type);
+	typedef struct GPDuplexClient2* GPDuplexClientRef;
+	
+	GPDuplexClientRef GPDuplexClient_Init();
+	void GPDuplexClient_Destroy(GPDuplexClientRef client);
+	
+	CFStringRef GPDuplexClient_GetName(GPDuplexClientRef client);
+	CFDataRef GPDuplexClient_Send(GPDuplexClientRef client, SInt32 type, CFDataRef data, Boolean expectsReturn);
+	void GPDuplexClient_AddObserver(GPDuplexClientRef client, void* observer, GPDuplexClientCallback callback, SInt32 type);
+	void GPDuplexClient_RemoveObserver(GPDuplexClientRef client, void* observer, GPDuplexClientCallback callback, SInt32 type);
+	void GPDuplexClient_RemoveEveryObserver(GPDuplexClientRef client, void* observer, GPDuplexClientCallback callback);
+	
+#ifdef __cplusplus
 }
-
--(void)dealloc;
--(id)init;
-
-@property(readonly,assign,nonatomic,getter=isGrowlInstalled) BOOL installed;
-@property(readonly,assign,nonatomic,getter=isGrowlRunning) BOOL running;
-@property(assign,nonatomic) NSObject<GrowlApplicationBridgeDelegate>* growlDelegate;
-
--(void)notifyWithTitle:(NSString*)title description:(NSString*)description notificationName:(NSString*)notifName iconData:(id)iconData priority:(signed)priority isSticky:(BOOL)isSticky clickContext:(NSObject*)clickContext;
--(void)notifyWithTitle:(NSString*)title description:(NSString*)description notificationName:(NSString*)notifName iconData:(id)iconData priority:(signed)priority isSticky:(BOOL)isSticky clickContext:(NSObject*)clickContext identifier:(NSString*)identifier;
--(void)notifyWithDictionary:(NSDictionary*)userInfo;
-
--(BOOL)registerWithDictionary:(NSDictionary*)potentialDictionary;
-
-// Addition for GriP
-// Check if GriP is enabled for this application.
-@property(readonly,assign,nonatomic) BOOL enabled;
--(BOOL)enabledForName:(NSString*)notifName;
-
-@end
+#endif
+#endif

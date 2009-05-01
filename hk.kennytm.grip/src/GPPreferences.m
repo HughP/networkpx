@@ -39,7 +39,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #import <GraphicsUtilities.h>
 
 static NSDictionary* preferences = nil;
-static pthread_mutex_t prefLock = PTHREAD_MUTEX_INITIALIZER;
+static NSMutableDictionary* tickets = nil;
+static pthread_mutex_t prefLock = PTHREAD_MUTEX_INITIALIZER, appLock = PTHREAD_MUTEX_INITIALIZER;
 
 NSDictionary* GPPreferences() {
 	pthread_mutex_lock(&prefLock);
@@ -58,28 +59,43 @@ void GPFlushPreferences() {
 	[preferences release];
 	preferences = nil;
 	pthread_mutex_unlock(&prefLock);
+	pthread_mutex_lock(&appLock);
+	[tickets release];
+	tickets = nil;
+	pthread_mutex_unlock(&appLock);
+}
+
+static NSMutableDictionary* GPTickets () {
+	pthread_mutex_lock(&appLock);
+	if (tickets == nil)
+		tickets = [[NSMutableDictionary alloc] init];
+	pthread_mutex_unlock(&appLock);
+	return tickets;
 }
 
 static NSString* GPTicketPathForAppName(NSString* appName) {
 #if GRIP_JAILBROKEN
 	return [@"/Library/GriP/Tickets/" stringByAppendingPathComponent:[appName stringByAppendingPathExtension:@"ticket"]];
 #else
-	return [[[[NSBundle mainBundle] bundlePath] stringByDeletingLastPathComponent] stringByAppendingPathComponent:[NSString stringWithFormat:@"Documents/%@.ticket", appName]];
+	return [NSHomeDirectory() stringByAppendingPathComponent:[NSString stringWithFormat:@"Documents/%@.ticket", appName]];
 #endif
 }
 
 void GPUpdateRegistrationDictionaryForAppName(NSString* appName, NSDictionary* registrationDictionary) {
 	NSString* appPath = GPTicketPathForAppName(appName);
-	NSMutableDictionary* ticket = [[NSMutableDictionary alloc] initWithContentsOfFile:appPath];
+	NSMutableDictionary* ticket = [[GPTickets() objectForKey:appName] retain];
 	BOOL hasModification = NO;
+	NSNumber* ZERO = [NSNumber numberWithInteger:0];
+	
 	if (ticket == nil) {
 		// Set default data for a new ticket.
 		hasModification = YES;
 		ticket = [[NSMutableDictionary alloc] initWithObjectsAndKeys:
-				  [NSNumber numberWithBool:YES], @"enabled",
-				  [NSNumber numberWithBool:NO], @"stealth",
-				  [NSNumber numberWithInteger:0], @"sticky",	// 0 = application defined, 1 = always sticky, else = always hide.
+				  (NSNumber*)kCFBooleanTrue, @"enabled",
+				  (NSNumber*)kCFBooleanFalse, @"stealth",
+				  ZERO, @"sticky",	// 0 = application defined, 1 = always sticky, else = always hide.
 				  [NSMutableDictionary dictionary], @"messages",
+				  (NSNumber*)kCFBooleanTrue, @"log",
 				  nil];
 	}
 	
@@ -97,9 +113,10 @@ void GPUpdateRegistrationDictionaryForAppName(NSString* appName, NSDictionary* r
 			NSString* desc = [descriptions objectForKey:name];
 			NSMutableDictionary* messageDict = [[NSMutableDictionary alloc] initWithObjectsAndKeys:
 												[NSNumber numberWithBool:enabled], @"enabled",
-												[NSNumber numberWithBool:NO], @"stealth",
-												[NSNumber numberWithInteger:0], @"sticky",
-												[NSNumber numberWithInteger:0], @"priority",
+												kCFBooleanFalse, @"stealth",
+												ZERO, @"sticky",
+												ZERO, @"priority",
+												kCFBooleanTrue, @"log",
 												nil];
 			if (hrName != nil)
 				[messageDict setObject:hrName forKey:@"friendlyName"];
@@ -112,6 +129,9 @@ void GPUpdateRegistrationDictionaryForAppName(NSString* appName, NSDictionary* r
 	}
 	if (hasModification)
 		[ticket writeToFile:appPath atomically:YES];
+	
+	[GPTickets() setObject:ticket forKey:appName];
+	
 	[ticket release];
 }
 
@@ -132,7 +152,7 @@ static BOOL GPCheckEnabledWithTicket(NSDictionary* ticket, NSString* msgName, NS
 
 void GPModifyMessageForUserPreference(NSMutableDictionary* message) {
 	NSString* appName = [message objectForKey:GRIP_APPNAME];
-	NSDictionary* ticket = [NSDictionary dictionaryWithContentsOfFile:GPTicketPathForAppName(appName)];
+	NSDictionary* ticket = [GPTickets() objectForKey:appName];
 	NSString* msgName = [message objectForKey:GRIP_NAME];
 	NSDictionary* msgDict;
 
@@ -168,7 +188,7 @@ void GPModifyMessageForUserPreference(NSMutableDictionary* message) {
 }
 
 BOOL GPCheckEnabled(NSString* appName, NSString* msgName) {
-	return appName != nil && GPCheckEnabledWithTicket([NSDictionary dictionaryWithContentsOfFile:GPTicketPathForAppName(appName)], msgName, NULL, YES);
+	return appName != nil && GPCheckEnabledWithTicket([GPTickets() objectForKey:appName], msgName, NULL, YES);
 }
 
 void GPCopyColorsForPriority(int priority, UIColor** outBGColor, UIColor** outFGColor) {
