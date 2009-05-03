@@ -33,15 +33,24 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef GRIP_DUPLEX_CLIENT_H
 #define GRIP_DUPLEX_CLIENT_H
 
-#include <GriP/Duplex/ClientC.h>
+enum {
+	GPMessage_GetClientPortID = 0,
+	GPMessage_ExchangeDirectMessagingFPtr = 1,
+	GPMessage_UnsubscribeFromDirectMessaging = 2,
+};
 
 #ifdef __OBJC__
 
 #import <Foundation/NSObject.h>
-@class NSMutableDictionary, NSData;
+#include <CoreFoundation/CFMessagePort.h>
+#include <pthread.h>
+@class NSMutableDictionary, NSData, NSString;
 
 @interface GPDuplexClient : NSObject {
-	GPDuplexClientRef client;
+	CFMessagePortRef clientPort, serverPort;
+	CFRunLoopSourceRef clientSource;
+	NSMutableDictionary* observers;
+	NSString* clientPortName;
 }
 -(id)init;
 -(void)dealloc;

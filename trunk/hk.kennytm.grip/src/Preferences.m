@@ -44,8 +44,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 static GPApplicationBridge* bridge = nil;
 static const float perPriorityDefaultSettings[5][7] = {
-	{0.400f, 0.400f, 0.400f, 0.75f, 0, 0,  0},
-	{0.188f, 0.663f, 0.290f, 0.75f, 1, 0,  2},
+	{0.400f, 0.400f, 0.400f, 0.75f, 0, 0,  2},
+	{0.188f, 0.290f, 0.663f, 0.75f, 1, 0,  2},
 	{0.098f, 0.098f, 0.098f, 0.75f, 1, 0,  4},
 	{0.349f, 0.024f, 0.016f, 0.80f, 1, 0,  7},
 	{0.698f, 0.047f, 0.031f, 0.85f, 1, 0, 10}
@@ -138,7 +138,7 @@ static const float perPriorityDefaultSettings[5][7] = {
 -(void)reset {
 	for (int i = 0; i < 7; ++ i)
 		[components replaceObjectAtIndex:i withObject:[NSNumber numberWithFloat:perPriorityDefaultSettings[j][i]]];
-	[self reloadSpecifiers];
+	[self reload];
 }
 -(void)dealloc {
 	[components release];

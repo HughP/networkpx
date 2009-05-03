@@ -34,10 +34,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #import <GriP/GPApplicationBridgeC.h>
 
 @protocol GrowlApplicationBridgeDelegate;
-@class NSDictionary, NSString;
+@class NSDictionary, NSString, GPDuplexClient;
 
 @interface GPApplicationBridge : NSObject {
-	GPApplicationBridgeRef bridge;
+	NSObject<GrowlApplicationBridgeDelegate>* sharedDelegate;
+	NSDictionary* cachedRegistrationDictionary;
+	NSString* appName;
+	GPDuplexClient* duplex;
 }
 
 -(void)dealloc;

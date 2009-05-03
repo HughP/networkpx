@@ -32,9 +32,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <GriP/Duplex/ClientC.h>
 #include <GriP/common.h>
-#include <stdlib.h>
+#include <GriP/CFExtensions.h>
 
 struct GPDuplexClient2 {
+	unsigned refcount;
 	CFMessagePortRef clientPort, serverPort;
 	CFRunLoopSourceRef clientSource;
 	CFMutableDictionaryRef observers;
@@ -78,16 +79,17 @@ static CFDataRef GPClientCallback (CFMessagePortRef serverPort_, SInt32 type, CF
 	return NULL;
 }
 
-extern GPDuplexClientRef GPDuplexClient_Init() {
+extern GPDuplexClientRef GPDuplexClient_Create() {
 	CFRunLoopRef runLoop = CFRunLoopGetCurrent();
 	GPDuplexClientRef client = calloc(1, sizeof(GPDuplexClientRef));
+	client->refcount = 1;
 	client->observers = CFDictionaryCreateMutable(NULL, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
 	
 	// (1) Obtain the server port.
 	client->serverPort = CFMessagePortCreateRemote(NULL, CFSTR("hk.kennytm.GriP.server"));
 	if (client->serverPort == NULL) {
-		fprintf(stderr, "GPDuplexClient_Init(): Cannot create server port. Is GriP running?");
-		GPDuplexClient_Destroy(client);
+		CFShow(CFSTR("GPDuplexClient_Init(): Cannot create server port. Is GriP running?"));
+		GPDuplexClient_Release(client);
 		return NULL;
 	}
 	
@@ -95,10 +97,10 @@ extern GPDuplexClientRef GPDuplexClient_Init() {
 	CFDataRef pidData = NULL;
 	SInt32 errorCode = CFMessagePortSendRequest(client->serverPort, GPMessage_GetClientPortID, NULL, 1, 1, kCFRunLoopDefaultMode, &pidData);
 	if (errorCode != kCFMessagePortSuccess || pidData == NULL) {
-		fprintf(stderr, "GPDuplexClient_Init(): Cannot obtain a unique client port ID from server. Error code = %d and pidData = %s.", errorCode, CFDataGetBytePtr(pidData));
+		CFLog(4, CFSTR("GPDuplexClient_Init(): Cannot obtain a unique client port ID from server. Error code = %d and pidData = %@."), errorCode, pidData);
 		if (pidData != NULL)
 			CFRelease(pidData);
-		GPDuplexClient_Destroy(client);
+		GPDuplexClient_Release(client);
 		return NULL;
 	}
 	
@@ -109,10 +111,10 @@ extern GPDuplexClientRef GPDuplexClient_Init() {
 	Boolean shouldFreeInfo = false;
 	client->clientPort = CFMessagePortCreateLocal(NULL, clientPortName, &GPClientCallback, &clientContext, &shouldFreeInfo);
 	if (shouldFreeInfo || client->clientPort == NULL) {
-		fprintf(stderr, "GPDuplexClient_Init(): Cannot create client port with port name %s.", clientPortCString);
+		CFLog(4, CFSTR("GPDuplexClient_Init(): Cannot create client port with port name %@."), clientPortName);
 		CFRelease(clientPortName);
 		CFRelease(pidData);
-		GPDuplexClient_Destroy(client);
+		GPDuplexClient_Release(client);
 		return NULL;
 	}
 	CFRelease(clientPortName);
@@ -123,11 +125,17 @@ extern GPDuplexClientRef GPDuplexClient_Init() {
 	
 	CFRelease(pidData);
 	
+	CFLog(4, CFSTR("create client = %@"), client->clientPort);
+	
 	return client;
 }
 
-extern void GPDuplexClient_Destroy(GPDuplexClientRef client) {
+extern void GPDuplexClient_Release(GPDuplexClientRef client) {
 	if (client != NULL) {
+		CFLog(4, CFSTR("release client = %@"), client->clientPort);
+		if (--(client->refcount) != 0)
+		 	return;
+		
 		if (client->serverPort != NULL)
 			CFRelease(client->serverPort);
 		if (client->clientPort != NULL) {
@@ -141,6 +149,12 @@ extern void GPDuplexClient_Destroy(GPDuplexClientRef client) {
 	}
 }
 
+extern GPDuplexClientRef GPDuplexClient_Retain(GPDuplexClientRef client) {
+	if (client != NULL)
+		++(client->refcount);
+	return client;
+}
+
 extern CFStringRef GPDuplexClient_GetName(GPDuplexClientRef client) { return CFMessagePortGetName(client->clientPort); }
 
 extern CFDataRef GPDuplexClient_Send(GPDuplexClientRef client, SInt32 type, CFDataRef data, Boolean expectsReturn) {
@@ -150,28 +164,31 @@ extern CFDataRef GPDuplexClient_Send(GPDuplexClientRef client, SInt32 type, CFDa
 	else {
 		serverPort = CFMessagePortCreateRemote(NULL, CFSTR("hk.kennytm.GriP.server"));
 		if (serverPort == NULL) {
-			fprintf(stderr, "GPDuplexClient_Send(): Cannot create server port. Is GriP running?");
+			CFShow(CFSTR("GPDuplexClient_Send(): Cannot create server port. Is GriP running?"));
 			return NULL;
 		}
 	}
 	
 	if (expectsReturn) {
 		CFDataRef retData = NULL;
-		SInt32 errorCode = CFMessagePortSendRequest(serverPort, type, data, 1, 1, kCFRunLoopDefaultMode, &retData);
+		SInt32 errorCode = CFMessagePortSendRequest(serverPort, type, data, 4, 1, kCFRunLoopDefaultMode, &retData);
 		if (client == NULL)
 			CFRelease(serverPort);
 		if (errorCode != kCFMessagePortSuccess) {
-			fprintf(stderr, "GPDuplexClient_Send(): Cannot send data to server. Returning NULL. Error code = %d", errorCode);
-			CFRelease(retData);
-			retData = NULL;
+			CFLog(4, CFSTR("GPDuplexClient_Send(): Cannot send data %@ of type %d to server. Returning NULL. Error code = %d"), data, type, errorCode);
+			if (retData != NULL) {
+				CFRelease(retData);
+				retData = NULL;
+			}
 		}
 		return retData;
 	} else {
-		SInt32 errorCode = CFMessagePortSendRequest(serverPort, type, data, 1, 0, NULL, NULL);
+		SInt32 errorCode = CFMessagePortSendRequest(serverPort, type, data, 4, 0, NULL, NULL);
 		if (client == NULL)
 			CFRelease(serverPort);
-		if (errorCode != kCFMessagePortSuccess)
-			fprintf(stderr, "GPDuplexClient_Send(): Cannot send data to server. Error code = %d", errorCode);
+		if (errorCode != kCFMessagePortSuccess) {
+			CFLog(4, CFSTR("GPDuplexClient_Send(): Cannot send data %@ of type %d to server. Error code = %d"), data, type, errorCode);
+		}
 		return NULL;
 	}
 }

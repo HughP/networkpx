@@ -35,13 +35,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #import <Foundation/Foundation.h>
 #import <GriP/GriP.h>
 
-int
-#if TARGET_IPHONE_SIMULATOR
-xmain
-#else
-main
+#if !TARGET_IPHONE_SIMULATOR
+#define GPGriPTest main
 #endif
-(int argc, char* argv[]) {
+
+int GPGriPTest(int argc, char* argv[]) {
 	if (argc == 1) {
 		printf("Usage: GriP [<options>]\n"
 			   "	where options are:\n"
@@ -66,6 +64,7 @@ main
 		NSString* identifier = nil;
 		
 		int c;
+		optind = 1;
 		while ((c = getopt(argc, argv, "t:d:i:u:p:se:")) != -1) {
 			switch (c) {
 				case 't':

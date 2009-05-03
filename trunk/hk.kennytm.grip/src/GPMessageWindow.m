@@ -152,7 +152,9 @@ static const int _orientation_angles[4] = {0, 180, 90, -90};
 #endif
 		uiOrientation = _orientation_angles[app.statusBarOrientation-1];
 	
-	NSInteger location = [[GPPreferences() objectForKey:@"Location"] integerValue];
+	NSDictionary* prefs = GPCopyPreferences();
+	NSInteger location = [[prefs objectForKey:@"Location"] integerValue];
+	[prefs release];
 	
 	// switch estimation box orientation if necessary.
 	if (uiOrientation == 90 || uiOrientation == -90) {
@@ -238,9 +240,12 @@ static const int _orientation_angles[4] = {0, 180, 90, -90};
 	[self _startTimer];
 }
 -(void)_startTimer {
-	if (!sticky)
-		hideTimer = [[NSTimer scheduledTimerWithTimeInterval:[[[[GPPreferences() objectForKey:@"PerPrioritySettings"] objectAtIndex:priority+2] objectAtIndex:GPPrioritySettings_Timer] doubleValue]
+	if (!sticky) {
+		NSDictionary* prefs = GPCopyPreferences();
+		hideTimer = [[NSTimer scheduledTimerWithTimeInterval:[[[[prefs objectForKey:@"PerPrioritySettings"] objectAtIndex:priority+2] objectAtIndex:GPPrioritySettings_Timer] doubleValue]
 													  target:self selector:@selector(hide) userInfo:nil repeats:NO] retain];
+		[prefs release];
+	}
 }
 -(void)stopTimer {
 	if (!sticky) {
@@ -285,7 +290,8 @@ static const int _orientation_angles[4] = {0, 180, 90, -90};
 -(void)dealloc {
 	[self stopTimer];
 	[helper release];
-	[GPDuplexClient sendMessage:GriPMessage_DisposeIdentifier data:[identitifer dataUsingEncoding:NSUTF8StringEncoding]];
+	if (identitifer != nil)
+		[GPDuplexClient sendMessage:GriPMessage_DisposeIdentifier data:[identitifer dataUsingEncoding:NSUTF8StringEncoding]];
 	[identitifer release];
 	[super dealloc];
 }

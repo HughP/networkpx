@@ -32,61 +32,157 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #import <GriP/GrowlApplicationBridge.h>
 #import <GriP/GPApplicationBridge.h>
+#import <GriP/Duplex/Client.h>
+#import <GriP/common.h>
 #import <UIKit/UIKit.h>
+
+@interface GPApplicationBridge ()
+-(void)messageClickedOrIgnored:(NSData*)contextData type:(SInt32)type;
+-(void)launchURL:(NSData*)urlData;
+@end
+
 
 @implementation GPApplicationBridge
 -(void)dealloc {
-	if (bridge != NULL)
-		GPApplicationBridge_Destroy(bridge);
+	[sharedDelegate release];
+	[cachedRegistrationDictionary release];
+	[appName release];
+	[duplex release];
 	[super dealloc];
 }
 -(id)init {
 	if ((self = [super init])) {
-		bridge = GPApplicationBridge_Init();
-		if (bridge == NULL) {
-			[self release];
-			return nil;
+		if (duplex == nil) {
+			duplex = [[GPDuplexClient alloc] init];
+			if (duplex == nil) {
+				NSLog(@"GPTryInitialize: Cannot initialize duplex client. Is GriP installed?");
+			} else {
+				[duplex addObserver:self selector:@selector(messageClickedOrIgnored:type:) forMessage:GriPMessage_ClickedNotification];
+				[duplex addObserver:self selector:@selector(messageClickedOrIgnored:type:) forMessage:GriPMessage_IgnoredNotification];
+				[duplex addObserver:self selector:@selector(launchURL:) forMessage:GriPMessage_LaunchURL];
+			}
+		}
+		
+		NSBundle* mainBundle = [NSBundle mainBundle];
+		if (appName == nil) {
+			appName = [([mainBundle objectForInfoDictionaryKey:@"CFBundleExecutableName"] ?: [[[mainBundle bundlePath] lastPathComponent] stringByDeletingPathExtension]) retain];
+			if (![appName isKindOfClass:[NSString class]]) {
+				[appName release];
+				appName = nil;
+			}
+		}
+		if (cachedRegistrationDictionary == nil) {
+			NSString* regDictPath = [mainBundle pathForResource:@"Growl Registration Ticket" ofType:@"growlRegDict"];
+			if (regDictPath != nil) 
+				[self registerWithDictionary:[NSDictionary dictionaryWithContentsOfFile:regDictPath]];
 		}
 	}
 	return self;
 }
 
+-(void)messageClickedOrIgnored:(NSData*)contextData type:(SInt32)type {
+	NSObject* context = [NSPropertyListSerialization propertyListFromData:contextData mutabilityOption:NSPropertyListImmutable format:NULL errorDescription:NULL];
+	if (context != nil) {
+		if (type == GriPMessage_ClickedNotification) {
+			if ([sharedDelegate respondsToSelector:@selector(growlNotificationWasClicked:)])
+				[sharedDelegate growlNotificationWasClicked:context];
+		} else {
+			if ([sharedDelegate respondsToSelector:@selector(growlNotificationTimedOut:)])
+				[sharedDelegate growlNotificationTimedOut:context];
+		}
+	}
+}
+
+-(void)launchURL:(NSData*)urlData {
+	NSString* urlString = [NSPropertyListSerialization propertyListFromData:urlData mutabilityOption:NSPropertyListImmutable format:NULL errorDescription:NULL];
+	if ([urlString isKindOfClass:[NSString class]])
+		[[UIApplication sharedApplication] openURL:[NSURL URLWithString:urlString]];
+}
+
 @dynamic installed, running;
--(BOOL)isGrowlInstalled { return GPApplicationBridge_CheckInstalled(bridge); }
--(BOOL)isGrowlRunning { return GPApplicationBridge_CheckRunning(bridge); }
-
-@dynamic growlDelegate;
+-(BOOL)isGrowlInstalled {
+	// FIXME: Find some SDK-compatible check to give an accurate result.
+	return [self isGrowlInstalled];
+}
+-(BOOL)isGrowlRunning {
+	// FIXME: Currently this check relies on the fact that only GriP has implemented the GPDuplexClient class.
+	//        what if other people are start using it? Then this method is no longer useful.
+	return duplex != nil;
+}
+@synthesize growlDelegate=sharedDelegate;
 -(void)setGrowlDelegate:(NSObject<GrowlApplicationBridgeDelegate>*)inDelegate {
-	GPApplicationBridgeCDelegate del;
-	del.object = inDelegate;
+	if (![self isGrowlRunning])
+		return;
 	
-#define SETDEL(key, sel, type) \
-	if ([inDelegate respondsToSelector:@selector(sel)]) \
-		del.key = type[inDelegate methodForSelector:@selector(sel)]; \
-	else \
-		del.key = NULL
+	if (sharedDelegate != inDelegate) {
+		[sharedDelegate release];
+		sharedDelegate = [inDelegate retain];
+	}
 	
-	SETDEL(registrationDictionary, registrationDictionaryForGrowl, (CFDictionaryRef(*)(CFTypeRef)));
-	SETDEL(applicationName,        applicationNameForGrowl,        (CFStringRef(*)(CFTypeRef)));
-	SETDEL(ready,                  growlIsReady,                   (void(*)(CFTypeRef)));
-	SETDEL(touched,                growlNotificationWasClicked:,   (void(*)(CFTypeRef,void*,CFPropertyListRef)));
-	SETDEL(ignored,                growlNotificationTimedOut:,     (void(*)(CFTypeRef,void*,CFPropertyListRef)));
+	// try to replace app name.
+	if ([inDelegate respondsToSelector:@selector(applicationNameForGrowl)]) {
+		NSString* potentialAppName = [inDelegate applicationNameForGrowl];
+		if ([potentialAppName isKindOfClass:[NSString class]]) {
+			[appName release];
+			appName = [potentialAppName retain];
+		}
+	}
 	
-#undef SETDEL
+	// try to replace the reg dict.
+	if ([inDelegate respondsToSelector:@selector(registrationDictionaryForGrowl)])
+		[self registerWithDictionary:[inDelegate registrationDictionaryForGrowl]];
 	
-	GPApplicationBridge_SetDelegate(bridge, del);
-}
--(NSObject<GrowlApplicationBridgeDelegate>*)growlDelegate {
-	return (NSObject<GrowlApplicationBridgeDelegate>*)GPApplicationBridge_GetDelegate(bridge).object;
+	
+	// we don't care about the app icon.
+	
+	// tell the delegate we're ready.
+	if ([inDelegate respondsToSelector:@selector(growlIsReady)])
+		[inDelegate growlIsReady];
 }
 
--(void)notifyWithTitle:(NSString*)title description:(NSString*)description notificationName:(NSString*)notifName iconData:(id)iconData priority:(signed)priority isSticky:(BOOL)isSticky clickContext:(NSObject*)clickContext {
+-(void)notifyWithTitle:(NSString*)title description:(NSString*)description notificationName:(NSString*)notifName iconData:(NSObject*)iconData priority:(signed)priority isSticky:(BOOL)isSticky clickContext:(NSObject*)clickContext {
 	[self notifyWithTitle:title description:description notificationName:notifName iconData:iconData priority:priority isSticky:isSticky clickContext:clickContext identifier:nil];
 }
--(void)notifyWithTitle:(NSString*)title description:(NSString*)description notificationName:(NSString*)notifName iconData:(id)iconData priority:(signed)priority isSticky:(BOOL)isSticky clickContext:(NSObject*)clickContext identifier:(NSString*)identifier {
+-(void)notifyWithTitle:(NSString*)title description:(NSString*)description notificationName:(NSString*)notifName iconData:(NSObject*)iconData priority:(signed)priority isSticky:(BOOL)isSticky clickContext:(NSObject*)clickContext identifier:(NSString*)identifier {
+	if (duplex == nil || appName == nil)
+		return;
+	
+	NSMutableDictionary* filteredDictionary = [[NSMutableDictionary alloc] init];
+	[filteredDictionary setObject:duplex.name forKey:GRIP_PID];
+	[filteredDictionary setObject:appName forKey:GRIP_APPNAME];
+	
+	if ([title isKindOfClass:[NSString class]])
+		[filteredDictionary setObject:title forKey:GRIP_TITLE];
+	if ([description isKindOfClass:[NSString class]])
+		[filteredDictionary setObject:description forKey:GRIP_DETAIL];
+	if ([notifName isKindOfClass:[NSString class]])
+		[filteredDictionary setObject:notifName forKey:GRIP_NAME];
 	if ([iconData isKindOfClass:[UIImage class]])
-		iconData = UIImagePNGRepresentation(iconData);
-	GPApplicationBridge_SendMessage(bridge, (CFStringRef)title, (CFStringRef)description, (CFStringRef)notifName, iconData, priority, isSticky, (CFPropertyListRef)clickContext, (CFStringRef)identifier);
+		[filteredDictionary setObject:UIImagePNGRepresentation((UIImage*)iconData) forKey:GRIP_ICON];
+	else if ([iconData isKindOfClass:[NSData class]] || [iconData isKindOfClass:[NSString class]])
+		[filteredDictionary setObject:iconData forKey:GRIP_ICON];
+	if (priority < -2) priority = -2;
+	else if (priority > 2) priority = 2;
+	[filteredDictionary setObject:[NSNumber numberWithInteger:priority] forKey:GRIP_PRIORITY];
+	[filteredDictionary setObject:[NSNumber numberWithBool:isSticky] forKey:GRIP_STICKY];
+	if (clickContext != nil) {
+		if ([clickContext isKindOfClass:[NSURL class]]) {
+			[filteredDictionary setObject:[(NSURL*)clickContext absoluteString] forKey:GRIP_CONTEXT];
+			[filteredDictionary setObject:[NSNumber numberWithBool:YES] forKey:GRIP_ISURL];
+		} else {
+			if ([NSPropertyListSerialization propertyList:clickContext isValidForFormat:NSPropertyListBinaryFormat_v1_0])
+				[filteredDictionary setObject:clickContext forKey:GRIP_CONTEXT];
+			else {
+				NSLog(@"clickContext is not a property list object. It will be ignored.");
+			}
+		}
+	}
+	if ([identifier isKindOfClass:[NSString class]])
+		[filteredDictionary setObject:identifier forKey:GRIP_ID];
+	
+	[duplex sendMessage:GriPMessage_ShowMessage data:[NSPropertyListSerialization dataFromPropertyList:filteredDictionary format:NSPropertyListBinaryFormat_v1_0 errorDescription:NULL]];
+	
+	[filteredDictionary release];
 }
 
 -(void)notifyWithDictionary:(NSDictionary*)userInfo {
@@ -114,10 +210,56 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 }
 
 -(BOOL)registerWithDictionary:(NSDictionary*)potentialDictionary {
-	return GPApplicationBridge_Register(bridge, (CFDictionaryRef)potentialDictionary);
+	if ([potentialDictionary isKindOfClass:[NSDictionary class]]) {
+		NSString* newAppName = [potentialDictionary objectForKey:GROWL_APP_NAME];
+		if (appName != newAppName && [newAppName isKindOfClass:[NSString class]]) {
+			[appName release];
+			appName = [newAppName retain];
+		}
+		
+		NSObject* tmp = [potentialDictionary objectForKey:GROWL_NOTIFICATIONS_ALL];
+		if (![tmp isKindOfClass:[NSArray class]])
+			return NO;
+		tmp = [potentialDictionary objectForKey:GROWL_NOTIFICATIONS_DEFAULT];
+		if (![tmp isKindOfClass:[NSArray class]])
+			return NO;
+		tmp = [potentialDictionary objectForKey:GROWL_NOTIFICATIONS_HUMAN_READABLE_NAMES];
+		if (tmp != nil && ![tmp isKindOfClass:[NSDictionary class]])
+			return NO;
+		tmp = [potentialDictionary objectForKey:GROWL_NOTIFICATIONS_DESCRIPTIONS];
+		if (tmp != nil && ![tmp isKindOfClass:[NSDictionary class]])
+			return NO;
+		
+		NSData* updateData = [NSPropertyListSerialization dataFromPropertyList:[NSArray arrayWithObjects:appName, potentialDictionary, nil]
+																		format:NSPropertyListBinaryFormat_v1_0 errorDescription:NULL];
+		if (updateData == nil)
+			return NO;
+		
+		[cachedRegistrationDictionary release];
+		cachedRegistrationDictionary = [potentialDictionary retain];
+		[duplex sendMessage:GriPMessage_UpdateTicket data:updateData];
+		return YES;
+	}
+	return NO;
 }
 
 @dynamic enabled;
--(BOOL)enabled { return GPApplicationBridge_CheckEnabled(bridge, NULL); }
--(BOOL)enabledForName:(NSString*)notifName { return GPApplicationBridge_CheckEnabled(bridge, (CFStringRef)notifName); }
+-(BOOL)enabled { return [self enabledForName:nil]; }
+-(BOOL)enabledForName:(NSString*)notifName {
+	if (appName == nil)
+		return NO;
+	NSArray* arrayToSend;
+	if (notifName == nil)
+		arrayToSend = [NSArray arrayWithObject:appName];
+	else
+		arrayToSend = [NSArray arrayWithObjects:appName, notifName, nil];
+	
+	NSData* data = [duplex sendMessage:GriPMessage_CheckEnabled
+								  data:[NSPropertyListSerialization dataFromPropertyList:arrayToSend format:NSPropertyListBinaryFormat_v1_0 errorDescription:NULL]
+						 expectsReturn:YES];
+	if (data != nil)
+		return *(BOOL*)[data bytes];
+	else
+		return NO;
+}
 @end

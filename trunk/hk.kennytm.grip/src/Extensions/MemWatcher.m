@@ -1,6 +1,6 @@
 /*
 
-MemWatcher.m ... Memory Watcher for GriP
+MemWatcher.c ... Memory Watcher for GriP
  
 Copyright (c) 2009, KennyTM~
 All rights reserved.
@@ -30,102 +30,102 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  
 */
 
-#import <GriP/GriP.h>
 #import <GriP/GPExtensions.h>
-#include <sys/sysctl.h>
-#include <libkern/OSMemoryNotification.h>
-#include <CoreFoundation/CoreFoundation.h>
+#import <GriP/GriP.h>
+#import <sys/sysctl.h>
+#if !TARGET_IPHONE_SIMULATOR
+#import <libkern/OSMemoryNotification.h>
+#endif
+#import <CoreFoundation/CoreFoundation.h>
+#import <Foundation/Foundation.h>
 
-NSString* const names[3] = {@"Memory at Warning level", @"Memory at Urgent level", @"Memory at Critical level"};
-NSString* const englishFormats[3] = {@"Memory Warning (%d%%)", @"Memory Urgent (%d%%)", @"Memory Critical (%d%%)"};
+static CFStringRef const names[3] = {CFSTR("Memory Warning"), CFSTR("Memory Urgent"), CFSTR("Memory Critical")};
+static GPApplicationBridge* memWatcherBridge = nil;
+static CFStringRef localizedFormats[3] = {NULL, NULL, NULL};
 
-@interface MemoryWatcher : NSObject {
-	GPApplicationBridge* memWatcherBridge;
-	NSString* formats[3];
-	NSData* thisIcon;
-}
--(id)init;
--(void)dealloc;
--(void)receivedMemoryWarning;
-@end
-
-void ReceivedMemoryWarningCallback (CFNotificationCenterRef center, MemoryWatcher* observer, CFStringRef name, const void* object, CFDictionaryRef userInfo) {
-	[observer receivedMemoryWarning];
-}
-
-
-@implementation MemoryWatcher
--(id)init {
-	if ((self = [super init])) {
-		memWatcherBridge = [[GPApplicationBridge alloc] init];
-		[memWatcherBridge registerWithDictionary:[NSDictionary dictionaryWithObjectsAndKeys:
-												  @"Memory Watcher", GROWL_APP_NAME,
-												  [NSArray arrayWithObjects:names count:3], GROWL_NOTIFICATIONS_ALL,
-												  [NSArray arrayWithObjects:(names+1) count:2], GROWL_NOTIFICATIONS_DEFAULT,
-												  nil]];
-		if (memWatcherBridge.enabled) {
-			NSDictionary* thisDictionary = [NSDictionary dictionaryWithContentsOfFile:@"/Library/MobileSubstrate/DynamicLibraries/MemoryWatcher.plist"];
-			thisIcon = [[thisDictionary objectForKey:@"Icon"] retain];
-			NSDictionary* localizationDictionary = [thisDictionary objectForKey:@"Localizations"];
-			NSDictionary* localization = [localizationDictionary objectForKey:[[NSBundle preferredLocalizationsFromArray:[localizationDictionary allKeys]] objectAtIndex:0]];
-			for (int i = 0; i < 3; ++ i)
-				formats[i] = [([localization objectForKey:englishFormats[i]] ?: englishFormats[i]) retain];
-			
-			CFStringRef notifName = CFStringCreateWithCString(NULL, kOSMemoryNotificationName, kCFStringEncodingUTF8);
-			CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), self, (CFNotificationCallback)&ReceivedMemoryWarningCallback, notifName, NULL, 0);
-			CFRelease(notifName);
-			
-		} else {
-			[self release];
-			return nil;
-		}
+static void terminator () {
+	if (memWatcherBridge != NULL) {
+		CFNotificationCenterRemoveEveryObserver(CFNotificationCenterGetDarwinNotifyCenter(), memWatcherBridge);
+		[memWatcherBridge release];
 	}
-	return self;
-}
-
--(void)dealloc {
-	CFNotificationCenterRemoveEveryObserver(CFNotificationCenterGetDarwinNotifyCenter(), self);
-	
-	[memWatcherBridge release];
-	[thisIcon release];
 	for (int i = 0; i < 3; ++ i)
-		[formats[i] release];
-	
-	[super dealloc];
+		if (localizedFormats[i] != NULL) {
+			CFRelease(localizedFormats[i]);
+			localizedFormats[i] = NULL;
+		}
 }
 
-
--(void)receivedMemoryWarning {
-	int memPercent;
+static void ReceivedMemoryWarningCallback (CFNotificationCenterRef center, void* observer, CFStringRef name, const void* object, CFDictionaryRef userInfo) {
+	int memPercent = 0;
 	size_t dummy = sizeof(int);
 	sysctlbyname("kern.memorystatus_level", &memPercent, &dummy, NULL, 0);
+#if !TARGET_IPHONE_SIMULATOR
 	OSMemoryNotificationLevel level = OSMemoryNotificationCurrentLevel() - 1;
+#else
+	int level = 1;
+#endif
 	if (level < 0)
 		return;
 	
-	[memWatcherBridge notifyWithTitle:[NSString stringWithFormat:formats[level], memPercent]
+	CFStringRef formattedString = CFStringCreateWithFormat(NULL, NULL, localizedFormats[level], memPercent);
+	UniChar iconChar = 0xe252;
+	CFStringRef iconString = CFStringCreateWithCharacters(NULL, &iconChar, 1);
+	[memWatcherBridge notifyWithTitle:(NSString*)formattedString
 						  description:nil
-					 notificationName:names[level]
-							 iconData:thisIcon
+					 notificationName:(NSString*)names[level]
+							 iconData:(NSString*)iconString
 							 priority:0
 							 isSticky:NO
 						 clickContext:nil];
-}
-@end
-
-
-
-static MemoryWatcher* memoryWatcher = nil;
-
-static void terminator () {
-	[memoryWatcher release];
-	memoryWatcher = nil;
+	CFRelease(formattedString);
+	CFRelease(iconString);
 }
 
 static void second_initializer () {
-	NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
 	atexit(&terminator);
-	memoryWatcher = [[MemoryWatcher alloc] init];
+	
+	NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
+	
+	memWatcherBridge = [[GPApplicationBridge alloc] init];
+	
+	if (memWatcherBridge != NULL) {
+		CFArrayRef allArray = CFArrayCreate(NULL, (const void**)names, 3, &kCFTypeArrayCallBacks);			/// !!!!
+		CFArrayRef defaultArray = CFArrayCreate(NULL, (const void**)(names+1), 2, &kCFTypeArrayCallBacks);
+		
+		static NSString* const keys[3] = {GROWL_APP_NAME, GROWL_NOTIFICATIONS_ALL, GROWL_NOTIFICATIONS_DEFAULT};
+		CFTypeRef values[3] = {CFSTR("Memory Watcher"), allArray, defaultArray};
+		
+		// callbacks are used just to let GPApplicationBridge_Register see them...
+		CFDictionaryRef regDict = CFDictionaryCreate(NULL, (const void**)keys, (const void**)values, 3, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+		[memWatcherBridge registerWithDictionary:(NSDictionary*)regDict];
+
+		CFRelease(allArray);
+		CFRelease(defaultArray);
+		CFRelease(regDict);
+		
+		if (memWatcherBridge.enabled) {
+#if !TARGET_IPHONE_SIMULATOR
+			CFURLRef url = CFURLCreateWithFileSystemPath(NULL, CFSTR("/Library/MobileSubstrate/DynamicLibraries/MemoryWatcher.plist"), kCFURLPOSIXPathStyle, false);
+#else
+			CFURLRef url = CFBundleCopyResourceURL(CFBundleGetMainBundle(), CFSTR("MemoryWatcher"), CFSTR("plist"), NULL);
+#endif
+			CFDictionaryRef localizableStrings = GPPropertyListCopyLocalizableStringsDictionary(url);
+			CFRelease(url);
+			for (int i = 0; i < 3; ++ i)
+				localizedFormats[i] = CFStringCreateWithFormat(NULL, NULL, CFSTR("%@ (%%d%%%%)"), CFDictionaryGetValue(localizableStrings, names[i]));
+			CFRelease(localizableStrings);
+#if !TARGET_IPHONE_SIMULATOR			
+			CFStringRef notifName = CFStringCreateWithCString(NULL, kOSMemoryNotificationName, kCFStringEncodingUTF8);
+			CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), memWatcherBridge, &ReceivedMemoryWarningCallback, notifName, NULL, 0);
+			CFRelease(notifName);
+#else
+			CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), memWatcherBridge, &ReceivedMemoryWarningCallback, CFSTR("kennytm.memorywatcher.test"), NULL, 0);
+#endif
+		} else {
+			terminator();
+		}
+	}
+	
 	[pool drain];
 }
 

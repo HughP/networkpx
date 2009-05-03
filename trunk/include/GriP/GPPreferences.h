@@ -30,23 +30,43 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  
 */
 
+#ifndef GRIP_GPPreferences_H
+#define GRIP_GPPreferences_H
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <objc/objc.h>
-@class UIColor, NSDictionary, NSString, NSMutableDictionary;
 	
-NSDictionary* GPPreferences();
-void GPFlushPreferences();
+#include <CoreFoundation/CoreFoundation.h>
 	
-void GPUpdateRegistrationDictionaryForAppName(NSString* appName, NSDictionary* registrationDictionary);
-void GPModifyMessageForUserPreference(NSMutableDictionary* message);
+#if __OBJC__
+#include <Foundation/Foundation.h>
+	@class UIColor;
+	NSDictionary* GPCopyPreferences();
+	void GPFlushPreferences();
+		
+	void GPUpdateRegistrationDictionaryForAppName(NSString* appName, NSDictionary* registrationDictionary);
+	void GPModifyMessageForUserPreference(NSMutableDictionary* message);
+		
+	BOOL GPCheckEnabled(NSString* appName, NSString* msgName);
 	
-BOOL GPCheckEnabled(NSString* appName, NSString* msgName);
-
-void GPCopyColorsForPriority(int priority, UIColor** outBGColor, UIColor** outFGColor);
+//#define GPPreferences() [GPCopyPreferences() autorelease]
+#else
+	typedef struct UIColor UIColor;
+	
+	CFDictionaryRef GPPreferences();
+	void GPFlushPreferences();
+	
+	void GPUpdateRegistrationDictionaryForAppName(CFStringRef appName, CFDictionaryRef registrationDictionary);
+	void GPModifyMessageForUserPreference(CFMutableDictionaryRef message);
+	
+	Boolean GPCheckEnabled(CFStringRef appName, CFStringRef msgName);	
+#endif
+	
+	void GPCopyColorsForPriority(int priority, UIColor** restrict outBGColor, UIColor** restrict outFGColor);
 	
 #ifdef __cplusplus
 }
+#endif
+
 #endif

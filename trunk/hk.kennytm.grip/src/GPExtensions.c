@@ -30,7 +30,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  
 */
 
-#include <CoreFoundation/CoreFoundation.h>
+#include <GriP/GPExtensions.h>
 
 static void GPGriPIsReadyCallback(CFNotificationCenterRef center, void(*initializer)(), CFStringRef name, const void* object, CFDictionaryRef userInfo) {
 	CFNotificationCenterRemoveEveryObserver(center, initializer);
@@ -49,4 +49,39 @@ extern void GPStartWhenGriPIsReady(void(*initializer)()) {
 		// GriP is not running. register for the notification and set the initializer as callback.
 		CFNotificationCenterAddObserver(CFNotificationCenterGetLocalCenter(), initializer, (CFNotificationCallback)&GPGriPIsReadyCallback, CFSTR("hk.kennytm.GriP.ready"), NULL, CFNotificationSuspensionBehaviorCoalesce);
 	}
+}
+
+extern CFDictionaryRef GPPropertyListCopyLocalizableStringsDictionary(CFURLRef fileURL) {
+	CFReadStreamRef stream = CFReadStreamCreateWithFile(NULL, fileURL);
+	if (stream == NULL)
+		return NULL;
+	if (!CFReadStreamOpen(stream)) {
+		CFRelease(stream);
+		return NULL;
+	}
+	CFDictionaryRef dict = CFPropertyListCreateFromStream(NULL, stream, 0, kCFPropertyListImmutable, NULL, NULL);
+	CFReadStreamClose(stream);
+	CFRelease(stream);
+	if (dict == NULL)
+		return NULL;
+	if (CFGetTypeID(dict) != CFDictionaryGetTypeID()) {
+		CFRelease(dict);
+		return NULL;
+	}
+	CFDictionaryRef localizedStringsDict = CFDictionaryGetValue(dict, CFSTR("Localizations"));
+	if (localizedStringsDict == NULL || CFGetTypeID(localizedStringsDict) != CFDictionaryGetTypeID()) {
+		CFRelease(dict);
+		return NULL;
+	}
+	CFIndex langCount = CFDictionaryGetCount(localizedStringsDict);
+	CFStringRef keys[langCount];	// assume we don't have 4000 languages :p
+	CFDictionaryGetKeysAndValues(localizedStringsDict, (const void**)keys, NULL);
+	CFArrayRef languages = CFArrayCreate(NULL, (const void**)keys, langCount, NULL);
+	CFArrayRef preferedLanguages = CFBundleCopyPreferredLocalizationsFromArray(languages);
+	CFDictionaryRef retval = CFRetain(CFDictionaryGetValue(localizedStringsDict, CFArrayGetValueAtIndex(preferedLanguages, 0)));
+	CFRelease(languages);
+	CFRelease(preferedLanguages);
+	CFRelease(dict);
+	
+	return retval;
 }
