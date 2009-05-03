@@ -43,6 +43,7 @@ enum {
 	GriPMessage_LaunchURL,
 	GriPMessage_CheckEnabled,
 	GriPMessage_DisposeIdentifier,
+	GriPMessage_UpdateSuspensionState,
 	GriPMessage__End = 1010
 };
 

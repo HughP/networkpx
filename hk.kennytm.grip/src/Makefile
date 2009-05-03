@@ -7,15 +7,16 @@ PrefsBundlePath=../deb/System/Library/PreferenceBundles
 
 GriPIncPath=../../include/GriP
 
-libVersion               =1.11.5
+libVersion               =1.11.9
 libGriPCompatVersion     =1.11.4
-libGriPExtraCompatVersion=1.11.5
+libGriPExtraCompatVersion=1.11.9
 
-Compiler=$(iPhoneDevPath)/usr/bin/gcc-4.2
+RawCompiler=$(iPhoneDevPath)/usr/bin/gcc-4.2
+Compiler=@$(RawCompiler)
 CodeSign=ldid -S
 
 Options=-arch armv6 \
-	-std=c99 \
+	-std=gnu99 \
 	-isysroot $(iPhoneSDKPath) \
 	-F$(iPhoneSDKPath)/System/Library/PrivateFrameworks \
 	-I$(iPhoneDevPath)/usr/include/gcc/darwin/default \
@@ -30,7 +31,7 @@ Options=-arch armv6 \
 	-DGRIP_JAILBROKEN=1
 
 SDKOptionsARM=-arch armv6 \
-	-std=c99 \
+	-std=gnu99 \
 	-isysroot $(iPhoneSDKPath) \
 	-I$(iPhoneDevPath)/usr/include/gcc/darwin/default \
 	-I$(iPhoneSDKPath)/usr/lib/gcc/arm-apple-darwin9/4.2.1/include \
@@ -42,7 +43,7 @@ SDKOptionsARM=-arch armv6 \
 iPhoneSimDevPath=/Developer/Platforms/iPhoneSimulator.platform/Developer
 iPhoneSimSDKPath=$(iPhoneSimDevPath)/SDKs/iPhoneSimulator3.0.sdk
 SDKOptionsSim=-arch i686 \
-	-std=c99 \
+	-std=gnu99 \
 	-isysroot $(iPhoneSimSDKPath) \
 	-I$(iPhoneSimDevPath)/usr/include/gcc/darwin/default \
 	-I$(iPhoneSimSDKPath)/usr/lib/gcc/i686-apple-darwin9/4.2.1/include \
@@ -50,9 +51,11 @@ SDKOptionsSim=-arch i686 \
 	-O2 \
 	-UGRIP_JAILBROKEN
 
+DontThumbSources=GPDefaultTheme.m | GPMessageWindow.m | GPPreferences.m | $(SharedSrcPath)/GraphicsUtitlities.m
+
 libGriP_Sources=Duplex/Client.o GPApplicationBridge.o GPExtensions.o NSString-stringByEscapingXMLEntities.o
 libGriP_Target=../deb/usr/lib/libGriP.dylib
-libGriP_Options=-dynamiclib -install_name /usr/lib/libGriP.dylib -compatibility_version $(libGriPCompatVersion) -current_version $(libVersion) -framework Foundation -framework CoreFoundation -framework UIKit
+libGriP_Options=-dynamiclib -install_name /usr/lib/libGriP.dylib -compatibility_version $(libGriPCompatVersion) -current_version $(libVersion) -framework CoreFoundation -framework Foundation -framework UIKit
 
 libGriPExtra_Sources=GPMessageWindow.o GPPreferences.o GPGetSmallAppIcon.o GPUIViewTheme.o GPRawThemeHelper.o
 libGriPExtra_Target=../deb/usr/lib/libGriPExtra.dylib
@@ -76,7 +79,7 @@ Preferences_Options=-lGriP -framework Preferences -framework Foundation -framewo
 
 MemWatcher_Sources=Extensions/MemWatcher.o
 MemWatcher_Target=$(MobileSubstratePath)/MemoryWatcher.dylib
-MemWatcher_Options=-lGriP -framework Foundation -dynamiclib -init _first_initializer
+MemWatcher_Options=-lGriP -lobjc -framework Foundation -framework CoreFoundation -dynamiclib -init _first_initializer
 
 YouveGotMail_Sources=Extensions/YouveGotMail.o
 YouveGotMail_Target=$(MobileSubstratePath)/YouveGotMail.dylib
@@ -97,28 +100,60 @@ SDK_libGPDefaultTheme_Options=-framework Foundation -framework UIKit -framework 
 SDK_Headers=$(GriPIncPath)/GPApplicationBridge.h $(GriPIncPath)/GrowlApplicationBridge.h $(GriPIncPath)/common.h $(GriPIncPath)/GrowlDefines.h $(GriPIncPath)/NSString-stringByEscapingXMLEntities.h $(GriPIncPath)/GriP.h $(GriPIncPath)/GriPServer.h $(GriPIncPath)/GPTheme.h $(GriPIncPath)/GPUIViewTheme.h $(GriPIncPath)/GPRawThemeHelper.h $(GriPIncPath)/GPGetSmallAppIcon.h
 SDK_Sources=NSString-stringByEscapingXMLEntities.m GrowlApplicationBridge.m ../deb/Library/GriP/GPPreferences.plist
 
-all: $(libGriP_Target) $(libGriPExtra_Target) $(DefaultTheme_Target) $(XXHooker_GriP_Target) $(GriPTest_Target) $(Preferences_Target) $(MemWatcher_Target) $(YouveGotMail_Target)
+all: $(libGriPC_Target) $(libGriP_Target) $(libGriPExtra_Target) $(DefaultTheme_Target) $(XXHooker_GriP_Target) $(GriPTest_Target) $(Preferences_Target) $(MemWatcher_Target) $(YouveGotMail_Target)
 
 %.sdk.o:	%.m
-	$(Compiler) -c $(SDKOptionsSim) -o $@.i686 $^
-	$(Compiler) -c $(SDKOptionsARM) -o $@.arm $^
-	lipo -create $@.i686 $@.arm -output $@
-	rm $@.i686 $@.arm
+	@case $^ in \
+		$(DontThumbSources)) \
+			$(RawCompiler) -c $(SDKOptionsARM) -o $@.arm $^; \
+			;; \
+		*) \
+			$(RawCompiler) -c $(SDKOptionsARM) -mthumb -o $@.arm $^; \
+			;; \
+	esac;
+	$(Compiler) -c $(SDKOptionsSim) -o $@.i686 $^;
+	@lipo -create $@.i686 $@.arm -output $@;
+	@rm $@.i686 $@.arm;
 
 %.sdk.o:	%.c
-	$(Compiler) -c $(SDKOptionsSim) -o $@.i686 $^
-	$(Compiler) -c $(SDKOptionsARM) -o $@.arm $^
-	lipo -create $@.i686 $@.arm -output $@
-	rm $@.i686 $@.arm
+	@case $^ in \
+		$(DontThumbSources)) \
+			$(RawCompiler) -c $(SDKOptionsARM) -o $@.arm $^; \
+			;; \
+		*) \
+			$(RawCompiler) -c $(SDKOptionsARM) -mthumb -o $@.arm $^; \
+			;; \
+	esac;
+	$(Compiler) -c $(SDKOptionsSim) -o $@.i686 $^;
+	@lipo -create $@.i686 $@.arm -output $@
+	@rm $@.i686 $@.arm
 
 %.o:	%.m
-	$(Compiler) -c $(Options) -o $@ $^
+	@case $^ in \
+		$(DontThumbSources)) \
+			$(RawCompiler) -c $(Options) -o $@ $^; \
+			;; \
+		*) \
+			$(RawCompiler) -c $(Options) -mthumb -o $@ $^; \
+			;; \
+	esac;
 
 %.o:	%.c
-	$(Compiler) -c $(Options) -o $@ $^
+	@case $^ in \
+		$(DontThumbSources)) \
+			$(RawCompiler) -c $(Options) -o $@ $^; \
+			;; \
+		*) \
+			$(RawCompiler) -c $(Options) -mthumb -o $@ $^; \
+			;; \
+	esac;
 
 $(ThemesPath)/%.griptheme/GriPView.nib:	%.xib
 	ibtool --compile $@ $^
+
+$(libGriPC_Target):	$(libGriPC_Sources)
+	$(Compiler) $(Options) $(libGriPC_Options) -o $@ $^
+	$(CodeSign) $@
 
 $(libGriP_Target):	$(libGriP_Sources)
 	$(Compiler) $(Options) $(libGriP_Options) -o $@ $^
@@ -173,3 +208,5 @@ clean:
 	rm -f *.o
 	rm -f Duplex/*.o
 	rm -f Extensions/*.o
+	rm -f ../sdk/*.h
+	rm -f ../sdk/*.* ../sdk/GriP/*.h ../sdk/GriP/Duplex/*.h

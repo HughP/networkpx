@@ -30,7 +30,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  
 */
 
-#include <pthread.h>
 #import <CoreFoundation/CoreFoundation.h>
 #import <Foundation/Foundation.h>
 #import <GriP/GPPreferences.h>
@@ -41,6 +40,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #import <GriP/GPTheme.h>
 #import <PrefHooker/PrefsLinkHooker.h>
 #import <UIKit/UIApplication.h>
+#import <GriP/GPSingleton.h>
 
 #if GRIP_JAILBROKEN
 @interface SpringBoard : UIApplication
@@ -51,16 +51,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #import <GriP/GPDefaultTheme.h>
 #endif
 
-static pthread_mutex_t atLock = PTHREAD_MUTEX_INITIALIZER;
 static NSObject<GPTheme>* activeTheme = nil;
 static const int MemoryAlertObserver = 12345678;
 
 static void GPMemoryAlert (CFNotificationCenterRef center, void* observer, CFStringRef name, const void* object, CFDictionaryRef userInfo) {
 	GPFlushPreferences();
-	pthread_mutex_lock(&atLock);
-	[activeTheme release];
-	activeTheme = nil;
-	pthread_mutex_unlock(&atLock);
+	GPSingletonDestructor(activeTheme, [__NEWOBJ__ release]);
 }
 
 static CFDataRef GriPCallback (CFMessagePortRef serverPort, SInt32 type, CFDataRef data, void* info) {
@@ -74,19 +70,19 @@ static CFDataRef GriPCallback (CFMessagePortRef serverPort, SInt32 type, CFDataR
 			break;
 			
 		case GriPMessage_ShowMessage: {
-			pthread_mutex_lock(&atLock);
-			if (activeTheme == nil) {
 #if GRIP_JAILBROKEN
-				NSBundle* activeThemeBundle = [NSBundle bundleWithPath:[@"/Library/GriP/Themes/" stringByAppendingPathComponent:[GPPreferences() objectForKey:@"ActiveTheme"]]];
+			GPSingletonConstructor(activeTheme, {
+				NSDictionary* prefs = GPCopyPreferences();
+				NSBundle* activeThemeBundle = [NSBundle bundleWithPath:[@"/Library/GriP/Themes/" stringByAppendingPathComponent:[prefs objectForKey:@"ActiveTheme"]]];
+				[prefs release];
 				NSString* themeType = [activeThemeBundle objectForInfoDictionaryKey:@"GPThemeType"];
 				if (themeType == nil || [@"OBJC" isEqualToString:themeType])
-					activeTheme = [[[activeThemeBundle principalClass] alloc] initWithBundle:activeThemeBundle];
+					__NEWOBJ__ = [[[activeThemeBundle principalClass] alloc] initWithBundle:activeThemeBundle];
+			}, [__NEWOBJ__ release]);
 #else
-				activeTheme = [[GPDefaultTheme alloc] initWithBundle:[NSBundle mainBundle]];
+			GPSingletonConstructor(activeTheme, __NEWOBJ__ = [[GPDefaultTheme alloc] initWithBundle:[NSBundle mainBundle]], [__NEWOBJ__ release]);
 #endif
-			}
 			BOOL willDisplay = [activeTheme respondsToSelector:@selector(display:)];
-			pthread_mutex_unlock(&atLock);
 			
 			NSMutableDictionary* messageDict = [NSPropertyListSerialization propertyListFromData:(NSData*)data mutabilityOption:NSPropertyListMutableContainers format:NULL errorDescription:NULL];
 			
@@ -113,12 +109,18 @@ static CFDataRef GriPCallback (CFMessagePortRef serverPort, SInt32 type, CFDataR
 			array = [NSPropertyListSerialization propertyListFromData:(NSData*)data mutabilityOption:NSPropertyListImmutable format:NULL errorDescription:NULL];
 ignored_message:
 			if ([array isKindOfClass:[NSArray class]] && [array count] >= 3) {
-				CFStringRef pid = (CFStringRef)[array objectAtIndex:0];
-				CFDataRef context = (CFDataRef)[NSPropertyListSerialization dataFromPropertyList:[array objectAtIndex:1] format:NSPropertyListBinaryFormat_v1_0 errorDescription:NULL];
+				NSString* pid = [array objectAtIndex:0];
+				NSData* context = [NSPropertyListSerialization dataFromPropertyList:[array objectAtIndex:1] format:NSPropertyListBinaryFormat_v1_0 errorDescription:NULL];
 				BOOL isURL = [[array objectAtIndex:2] boolValue];
 				
-				CFMessagePortRef clientPort = CFMessagePortCreateRemote(NULL, pid);
-				if (isURL && type == GriPMessage_ClickedNotification) {
+				if (isURL) {
+					if (type != GriPMessage_ClickedNotification)
+						break;
+					else
+						type = GriPMessage_LaunchURL;
+				}
+				
+				if (!GPServerForwardMessage((CFStringRef)pid, type, (CFDataRef)context) && isURL) {
 					NSURL* url = [NSURL URLWithString:(NSString*)[array objectAtIndex:1]];
 #if GRIP_JAILBROKEN
 					SpringBoard* springBoard = (SpringBoard*)[UIApplication sharedApplication];
@@ -129,9 +131,6 @@ ignored_message:
 #else
 					[[UIApplication sharedApplication] openURL:url];
 #endif
-				} else if (clientPort != NULL) {
-					CFMessagePortSendRequest(clientPort, type, context, 1, 0, NULL, NULL);
-					CFRelease(clientPort);
 				}
 			}
 			break;

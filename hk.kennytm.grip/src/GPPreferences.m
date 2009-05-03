@@ -30,47 +30,33 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  
 */
 
-#include <GriP/GPPreferences.h>
+#import <GriP/GPPreferences.h>
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
 #import <GriP/GrowlDefines.h>
 #import <GriP/common.h>
 #import <pthread.h>
 #import <GraphicsUtilities.h>
+#import <GriP/GPSingleton.h>
+#import <pthread.h>
 
 static NSDictionary* preferences = nil;
-static NSMutableDictionary* tickets = nil;
-static pthread_mutex_t prefLock = PTHREAD_MUTEX_INITIALIZER, appLock = PTHREAD_MUTEX_INITIALIZER;
+static NSMutableDictionary* cachedTickets = nil;
+static pthread_mutex_t appUpdateLock = PTHREAD_MUTEX_INITIALIZER;
 
-NSDictionary* GPPreferences() {
-	pthread_mutex_lock(&prefLock);
-	if (preferences == nil)
+NSDictionary* GPCopyPreferences() {
 #if GRIP_JAILBROKEN
-		preferences = [[NSDictionary alloc] initWithContentsOfFile:@"/Library/GriP/GPPreferences.plist"];
+#define FILEPATH @"/Library/GriP/GPPreferences.plist"
 #else
-		preferences = [[NSDictionary alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"GPPreferences" ofType:@"plist" inDirectory:nil]];
+#define FILEPATH [[NSBundle mainBundle] pathForResource:@"GPPreferences" ofType:@"plist" inDirectory:nil]
 #endif
-	pthread_mutex_unlock(&prefLock);
-	return preferences;
+	GPSingletonConstructor(preferences, __NEWOBJ__ = [[NSDictionary alloc] initWithContentsOfFile:FILEPATH], [__NEWOBJ__ release]);
+	return [preferences retain];
 }
 
 void GPFlushPreferences() {
-	pthread_mutex_lock(&prefLock);
-	[preferences release];
-	preferences = nil;
-	pthread_mutex_unlock(&prefLock);
-	pthread_mutex_lock(&appLock);
-	[tickets release];
-	tickets = nil;
-	pthread_mutex_unlock(&appLock);
-}
-
-static NSMutableDictionary* GPTickets () {
-	pthread_mutex_lock(&appLock);
-	if (tickets == nil)
-		tickets = [[NSMutableDictionary alloc] init];
-	pthread_mutex_unlock(&appLock);
-	return tickets;
+	GPSingletonDestructor(preferences, [__NEWOBJ__ release]);
+	GPSingletonDestructor(cachedTickets, [__NEWOBJ__ release]);
 }
 
 static NSString* GPTicketPathForAppName(NSString* appName) {
@@ -81,29 +67,45 @@ static NSString* GPTicketPathForAppName(NSString* appName) {
 #endif
 }
 
+static NSDictionary* GPGetTicket(NSString* appName) {
+	GPSingletonConstructor(cachedTickets, __NEWOBJ__ = [[NSMutableDictionary alloc] init], [__NEWOBJ__ release]);
+	
+	// ????????????????????????????????
+	NSDictionary* ticket = [[[cachedTickets retain] objectForKey:appName] retain];
+#define COMMA ,
+	GPSingletonConstructor(ticket, {
+		__NEWOBJ__ = [[NSMutableDictionary alloc] initWithContentsOfFile:GPTicketPathForAppName(appName)];
+		if (__NEWOBJ__ == nil) {
+			static const NSString* const keys[] = {@"enabled" COMMA @"stealth" COMMA @"sticky" COMMA @"messages" COMMA @"log"};
+			id values[] = {(NSNumber*)kCFBooleanTrue COMMA (NSNumber*)kCFBooleanFalse COMMA [NSNumber numberWithInteger:0] COMMA [NSMutableDictionary dictionary] COMMA (NSNumber*)kCFBooleanTrue};
+			__NEWOBJ__ = [[NSDictionary alloc] initWithObjects:values forKeys:keys count:sizeof(keys)/sizeof(NSString*)];
+		}
+		[cachedTickets setObject:__NEWOBJ__ forKey:appName];
+	}, [__NEWOBJ__ release]);
+#undef COMMA
+	[ticket release];
+	[cachedTickets release];
+	// ????????????????????????????????
+	
+	return ticket;
+}
+
 void GPUpdateRegistrationDictionaryForAppName(NSString* appName, NSDictionary* registrationDictionary) {
 	NSString* appPath = GPTicketPathForAppName(appName);
-	NSMutableDictionary* ticket = [[GPTickets() objectForKey:appName] retain];
+	
+	// can't think of a lock-free way to do so :)
+	pthread_mutex_lock(&appUpdateLock);
+	
+	NSDictionary* ticket = GPGetTicket(appName);
 	BOOL hasModification = NO;
-	NSNumber* ZERO = [NSNumber numberWithInteger:0];
-	
-	if (ticket == nil) {
-		// Set default data for a new ticket.
-		hasModification = YES;
-		ticket = [[NSMutableDictionary alloc] initWithObjectsAndKeys:
-				  (NSNumber*)kCFBooleanTrue, @"enabled",
-				  (NSNumber*)kCFBooleanFalse, @"stealth",
-				  ZERO, @"sticky",	// 0 = application defined, 1 = always sticky, else = always hide.
-				  [NSMutableDictionary dictionary], @"messages",
-				  (NSNumber*)kCFBooleanTrue, @"log",
-				  nil];
-	}
-	
+		
 	NSMutableDictionary* currentNotifs = [ticket objectForKey:@"messages"];
 	NSArray* newNotifs = [registrationDictionary objectForKey:GROWL_NOTIFICATIONS_ALL];
 	NSArray* defaultNotifs = [registrationDictionary objectForKey:GROWL_NOTIFICATIONS_DEFAULT];
 	NSDictionary* humanReadableNames = [registrationDictionary objectForKey:GROWL_NOTIFICATIONS_HUMAN_READABLE_NAMES];
 	NSDictionary* descriptions = [registrationDictionary objectForKey:GROWL_NOTIFICATIONS_DESCRIPTIONS];
+	
+	NSNumber* zero = [NSNumber numberWithInteger:0];
 	
 	for (NSString* name in newNotifs) {
 		if ([currentNotifs objectForKey:name] == nil) {
@@ -111,28 +113,26 @@ void GPUpdateRegistrationDictionaryForAppName(NSString* appName, NSDictionary* r
 			BOOL enabled = [defaultNotifs containsObject:name];
 			NSString* hrName = [humanReadableNames objectForKey:name];
 			NSString* desc = [descriptions objectForKey:name];
-			NSMutableDictionary* messageDict = [[NSMutableDictionary alloc] initWithObjectsAndKeys:
-												[NSNumber numberWithBool:enabled], @"enabled",
-												kCFBooleanFalse, @"stealth",
-												ZERO, @"sticky",
-												ZERO, @"priority",
-												kCFBooleanTrue, @"log",
-												nil];
-			if (hrName != nil)
-				[messageDict setObject:hrName forKey:@"friendlyName"];
-			if (desc != nil)
-				[messageDict setObject:desc forKey:@"description"];
+			static const NSString* const keys[] = {@"friendlyName", @"enabled", @"stealth", @"sticky", @"priority", @"log", @"description"};
+			id values[] = {hrName, (NSNumber*)(enabled ? kCFBooleanTrue : kCFBooleanFalse), (NSNumber*)kCFBooleanFalse, zero, zero, (NSNumber*)kCFBooleanTrue, desc};
 			
-			[currentNotifs setObject:messageDict forKey:name];
-			[messageDict release];
+			int size = sizeof(keys)/sizeof(NSString*);
+			id* thisKeys = keys, *thisValues = values;
+			if (hrName == nil) {
+				++ thisValues;
+				++ thisKeys;
+				-- size;
+			}
+			if (desc == nil)
+				-- size;
+			
+			[currentNotifs setObject:[NSDictionary dictionaryWithObjects:thisValues forKeys:thisKeys count:size] forKey:name];
 		}
 	}
 	if (hasModification)
 		[ticket writeToFile:appPath atomically:YES];
 	
-	[GPTickets() setObject:ticket forKey:appName];
-	
-	[ticket release];
+	pthread_mutex_unlock(&appUpdateLock);
 }
 
 #define EnabledWithStealth(dict) ([[(dict) objectForKey:@"enabled"] boolValue] || (respectStealth && [[(dict) objectForKey:@"stealth"] boolValue]))
@@ -152,7 +152,7 @@ static BOOL GPCheckEnabledWithTicket(NSDictionary* ticket, NSString* msgName, NS
 
 void GPModifyMessageForUserPreference(NSMutableDictionary* message) {
 	NSString* appName = [message objectForKey:GRIP_APPNAME];
-	NSDictionary* ticket = [GPTickets() objectForKey:appName];
+	NSDictionary* ticket = GPGetTicket(appName);
 	NSString* msgName = [message objectForKey:GRIP_NAME];
 	NSDictionary* msgDict;
 
@@ -168,7 +168,9 @@ void GPModifyMessageForUserPreference(NSMutableDictionary* message) {
 	} else
 		newPriority = [[message objectForKey:GRIP_PRIORITY] integerValue];
 	
-	NSArray* priorityArray = [[GPPreferences() objectForKey:@"PerPrioritySettings"] objectAtIndex:newPriority+2];
+	NSDictionary* prefs = GPCopyPreferences();
+	NSArray* priorityArray = [[prefs objectForKey:@"PerPrioritySettings"] objectAtIndex:newPriority+2];
+	[prefs release];
 	// Disable this message the priority is disabled.
 	if (![[priorityArray objectAtIndex:GPPrioritySettings_Enabled] boolValue]) {
 		[message removeAllObjects];
@@ -188,18 +190,20 @@ void GPModifyMessageForUserPreference(NSMutableDictionary* message) {
 }
 
 BOOL GPCheckEnabled(NSString* appName, NSString* msgName) {
-	return appName != nil && GPCheckEnabledWithTicket([GPTickets() objectForKey:appName], msgName, NULL, YES);
+	return appName != nil && GPCheckEnabledWithTicket(GPGetTicket(appName), msgName, NULL, YES);
 }
 
 void GPCopyColorsForPriority(int priority, UIColor** outBGColor, UIColor** outFGColor) {
 	if (priority < -2) priority = -2;
 	if (priority > 2) priority = 2;
 	
-	NSArray* colorArray = [[GPPreferences() objectForKey:@"PerPrioritySettings"] objectAtIndex:(priority+2)];
+	NSDictionary* prefs = GPCopyPreferences();
+	NSArray* colorArray = [[prefs objectForKey:@"PerPrioritySettings"] objectAtIndex:(priority+2)];
 	CGFloat red = [[colorArray objectAtIndex:GPPrioritySettings_Red] floatValue];
 	CGFloat green = [[colorArray objectAtIndex:GPPrioritySettings_Green] floatValue];
 	CGFloat blue = [[colorArray objectAtIndex:GPPrioritySettings_Blue] floatValue];
 	CGFloat alpha = [[colorArray objectAtIndex:GPPrioritySettings_Alpha] floatValue];
+	[prefs release];
 	
 	if (outBGColor != NULL)
 		*outBGColor = [[UIColor alloc] initWithRed:red green:green blue:blue alpha:alpha];

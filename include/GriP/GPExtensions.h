@@ -30,12 +30,15 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  
 */
 
+#ifndef GRIP_GPEXTENSIONS_H
+#define GRIP_GPEXTENSIONS_H
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-	void GPStartWhenGriPIsReady(void(*initializer)());
-	
+#include <CoreFoundation/CoreFoundation.h>
+void GPStartWhenGriPIsReady(void(*initializer)());
+CFDictionaryRef GPPropertyListCopyLocalizableStringsDictionary(CFURLRef url);
 #ifdef __cplusplus
 }
+#endif
 #endif

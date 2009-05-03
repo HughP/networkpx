@@ -35,7 +35,11 @@
 
 #include <CoreGraphics/CoreGraphics.h>
 
+#if __OBJC__
 @class UIImage;
+#else
+typedef struct UIImage UIImage;
+#endif
 
 typedef struct GUCaps {
 	CGFloat left, right, top, bottom;

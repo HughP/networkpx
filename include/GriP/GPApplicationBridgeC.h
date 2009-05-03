@@ -53,8 +53,13 @@ extern "C" {
 	
 #define kGPApplicationBridge_EmptyDelegate (GPApplicationBridgeCDelegate){NULL, NULL, NULL, NULL, NULL, NULL}
 	
-	GPApplicationBridgeRef GPApplicationBridge_Init();
-	void GPApplicationBridge_Destroy(GPApplicationBridgeRef bridge);
+	GPApplicationBridgeRef GPApplicationBridge_Create();
+	GPApplicationBridgeRef GPApplicationBridge_Retain(GPApplicationBridgeRef bridge);
+	void GPApplicationBridge_Release(GPApplicationBridgeRef bridge);
+	
+	// backward compatibility.
+#define GPApplicationBridge_Init GPApplicationBridge_Create
+#define GPApplicationBridge_Destroy GPApplicationBridge_Release
 	
 	void GPApplicationBridge_SetDelegate(GPApplicationBridgeRef bridge, GPApplicationBridgeCDelegate delegate);
 	GPApplicationBridgeCDelegate GPApplicationBridge_GetDelegate(GPApplicationBridgeRef bridge);

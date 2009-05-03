@@ -107,7 +107,6 @@ __attribute__((visibility("hidden")))
 	ActivityMonitor* mon = [ActivityMonitor currentMonitor];
 	if ([mon gotNewMessages]) {
 		[mon reset];
-		NSLog(@"%@", notif);
 		
 		NSDictionary* userInfo = [notif userInfo];
 		NSArray* messages = [userInfo objectForKey:@"messages"];

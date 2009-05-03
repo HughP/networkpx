@@ -46,14 +46,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 
-static void GPSetFGColor(UIView* view, UIColor* fgColor) {
-	if ([view respondsToSelector:@selector(setTextColor:)]) {
-		[(UILabel*)view setTextColor:fgColor];
-	} else if ([view respondsToSelector:@selector(setTitleColor:forState:)])
-		[(UIButton*)view setTitleColor:fgColor forState:UIControlStateNormal];
-}
-
-
 @implementation GPUIViewTheme
 -(void)modifyView:(UIView*)inoutView asNew:(BOOL)asNew withMessage:(NSDictionary*)message {}
 +(void)updateViewForDisclosure:(UIView*)view {}
@@ -88,9 +80,7 @@ static void GPSetFGColor(UIView* view, UIColor* fgColor) {
 	[self modifyView:newView asNew:asNew withMessage:message];
 	
 	if (identifier != nil) {
-		@synchronized(identifiedViews) {
-			[identifiedViews setObject:newView forKey:identifier];
-		}
+		[identifiedViews setObject:newView forKey:identifier];
 	}
 		
 	if (window == nil) {
@@ -105,9 +95,7 @@ static void GPSetFGColor(UIView* view, UIColor* fgColor) {
 }
 
 -(void)messageClosed:(NSString*)identifier {
-	@synchronized(identifiedViews) {
-		[identifiedViews removeObjectForKey:identifier];
-	}
+	[identifiedViews removeObjectForKey:identifier];
 }
 
 -(void)dealloc {
