@@ -89,7 +89,7 @@ UIImage* GPGetSmallAppIcon (NSString* bundleIdentifier) {
 			CFSTR("com.apple.MobileAddressBook"),
 			CFSTR("com.apple.mobilecal"),
 			CFSTR("com.apple.mobilemail"),
-			CFSTR("(airport)"),
+			CFSTR("(WiFi)"),
 			CFSTR("com.apple.mobileslideshow"),
 			CFSTR("(music)"),
 			CFSTR("(schedule)"),
@@ -142,9 +142,18 @@ UIImage* GPGetSmallAppIcon(NSString* bundleIdentifier) {
 #endif
 
 UIImage* GPGetSmallAppIconFromObject(NSObject* object) {
-	if ([object isKindOfClass:[NSString class]])
-		return GPGetSmallAppIcon((NSString*)object);
-	else if ([object isKindOfClass:[NSData class]])
+	if ([object isKindOfClass:[NSString class]]) {
+#define str (NSString*)object
+		if (GPStringIsEmoji(str)) {
+			UIGraphicsBeginImageContext(CGSizeMake(29, 29));
+			[str drawInRect:iconRect withFont:[UIFont systemFontOfSize:27.5f] lineBreakMode:UILineBreakModeWordWrap alignment:UITextAlignmentCenter];
+			UIImage* retimg = UIGraphicsGetImageFromCurrentImageContext();
+			UIGraphicsEndImageContext();
+			return retimg;
+		} else
+			return GPGetSmallAppIcon(str);
+#undef str
+	} else if ([object isKindOfClass:[NSData class]])
 		return [UIImage imageWithData:(NSData*)object];
 	else
 		return nil;

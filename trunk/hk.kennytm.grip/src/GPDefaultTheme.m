@@ -45,22 +45,27 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 __attribute__((visibility("hidden")))
 @interface GPDTStaticView : UIView {
 	NSString* title;
-	UIImage* icon;
+	id icon;
 	UIColor* fgColor;
 @package
 	CGRect iconRect, titleRect;
 }
 @property(retain) NSString* title;
-@property(retain) UIImage* icon;
+@property(retain) id icon;
 @property(retain) UIColor* fgColor;
 -(void)drawRect:(CGRect)rect;
 -(void)dealloc;
 @end
 @implementation GPDTStaticView
 @synthesize title, icon, fgColor;
--(void)drawRect:(CGRect)rect {
+-(void)drawRect:(CGRect)rect {	
 	if (icon != nil) {
-		[icon drawInRect:iconRect];
+		if ([icon isKindOfClass:[UIImage class]])
+			[icon drawInRect:iconRect];
+		else {
+			// must be a NSString* here.
+			[icon drawInRect:iconRect withFont:[UIFont systemFontOfSize:27.5f] lineBreakMode:UILineBreakModeWordWrap alignment:UITextAlignmentCenter];
+		}
 	}
 	if (title != nil) {
 		[fgColor setFill];
@@ -141,7 +146,7 @@ __attribute__((visibility("hidden")))
 	return self;
 }
 
--(void)setTitle:(NSString*)title_ icon:(UIImage*)icon_ description:(NSString*)description fgColor:(UIColor*)fgColor_ activeImage:(UIImage*)activeImage bgImage:(UIImage*)bgImage {
+-(void)setTitle:(NSString*)title_ icon:(id)icon_ description:(NSString*)description fgColor:(UIColor*)fgColor_ activeImage:(UIImage*)activeImage bgImage:(UIImage*)bgImage {
 	// horizontally,
 	//   0 --  20 == close button
 	//  20 --  49 == icon
@@ -188,7 +193,7 @@ __attribute__((visibility("hidden")))
 	
 	descriptionView.textColor = fgColor_;
 #if GRIP_JAILBROKEN
-	[descriptionView setContentToHTMLString:description];
+	[descriptionView setContentToHTMLString:[description stringByReplacingOccurrencesOfString:@"\n" withString:@"<br/>"]];
 #else
 	descriptionView.text = description;
 #endif
@@ -248,7 +253,9 @@ __attribute__((visibility("hidden")))
 	
 	NSString* title = [message objectForKey:GRIP_TITLE];
 	NSString* description = [message objectForKey:GRIP_DETAIL];
-	UIImage* icon = GPGetSmallAppIconFromObject([message objectForKey:GRIP_ICON]);
+	id icon = [message objectForKey:GRIP_ICON];
+	if (!GPStringIsEmoji(icon))
+		icon = GPGetSmallAppIcon(icon);
 	int priorityIndex = [[message objectForKey:GRIP_PRIORITY] integerValue]+2;
 	
 	if (asNew) {
