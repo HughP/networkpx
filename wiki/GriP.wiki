@@ -90,6 +90,16 @@ More fine-grained settings for each application/extension. If a per-app setting 
 || *Messages* || List of messages that this app will display. The link provides even more fine-grained per-message settings. Like the higher level, per-message settings trumps per-app settings, _except_ “enabled”. <br /><br />The per-message settings you can override are: “Enabled”, “Stealth”, “Sticky” and “Priority”. ||
 || *Remove Settings* || Click on this button to remove the settings of this app from GriP. This is equivalent to restoring to the factory settings for that app. ||
 
+= System Usage =
+
+On initialization, GriP uses about 250 KiB of RAM.
+
+GriP uses negligible amount of CPU and no extra RAM when idle. GriP will only cause slow down when there are a dozen of messages on screen.
+
+Apple's UIKit framework themselves may take memory that we cannot control. So far we observed a steady gain of 3 KiB every GriP message appears. We will try to get lower level to reduce memory use.
+
+----
+
 = Programming for GriP =
 
 == !AppStore (SDK) developers ==
@@ -167,7 +177,11 @@ GriP implements all the _documented_ API of Growl on http://growl.info/documenta
 
 There are a few changes to GriP compared with the Growl API in the `notifyWithTitle:...` method:
  * The `description` cannot be attributed string (RTF strings) because the iPhoneOS does not support it. However, you can pass an HTML string and have it shown as rendered HTML. Because of this, if you have any `<`, `>` or `&` in the description that are not intended for HTML use, you must replace them as `&lt;`, `&gt;` and `&amp;`. You may use the `-[NSString stringByEscapingXMLEntities]` method provided by the category that comes along with the GriP client.
- * Besides being the `NSData` of the whole image, `iconData` accepts a `UIImage` and a bundle identifier (`NSString`) too. When an bundle identifier is given, the icon for that app will be used as `iconData`. 
+ * Besides being the `NSData` of the whole image, `iconData` accepts:
+   * `UIImage`
+   * bundle identifier (`NSString`). The icon for that app will be used. In addition, the following strings are also supported:
+     {{{ "(WiFi)", "(music)", "(VPN)", "(video)", "(wallpaper)", "(camera)", "(airplane)", "(display)", "(sound)" }}}
+   * a single character (`NSString`) in the range of U+E000 to U+E5FF. The character will be drawn directly as an icon. Emoji icons are in this character range.
  * `clickContext` accepts an `NSURL` alongside with property list objects. When an `NSURL` is given, the message will launch the URL when the user tap on it. This works even without a delegate, and across process termination. (The `growlNotificationWasClicked:` and `growlNotificationTimedOut:` methods will still be invoked if a delegate is present.)
 
 If you are writing a Mobile Substrate extension, we strongly recommend you *not* to use the `GrowlApplicationBridge` class methods, as this may cause the structures of the same object be shared between extensions undesirably. Instead, you should explicitly create an instance of `GPApplicationBridge` and work on it. If you have already used `GrowlApplicationBridge` and want to turn back, you can create a global variable named `GrowlApplicationBridge` initialized as `[[GPApplicationBridge alloc] init]` and call `[GrowlApplicationBridge release]` at termination.
@@ -191,11 +205,11 @@ NSArray* supportedMessages = [NSArray arrayWithObject:@"Test Message"];
                                 supportedMessages, GROWL_NOTIFICATIONS_DEFAULT,
                                 nil]];
 
-// Display a new message with title "Hello world!" and an icon of your application, which will launch Google when tapped.
+// Display a new message with title "Hello world!" and an icon of Safari, which will launch Google when tapped.
 [bridge notifyWithTitle:@"Hello world!"
             description:@"Fill in some detail here."
        notificationName:@"Test Message"
-               iconData:@"com.yourcompany.testApp"
+               iconData:@"com.apple.mobilesafari"
                priority:0
                isSticky:NO
            clickContext:[NSURL URLWithString:@"http://www.google.com/"]];
