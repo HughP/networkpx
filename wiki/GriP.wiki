@@ -428,6 +428,10 @@ Since we don't have other resources the `bundle` is not very useful. So just tre
     helper = [[GPRawThemeHelper alloc] init];
   return self;
 }
+-(void)dealloc {
+  [helper release];
+  [super dealloc];
+}
 }}}
 Now for `-display:`, the `message` is a dictionary with the same structure we've discussed for a UIView theme. Hence,
 {{{
