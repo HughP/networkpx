@@ -34,3 +34,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 UIImage* GPGetSmallAppIcon(NSString* identifier);
 
 UIImage* GPGetSmallAppIconFromObject(NSObject* object);
+
+static inline BOOL GPStringIsEmoji(NSString* str) {
+	if ([str isKindOfClass:[NSString class]] && [str length] == 1) {
+		UniChar c = [str characterAtIndex:0];
+		return (c >= 0xE000 && c < 0xE600);
+	} else
+		return NO;
+	
+}
