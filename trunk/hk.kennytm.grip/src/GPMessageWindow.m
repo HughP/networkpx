@@ -154,7 +154,7 @@ static UIColor* _backgroundColor = nil;
 }
 
 +(CGFloat)maxWidth { return _maxWidth; }
-+(void)setMaxWidth:(CGFloat)maxWidth { _maxWidth = maxWidth; }
++(void)setMaxWidth:(CGFloat)maxWidth { _maxWidth = floorf(maxWidth); }
 +(UIColor*)backgroundColor { return _backgroundColor; }
 +(void)setBackgroundColor:(UIColor*)backgroundColor {
 	if (backgroundColor != _backgroundColor) {

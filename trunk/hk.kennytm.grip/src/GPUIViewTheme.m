@@ -71,7 +71,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		newView = [identifiedViews objectForKey:identifier];
 	if (newView == nil) {
 		asNew = YES;
-		newView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 160, 60)];
+		newView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, [GPMessageWindow maxWidth], 60)];
 	}
 	
 	GPMessageWindow* window = (GPMessageWindow*)newView.window;

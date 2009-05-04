@@ -73,7 +73,7 @@ DefaultTheme_Options=-lGriPExtra -framework UIKit -framework Foundation -framewo
 
 DefaultThemePrefs_Sources=GPDefaultThemePrefs.o
 DefaultThemePrefs_Target=$(ThemesPath)/Default.griptheme/Preferences.bundle/Preferences
-DefaultThemePrefs_Options=-framework Preferences -framework Foundation -bundle
+DefaultThemePrefs_Options=-framework Preferences -framework Foundation -lGriP -bundle
 
 DoubleHeightTheme_Sources=GPDoubleHeightTheme.o $(SharedSrcPath)/UIKit3/UIUtilities.o
 DoubleHeightTheme_Target=$(ThemesPath)/DoubleHeight.griptheme/DoubleHeight

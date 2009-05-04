@@ -35,6 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #import <GriP/common.h>
 #import <GriP/GPGetSmallAppIcon.h>
 #import <GraphicsUtilities.h>
+#import <GriP/GPMessageWindow.h>
 
 #if GRIP_JAILBROKEN
 @interface UITextView ()
@@ -150,8 +151,11 @@ __attribute__((visibility("hidden")))
 	// horizontally,
 	//   0 --  20 == close button
 	//  20 --  49 == icon
-	//  54 -- 134 == title
-	// 134 -- 154 == disclosure button.
+	//  54 -- -26 == title
+	// -26 --  -6 == disclosure button.
+	// negative numbers indicate (maxWidth)-x.
+	
+	CGFloat maxWidth = [GPMessageWindow maxWidth];
 	
 	staticView.title = title_;
 	staticView.icon = icon_;
@@ -160,10 +164,10 @@ __attribute__((visibility("hidden")))
 	backgroundView.image = bgImage;
 	[clickContext setBackgroundImage:activeImage forState:UIControlStateHighlighted];
 	
-	CGFloat titleWidth = 80;
+	CGFloat titleWidth = maxWidth-80;
 	CGFloat titleLeft = 54;
 	if (icon_ == nil) {
-		titleWidth = 114;
+		titleWidth += 34;
 		titleLeft = 20;
 	}
 	if (description == nil)
@@ -183,12 +187,12 @@ __attribute__((visibility("hidden")))
 	CGRect descriptionFrame = descriptionView.frame;
 	
 	self.autoresizesSubviews = NO;
-	self.frame = backgroundView.frame = staticView.frame = CGRectMake(0, 0, 160, titleHeight+5+descriptionFrame.size.height);
-	clickContext.frame = CGRectMake(0, 0, 160, titleHeight+5);
+	self.frame = backgroundView.frame = staticView.frame = CGRectMake(0, 0, maxWidth, titleHeight+5+descriptionFrame.size.height);
+	clickContext.frame = CGRectMake(0, 0, maxWidth, titleHeight+5);
 	closeButton.frame = CGRectMake(0, 0, 20, titleHeight);
 	if (!(disclosureButton.hidden = (disclosed || description == nil)))
-		disclosureButton.frame = CGRectMake(134, 0, 26, titleHeight);
-	descriptionView.frame = CGRectMake(0, titleHeight, 154, descriptionFrame.size.height);
+		disclosureButton.frame = CGRectMake(maxWidth-26, 0, 26, titleHeight);
+	descriptionView.frame = CGRectMake(0, titleHeight, maxWidth-6, descriptionFrame.size.height);
 	self.autoresizesSubviews = YES;
 	
 	descriptionView.textColor = fgColor_;

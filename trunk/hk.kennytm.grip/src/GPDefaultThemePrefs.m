@@ -1,6 +1,6 @@
 /*
 
-common.h ... Common definitions for GriP
+FILE_NAME ... DESCRIPTION
  
 Copyright (c) 2009, KennyTM~
 All rights reserved.
@@ -30,51 +30,46 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  
 */
 
-#ifndef GRIP_COMMON_H
-#define GRIP_COMMON_H
+#import <Preferences/PSListController.h>
+#import <Preferences/PSSpecifier.h>
+#import <Foundation/Foundation.h>
+#import <GriP/common.h>
+#import <GriP/Duplex/Client.h>
 
-enum {
-	GriPMessage__Start = 1000,
-	GriPMessage_ClickedNotification = GriPMessage__Start,
-	GriPMessage_IgnoredNotification,
-	GriPMessage_ShowMessage,
-	GriPMessage_FlushPreferences,
-	GriPMessage_UpdateTicket,
-	GriPMessage_LaunchURL,
-	GriPMessage_CheckEnabled,
-	GriPMessage_DisposeIdentifier,
-	GriPMessage_UpdateSuspensionState,
-	GriPMessage__End = 1010
-};
+@interface GPDefaultThemePrefsListController : PSListController {
+	NSNumber* width;
+}
+-(id)initForContentSize:(CGSize)size;
+-(void)dealloc;
+-(void)suspend;
+-(NSArray*)specifiers;
+@property(retain) NSNumber* width;
+@end
+@implementation GPDefaultThemePrefsListController
+@synthesize width;
+-(id)initForContentSize:(CGSize)size {
+	if ((self = [super initForContentSize:size])) {
+		width = [[[NSDictionary dictionaryWithContentsOfFile:GRIP_PREFDICT] objectForKey:@"Width"] retain];
+	}
+	return self;
+}
+-(void)dealloc {
+	[width release];
+	[super dealloc];
+}
+-(void)suspend {
+	NSMutableDictionary* dict = [NSMutableDictionary dictionaryWithContentsOfFile:GRIP_PREFDICT];
+	[dict setObject:width forKey:@"Width"];
+	[dict writeToFile:GRIP_PREFDICT atomically:NO];
+	[GPDuplexClient sendMessage:GriPMessage_FlushPreferences data:nil];
+	[super suspend];
+}
+-(NSArray*)specifiers {
+	if (_specifiers == nil) {
+		NSLog(@"%@", [self bundle]);
+		_specifiers = [[self loadSpecifiersFromPlistName:@"Customize" target:self] retain];
+	}
+	return _specifiers;
+}
+@end
 
-#if __OBJC__
-#define GPSTR(s) @#s
-#else
-#define GPSTR(s) CFSTR(#s)
-#endif
-
-#define GRIP_TITLE    GPSTR(t)
-#define GRIP_PID      GPSTR(p)
-#define GRIP_DETAIL   GPSTR(d)
-#define GRIP_NAME     GPSTR(n)
-#define GRIP_ICON     GPSTR(i)
-#define GRIP_PRIORITY GPSTR(!)
-#define GRIP_STICKY   GPSTR(s)
-#define GRIP_CONTEXT  GPSTR(c)
-#define GRIP_ID       GPSTR(=)
-#define GRIP_APPNAME  GPSTR(a)
-#define GRIP_ISURL    GPSTR(u)
-
-#define GRIP_PREFDICT GPSTR(/Library/GriP/GPPreferences.plist)
-
-enum {
-	GPPrioritySettings_Red,
-	GPPrioritySettings_Green,
-	GPPrioritySettings_Blue,
-	GPPrioritySettings_Alpha,
-	GPPrioritySettings_Enabled,
-	GPPrioritySettings_Sticky,
-	GPPrioritySettings_Timer
-};
-
-#endif
