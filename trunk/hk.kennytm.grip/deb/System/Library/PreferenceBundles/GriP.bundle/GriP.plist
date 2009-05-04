@@ -29,6 +29,8 @@ items = (
 		set = "set:with:"; },
 	{ cell = PSLinkCell;
 		label = Customize;
+		id = Customize;
+		isController = YES;
 		enabled = 0; },
 
 	{ cell = PSGroupCell; label = "Per-Priority Settings"; },

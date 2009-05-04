@@ -1,5 +1,7 @@
 iPhoneDevPath=/Developer/Platforms/iPhoneOS.platform/Developer
 iPhoneSDKPath=$(iPhoneDevPath)/SDKs/iPhoneOS3.0.sdk
+iPhoneSimDevPath=/Developer/Platforms/iPhoneSimulator.platform/Developer
+iPhoneSimSDKPath=$(iPhoneSimDevPath)/SDKs/iPhoneSimulator3.0.sdk
 MobileSubstratePath=../deb/Library/MobileSubstrate/DynamicLibraries
 ThemesPath=../deb/Library/GriP/Themes
 SharedSrcPath=../../src
@@ -11,8 +13,7 @@ libVersion               =1.11.9
 libGriPCompatVersion     =1.11.4
 libGriPExtraCompatVersion=1.11.9
 
-RawCompiler=$(iPhoneDevPath)/usr/bin/gcc-4.2
-Compiler=@$(RawCompiler)
+Compiler=$(iPhoneDevPath)/usr/bin/gcc-4.2
 CodeSign=ldid -S
 
 Options=-arch armv6 \
@@ -40,8 +41,6 @@ SDKOptionsARM=-arch armv6 \
 	-mcpu=arm1176jzf-s \
 	-UGRIP_JAILBROKEN
 
-iPhoneSimDevPath=/Developer/Platforms/iPhoneSimulator.platform/Developer
-iPhoneSimSDKPath=$(iPhoneSimDevPath)/SDKs/iPhoneSimulator3.0.sdk
 SDKOptionsSim=-arch i686 \
 	-std=gnu99 \
 	-isysroot $(iPhoneSimSDKPath) \
@@ -53,6 +52,9 @@ SDKOptionsSim=-arch i686 \
 
 DontThumbSources=GPDefaultTheme.m | GPMessageWindow.m | GPPreferences.m | $(SharedSrcPath)/GraphicsUtitlities.m
 
+AllTargets=libGriP libGriPExtra DefaultTheme XGriP GriPTest Preferences MemWatcher YouveGotMail DoubleHeightTheme DefaultThemePrefs
+AllSDKTarget=libGriP libGriPServer libGPDefaultTheme
+
 libGriP_Sources=Duplex/Client.o GPApplicationBridge.o GPExtensions.o NSString-stringByEscapingXMLEntities.o
 libGriP_Target=../deb/usr/lib/libGriP.dylib
 libGriP_Options=-dynamiclib -install_name /usr/lib/libGriP.dylib -compatibility_version $(libGriPCompatVersion) -current_version $(libVersion) -framework CoreFoundation -framework Foundation -framework UIKit
@@ -61,13 +63,21 @@ libGriPExtra_Sources=GPMessageWindow.o GPPreferences.o GPGetSmallAppIcon.o GPUIV
 libGriPExtra_Target=../deb/usr/lib/libGriPExtra.dylib
 libGriPExtra_Options=-lGriP -dynamiclib -install_name /usr/lib/libGriPExtra.dylib -compatibility_version $(libGriPExtraCompatVersion) -current_version $(libVersion) -framework Foundation -framework CoreFoundation -framework UIKit -framework CoreGraphics
 
-XXHooker_GriP_Sources=GriPServer.o Duplex/Server.o ../../src/PrefsLinkHooker.o
-XXHooker_GriP_Target=$(MobileSubstratePath)/%GriP.dylib
-XXHooker_GriP_Options=-lobjc -lGriPExtra -lsubstrate -dynamiclib -framework Foundation -framework CoreFoundation -framework Preferences -framework UIKit -init _GPStartGriPServer
+XGriP_Sources=GriPServer.o Duplex/Server.o ../../src/PrefsLinkHooker.o
+XGriP_Target=$(MobileSubstratePath)/%GriP.dylib
+XGriP_Options=-lobjc -lGriPExtra -lsubstrate -dynamiclib -framework Foundation -framework CoreFoundation -framework Preferences -framework UIKit -init _GPStartGriPServer
 
 DefaultTheme_Sources=GPDefaultTheme.o $(SharedSrcPath)/GraphicsUtilities.o
 DefaultTheme_Target=$(ThemesPath)/Default.griptheme/Default
 DefaultTheme_Options=-lGriPExtra -framework UIKit -framework Foundation -framework CoreGraphics -bundle
+
+DefaultThemePrefs_Sources=GPDefaultThemePrefs.o
+DefaultThemePrefs_Target=$(ThemesPath)/Default.griptheme/Preferences.bundle/Preferences
+DefaultThemePrefs_Options=-framework Preferences -framework Foundation -bundle
+
+DoubleHeightTheme_Sources=GPDoubleHeightTheme.o $(SharedSrcPath)/UIKit3/UIUtilities.o
+DoubleHeightTheme_Target=$(ThemesPath)/DoubleHeight.griptheme/DoubleHeight
+DoubleHeightTheme_Options=-lGriPExtra -framework UIKit -framework Foundation -bundle
 
 GriPTest_Sources=GriPTest.o
 GriPTest_Target=../deb/usr/bin/GriP
@@ -100,92 +110,58 @@ SDK_libGPDefaultTheme_Options=-framework Foundation -framework UIKit -framework 
 SDK_Headers=$(GriPIncPath)/GPApplicationBridge.h $(GriPIncPath)/GrowlApplicationBridge.h $(GriPIncPath)/common.h $(GriPIncPath)/GrowlDefines.h $(GriPIncPath)/NSString-stringByEscapingXMLEntities.h $(GriPIncPath)/GriP.h $(GriPIncPath)/GriPServer.h $(GriPIncPath)/GPTheme.h $(GriPIncPath)/GPUIViewTheme.h $(GriPIncPath)/GPRawThemeHelper.h $(GriPIncPath)/GPGetSmallAppIcon.h
 SDK_Sources=NSString-stringByEscapingXMLEntities.m GrowlApplicationBridge.m ../deb/Library/GriP/GPPreferences.plist
 
-all: $(libGriPC_Target) $(libGriP_Target) $(libGriPExtra_Target) $(DefaultTheme_Target) $(XXHooker_GriP_Target) $(GriPTest_Target) $(Preferences_Target) $(MemWatcher_Target) $(YouveGotMail_Target)
+#-----------------------------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------------------------
+#------------------------------                                                     ------------------------------
+#------------------------------   Don't touch anything after this line, thank you   ------------------------------
+#------------------------------                                                     ------------------------------
+#-----------------------------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------------------------
 
-%.sdk.o:	%.m
-	@case $^ in \
+define CompileRule
+	@case $(2) in \
 		$(DontThumbSources)) \
-			$(RawCompiler) -c $(SDKOptionsARM) -o $@.arm $^; \
+			$(Compiler) -c $(Options) -o $(1) $(2); \
 			;; \
 		*) \
-			$(RawCompiler) -c $(SDKOptionsARM) -mthumb -o $@.arm $^; \
+			$(Compiler) -c $(Options) -mthumb -o $(1) $(2); \
 			;; \
 	esac;
-	$(Compiler) -c $(SDKOptionsSim) -o $@.i686 $^;
-	@lipo -create $@.i686 $@.arm -output $@;
-	@rm $@.i686 $@.arm;
+endef
 
-%.sdk.o:	%.c
-	@case $^ in \
-		$(DontThumbSources)) \
-			$(RawCompiler) -c $(SDKOptionsARM) -o $@.arm $^; \
-			;; \
-		*) \
-			$(RawCompiler) -c $(SDKOptionsARM) -mthumb -o $@.arm $^; \
-			;; \
-	esac;
-	$(Compiler) -c $(SDKOptionsSim) -o $@.i686 $^;
-	@lipo -create $@.i686 $@.arm -output $@
-	@rm $@.i686 $@.arm
+define SDKCompileRule
+	@$(call CompileRule,$(1).arm,$(2))
+	@$(Compiler) -c $(SDKOptionsSim) -o $(1).i686 $(2); \
+	@lipo -create $(1).i686 $(1).arm -output $(1); \
+	@rm $(1).i686 $(1).arm;
+endef
 
-%.o:	%.m
-	@case $^ in \
-		$(DontThumbSources)) \
-			$(RawCompiler) -c $(Options) -o $@ $^; \
-			;; \
-		*) \
-			$(RawCompiler) -c $(Options) -mthumb -o $@ $^; \
-			;; \
-	esac;
+define MakeTemplate
+$$($(1)_Target):	$$($(1)_Sources)
+	@$(Compiler) $(Options) $$($(1)_Options) -o $$@ $$^;
+	$(CodeSign) $$@;
 
-%.o:	%.c
-	@case $^ in \
-		$(DontThumbSources)) \
-			$(RawCompiler) -c $(Options) -o $@ $^; \
-			;; \
-		*) \
-			$(RawCompiler) -c $(Options) -mthumb -o $@ $^; \
-			;; \
-	esac;
+endef
+
+all:	$(foreach target,$(AllTargets),$($(target)_Target))
+
+$(foreach target,$(AllTargets),$(eval $(call MakeTemplate,$(target))))
+
+
+%.sdk.o::	%.m
+	$(call SDKCompileRule,$@,$^)
+
+%.sdk.o::	%.c
+	$(call SDKCompileRule,$@,$^)
+	
+%.o::	%.m
+	$(call CompileRule,$@,$^)
+
+%.o::	%.c
+	$(call CompileRule,$@,$^)
 
 $(ThemesPath)/%.griptheme/GriPView.nib:	%.xib
 	ibtool --compile $@ $^
-
-$(libGriPC_Target):	$(libGriPC_Sources)
-	$(Compiler) $(Options) $(libGriPC_Options) -o $@ $^
-	$(CodeSign) $@
-
-$(libGriP_Target):	$(libGriP_Sources)
-	$(Compiler) $(Options) $(libGriP_Options) -o $@ $^
-	$(CodeSign) $@
-
-$(libGriPExtra_Target):	$(libGriPExtra_Sources)
-	$(Compiler) $(Options) $(libGriPExtra_Options) -o $@ $^
-	$(CodeSign) $@
-
-$(XXHooker_GriP_Target):	$(XXHooker_GriP_Sources)
-	$(Compiler) $(Options) $(XXHooker_GriP_Options) -o $@ $^
-	$(CodeSign) $@
-
-$(DefaultTheme_Target):	$(DefaultTheme_Sources) 
-	$(Compiler) $(Options) $(DefaultTheme_Options) -o $@ $^
-	$(CodeSign) $@
-
-$(GriPTest_Target):	$(GriPTest_Sources)
-	$(Compiler) $(Options) $(GriPTest_Options) -o $@ $^
-	$(CodeSign) $@
-
-$(Preferences_Target):	$(Preferences_Sources)
-	$(Compiler) $(Options) $(Preferences_Options) -o $@ $^
-	$(CodeSign) $@
-
-$(MemWatcher_Target):	$(MemWatcher_Sources)
-	$(Compiler) $(Options) $(MemWatcher_Options) -o $@ $^
-	$(CodeSign) $@
-
-$(YouveGotMail_Target):	$(YouveGotMail_Sources)
-	$(Compiler) $(Options) $(YouveGotMail_Options) -o $@ $^
-	$(CodeSign) $@
 
 sdk: $(SDK_libGriP_Target) $(SDK_libGriPServer_Target) $(SDK_libGPDefaultTheme_Target) SDKEtc
 

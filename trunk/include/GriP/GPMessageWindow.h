@@ -41,7 +41,9 @@ typedef struct GPGap {
 
 
 @interface GPMessageWindow : UIWindow {
+@package
 	GPGap currentGap;
+@private
 	NSTimer* hideTimer;
 	UIView* view;
 	BOOL sticky;
@@ -66,16 +68,24 @@ typedef struct GPGap {
 -(void)stopTimer;
 -(void)restartTimer;
 -(void)dealloc;
++(void)arrangeWindows;
+
++(CGFloat)maxWidth;
++(void)setMaxWidth:(CGFloat)maxWidth;
++(UIColor*)backgroundColor;
++(void)setBackgroundColor:(UIColor*)backgroundColor;
 @end
 
 @interface GPMessageWindow ()
 +(void)_initialize;
 +(void)_cleanup;
++(void)_closeAllWindows;
 
 -(id)initWithView:(UIView*)view_ message:(NSDictionary*)message;
 +(void)_removeGap:(GPGap)gap;
-+(GPGap)_createGapWithHeight:(CGFloat)height;
++(GPGap)_createGapWithHeight:(CGFloat)height pageHeight:(CGFloat)pageHeight;
 -(void)_layoutWithAnimation:(BOOL)animate;
 -(void)_releaseMyself;
+-(void)_forceRelease;
 -(void)_startTimer;
 @end

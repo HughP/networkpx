@@ -3,4 +3,5 @@
 	CFBundleDisplayName = "Default";
 	NSPrincipalClass = GPDefaultTheme;
 	GPThemeType = OBJC;
+	PSBundle = Preferences;
 }

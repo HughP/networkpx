@@ -33,13 +33,14 @@
 #import <UIKit3/UIUtilities.h>
 #import <Foundation/Foundation.h>
 #import <UIKit/UIView.h>
+#import <UIKit/UIGeometry.h>
+#import <UIKit2/UIPickerTable.h>
+#ifdef UIUTILITIES_SHOW_WEBTEXT
 #import <WebCore/PublicDOMInterfaces.h>
 #import <WebCore/wak/WebCoreThread.h>
 #import <UIKit2/UIWebDocumentView.h>
-#import <UIKit2/UIPickerTable.h>
 #import <UIKit2/DOMNode-UIWebViewAdditions.h>
 #import <WebKit/mac/Misc/WebLocalizableStrings.h>
-#import <UIKit/UIGeometry.h>
 
 static WebLocalizableStringsBundle UIKitLocalizableStringsBundle = {"com.apple.UIKit", nil};
 
@@ -59,7 +60,7 @@ static WebLocalizableStringsBundle UIKitLocalizableStringsBundle = {"com.apple.U
 			text, linkLabel, URL, alt, imageURL, title, NSStringFromCGRect(rect), userInfo];
 }
 @end
-
+#endif
 
 extern
 NSString* UITextOf(UIView* v) {
@@ -99,6 +100,7 @@ extern void UILogSuperviews (UIView* v) {
 	}
 }
 
+#ifdef UIUTILITIES_SHOW_WEBTEXT
 UIWebTexts* UITextsAtPoint(UIView* view, CGPoint pt) {
 	UIWebTexts* retval = [[[UIWebTexts alloc] init] autorelease];
 	if ([view isKindOfClass:[UIWebDocumentView class]]) {
@@ -130,3 +132,4 @@ UIWebTexts* UITextsAtPoint(UIView* view, CGPoint pt) {
 NSString* UILocalizedString(const char* str) {
 	return WebLocalizedString(&UIKitLocalizableStringsBundle, str);
 }
+#endif
