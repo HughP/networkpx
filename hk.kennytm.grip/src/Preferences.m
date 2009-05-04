@@ -40,8 +40,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #import <GriP/GPApplicationBridge.h>
 #include <notify.h>
 
-#define PREFDICT @"/Library/GriP/GPPreferences.plist"
-
 static GPApplicationBridge* bridge = nil;
 static const float perPriorityDefaultSettings[5][7] = {
 	{0.400f, 0.400f, 0.400f, 0.75f, 0, 0,  2},
@@ -82,7 +80,7 @@ static const float perPriorityDefaultSettings[5][7] = {
 		PSSpecifier* spec = self.specifier;
 		j = [[spec propertyForKey:@"priorityLevel"] integerValue];
 		self.title = spec.name;
-		components = [[[[NSDictionary dictionaryWithContentsOfFile:PREFDICT] objectForKey:@"PerPrioritySettings"] objectAtIndex:j] mutableCopy];
+		components = [[[[NSDictionary dictionaryWithContentsOfFile:GRIP_PREFDICT] objectForKey:@"PerPrioritySettings"] objectAtIndex:j] mutableCopy];
 	}
 	return _specifiers;
 }
@@ -126,9 +124,9 @@ static const float perPriorityDefaultSettings[5][7] = {
 			   clickContext:nil];
 }
 -(void)flushPreferences {
-	NSMutableDictionary* dict = [NSMutableDictionary dictionaryWithContentsOfFile:PREFDICT];
+	NSMutableDictionary* dict = [NSMutableDictionary dictionaryWithContentsOfFile:GRIP_PREFDICT];
 	[[dict objectForKey:@"PerPrioritySettings"] replaceObjectAtIndex:j withObject:components];
-	[dict writeToFile:PREFDICT atomically:NO];
+	[dict writeToFile:GRIP_PREFDICT atomically:NO];
 	[GPDuplexClient sendMessage:GriPMessage_FlushPreferences data:nil];
 }
 -(void)suspend {
@@ -346,18 +344,18 @@ __attribute__((visibility("hidden")))
 		}
 		[self addSpecifiersFromArray:secondPart];
 		[secondPart release];
-		[self updateCustomizeLinkTo:[[NSDictionary dictionaryWithContentsOfFile:PREFDICT] objectForKey:@"ActiveTheme"]];
+		[self updateCustomizeLinkTo:[[NSDictionary dictionaryWithContentsOfFile:GRIP_PREFDICT] objectForKey:@"ActiveTheme"]];
 	}
 	return _specifiers;
 }
 -(NSObject*)get:(PSSpecifier*)spec {
-	return [[NSDictionary dictionaryWithContentsOfFile:PREFDICT] objectForKey:spec.identifier];
+	return [[NSDictionary dictionaryWithContentsOfFile:GRIP_PREFDICT] objectForKey:spec.identifier];
 }
 -(void)set:(NSObject*)obj with:(PSSpecifier*)spec {
 	NSString* specID = spec.identifier;
-	NSMutableDictionary* dict = [NSMutableDictionary dictionaryWithContentsOfFile:PREFDICT];
+	NSMutableDictionary* dict = [NSMutableDictionary dictionaryWithContentsOfFile:GRIP_PREFDICT];
 	[dict setObject:obj forKey:specID];
-	[dict writeToFile:PREFDICT atomically:NO];
+	[dict writeToFile:GRIP_PREFDICT atomically:NO];
 	// pass an empty data to force hard flush (close all windows)
 	if ([@"ActiveTheme" isEqualToString:specID]) {
 		[self updateCustomizeLinkTo:(NSString*)obj];
@@ -373,7 +371,7 @@ __attribute__((visibility("hidden")))
 	NSBundle* themeBundle = [NSBundle bundleWithPath:theme];
 	NSString* prefName = [themeBundle objectForInfoDictionaryKey:@"PSBundle"];
 	[spec setProperty:[NSNumber numberWithBool:(prefName != nil)] forKey:@"enabled"];
-	[spec setProperty:[NSString stringWithFormat:@"../../../Library/GriP/Themes/%@/%@", theme, prefName] forKey:@"bundle"];
+	[spec setProperty:[NSString stringWithFormat:@"/Library/GriP/Themes/%@/%@.bundle", theme, prefName] forKey:@"lazy-bundle"];
 	[self reloadSpecifier:spec];
 }
 -(NSArray*)allThemeValues {
@@ -438,6 +436,10 @@ __attribute__((visibility("hidden")))
 					   isSticky:NO
 				   clickContext:@""];
 	}
+}
+
++(void)attentionClassDumpUser:(id)fp8 reverseEngineeringThisClassAndCallingPrivateMethodsIsNotFun:(id)fp12 andAllTheWholeSourceCodeAreAvailableOnTheWebForFreeToo:(id)fp16 soWhatTheHeckAreYouDoingHereHuh:(id)fp20 {
+	NSLog(@"And this method at least *does* something.");
 }
 @end
 

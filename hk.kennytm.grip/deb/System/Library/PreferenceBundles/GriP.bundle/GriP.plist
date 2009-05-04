@@ -30,7 +30,7 @@ items = (
 	{ cell = PSLinkCell;
 		label = Customize;
 		id = Customize;
-		isController = YES;
+		action = "lazyLoadBundle:";
 		enabled = 0; },
 
 	{ cell = PSGroupCell; label = "Per-Priority Settings"; },

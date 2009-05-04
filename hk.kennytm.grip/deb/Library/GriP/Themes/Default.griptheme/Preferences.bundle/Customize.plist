@@ -1,0 +1,14 @@
+{
+title = "Default";
+items = (
+	{ cell = PSGroupCell;
+		label = Width; },
+	{ cell = PSSliderCell;
+		id = width;
+		get = width;
+		set = "setWidth:";
+		min = 80;
+		max = 320;
+		showValue = YES; }
+);
+}
