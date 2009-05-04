@@ -32,6 +32,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #import <UIKit/UIKit.h>
 #import <Foundation/Foundation.h>
+#import <GriP/GPGetSmallAppIcon.h>
 
 #if GRIP_JAILBROKEN
 
@@ -146,7 +147,7 @@ UIImage* GPGetSmallAppIconFromObject(NSObject* object) {
 #define str (NSString*)object
 		if (GPStringIsEmoji(str)) {
 			UIGraphicsBeginImageContext(CGSizeMake(29, 29));
-			[str drawInRect:iconRect withFont:[UIFont systemFontOfSize:27.5f] lineBreakMode:UILineBreakModeWordWrap alignment:UITextAlignmentCenter];
+			[str drawInRect:CGRectMake(0,0,29,29) withFont:[UIFont systemFontOfSize:27.5f] lineBreakMode:UILineBreakModeWordWrap alignment:UITextAlignmentCenter];
 			UIImage* retimg = UIGraphicsGetImageFromCurrentImageContext();
 			UIGraphicsEndImageContext();
 			return retimg;

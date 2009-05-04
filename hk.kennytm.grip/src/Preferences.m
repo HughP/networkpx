@@ -313,6 +313,7 @@ __attribute__((visibility("hidden")))
 -(NSObject*)get:(PSSpecifier*)spec;
 -(void)set:(NSObject*)obj with:(PSSpecifier*)spec;
 -(void)preview;
+-(void)updateCustomizeLinkTo:(NSString*)theme;
 
 -(NSDictionary*)registrationDictionaryForGrowl;
 -(NSString*)applicationNameForGrowl;
@@ -345,6 +346,7 @@ __attribute__((visibility("hidden")))
 		}
 		[self addSpecifiersFromArray:secondPart];
 		[secondPart release];
+		[self updateCustomizeLinkTo:[[NSDictionary dictionaryWithContentsOfFile:PREFDICT] objectForKey:@"ActiveTheme"]];
 	}
 	return _specifiers;
 }
@@ -352,10 +354,27 @@ __attribute__((visibility("hidden")))
 	return [[NSDictionary dictionaryWithContentsOfFile:PREFDICT] objectForKey:spec.identifier];
 }
 -(void)set:(NSObject*)obj with:(PSSpecifier*)spec {
+	NSString* specID = spec.identifier;
 	NSMutableDictionary* dict = [NSMutableDictionary dictionaryWithContentsOfFile:PREFDICT];
-	[dict setObject:obj forKey:spec.identifier];
+	[dict setObject:obj forKey:specID];
 	[dict writeToFile:PREFDICT atomically:NO];
-	[GPDuplexClient sendMessage:GriPMessage_FlushPreferences data:nil];
+	// pass an empty data to force hard flush (close all windows)
+	if ([@"ActiveTheme" isEqualToString:specID]) {
+		[self updateCustomizeLinkTo:(NSString*)obj];
+		[GPDuplexClient sendMessage:GriPMessage_FlushPreferences data:[NSData data]];
+	} else
+		[GPDuplexClient sendMessage:GriPMessage_FlushPreferences data:nil];
+}
+-(void)updateCustomizeLinkTo:(NSString*)theme {
+	PSSpecifier* spec = [self specifierForID:@"Customize"];
+	
+	NSFileManager* fman = [NSFileManager defaultManager];
+	[fman changeCurrentDirectoryPath:@"/Library/GriP/Themes/"];
+	NSBundle* themeBundle = [NSBundle bundleWithPath:theme];
+	NSString* prefName = [themeBundle objectForInfoDictionaryKey:@"PSBundle"];
+	[spec setProperty:[NSNumber numberWithBool:(prefName != nil)] forKey:@"enabled"];
+	[spec setProperty:[NSString stringWithFormat:@"../../../Library/GriP/Themes/%@/%@", theme, prefName] forKey:@"bundle"];
+	[self reloadSpecifier:spec];
 }
 -(NSArray*)allThemeValues {
 	NSFileManager* fman = [NSFileManager defaultManager];

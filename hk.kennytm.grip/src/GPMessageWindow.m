@@ -36,6 +36,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #import <GriP/Duplex/Client.h>
 #import <GriP/common.h>
 #import <GriP/GPRawThemeHelper.h>
+#import <math.h>
 
 #if GRIP_JAILBROKEN
 __attribute__((visibility("hidden")))
@@ -51,7 +52,7 @@ __attribute__((visibility("hidden")))
 #endif
 
 static NSMutableArray* occupiedGaps = nil;
-static NSMutableSet* unreleasedMessageWindows = nil;
+static NSMutableArray* unreleasedMessageWindows = nil;
 #if GRIP_JAILBROKEN
 static Class $SBStatusBarController = Nil;
 #endif
@@ -64,12 +65,24 @@ static const int _oriented_locations_matrix[4][4] = {
 
 static const int _orientation_angles[4] = {0, 180, 90, -90};
 
+static NSComparisonResult compareHeight(GPMessageWindow* win1, GPMessageWindow* win2, void* context) {
+	if (win1->currentGap.y < win2->currentGap.y)
+		return NSOrderedAscending;
+	else if (win1->currentGap.y > win2->currentGap.y)
+		return NSOrderedDescending;
+	else 
+		return NSOrderedSame;
+}
+
+static CGFloat _maxWidth = 160;
+static UIColor* _backgroundColor = nil;
+
 @implementation GPMessageWindow
 @synthesize view;
 
 +(void)_initialize {
 	occupiedGaps = [[NSMutableArray alloc] init];
-	unreleasedMessageWindows = [[NSMutableSet alloc] init];
+	unreleasedMessageWindows = [[NSMutableArray alloc] init];
 #if GRIP_JAILBROKEN
 	$SBStatusBarController = objc_getClass("SBStatusBarController");
 #endif
@@ -77,12 +90,18 @@ static const int _orientation_angles[4] = {0, 180, 90, -90};
 +(void)_cleanup {
 	[occupiedGaps release];
 	[unreleasedMessageWindows release];
+	[_backgroundColor release];
+}
++(void)_closeAllWindows {
+	NSArray* unreleasedMessageWindowsCopy = [unreleasedMessageWindows copy];
+	[unreleasedMessageWindowsCopy makeObjectsPerformSelector:@selector(_forceRelease)];
+	[unreleasedMessageWindowsCopy release];
 }
 
 +(void)_removeGap:(GPGap)gap {
 	[occupiedGaps removeObject:[NSValue valueWithBytes:&gap objCType:@encode(GPGap)]];
 }
-+(GPGap)_createGapWithHeight:(CGFloat)height {
++(GPGap)_createGapWithHeight:(CGFloat)height pageHeight:(CGFloat)pageHeight {
 	GPGap potentialGap;
 	potentialGap.y = 0;
 	potentialGap.h = height;
@@ -92,13 +111,26 @@ static const int _orientation_angles[4] = {0, 180, 90, -90};
 	for (NSValue* v in occupiedGaps) {
 		GPGap occupiedGap;
 		[v getValue:&occupiedGap];
-		if (occupiedGap.y >= potentialGap.y + potentialGap.h)
-			break;
-		else {
+		if (occupiedGap.y >= potentialGap.y + potentialGap.h) {
+			// make sure the window doesn't cross page boundary.
+			CGFloat topPage, bottomPage;
+			modff(potentialGap.y/pageHeight, &topPage);
+			CGFloat bottomPagePercent = modff((potentialGap.y+potentialGap.h)/pageHeight, &bottomPage);
+			if (topPage == bottomPage || (bottomPagePercent == 0 && bottomPage-topPage == 1))
+				break;
+			else
+				potentialGap.y = bottomPage*pageHeight;
+		} else {
 			potentialGap.y = occupiedGap.y + occupiedGap.h;
 			++ gapIndex;
 		}
 	}
+	
+	CGFloat topPage, bottomPage;
+	modff(potentialGap.y/pageHeight, &topPage);
+	CGFloat bottomPagePercent = modff((potentialGap.y+potentialGap.h)/pageHeight, &bottomPage);
+	if (topPage != bottomPage && (bottomPagePercent != 0 || bottomPage-topPage != 1))
+		potentialGap.y = bottomPage*pageHeight;
 	
 	[occupiedGaps insertObject:[NSValue valueWithBytes:&potentialGap objCType:@encode(GPGap)] atIndex:gapIndex];
 	return potentialGap;
@@ -110,17 +142,28 @@ static const int _orientation_angles[4] = {0, 180, 90, -90};
 		[view removeFromSuperview];
 		[GPMessageWindow _removeGap:currentGap];
 		[unreleasedMessageWindows removeObject:self];
+	}	
+}
+-(void)_forceRelease {
+	[self stopTimer];
+	hiding = YES;
+	[self retain];
+	[identitifer release];
+	identitifer = nil;
+	[self _releaseMyself];
+}
+
++(CGFloat)maxWidth { return _maxWidth; }
++(void)setMaxWidth:(CGFloat)maxWidth { _maxWidth = maxWidth; }
++(UIColor*)backgroundColor { return _backgroundColor; }
++(void)setBackgroundColor:(UIColor*)backgroundColor {
+	if (backgroundColor != _backgroundColor) {
+		[_backgroundColor release];
+		_backgroundColor = [backgroundColor retain];
 	}
 }
 
 -(void)_layoutWithAnimation:(BOOL)animate {
-	CGSize viewSize = view.frame.size;
-	[GPMessageWindow _removeGap:currentGap];
-	currentGap = [GPMessageWindow _createGapWithHeight:viewSize.height];
-	
-	// create frame of window.
-	CGRect estimatedFrame = CGRectMake(0, currentGap.y, viewSize.width, viewSize.height);
-	
 	// obtain the current screen size & subtract the status bar from the screen.
 	// (can't use [UIScreen mainScreen].applicationFrame because that returns
 	//  SpringBoard's application frame and that's clearly not what we want.)
@@ -152,16 +195,29 @@ static const int _orientation_angles[4] = {0, 180, 90, -90};
 #endif
 		uiOrientation = _orientation_angles[app.statusBarOrientation-1];
 	
+	BOOL isLandscape = uiOrientation == 90 || uiOrientation == -90;
+	CGFloat pageHeight = isLandscape ? currentScreenFrame.size.width : currentScreenFrame.size.height;
+	
+	CGSize viewSize = view.frame.size;
+	[GPMessageWindow _removeGap:currentGap];
+	currentGap = [GPMessageWindow _createGapWithHeight:viewSize.height pageHeight:pageHeight];
+	
+	// move box to next column(s) if it overflows height boundary
+	CGFloat actualGapPage;
+	CGFloat actualGapY = modff(currentGap.y/pageHeight, &actualGapPage)*pageHeight;
+	actualGapPage *= _maxWidth;
+	
+	// create frame of window.
+	CGRect estimatedFrame = CGRectMake(actualGapPage, actualGapY, _maxWidth, viewSize.height);
+	
+	// switch estimation box orientation if necessary.
+	if (isLandscape)
+		estimatedFrame = CGRectMake(estimatedFrame.origin.y, estimatedFrame.origin.x, estimatedFrame.size.height, estimatedFrame.size.width);
+	
 	NSDictionary* prefs = GPCopyPreferences();
 	NSInteger location = [[prefs objectForKey:@"Location"] integerValue];
 	[prefs release];
-	
-	// switch estimation box orientation if necessary.
-	if (uiOrientation == 90 || uiOrientation == -90) {
-		estimatedFrame = CGRectMake(estimatedFrame.origin.y, estimatedFrame.origin.x, estimatedFrame.size.height, estimatedFrame.size.width);
-		// currentScreenFrame = CGRectMake(currentScreenFrame.origin.y, currentScreenFrame.origin.x, currentScreenFrame.size.height, currentScreenFrame.size.width);
-	}
-	
+		
 	NSInteger adjustedLocation = _oriented_locations_matrix[uiOrientation/90+1][location];
 		
 	// flip horizontal alignment if on the right.
@@ -179,16 +235,21 @@ static const int _orientation_angles[4] = {0, 180, 90, -90};
 	// frankly speaking... I don't know what I'm doing here.
 	self.frame = estimatedFrame;
 	UIView* transformerView = [self.subviews objectAtIndex:0];
-	transformerView.bounds = CGRectMake(0, 0, viewSize.width, viewSize.height);
+	transformerView.bounds = CGRectMake(0, 0, _maxWidth, viewSize.height);
 	transformerView.center = CGPointMake(estimatedFrame.size.width/2, estimatedFrame.size.height/2);
 	transformerView.transform = CGAffineTransformMakeRotation(uiOrientation*M_PI/180);
-	view.frame = CGRectMake(0, 0, viewSize.width, viewSize.height);
+	view.frame = CGRectMake(0, 0, _maxWidth, viewSize.height);
 	
 	if (animate)
 		[UIView commitAnimations];
-	
-	
-	
+}
+
++(void)arrangeWindows {
+	// we need to arrange the windows with increasing gap position.
+	// so sort it first. (there is a sorted array (RBTree/AVRTree) structure in ObjC right? right?)
+	[unreleasedMessageWindows sortUsingFunction:&compareHeight context:NULL];
+	[unreleasedMessageWindows makeObjectsPerformSelector:@selector(prepareForResizing)];
+	[unreleasedMessageWindows makeObjectsPerformSelector:@selector(resize)];
 }
 
 +(GPMessageWindow*)registerWindowWithView:(UIView*)view_ message:(NSDictionary*)message {
@@ -213,6 +274,8 @@ static const int _orientation_angles[4] = {0, 180, 90, -90};
 		self.windowLevel = UIWindowLevelStatusBar*2;
 		self.hidden = NO;
 		identitifer = [[message objectForKey:GRIP_ID] retain];
+		if (_backgroundColor)
+			self.backgroundColor = _backgroundColor;
 	}
 	return self;
 }

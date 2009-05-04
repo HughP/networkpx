@@ -54,19 +54,23 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 static NSObject<GPTheme>* activeTheme = nil;
 static const int MemoryAlertObserver = 12345678;
 
-static void GPMemoryAlert (CFNotificationCenterRef center, void* observer, CFStringRef name, const void* object, CFDictionaryRef userInfo) {
-	GPFlushPreferences();
-	GPSingletonDestructor(activeTheme, [__NEWOBJ__ release]);
-}
-
 static CFDataRef GriPCallback (CFMessagePortRef serverPort, SInt32 type, CFDataRef data, void* info) {
 	CFDataRef retData = NULL;
 	NSArray* array = nil;
 	
 	switch (type) {
 		case GriPMessage_FlushPreferences:
-			// basically the same action.
-			GPMemoryAlert(NULL, NULL, NULL, NULL, NULL);
+			GPFlushPreferences();
+			GPSingletonDestructor(activeTheme, {
+				if (data != NULL) {
+					// hard flush required.
+					[GPMessageWindow _closeAllWindows];
+					Class cls = [__NEWOBJ__ class];
+					[__NEWOBJ__ release];
+					[[NSBundle bundleForClass:cls] unload];
+				} else
+					[__NEWOBJ__ release];
+			});
 			break;
 			
 		case GriPMessage_ShowMessage: {
@@ -175,6 +179,11 @@ ignored_message:
 	return retData;
 }
 
+
+static void GPMemoryAlert (CFNotificationCenterRef center, void* observer, CFStringRef name, const void* object, CFDictionaryRef userInfo) {
+	// basically the same action.
+	GriPCallback(NULL, GriPMessage_FlushPreferences, NULL, NULL);
+}
  
 static void terminate () {
 	CFNotificationCenterRemoveObserver(CFNotificationCenterGetLocalCenter(), &MemoryAlertObserver,
