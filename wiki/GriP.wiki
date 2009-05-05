@@ -64,6 +64,7 @@ You can change GriP settings in Settings → GriP (the option is at the bottom).
 || *Preview* || Clicking this button will display one GriP message based on your current settings. Another GriP message will also show after you have ignored or tapped on this message. ||
 || *Location* || On which corner should the GriP message appear. ||
 || *Theme* || Which theme to use. ||
+|| *Game mode* || You can mark some apps as _Games_. When these apps are active, GriP will be suspended except for important messages. When you close the app the suppressed normal messages will all be delivered at once. This mode is introduced to reduce distractions when playing games or watching movies. ||
 
 == Per-Priority Settings ==
 
@@ -75,6 +76,7 @@ Most messages have a "normal" priority, so you should target that item in most c
 || *Sticky* || While most GriP message will automatically dismiss, some will choose to “stick” on screen until you explicitly close it, or tap on it. These are known as _sticky_ messages. You can override the application decision in this setting. ||
 || *Duration* || How long should a GriP message live before it auto-close. The range is between 0 to 10 seconds. ||
 || *Background color* || The background color of a message. From top to bottom each slider represent the red, green, blue channel, and the opacity (alpha channel). ||
+|| *Suspension behavior* || What to do for the messages when GriP is suspended. There are two cases where GriP can be suspended: either in Game mode or the Screen is turned off. There are 4 options for each setting:<ol><li>*Drop*: Just ignore all messages when suspended.</li><li>*Keep last only*: Only keep the last message, and ignore all previous ones.</li><li>*Queue*: Put the message on a queue and deliver all of them when GriP is resumed.</li><li>*Deliver immediately*: Pretend GriP is not suspended and immediately show the message.</li></ol> ||
 
 The background color is only a recommended value for the theme. The theme may choose to ignore it.
 
@@ -97,6 +99,11 @@ On initialization, GriP uses about 250 KiB of RAM.
 GriP uses negligible amount of CPU and no extra RAM when idle. GriP will only cause slow down when there are a dozen of messages on screen.
 
 Apple's UIKit framework themselves may take memory that we cannot control. So far we observed a steady gain of 3 KiB every GriP message appears. We will try to get lower level to reduce memory use.
+
+== Know issues ==
+
+ * Themes cannot be completely unloaded. This is to avoid SpringBoard crashing when some code access resources of a completely unload theme.
+ * Screen on/off cannot be detected on firmware 2.0. Anyway, you should upgrade to ≥2.1.
 
 ----
 
@@ -235,7 +242,9 @@ please just say
 
 All the details can be thrown into the description. And because the description is normally hidden, you can give as much detail as you want there. Of course, you should _still_ make the description concise, no one wants to read a novel in a 160x60 box.
 
-Another thing is that, *do not use GriP for important messages that require user feedback*, because GriP messages can be easily ignored. A `UIAlertView` or `UIActionSheet` is more suitable in this case. Also, *always assume your message will be ignored.*
+Another thing is that, *do not use GriP for important messages that require user feedback*, because GriP messages can be easily ignored. A `UIAlertView` or `UIActionSheet` is more suitable in this case.
+
+You *should not rely on the `growlNotificationTimedOut:` delegate method* to do any responds. Currently, when GriP is suspended, the `growlNotificationTimedOut:` method may not be called. 
 
 == Known issues of the embedded server ==
 
