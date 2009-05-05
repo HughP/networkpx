@@ -180,7 +180,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	if ([identifier isKindOfClass:[NSString class]])
 		[filteredDictionary setObject:identifier forKey:GRIP_ID];
 	
-	[duplex sendMessage:GriPMessage_ShowMessage data:[NSPropertyListSerialization dataFromPropertyList:filteredDictionary format:NSPropertyListBinaryFormat_v1_0 errorDescription:NULL]];
+	[duplex sendMessage:GriPMessage_EnqueueMessage data:[NSPropertyListSerialization dataFromPropertyList:filteredDictionary format:NSPropertyListBinaryFormat_v1_0 errorDescription:NULL]];
 	
 	[filteredDictionary release];
 }

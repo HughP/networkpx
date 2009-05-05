@@ -61,7 +61,10 @@ static CFDictionaryRef settingIcons = NULL;
 static void GPReleaseSettingIcons () { if (settingIcons != NULL) { CFRelease(settingIcons); settingIcons = NULL; } }
 
 UIImage* GPGetSmallAppIcon (NSString* bundleIdentifier) {
-	if (settingIcons == nil) {
+	if (bundleIdentifier == nil)
+		return nil;
+	
+	if (settingIcons == NULL) {
 		// For some unknown reason... if I create the settingIcons dictionary as an NSDictionary* instead of CFDictionaryRef, 
 		// SpringBoard crashes.
 		static const CFStringRef values[] = {
@@ -69,6 +72,7 @@ UIImage* GPGetSmallAppIcon (NSString* bundleIdentifier) {
 			CFSTR("/System/Library/PreferenceBundles/AccountSettings/MobileCalSettings.bundle/icon.png"),
 			CFSTR("/System/Library/PreferenceBundles/AccountSettings/MobileMailSettings.bundle/icon.png"),
 			CFSTR("/System/Library/PreferenceBundles/AirPortSettings.bundle/icon.png"),
+			CFSTR("/System/Library/PreferenceBundles/MobileSlideShowSettings.bundle/icon.png"),
 			CFSTR("/System/Library/PreferenceBundles/MobileSlideShowSettings.bundle/icon.png"),
 			CFSTR("/System/Library/PreferenceBundles/MusicSettings.bundle/icon.png"),
 			CFSTR("/System/Library/PreferenceBundles/ScheduleSettings.bundle/icon.png"),
@@ -92,15 +96,16 @@ UIImage* GPGetSmallAppIcon (NSString* bundleIdentifier) {
 			CFSTR("com.apple.mobilemail"),
 			CFSTR("(WiFi)"),
 			CFSTR("com.apple.mobileslideshow"),
-			CFSTR("(music)"),
+			CFSTR("com.apple.mobileslideshow-Photos"),
+			CFSTR("com.apple.mobileipod-AudioPlayer"),
 			CFSTR("(schedule)"),
 			CFSTR("(VPN)"),
-			CFSTR("(video)"),
+			CFSTR("com.apple.mobileipod-VideoPlayer"),
 			CFSTR("(wallpaper)"),
 			CFSTR("com.apple.mobilesafari"),
 			CFSTR("com.apple.mobileipod"),
 			CFSTR("com.apple.AppStore"),
-			CFSTR("(camera)"),
+			CFSTR("com.apple.mobileslideshow-Camera"),
 			CFSTR("com.apple.MobileStore"),
 			CFSTR("(airplane)"),
 			CFSTR("(display)"),
@@ -118,6 +123,8 @@ UIImage* GPGetSmallAppIcon (NSString* bundleIdentifier) {
 		retimg = [[UIImage alloc] initWithContentsOfFile:path];
 	else {
 		Class SBIconModel = objc_getClass("SBIconModel");
+		if (SBIconModel == Nil)
+			return nil;
 		SBApplicationIcon* icon = [[SBIconModel sharedInstance] iconForDisplayIdentifier:bundleIdentifier];
 		if ([icon respondsToSelector:@selector(smallIcon)])
 			retimg = [[icon smallIcon] retain];

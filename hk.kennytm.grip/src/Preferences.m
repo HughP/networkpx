@@ -39,6 +39,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #import <GriP/GrowlApplicationBridge.h>
 #import <GriP/GPApplicationBridge.h>
 #include <notify.h>
+#import <GriP/GPGetSmallAppIcon.h>
 
 static GPApplicationBridge* bridge = nil;
 static const float perPriorityDefaultSettings[5][7] = {
@@ -54,8 +55,124 @@ static const float perPriorityDefaultSettings[5][7] = {
 //------------------------------------------------------------------------------
 #pragma mark -
 
-@interface GPCustomizationController : PSListController {} @end
-@implementation GPCustomizationController @end
+extern UIImage* PSSettingsIconImageForUserAppBundlePath(NSString* path);
+extern NSString* SBSCopyLocalizedApplicationNameForDisplayIdentifier(NSString* identifier);
+extern NSArray* SBSCopyApplicationDisplayIdentifiers(BOOL onlyActive, BOOL unknown);
+extern NSString* SBSCopyIconImagePathForDisplayIdentifier(NSString* identifier);
+extern void SBBundlePathForDisplayIdentifier(mach_port_t port, const char* identifier, char* result);
+extern mach_port_t SBSSpringBoardServerPort();
+
+static inline NSString* GPBundlePathForDisplayIdentifier(mach_port_t port, NSString* identifier) {
+	char resstr[1024];
+	SBBundlePathForDisplayIdentifier(port, [identifier UTF8String], resstr);
+	return [NSString stringWithUTF8String:resstr];
+}
+
+@interface UIImage ()
+-(UIImage*)_smallApplicationIconImagePrecomposed:(BOOL)precomposed;
+@end
+
+static NSComparisonResult comparePSSpecs(PSSpecifier* p1, PSSpecifier* p2, void* context) { return [p1.name localizedCompare:p2.name]; }
+
+//------------------------------------------------------------------------------
+#pragma mark -
+
+@interface GPGameModeController : PSListController {
+	NSMutableSet* gameModeApps;
+}
+-(id)initForContentSize:(CGSize)size;
+-(void)dealloc;
+-(void)suspend;
+-(NSArray*)specifiers;
+-(void)populateSystemApps;
+-(CFBooleanRef)getApp:(PSSpecifier*)spec;
+-(void)set:(CFBooleanRef)enable app:(PSSpecifier*)spec;
+@end
+@implementation GPGameModeController
+-(id)initForContentSize:(CGSize)size {
+	if ((self = [super initForContentSize:size])) {
+		NSArray* gameModeAppsArray = [[NSDictionary dictionaryWithContentsOfFile:GRIP_PREFDICT] objectForKey:@"GameModeApps"] ?: [NSArray array];
+		gameModeApps = [[NSMutableSet alloc] initWithArray:gameModeAppsArray];
+	}
+	return self;
+}
+-(void)dealloc {
+	[gameModeApps release];
+	[super dealloc];
+}
+-(void)suspend {
+	NSMutableDictionary* dict = [NSMutableDictionary dictionaryWithContentsOfFile:GRIP_PREFDICT];
+	[dict setObject:[gameModeApps allObjects] forKey:@"GameModeApps"];
+	[dict writeToFile:GRIP_PREFDICT atomically:NO];
+	[GPDuplexClient sendMessage:GriPMessage_FlushPreferences data:nil];
+	[super suspend];
+}
+-(void)populateSystemApps {
+	NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
+	
+	NSMutableArray* systemSpecs = [NSMutableArray array];
+	mach_port_t port = SBSSpringBoardServerPort();
+	NSArray* sbApps = SBSCopyApplicationDisplayIdentifiers(NO, NO);
+	
+	for (NSString* identifier in sbApps) {
+		NSString* localizedName = SBSCopyLocalizedApplicationNameForDisplayIdentifier(identifier);
+		NSString* bundlePath = GPBundlePathForDisplayIdentifier(port, identifier);
+		UIImage* image = PSSettingsIconImageForUserAppBundlePath(bundlePath) ?: GPGetSmallAppIcon(identifier);
+		if (image == nil) {
+			NSString* iconPath = SBSCopyIconImagePathForDisplayIdentifier(identifier);
+			image = [[UIImage imageWithContentsOfFile:iconPath] _smallApplicationIconImagePrecomposed:YES];
+			[iconPath release];
+		}
+		PSSpecifier* spec = [PSSpecifier preferenceSpecifierNamed:localizedName
+														   target:self
+															  set:@selector(set:app:)
+															  get:@selector(getApp:)
+														   detail:Nil
+															 cell:PSSwitchCell
+															 edit:Nil];
+		[localizedName release];
+		[spec setProperty:image forKey:@"iconImage"];
+		[spec setProperty:identifier forKey:@"id"];
+		[systemSpecs addObject:spec];
+	}
+	[sbApps release];
+	
+	// sort the array using the localized name.
+	[systemSpecs sortUsingFunction:&comparePSSpecs context:NULL];
+	
+	NSInvocation* invoc = [NSInvocation invocationWithMethodSignature:[self methodSignatureForSelector:@selector(insertContiguousSpecifiers:atIndex:animated:)]];
+	BOOL _yes = YES;
+	int index = 1;
+	[invoc setTarget:self];
+	[invoc setSelector:@selector(insertContiguousSpecifiers:atIndex:animated:)];
+	[invoc setArgument:&systemSpecs atIndex:2];
+	[invoc setArgument:&index atIndex:3];
+	[invoc setArgument:&_yes atIndex:4];
+	[invoc retainArguments];
+	
+	[invoc performSelectorOnMainThread:@selector(invoke) withObject:nil waitUntilDone:NO];
+	[[UIApplication sharedApplication] performSelectorOnMainThread:@selector(setNetworkActivityIndicatorVisible:) withObject:NO waitUntilDone:NO];
+	
+	[pool drain];
+}
+
+-(NSArray*)specifiers {
+	if (_specifiers == nil) {
+		_specifiers = [[self loadSpecifiersFromPlistName:@"Game mode" target:self] retain];
+		[UIApplication sharedApplication].networkActivityIndicatorVisible = YES;
+		[self performSelectorInBackground:@selector(populateSystemApps) withObject:nil];
+	}
+	return _specifiers;
+}
+-(CFBooleanRef)getApp:(PSSpecifier*)spec { return [gameModeApps containsObject:spec.identifier] ? kCFBooleanTrue : kCFBooleanFalse; }
+-(void)set:(CFBooleanRef)enable app:(PSSpecifier*)spec {
+	NSString* iden = spec.identifier;
+	if (enable == kCFBooleanTrue)
+		[gameModeApps addObject:iden];
+	else
+		[gameModeApps removeObject:iden];
+}
+@end
 
 //------------------------------------------------------------------------------
 

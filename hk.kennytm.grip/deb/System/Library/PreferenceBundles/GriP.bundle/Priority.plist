@@ -67,6 +67,36 @@ items = (
 		max = 1;
 		showValue = YES;
 		leftImage = alpha.png; },
+
+	{ cell = PSGroupCell;
+		label = "Suspension behavior"; },
+	{ cell = PSLinkListCell;
+		detail = PSListItemsController;
+		label = "Game mode";
+		id = 7;
+		validTitles = (
+			Drop,
+			"Keep last only",
+			Queue,
+			"Deliver immediately"
+		);
+		validValues = (1,2,3,4);
+		get = "getComponent:";
+		set = "set:forComponent:"; },
+	{ cell = PSLinkListCell;
+		detail = PSListItemsController;
+		label = "Screen off";
+		id = 8;
+		validTitles = (
+			Drop,
+			"Keep last only",
+			Queue,
+			"Deliver immediately"
+		);
+		validValues = (1,2,3,4);
+		get = "getComponent:";
+		set = "set:forComponent:"; },
+
 	{ cell = PSGroupCell; },
 	{ cell = PSButtonCell; 
 		action = reset; 

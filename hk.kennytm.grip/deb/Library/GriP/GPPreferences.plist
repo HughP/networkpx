@@ -1,14 +1,14 @@
 {
 
 // Per-priority settings
-// (R, G, B, A, enabled, sticky, timer)
+// (R, G, B, A, enabled, sticky, timer, suspension behavior[gaming], [locked])
 // for sticky: 0 = App decides, 1 = Always, 2 = Never.
 PerPrioritySettings = (
-	(0.400, 0.400, 0.400, 0.75, 0, 0,  2),	// Very low priorty
-	(0.188, 0.290, 0.663, 0.75, 1, 0,  2),	// Moderate
-	(0.098, 0.098, 0.098, 0.75, 1, 0,  4),	// Normal
-	(0.349, 0.024, 0.016, 0.80, 1, 0,  7),	// High priority
-	(0.698, 0.047, 0.031, 0.85, 1, 0, 10) 	// Emergency
+	(0.400, 0.400, 0.400, 0.75, 0, 0,  2, 1, 1),	// Very low priorty
+	(0.188, 0.290, 0.663, 0.75, 1, 0,  2, 2, 2),	// Moderate
+	(0.098, 0.098, 0.098, 0.75, 1, 0,  4, 3, 3),	// Normal
+	(0.349, 0.024, 0.016, 0.80, 1, 0,  7, 4, 3),	// High priority
+	(0.698, 0.047, 0.031, 0.85, 1, 0, 10, 4, 3) 	// Emergency
 );
 
 // At which corner should a GriP message appear.
@@ -18,6 +18,9 @@ Location = 1;
 // Which theme to use.
 // Ignored in embedded server.
 ActiveTheme = "Default.griptheme";
+
+// Suspend GriP in these apps.
+GameModeApps = ();
 
 Width = 160;
 }
