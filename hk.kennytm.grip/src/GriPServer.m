@@ -298,7 +298,6 @@ void GPStartGriPServer () {
 		MSHookMessage(SBApplication_class, @selector(launchSucceeded), (IMP)&GP_SBApplication_launchSucceeded, "hk_kennytm_grip_");
 		MSHookMessage(SBApplication_class, @selector(exitedCommon), (IMP)&GP_SBApplication_exitedCommon, "hk_kennytm_grip_");
 #endif
-		
 		[pool drain];
 		
 #if GRIP_JAILBROKEN

@@ -42,12 +42,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #import <GriP/GPGetSmallAppIcon.h>
 
 static GPApplicationBridge* bridge = nil;
-static const float perPriorityDefaultSettings[5][7] = {
-	{0.400f, 0.400f, 0.400f, 0.75f, 0, 0,  2},
-	{0.188f, 0.290f, 0.663f, 0.75f, 1, 0,  2},
-	{0.098f, 0.098f, 0.098f, 0.75f, 1, 0,  4},
-	{0.349f, 0.024f, 0.016f, 0.80f, 1, 0,  7},
-	{0.698f, 0.047f, 0.031f, 0.85f, 1, 0, 10}
+static const float perPriorityDefaultSettings[5][9] = {
+	{0.400f, 0.400f, 0.400f, 0.75f, 0, 0,  2, 1, 1},
+	{0.188f, 0.290f, 0.663f, 0.75f, 1, 0,  2, 2, 2},
+	{0.098f, 0.098f, 0.098f, 0.75f, 1, 0,  4, 3, 3},
+	{0.349f, 0.024f, 0.016f, 0.80f, 1, 0,  7, 4, 3},
+	{0.698f, 0.047f, 0.031f, 0.85f, 1, 0, 10, 4, 3}
 };
 
 #define LS(str) [myBundle localizedStringForKey:str value:nil table:nil]

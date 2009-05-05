@@ -52,7 +52,7 @@ SDKOptionsSim=-arch i686 \
 
 DontThumbSources=GPDefaultTheme.m | GPMessageWindow.m | GPPreferences.m | $(SharedSrcPath)/GraphicsUtitlities.m
 
-AllTargets=libGriP libGriPExtra DefaultTheme XGriP GriPTest Preferences MemWatcher YouveGotMail DoubleHeightTheme DefaultThemePrefs
+AllTargets=libGriP libGriPExtra DefaultTheme XGriP GriPTest Preferences MemWatcher YouveGotMail DefaultThemePrefs
 AllSDKTarget=libGriP libGriPServer libGPDefaultTheme
 
 libGriP_Sources=Duplex/Client.o GPApplicationBridge.o GPExtensions.o NSString-stringByEscapingXMLEntities.o
@@ -99,7 +99,7 @@ SDK_libGriP_Sources=Duplex/Client.sdk.o GPApplicationBridge.sdk.o
 SDK_libGriP_Target=../sdk/libGriP.a
 SDK_libGriP_Options=-framework Foundation -static
 
-SDK_libGriPServer_Sources=GPMessageWindow.sdk.o GPPreferences.sdk.o GPGetSmallAppIcon.sdk.o GPUIViewTheme.sdk.o GriPServer.sdk.o Duplex/Server.sdk.o GPRawThemeHelper.sdk.o
+SDK_libGriPServer_Sources=GPMessageWindow.sdk.o GPPreferences.sdk.o GPGetSmallAppIcon.sdk.o GPUIViewTheme.sdk.o GriPServer.sdk.o Duplex/Server.sdk.o GPRawThemeHelper.sdk.o GPMessageQueue.sdk.o
 SDK_libGriPServer_Target=../sdk/libGriPServer.a
 SDK_libGriPServer_Options=-framework Foundation -framework UIKit -framework CoreGraphics -static
 
@@ -121,19 +121,19 @@ SDK_Sources=NSString-stringByEscapingXMLEntities.m GrowlApplicationBridge.m ../d
 define CompileRule
 	@case $(2) in \
 		$(DontThumbSources)) \
-			$(Compiler) -c $(Options) -o $(1) $(2); \
+			$(Compiler) -c $(3) -o $(1) $(2); \
 			;; \
 		*) \
-			$(Compiler) -c $(Options) -mthumb -o $(1) $(2); \
+			$(Compiler) -c $(3) -mthumb -o $(1) $(2); \
 			;; \
 	esac;
 endef
 
 define SDKCompileRule
-	@$(call CompileRule,$(1).arm,$(2))
+	$(call CompileRule,$(1).arm,$(2),$(SDKOptionsARM))
 	@$(Compiler) -c $(SDKOptionsSim) -o $(1).i686 $(2); \
-	@lipo -create $(1).i686 $(1).arm -output $(1); \
-	@rm $(1).i686 $(1).arm;
+	lipo -create $(1).i686 $(1).arm -output $(1); \
+	rm $(1).i686 $(1).arm;
 endef
 
 define MakeTemplate
@@ -155,10 +155,10 @@ $(foreach target,$(AllTargets),$(eval $(call MakeTemplate,$(target))))
 	$(call SDKCompileRule,$@,$^)
 	
 %.o::	%.m
-	$(call CompileRule,$@,$^)
+	$(call CompileRule,$@,$^,$(Options))
 
 %.o::	%.c
-	$(call CompileRule,$@,$^)
+	$(call CompileRule,$@,$^,$(Options))
 
 $(ThemesPath)/%.griptheme/GriPView.nib:	%.xib
 	ibtool --compile $@ $^
@@ -178,6 +178,9 @@ SDKEtc:	$(SDK_Headers) $(SDK_Sources)
 	cp $(SDK_Sources) ../sdk/
 	cp $(SDK_Headers) ../sdk/GriP/
 	cp $(GriPIncPath)/Duplex/Client.h ../sdk/GriP/Duplex/
+	@$(Compiler) $(SDKOptionsARM) ../sdktest.m $(SDK_libGriP_Target) $(SDK_libGriPServer_Target) $(SDK_libGPDefaultTheme_Target) -framework CoreFoundation -framework Foundation -framework UIKit -framework CoreGraphics
+	@$(Compiler) $(SDKOptionsSim) ../sdktest.m $(SDK_libGriP_Target) $(SDK_libGriPServer_Target) $(SDK_libGPDefaultTheme_Target) -framework CoreFoundation -framework Foundation -framework UIKit -framework CoreGraphics
+	@rm a.out
 	tar --exclude=".*" -cjf ../GriP-for-SDK-developers.tar.bz2 -C .. sdk
 
 clean:
