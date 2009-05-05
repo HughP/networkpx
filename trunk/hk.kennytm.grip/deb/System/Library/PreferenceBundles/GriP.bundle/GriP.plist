@@ -55,6 +55,11 @@ items = (
 		priorityLevel = 0;
 		detail = GPPerPrioritySettingsController; },
 
+	{ cell = PSGroupCell; },
+	{ cell = PSLinkCell;
+		label = "Game mode";
+		detail = GPGameModeController; },
+
 	{ cell = PSGroupCell; label = "Per-App Settings"; }
 );
 }

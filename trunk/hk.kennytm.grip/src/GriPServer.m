@@ -41,8 +41,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #import <PrefHooker/PrefsLinkHooker.h>
 #import <UIKit/UIApplication.h>
 #import <GriP/GPSingleton.h>
+#import <GriP/GPMessageQueue.h>
 
 #if GRIP_JAILBROKEN
+#import <substrate.h>
+__attribute__((visibility("hidden")))
 @interface SpringBoard : UIApplication
 -(void)applicationOpenURL:(NSURL*)url publicURLsOnly:(BOOL)publicsOnly;	// only in >=3.0
 -(void)applicationOpenURL:(NSURL*)url asPanel:(BOOL)asPanel publicURLsOnly:(BOOL)publicsOnly;	// only in <3.0
@@ -52,7 +55,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 static NSObject<GPTheme>* activeTheme = nil;
-static const int MemoryAlertObserver = 12345678;
+static const int MemoryAlertObserver = 12345678, DisplayOnOffObserver = 87654321;
 
 static CFDataRef GriPCallback (CFMessagePortRef serverPort, SInt32 type, CFDataRef data, void* info) {
 	CFDataRef retData = NULL;
@@ -62,6 +65,18 @@ static CFDataRef GriPCallback (CFMessagePortRef serverPort, SInt32 type, CFDataR
 		case GriPMessage_FlushPreferences:
 			GPFlushPreferences();
 			GPSingletonDestructor(activeTheme, {
+				// Currently there's so safe way to force a hard flush.
+				// the latest attempt results in this:
+				/*
+				 #0  0x300c7760 in _unload_image ()
+				 #1  0x300c1238 in unmap_image ()
+				 #2  0x2fe02eb0 in __dyld__ZN4dyld11removeImageEP11ImageLoader ()
+				 #3  0x2fe031a8 in __dyld__ZN4dyld20garbageCollectImagesEv ()
+				 #4  0x2fe0a7dc in __dyld_dlclose ()
+				 #5  0x3148ee48 in dlclose ()
+				 #6  0x3029d93a in _CFBundleDlfcnUnload ()
+				 */
+				/*
 				if (data != NULL) {
 					// hard flush required.
 					[GPMessageWindow _closeAllWindows];
@@ -69,36 +84,45 @@ static CFDataRef GriPCallback (CFMessagePortRef serverPort, SInt32 type, CFDataR
 					[__NEWOBJ__ release];
 					[[NSBundle bundleForClass:cls] unload];
 				} else
+				 */
 					[__NEWOBJ__ release];
 			});
 			break;
 			
-		case GriPMessage_ShowMessage: {
+		case GriPMessage_DequeueMessages:
+dequeue_messages:
+		{
+			NSArray* dequeuedMessages = (NSArray*)GPCopyAndDequeueMessages();
+			if ([dequeuedMessages count] != 0) {
+			
 #if GRIP_JAILBROKEN
-			GPSingletonConstructor(activeTheme, {
-				NSDictionary* prefs = GPCopyPreferences();
-				NSBundle* activeThemeBundle = [NSBundle bundleWithPath:[@"/Library/GriP/Themes/" stringByAppendingPathComponent:[prefs objectForKey:@"ActiveTheme"]]];
-				[prefs release];
-				NSString* themeType = [activeThemeBundle objectForInfoDictionaryKey:@"GPThemeType"];
-				if (themeType == nil || [@"OBJC" isEqualToString:themeType])
-					__NEWOBJ__ = [[[activeThemeBundle principalClass] alloc] initWithBundle:activeThemeBundle];
-			}, [__NEWOBJ__ release]);
+				GPSingletonConstructor(activeTheme, {
+					NSDictionary* prefs = GPCopyPreferences();
+					NSBundle* activeThemeBundle = [NSBundle bundleWithPath:[@"/Library/GriP/Themes/" stringByAppendingPathComponent:[prefs objectForKey:@"ActiveTheme"]]];
+					[prefs release];
+					NSString* themeType = [activeThemeBundle objectForInfoDictionaryKey:@"GPThemeType"];
+					if (themeType == nil || [@"OBJC" isEqualToString:themeType])
+						__NEWOBJ__ = [[[activeThemeBundle principalClass] alloc] initWithBundle:activeThemeBundle];
+				}, [__NEWOBJ__ release]);
 #else
-			GPSingletonConstructor(activeTheme, __NEWOBJ__ = [[GPDefaultTheme alloc] initWithBundle:[NSBundle mainBundle]], [__NEWOBJ__ release]);
+				GPSingletonConstructor(activeTheme, __NEWOBJ__ = [[GPDefaultTheme alloc] initWithBundle:[NSBundle mainBundle]], [__NEWOBJ__ release]);
 #endif
-			BOOL willDisplay = [activeTheme respondsToSelector:@selector(display:)];
-			
-			NSMutableDictionary* messageDict = [NSPropertyListSerialization propertyListFromData:(NSData*)data mutabilityOption:NSPropertyListMutableContainers format:NULL errorDescription:NULL];
-			
-			if (willDisplay) {
-				GPModifyMessageForUserPreference(messageDict);
-				if ([messageDict count] != 0) {
+				for (NSDictionary* messageDict in dequeuedMessages)
 					[activeTheme display:messageDict];
-					break;
-				}
+			}
+			[dequeuedMessages release];
+			break;
+		}
+					
+		case GriPMessage_EnqueueMessage: {
+			NSMutableDictionary* messageDict = [NSPropertyListSerialization propertyListFromData:(NSData*)data mutabilityOption:NSPropertyListMutableContainers format:NULL errorDescription:NULL];
+			GPModifyMessageForUserPreference(messageDict);
+			if ([messageDict count] != 0) {
+				GPEnqueueMessage((CFDictionaryRef)messageDict);
+				goto dequeue_messages;
 			}
 			
-			// fall through as an ignored message if it remained unhandled.
+			// fall through as an ignored message if it remains unhandled.
 			type = GriPMessage_IgnoredNotification;
 			NSObject* context = [messageDict objectForKey:GRIP_CONTEXT];
 			if (context == nil)
@@ -111,8 +135,9 @@ static CFDataRef GriPCallback (CFMessagePortRef serverPort, SInt32 type, CFDataR
 		case GriPMessage_ClickedNotification:
 		case GriPMessage_IgnoredNotification:
 			array = [NSPropertyListSerialization propertyListFromData:(NSData*)data mutabilityOption:NSPropertyListImmutable format:NULL errorDescription:NULL];
+			if ([array isKindOfClass:[NSArray class]] && [array count] >= 3)
 ignored_message:
-			if ([array isKindOfClass:[NSArray class]] && [array count] >= 3) {
+			{
 				NSString* pid = [array objectAtIndex:0];
 				NSData* context = [NSPropertyListSerialization dataFromPropertyList:[array objectAtIndex:1] format:NSPropertyListBinaryFormat_v1_0 errorDescription:NULL];
 				BOOL isURL = [[array objectAtIndex:2] boolValue];
@@ -179,15 +204,57 @@ ignored_message:
 	return retData;
 }
 
+#if GRIP_JAILBROKEN
+__attribute__((visibility("hidden")))
+@interface SBApplication : NSObject
+-(NSString*)displayIdentifier;
+-(void)launchSucceeded;
+-(void)exitedCommon;
+-(void)hk_kennytm_grip_launchSucceeded;
+-(void)hk_kennytm_grip_exitedCommon;
+@end
+
+static void GPUpdateGamingForDisplayID(NSString* displayID);
+
+// I don't know how these will interact with Backgrounder. Hopefully not badly.
+static void GP_SBApplication_launchSucceeded(SBApplication* self, SEL _cmd) {
+	GPUpdateGamingForDisplayID([self displayIdentifier]);
+	[self hk_kennytm_grip_launchSucceeded];
+}
+static void GP_SBApplication_exitedCommon(SBApplication* self, SEL _cmd) {
+	GPUpdateGamingForDisplayID(nil);
+	[self hk_kennytm_grip_exitedCommon];
+}
+
+static void GPUpdateGamingForDisplayID(NSString* displayID) {
+	if (displayID == nil)
+		GPSetGaming(false);
+	else {
+		NSDictionary* prefs = GPCopyPreferences();
+		BOOL gaming = [[prefs objectForKey:@"GameModeApps"] containsObject:displayID];
+		GPSetGaming(gaming);
+		[prefs release];
+	}
+	GriPCallback(NULL, GriPMessage_DequeueMessages, NULL, NULL);
+}
+#endif
 
 static void GPMemoryAlert (CFNotificationCenterRef center, void* observer, CFStringRef name, const void* object, CFDictionaryRef userInfo) {
 	// basically the same action.
 	GriPCallback(NULL, GriPMessage_FlushPreferences, NULL, NULL);
 }
+
+static void GPDisplayOnOff (CFNotificationCenterRef center, void* observer, CFStringRef name, const void* object, CFDictionaryRef userInfo) {
+	Boolean locked = (CFStringCompare(name, CFSTR("SBDidTurnOnDisplayNotification"), 0) != kCFCompareEqualTo);
+	GPSetLocked(locked);
+	if (!locked)
+		GriPCallback(NULL, GriPMessage_DequeueMessages, NULL, NULL);
+}
  
 static void terminate () {
 	CFNotificationCenterRemoveObserver(CFNotificationCenterGetLocalCenter(), &MemoryAlertObserver,
 									   (CFStringRef)UIApplicationDidReceiveMemoryWarningNotification, NULL);
+	CFNotificationCenterRemoveEveryObserver(CFNotificationCenterGetDarwinNotifyCenter(), &DisplayOnOffObserver);
 	GPStopServer();
 	[GPMessageWindow _cleanup];
 	[activeTheme release];
@@ -219,6 +286,18 @@ void GPStartGriPServer () {
 		CFNotificationCenterAddObserver(localCenter, &MemoryAlertObserver, &GPMemoryAlert,
 										(CFStringRef)UIApplicationDidReceiveMemoryWarningNotification,
 										NULL, CFNotificationSuspensionBehaviorDeliverImmediately);
+		
+		// Set to suspension when screen is locked.
+		// ** Only available for >=2.1 **
+		CFNotificationCenterRef darwinCenter = CFNotificationCenterGetDarwinNotifyCenter();
+		CFNotificationCenterAddObserver(darwinCenter, &DisplayOnOffObserver, &GPDisplayOnOff, CFSTR("SBDidTurnOnDisplayNotification"), NULL, 0);
+		CFNotificationCenterAddObserver(darwinCenter, &DisplayOnOffObserver, &GPDisplayOnOff, CFSTR("SBDidTurnOffDisplayNotification"), NULL, 0);
+		
+#if GRIP_JAILBROKEN
+		Class SBApplication_class = objc_getClass("SBApplication");
+		MSHookMessage(SBApplication_class, @selector(launchSucceeded), (IMP)&GP_SBApplication_launchSucceeded, "hk_kennytm_grip_");
+		MSHookMessage(SBApplication_class, @selector(exitedCommon), (IMP)&GP_SBApplication_exitedCommon, "hk_kennytm_grip_");
+#endif
 		
 		[pool drain];
 		

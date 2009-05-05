@@ -1,0 +1,10 @@
+{
+title = "Game mode";
+items = (
+	{ cell = PSGroupCell; },
+	{ cell = PSGroupCell;
+		isStaticText = 1; },
+	{ cell = PSStaticTextCell;
+		label = "Lower-priority GriP messages won't be delivered in Game mode."; }
+);
+}

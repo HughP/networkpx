@@ -283,14 +283,14 @@ static UIColor* _backgroundColor = nil;
 -(void)refreshWithMessage:(NSDictionary*)message {
 	[self stopHiding];
 	
+	helperUID = [helper registerMessage:message];
+	priority = [[message objectForKey:GRIP_PRIORITY] integerValue];
+	
 	if (!forceSticky) {
 		[self stopTimer];
 		sticky = [[message objectForKey:GRIP_STICKY] boolValue];
 		[self _startTimer];
 	}
-	
-	helperUID = [helper registerMessage:message];
-	priority = [[message objectForKey:GRIP_PRIORITY] integerValue];
 }
 
 -(void)prepareForResizing {
@@ -304,9 +304,11 @@ static UIColor* _backgroundColor = nil;
 }
 -(void)_startTimer {
 	if (!sticky) {
+		
 		NSDictionary* prefs = GPCopyPreferences();
-		hideTimer = [[NSTimer scheduledTimerWithTimeInterval:[[[[prefs objectForKey:@"PerPrioritySettings"] objectAtIndex:priority+2] objectAtIndex:GPPrioritySettings_Timer] doubleValue]
-													  target:self selector:@selector(hide) userInfo:nil repeats:NO] retain];
+		NSTimeInterval interval = [[[[prefs objectForKey:@"PerPrioritySettings"] objectAtIndex:priority+2] objectAtIndex:GPPrioritySettings_Timer] doubleValue];
+		NSLog(@"%d -> %lg", priority, interval);
+		hideTimer = [[NSTimer scheduledTimerWithTimeInterval:interval target:self selector:@selector(hide) userInfo:nil repeats:NO] retain];
 		[prefs release];
 	}
 }

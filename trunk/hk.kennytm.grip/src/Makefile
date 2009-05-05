@@ -9,7 +9,7 @@ PrefsBundlePath=../deb/System/Library/PreferenceBundles
 
 GriPIncPath=../../include/GriP
 
-libVersion               =1.11.9
+libVersion               =1.11.10
 libGriPCompatVersion     =1.11.4
 libGriPExtraCompatVersion=1.11.9
 
@@ -63,7 +63,7 @@ libGriPExtra_Sources=GPMessageWindow.o GPPreferences.o GPGetSmallAppIcon.o GPUIV
 libGriPExtra_Target=../deb/usr/lib/libGriPExtra.dylib
 libGriPExtra_Options=-lGriP -dynamiclib -install_name /usr/lib/libGriPExtra.dylib -compatibility_version $(libGriPExtraCompatVersion) -current_version $(libVersion) -framework Foundation -framework CoreFoundation -framework UIKit -framework CoreGraphics
 
-XGriP_Sources=GriPServer.o Duplex/Server.o ../../src/PrefsLinkHooker.o
+XGriP_Sources=GriPServer.o Duplex/Server.o ../../src/PrefsLinkHooker.o GPMessageQueue.o
 XGriP_Target=$(MobileSubstratePath)/%GriP.dylib
 XGriP_Options=-lobjc -lGriPExtra -lsubstrate -dynamiclib -framework Foundation -framework CoreFoundation -framework Preferences -framework UIKit -init _GPStartGriPServer
 
@@ -85,7 +85,7 @@ GriPTest_Options=-lGriP -framework Foundation
 
 Preferences_Sources=Preferences.o
 Preferences_Target=$(PrefsBundlePath)/GriP.bundle/GriP
-Preferences_Options=-lGriP -framework Preferences -framework Foundation -framework UIKit -bundle
+Preferences_Options=-lGriPExtra -lGriP -framework Preferences -framework Foundation -framework UIKit -framework SpringBoardServices -bundle
 
 MemWatcher_Sources=Extensions/MemWatcher.o
 MemWatcher_Target=$(MobileSubstratePath)/MemoryWatcher.dylib
