@@ -8,6 +8,6 @@ Maintainer: KennyTM~ <kennytm+GriP@gmail.com>
 Author: KennyTM~ <kennytm+GriP@gmail.com>
 Section: System
 Depends: mobilesubstrate (>=0.9-0)
-Installed-Size: 476
+Installed-Size: 460
 Support: http://code.google.com/p/networkpx/wiki/FAQ
 dev: kennytm
