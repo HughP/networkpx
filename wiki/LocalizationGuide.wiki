@@ -9,6 +9,7 @@ To avoid localizers from having to dig the svn tree every time something changes
 
 In all networkpx projects, the *English* (en), *Spanish* (es) and *Chinese* (zh_TW and zh_CN) will always be fully translated. The rest are provided by volunteers and the availability will be listed in the tables below.
  * ✓ = Translation available.
+ * ?  = Translation has been modified by the author. It needs to be checked.
  *    = Translation not available.
 
 If you want to fill in the blanks or provide a completely new language, you can simply write a comment in issue 11.
@@ -110,52 +111,63 @@ The _lproj_'s are located in `/svn/trunk/hk.kennytm.5RowQWERTY/deb/Library/iKeyE
 GriP has 3 components that need to localized: GriP, !MemoryWatcher and You've Got Mail.
 
 For GriP, the _lproj_'s are in `/svn/trunk/hk.kennytm.grip/deb/System/Library/PreferenceBundles/GriP.bundle/`. *Don't fiddle with Duration.png* unless you know what to do. Tell me the translation of "Duration" instead.
-|| *Key*                                                            || 
-|| Preview                                                          || 
-|| Location                                                         || 
-|| \UE237 Top left                                                  || 
-|| \UE236 Top right                                                 || 
-|| \UE239 Bottom left                                               || 
-|| \UE238 Bottom right                                              || 
-|| Sticky                                                           || 
-|| App decides                                                      || 
-|| Always                                                           || 
-|| Never                                                            || 
-|| Background colors                                                || 
-|| Per-App Settings                                                 ||
-|| Minimum priority                                                 ||
-|| Ignore all                                                       ||
-|| Enabled                                                          ||
-|| Priority                                                         ||
-|| Default                                                          ||
-|| Emergency                                                        ||
-|| High                                                             ||
-|| Normal                                                           ||
-|| Low                                                              ||
-|| Very low                                                         ||
-|| Messages                                                         ||
-|| Remove Settings                                                  ||
-|| High Priority                                                    ||
-|| Low Priority                                                     ||
-|| Very Low Priority                                                ||
-|| GriP Message Preview                                             ||
-|| `This is a preview of a normal <strong>GriP</strong> message.`   ||
-|| Message touched                                                  ||
-|| You have touched the GriP preview message.                       ||
-|| Message ignored                                                  ||
-|| You have closed or ignored the GriP preview message.             ||
-|| Cannot remove settings for %@                                    ||
-|| `Error: %@<br/><br/>Please delete <code>%@</code> manually.`     ||
+|| *Key*                 || *it* || *nl* ||
+|| Preview               || ✓    || ✓   ||
+|| Location              || ✓    || ✓   || 
+|| \UE237 Top left       || ✓    || ✓   ||
+|| \UE236 Top right      || ✓    || ✓   ||
+|| \UE239 Bottom left    || ✓    || ✓   ||
+|| \UE238 Bottom right   || ✓    || ✓   ||
+|| Sticky                || ✓    || ✓   ||
+|| App decides           || ✓    || ✓   ||
+|| Always                || ✓    || ✓   ||
+|| Never                 || ✓    || ✓   ||
+|| Background color      || ✓    || ✓   ||
+|| Per-App Settings      || ✓    || ✓   ||
+|| Per-Priority Settings || ✓    || ✓   ||
+|| Theme                 || ✓    || ✓   ||
+|| Stealth               || ✓    || ✓   ||
+|| Customize             || ?    || ?    ||
+|| Cancel                || ✓    || ✓   ||
+|| Reset                 || ✓    || ✓   ||
+|| Enabled               || ✓    || ✓   ||
+|| Priority              || ✓    || ✓   ||
+|| Default               || ✓    || ✓   ||
+|| Emergency             || ✓    || ✓   ||
+|| High                  || ✓    || ✓   ||
+|| High priority         || ?    || ?    ||
+|| Normal                || ✓    || ✓   ||
+|| Moderate              || ✓    || ✓   ||
+|| Very low              || ✓    || ✓   ||
+|| Very low priority     || ?    || ?    ||
+|| Messages              || ✓    || ✓   ||
+|| Remove Settings       || ✓    || ✓   ||
+|| Suspension behavior   ||      ||      ||
+|| Game mode             ||      ||      ||
+|| Screen off            ||      ||      ||
+|| Drop                  ||      ||      ||
+|| Keep last only        ||      ||      ||
+|| Queue                 ||      ||      ||
+|| Deliver immediately   ||      ||      ||
+|| Lower-priority GriP messages won't be delivered in Game mode. ||   ||   ||
+|| GriP Message Preview                                          || ✓ || ✓ ||
+|| `This is a preview of a <strong>%@</strong> GriP message.`    || ? || ? ||
+|| Message touched                                               || ✓ || ✓ ||
+|| You have touched the GriP preview message.                    || ✓ || ✓ ||
+|| Message ignored                                               || ✓ || ✓ ||
+|| You have closed or ignored the GriP preview message.          || ✓ || ✓ ||
+|| Cannot remove settings for %@                                 || ✓ || ✓ ||
+|| `Error: %@<br/><br/>Please delete <code>%@</code> manually.`  || ✓ || ✓ ||
 
 For !MemoryWatcher, the localizations are located directly inside `/svn/trunk/hk.kennytm.grip/Lbrary/MobileSubstrate/DynamicLibraries/MemoryWatcher.plist`. This is unlike the other projects that _lproj_'s are used. The file is saved as a binary plist, so you may need to convert it into XML, or edit it by Property List Editor.
 
-|| *Key*                  || 
-|| Memory Warning (%d%%)  || 
-|| Memory Urgent (%d%%)   || 
-|| Memory Critical (%d%%) || 
+|| *Key*           || *it* || *nl* ||
+|| Memory Warning  || ✓    || ✓   ||
+|| Memory Urgent   || ✓    || ✓   ||
+|| Memory Critical ||  ✓   || ✓   ||
 
 For You've Got Mail, the localizations are located directly inside `/svn/trunk/hk.kennytm.grip/Lbrary/MobileSubstrate/DynamicLibraries/YouveGotMail.plist`.
 
-|| *Key*        || 
-|| 1 new mail   || 
-|| %d new mails || 
+|| *Key*              || *it* || *nl* ||
+|| 1 new mail to %@   ||  ?   ||  ?   ||
+|| %d new mails to %@ ||  ?   ||  ?   ||
