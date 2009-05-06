@@ -30,7 +30,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  
 */
 
-//#import <substrate.h>
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
 #import <GriP/NSString-stringByEscapingXMLEntities.h>
@@ -57,6 +56,7 @@ __attribute__((visibility("hidden")))
 @property(retain) NSString* subject;
 @property(retain) NSString* sender;
 -(MailAccount*)account;
+@property(assign) unsigned long messageFlags;
 @end
 
 @interface UIApplication ()
@@ -71,6 +71,7 @@ __attribute__((visibility("hidden")))
 	NSString* oneNewMail, *manyNewMails;
 	NSMutableDictionary* newMessagesForEachMail;
 	NSCountedSet* newMessagesCountForEachMail;
+	Class MailMessageLibrary;
 }
 -(id)init;
 -(void)dealloc;
@@ -96,6 +97,8 @@ __attribute__((visibility("hidden")))
 		newMessagesForEachMail = [[NSMutableDictionary alloc] init];
 		newMessagesCountForEachMail = [[NSCountedSet alloc] init];
 		
+		MailMessageLibrary = objc_getClass("MailMessageLibrary");
+		
 		bridge = [[GPApplicationBridge alloc] init];
 		bridge.growlDelegate = self;
 		NSNotificationCenter* center = [NSNotificationCenter defaultCenter];
@@ -114,15 +117,19 @@ __attribute__((visibility("hidden")))
 	[super dealloc];
 }
 -(void)messagesAdded:(NSNotification*)notif {
-	ActivityMonitor* mon = [ActivityMonitor currentMonitor];
-	if ([mon gotNewMessages]) {
-		[mon reset];
-		
+		if (![[notif object] isKindOfClass:MailMessageLibrary])
+			return;
+			
 		NSDictionary* userInfo = [notif userInfo];
 		NSArray* messages = [userInfo objectForKey:@"messages"];
-				
+		
 		// analyze each new email and format into readable form.
 		for (Message* message in messages) {
+			/// WARNING:: MAGIC NUMBERS:: CHECK FOR 3.0 COMPATIBILITY!!!
+			unsigned long flags = message.messageFlags;
+			if (flags != 0x30020 && flags != 0)
+				continue;
+			
 			NSString* account = [[[message account] emailAddresses] objectAtIndex:0];
 			
 			NSString* strippedSender = message.sender;
@@ -140,7 +147,7 @@ __attribute__((visibility("hidden")))
 			
 			[newMessagesCountForEachMail addObject:account];
 		}
-		
+
 		// send notifications to each mail account.
 		for (NSString* account in newMessagesForEachMail) {
 			NSInteger newMsgCount = [newMessagesCountForEachMail countForObject:account];
@@ -166,7 +173,6 @@ __attribute__((visibility("hidden")))
 					   clickContext:account
 						 identifier:account];
 		}
-	}
 }
 
 -(NSString*)applicationNameForGrowl { return @"You've Got Mail"; }
@@ -176,6 +182,7 @@ __attribute__((visibility("hidden")))
 }
 -(void)growlNotificationWasClicked:(NSObject*)context {
 	[[UIApplication sharedApplication] launchApplicationWithIdentifier:@"com.apple.mobilemail" suspended:NO];
+	[self growlNotificationTimedOut:context];
 }
 -(void)growlNotificationTimedOut:(NSObject*)context {
 	NSString* account = (NSString*)context;
