@@ -35,9 +35,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include <CoreFoundation/CoreFoundation.h>
 void GPStartWhenGriPIsReady(void(*initializer)());
+#if __OBJC__
+@class NSDictionary, NSURL;
+NSDictionary* GPPropertyListCopyLocalizableStringsDictionary(NSURL* url);
+#else
+#include <CoreFoundation/CoreFoundation.h>
 CFDictionaryRef GPPropertyListCopyLocalizableStringsDictionary(CFURLRef url);
+#endif
 #ifdef __cplusplus
 }
 #endif

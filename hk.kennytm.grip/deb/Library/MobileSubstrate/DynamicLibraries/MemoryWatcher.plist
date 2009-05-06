@@ -16,6 +16,11 @@ Localizations={
 		"Memory Urgent" = "Memoria Urgente";
 		"Memory Warning" = "Memoria Avviso";
 	};
+	nl = {
+		"Memory Critical" = "Geheugen Kritiek";
+		"Memory Urgent" = "Geheugen Urgent";
+		"Memory Warning" = "Geheugenwaarschuwing";
+	};
 	zh_CN = {
 		"Memory Critical" = "內存严重不足";
 		"Memory Urgent" = "內存非常不足";

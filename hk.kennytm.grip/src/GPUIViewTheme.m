@@ -95,6 +95,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 }
 
 -(void)messageClosed:(NSString*)identifier {
+	NSLog(@"%@", identifier);
 	[identifiedViews removeObjectForKey:identifier];
 }
 
@@ -103,7 +104,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		[fgColors[i] release];
 		[bgColors[i] release];
 	}	
-	CFRelease(identifiedViews);
+	[identifiedViews release];
 	[selfBundle release];
 	[super dealloc];
 }

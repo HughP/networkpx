@@ -36,6 +36,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #import <GriP/NSString-stringByEscapingXMLEntities.h>
 #import <GriP/GrowlApplicationBridge.h>
 #import <GriP/GPApplicationBridge.h>
+#import <GriP/GPExtensions.h>
 
 //------------------------------------------------------------------------------
 
@@ -68,6 +69,8 @@ __attribute__((visibility("hidden")))
 @interface YouveGotMail : NSObject <GrowlApplicationBridgeDelegate> {
 	GPApplicationBridge* bridge;
 	NSString* oneNewMail, *manyNewMails;
+	NSMutableDictionary* newMessagesForEachMail;
+	NSCountedSet* newMessagesCountForEachMail;
 }
 -(id)init;
 -(void)dealloc;
@@ -75,18 +78,23 @@ __attribute__((visibility("hidden")))
 
 -(NSString*)applicationNameForGrowl;
 -(NSDictionary*)registrationDictionaryForGrowl;
+-(void)growlNotificationWasClicked:(NSObject*)context;
+-(void)growlNotificationTimedOut:(NSObject*)context;
 @end
 
 @implementation YouveGotMail
 -(id)init {
 	if ((self = [super init])) {
-		NSDictionary* localizations = [[NSDictionary dictionaryWithContentsOfFile:@"/Library/MobileSubstrate/DynamicLibraries/YouveGotMail.plist"] objectForKey:@"Localizations"];
-		NSString* preferredLocalization = [[NSBundle preferredLocalizationsFromArray:[localizations allKeys]] objectAtIndex:0];
-		NSDictionary* localizationStrings = [localizations objectForKey:preferredLocalization];
-		if (localizationStrings == nil)
-			localizationStrings = [localizations objectForKey:@"en"];
-		oneNewMail = [[localizationStrings objectForKey:@"1 new mail"] retain];
-		manyNewMails = [[localizationStrings objectForKey:@"%d new mails"] retain];
+		NSURL* myDictURL = [NSURL fileURLWithPath:@"/Library/MobileSubstrate/DynamicLibraries/YouveGotMail.plist" isDirectory:NO];
+		NSDictionary* localizationStrings = GPPropertyListCopyLocalizableStringsDictionary(myDictURL);
+		
+		oneNewMail = [[localizationStrings objectForKey:@"1 new mail to %@"] retain];
+		manyNewMails = [[localizationStrings objectForKey:@"%d new mails to %@"] retain];
+		
+		[localizationStrings release];
+		
+		newMessagesForEachMail = [[NSMutableDictionary alloc] init];
+		newMessagesCountForEachMail = [[NSCountedSet alloc] init];
 		
 		bridge = [[GPApplicationBridge alloc] init];
 		bridge.growlDelegate = self;
@@ -101,6 +109,8 @@ __attribute__((visibility("hidden")))
 	[bridge release];
 	[oneNewMail release];
 	[manyNewMails release];
+	[newMessagesForEachMail release];
+	[newMessagesCountForEachMail release];
 	[super dealloc];
 }
 -(void)messagesAdded:(NSNotification*)notif {
@@ -110,12 +120,10 @@ __attribute__((visibility("hidden")))
 		
 		NSDictionary* userInfo = [notif userInfo];
 		NSArray* messages = [userInfo objectForKey:@"messages"];
-		
-		NSMutableDictionary* newMessagesForEachMail = [[NSMutableDictionary alloc] init];
-		
+				
 		// analyze each new email and format into readable form.
 		for (Message* message in messages) {
-			NSArray* account = [[message account] emailAddresses];
+			NSString* account = [[[message account] emailAddresses] objectAtIndex:0];
 			
 			NSString* strippedSender = message.sender;
 			NSUInteger addrPart = [strippedSender rangeOfString:@"<"].location;
@@ -125,27 +133,39 @@ __attribute__((visibility("hidden")))
 											  [strippedSender stringByEscapingXMLEntities], [message.subject stringByEscapingXMLEntities]];
 						
 			NSMutableString* lines = [newMessagesForEachMail objectForKey:account];
-			if (lines != nil) {
+			if (lines != nil)
 				[lines appendString:formattedLine];
-			} else {
+			else
 				[newMessagesForEachMail setObject:formattedLine forKey:account];
-			}
+			
+			[newMessagesCountForEachMail addObject:account];
 		}
 		
-		// merge together the new emails from each mail account into one single string.
-		NSMutableString* mergedString = [[NSMutableString alloc] init];
-		for (NSArray* account in newMessagesForEachMail) {
-			[mergedString appendFormat:@"<p align='right'><b><i>%@</i></b></p>%@", [account objectAtIndex:0], [newMessagesForEachMail objectForKey:account]];
+		// send notifications to each mail account.
+		for (NSString* account in newMessagesForEachMail) {
+			NSInteger newMsgCount = [newMessagesCountForEachMail countForObject:account];
+			NSString* title;
+			NSInteger atPosition = [account rangeOfString:@"@"].location;
+			if (atPosition == NSNotFound)
+				atPosition = [account length];
+			NSString* strippedAccount;
+			if (atPosition > 10)
+				strippedAccount = [[account substringToIndex:8] stringByAppendingString:@"…"];
+			else
+				strippedAccount = [account substringToIndex:atPosition];
+			if (newMsgCount == 1)
+				title = [NSString stringWithFormat:oneNewMail, strippedAccount];
+			else
+				title = [NSString stringWithFormat:manyNewMails, newMsgCount, strippedAccount];
+			[bridge notifyWithTitle:title
+						description:[NSString stringWithFormat:@"<p align='right'><i>%@</i></p>%@", account, [newMessagesForEachMail objectForKey:account]]
+				   notificationName:@"You've Got Mail"
+						   iconData:@"com.apple.mobilemail"
+						   priority:0
+						   isSticky:NO
+					   clickContext:account
+						 identifier:account];
 		}
-		
-		[newMessagesForEachMail release];
-		
-		NSUInteger newMsgCount = [messages count];
-		NSString* title = newMsgCount == 1 ? oneNewMail : [NSString stringWithFormat:manyNewMails, newMsgCount];
-		
-		[bridge notifyWithTitle:title description:mergedString notificationName:@"You've Got Mail" iconData:@"com.apple.mobilemail" priority:0 isSticky:NO clickContext:@""];
-		
-		[mergedString release];
 	}
 }
 
@@ -156,6 +176,13 @@ __attribute__((visibility("hidden")))
 }
 -(void)growlNotificationWasClicked:(NSObject*)context {
 	[[UIApplication sharedApplication] launchApplicationWithIdentifier:@"com.apple.mobilemail" suspended:NO];
+}
+-(void)growlNotificationTimedOut:(NSObject*)context {
+	NSString* account = (NSString*)context;
+	[newMessagesForEachMail removeObjectForKey:account];
+	NSInteger numberOfRemovals = [newMessagesCountForEachMail countForObject:account];
+	for (int i = 0; i < numberOfRemovals; ++i)
+		[newMessagesCountForEachMail removeObject:account];
 }
 @end
 
@@ -168,7 +195,7 @@ static void terminate () {
 	youveGotMail = nil;
 }
 
-void initialize () {
+extern void initialize () {
 	NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
 	atexit(&terminate);
 	youveGotMail = [[YouveGotMail alloc] init];

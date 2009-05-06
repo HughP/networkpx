@@ -38,7 +38,7 @@ extern "C" {
 	
 #include <CoreFoundation/CoreFoundation.h>
 	
-	void GPEnqueueMessage(CFDictionaryRef message);
+	CFArrayRef GPEnqueueMessage(CFDictionaryRef message);
 	CFArrayRef GPCopyAndDequeueMessages();
 	
 	void GPSetLocked(Boolean locked);
