@@ -1,14 +1,14 @@
 {{{
 
 struct GPTableViewAlert {
-  array<Button> buttons = ({label="Close";});  // Buttons of the alert. Requires at least 1 button. 
+  array<Button> buttons = ({});  // Buttons of the alert. Requires at least 1 button. 
   string title;                                // Alert title.
   bool backButton = false;                     // Whether to show the "back" button.
   array<Entry> entries;                        // Table entries.
 };
 
 struct Button {
-  string(localizable) label; // Label of the button.
+  string(localizable) label = "Close"; // Label of the button.
   string id = label;          // Identifier of the button.
   Icon icon = null;           // Icon for this button. May be ignored.
 };
