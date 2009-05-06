@@ -45,7 +45,8 @@ union Accessory {
     DisclosureButton,
     InfoButton,
     ContactAddButton,
-    Switch
+    SwitchOn,
+    SwitchOff
   };                    // Standard accessories
   Icon;                 // an image as a button.
 };
