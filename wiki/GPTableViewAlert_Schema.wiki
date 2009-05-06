@@ -11,7 +11,6 @@ union Button {
   struct {
     string label = "OK"; // Label of the button.
     string id = label;      // Identifier of the button.
-    Icon icon = null;       // Icon for this button. May be ignored.
   };
   string;         // Use this string as label.
 };
