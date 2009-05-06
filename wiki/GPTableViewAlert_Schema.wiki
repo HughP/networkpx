@@ -7,10 +7,13 @@ struct GPTableViewAlert {
   array<Entry> entries;                        // Table entries.
 };
 
-struct Button {
-  string(localizable) label = "Close"; // Label of the button.
-  string id = label;          // Identifier of the button.
-  Icon icon = null;           // Icon for this button. May be ignored.
+union {
+  struct {
+    string label = "Close"; // Label of the button.
+    string id = label;      // Identifier of the button.
+    Icon icon = null;       // Icon for this button. May be ignored.
+  };
+  string;         // Use this string as label.
 };
 
 struct Entry {
