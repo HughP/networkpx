@@ -70,22 +70,12 @@ When a leaf entry is tapped, the following method will be called:
 You can display a GPTableViewAlert using:
 {{{
 NSDictionary* alertSpec = ...;
-GPTableViewAlert* alert = [GPTableViewAlert showAlertWithDictionary:alertSpec];
+GPTableViewAlert* alert = [GPTableViewAlert showAlertWithDictionary:alertSpec delegate:self];
 }}}
 and request to update the view using:
 {{{
-GPTableViewAlertAnimation animation = ...;
-[alert updateToDictionary:alertSpec2 withAnimation:animation];
+NSString* animationType = kCATransitionPush;
+NSString* animationSubtype = kCATransitionFromRight;
+[alert updateToDictionary:alertSpec2 withAnimationType:animationType subtype:animationSubtype];
 }}}
-where
-{{{
-typedef enum GPTableViewAlertAnimation {
-  GPAnimation_PushToLeft = -2,
-  GPAnimation_PopToRight = -1,
-  GPAnimation_None = UIViewAnimationTransitionNone,
-  GPAnimation_FlipFromLeft = UIViewAnimationTransitionFlipFromLeft,
-  GPAnimation_FlipFromRight = UIViewAnimationTransitionFlipFromRight
-  GPAnimation_CurlUp = UIViewAnimationTransitionCurlUp,
-  GPAnimation_CurlDown = UIViewAnimationTransitionCurlDown,
-} GPTableViewAlertAnimation;
-}}}
+The `buttons` in this the dictionary of this method will be ignored.
