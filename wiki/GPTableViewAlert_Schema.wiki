@@ -1,0 +1,54 @@
+{{{
+
+struct GPTableViewAlert {
+  array<Button> buttons = ({label="Close";});  // Buttons of the alert. Requires at least 1 button. 
+  array<Entry> entries;                        // Table entries.
+  
+};
+
+struct Button {
+  string<:localizable> label; // Label of the button.
+  string id = label;          // Identifier of the button.
+  Icon icon = null;           // Icon for this button. May be ignored.
+};
+
+struct Entry {
+  string title;               // Entry title.
+  string id = title;          // Identifier of this entry. Should be unique.
+  Icon icon = null;           // Icon of the entry.
+  bool reorder = false;       // Whether to display the reorder control for this row.
+  string<:enum{Add,Delete}> edit = null; // Display a "+" or "-" sign.
+  string<:html> description = null;    // HTML description.
+  array<Button> buttons = null;        // Buttons associated with this entry.
+  array<Entry> children = null;        // Sub entries.
+};
+
+union Icon {
+  data<:image> image;         // Icon as image.
+  string<:bundleID> bundleID; // Icon with display identifier
+  string<:regex/^[\uE000-\uE5FF]$/> emoji;               // Emoji icon.
+};
+
+}}}
+
+When a button is clicked, the following method will be called:
+{{{
+-(BOOL)tableViewAlert:(int)alertUID buttonClicked:(NSString*)identifier;
+}}}
+return `YES` if you want to keep the alert view on screen.
+
+When two entries are rearranged, the following method will be called:
+{{{
+-(void)tableViewAlert:(int)alertUID movedItem:(NSString*)targetID below:(NSString*)belowID atLevel:(unsigned)level;
+}}}
+If the item is moved to the top, `belowID` will be `nil`. 
+
+When an editing control (+ or -) is pressed, the following method will be called:
+{{{
+-(void)tableViewAlert:(int)alertUID editedWithAction:(UITableViewCellEditingStyle)action forItem:(NSString*)item atLevel:(unsigned)level;
+}}}
+
+When a leaf entry is clicked, the following method will be called:
+{{{
+-(void)tableViewAlert:(int)alertUID touchedItem:(NSString*)item atLevel:(unsigned)level;
+}}}
