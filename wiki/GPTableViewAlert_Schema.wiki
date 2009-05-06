@@ -51,7 +51,7 @@ When a button is clicked, the following method will be called:
 {{{
 -(BOOL)tableViewAlert:(GPTableViewAlert*)alert buttonClicked:(NSString*)identifier forItem:(NSString*)item;
 }}}
-return `YES` if you want to keep the alert view on screen. `item` is nil if it's a button from the alert view instead of an item.
+return `YES` if you want to keep the alert view on screen. `item` is nil if it's a button from the alert view instead of an item. `identifier` is `@"__BACK__"` if the back button is tapped.
 
 When two entries are rearranged, the following method will be called:
 {{{
