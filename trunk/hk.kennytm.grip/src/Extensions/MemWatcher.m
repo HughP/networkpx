@@ -109,7 +109,7 @@ static void second_initializer () {
 #else
 			CFURLRef url = CFBundleCopyResourceURL(CFBundleGetMainBundle(), CFSTR("MemoryWatcher"), CFSTR("plist"), NULL);
 #endif
-			CFDictionaryRef localizableStrings = GPPropertyListCopyLocalizableStringsDictionary(url);
+			CFDictionaryRef localizableStrings = (CFDictionaryRef)GPPropertyListCopyLocalizableStringsDictionary((NSURL*)url);
 			CFRelease(url);
 			for (int i = 0; i < 3; ++ i)
 				localizedFormats[i] = CFStringCreateWithFormat(NULL, NULL, CFSTR("%@ (%%d%%%%)"), CFDictionaryGetValue(localizableStrings, names[i]));

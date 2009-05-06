@@ -76,7 +76,8 @@ extern CFDictionaryRef GPPropertyListCopyLocalizableStringsDictionary(CFURLRef f
 	CFIndex langCount = CFDictionaryGetCount(localizedStringsDict);
 	CFStringRef keys[langCount];	// assume we don't have 4000 languages :p
 	CFDictionaryGetKeysAndValues(localizedStringsDict, (const void**)keys, NULL);
-	CFArrayRef languages = CFArrayCreate(NULL, (const void**)keys, langCount, NULL);
+	CFArrayCallBacks languagesCallbacks = {0, NULL, NULL, NULL, &CFEqual};
+	CFArrayRef languages = CFArrayCreate(NULL, (const void**)keys, langCount, &languagesCallbacks);
 	CFArrayRef preferedLanguages = CFBundleCopyPreferredLocalizationsFromArray(languages);
 	CFDictionaryRef retval = CFRetain(CFDictionaryGetValue(localizedStringsDict, CFArrayGetValueAtIndex(preferedLanguages, 0)));
 	CFRelease(languages);

@@ -165,6 +165,12 @@ void GPModifyMessageForUserPreference(NSMutableDictionary* message) {
 		return;
 	}
 	
+	// change the identifier to app-specific. 
+	NSString* identifier = [message objectForKey:GRIP_ID];
+	if (identifier != nil) {
+		[message setObject:[NSString stringWithFormat:@"%@\uFDD0%@", appName, identifier] forKey:GRIP_ID];
+	}
+	
 	NSInteger newPriority = [[msgDict objectForKey:@"priority"] integerValue];
 	if (newPriority >= 1 && newPriority <= 5) {
 		newPriority -= 3;

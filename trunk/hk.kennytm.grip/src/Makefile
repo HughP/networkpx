@@ -139,7 +139,8 @@ endef
 define MakeTemplate
 $$($(1)_Target):	$$($(1)_Sources)
 	@$(Compiler) $(Options) $$($(1)_Options) -o $$@ $$^;
-	$(CodeSign) $$@;
+	@strip -x $$@;
+	$(CodeSign) $$@
 
 endef
 

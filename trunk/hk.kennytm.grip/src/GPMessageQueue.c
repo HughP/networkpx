@@ -63,25 +63,35 @@ extern void GPCleanUpSuspensionQueues() {
 			CFRelease(messageQueues[i]);
 }
 
-void GPEnqueueMessage(CFDictionaryRef message) {
+CFArrayRef GPEnqueueMessage(CFDictionaryRef message) {
 	int priorityIndex = 0;
 	CFNumberGetValue(CFDictionaryGetValue(message, GRIP_PRIORITY), kCFNumberIntType, &priorityIndex);
 	priorityIndex += 2;
 	
 	CFNotificationSuspensionBehavior currentSuspensionBehavior = GPCurrentSuspensionBehaviorForPriorityIndex(priorityIndex);
-	if (currentSuspensionBehavior == CFNotificationSuspensionBehaviorDrop)
-		return;
+	if (currentSuspensionBehavior == CFNotificationSuspensionBehaviorDrop) {
+		return CFArrayCreate(NULL, &message, 1, &kCFTypeArrayCallBacks);
+	}
 	
 	GPSingletonConstructor(messageQueues[priorityIndex],
 						   __NEWOBJ__ = CFArrayCreateMutable(NULL, 0, &kCFTypeArrayCallBacks),
 						   if(__NEWOBJ__ != NULL) CFRelease(__NEWOBJ__));
 	
-	if (currentSuspensionBehavior == CFNotificationSuspensionBehaviorCoalesce)
-		CFArrayRemoveAllValues(messageQueues[priorityIndex]);
-	
-	CFArrayAppendValue(messageQueues[priorityIndex], message);
+	if (currentSuspensionBehavior == CFNotificationSuspensionBehaviorCoalesce) {
+		CFArrayRef queues = messageQueues[priorityIndex];
+		CFArrayRef coalescedQueue = CFArrayCreateMutable(NULL, 0, &kCFTypeArrayCallBacks);
+		CFArrayAppendValue(coalescedQueue, &message);
+		if (!OSAtomicCompareAndSwapPtrBarrier((void*)queues, (void*)coalescedQueue, (void*volatile*)&(messageQueues[priorityIndex])))
+			CFRelease(coalescedQueue);
+		return queues;
+		
+	} else {
+		CFArrayAppendValue(messageQueues[priorityIndex], message);
+		return NULL;
+	}
 }
 
+// TODO: Thread safety check.
 CFArrayRef GPCopyAndDequeueMessages() {
 	CFMutableArrayRef resArray = CFArrayCreateMutable(NULL, 0, &kCFTypeArrayCallBacks);
 	

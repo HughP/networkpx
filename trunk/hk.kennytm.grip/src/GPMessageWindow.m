@@ -270,6 +270,7 @@ static UIColor* _backgroundColor = nil;
 		[transformerView release];
 		view = view_;
 		[self _layoutWithAnimation:NO];
+		helperUID = -1;
 		[self refreshWithMessage:message];
 		self.windowLevel = UIWindowLevelStatusBar*2;
 		self.hidden = NO;
@@ -283,6 +284,7 @@ static UIColor* _backgroundColor = nil;
 -(void)refreshWithMessage:(NSDictionary*)message {
 	[self stopHiding];
 	
+	[helper ignoredMessageID:helperUID];
 	helperUID = [helper registerMessage:message];
 	priority = [[message objectForKey:GRIP_PRIORITY] integerValue];
 	

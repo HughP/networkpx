@@ -116,18 +116,29 @@ dequeue_messages:
 					
 		case GriPMessage_EnqueueMessage: {
 			NSMutableDictionary* messageDict = [NSPropertyListSerialization propertyListFromData:(NSData*)data mutabilityOption:NSPropertyListMutableContainers format:NULL errorDescription:NULL];
+			if ([messageDict objectForKey:GRIP_CONTEXT] != nil)
+				array = [messageDict objectsForKeys:[NSArray arrayWithObjects:GRIP_PID, GRIP_CONTEXT, GRIP_ISURL, nil] notFoundMarker:@""];
+			else
+				array = nil;
+			
 			GPModifyMessageForUserPreference(messageDict);
 			if ([messageDict count] != 0) {
-				GPEnqueueMessage((CFDictionaryRef)messageDict);
+				NSArray* dismissedMessages = (NSArray*)GPEnqueueMessage((CFDictionaryRef)messageDict);
+				for (NSDictionary* message in dismissedMessages) {
+					if ([message objectForKey:GRIP_CONTEXT] != nil) {
+						NSArray* arr = [message objectsForKeys:[NSArray arrayWithObjects:GRIP_PID, GRIP_CONTEXT, GRIP_ISURL, nil] notFoundMarker:@""];
+						NSData* arrData = [NSPropertyListSerialization dataFromPropertyList:arr format:NSPropertyListBinaryFormat_v1_0 errorDescription:NULL];
+						GriPCallback(NULL, GriPMessage_IgnoredNotification, (CFDataRef)arrData, NULL);
+					}
+				}
+				[dismissedMessages release];
 				goto dequeue_messages;
 			}
 			
 			// fall through as an ignored message if it remains unhandled.
 			type = GriPMessage_IgnoredNotification;
-			NSObject* context = [messageDict objectForKey:GRIP_CONTEXT];
-			if (context == nil)
+			if (array == nil)
 				break;
-			array = [messageDict objectsForKeys:[NSArray arrayWithObjects:GRIP_PID, GRIP_CONTEXT, GRIP_ISURL, nil] notFoundMarker:@""];
 			
 			goto ignored_message;
 		}
