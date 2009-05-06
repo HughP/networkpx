@@ -7,7 +7,7 @@ struct GPTableViewAlert {
   array<Entry> entries;                        // Table entries.
 };
 
-union {
+union Button {
   struct {
     string label = "Close"; // Label of the button.
     string id = label;      // Identifier of the button.
