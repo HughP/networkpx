@@ -23,9 +23,9 @@ union Entry {
   string id = title;          // Identifier of this entry. Should be unique.
   Icon icon = null :: header == false;           // Icon of the entry.
   bool reorder = false :: header == false && accessory == null;       // Whether to display the reorder control for this row.
-  enum{Add,Delete} edit = null :: header == false; // Display a "+" or "-" sign.
+  enum{Add,Delete} action = null :: header == false; // Display a "+" or "-" sign.
   string(html) description = null :: header == false;    // HTML description.
-  bool textview = false :: header == false;              // Make the description as a text view.
+  bool edit = false :: header == false;   // Make the description as an editing text view.
   bool atBegin = false :: header == false && textview == true; // Place the cursor at the beginning or end.
   Accessory accessory = null :: header == false && reorder == false; // accessory
   array<Button> buttons = null :: header == false;        // Buttons associated with this entry.
