@@ -16,7 +16,8 @@ union Button {
   string;         // Use this string as label.
 };
 
-struct Entry {
+union Entry {
+ struct {
   bool header = false;        // Whether to treat this entry as a section header.
   string title;               // Entry title.
   string id = title;          // Identifier of this entry. Should be unique.
@@ -28,6 +29,8 @@ struct Entry {
   bool atBegin = false :: header == false && textview == true; // Place the cursor at the beginning or end.
   Accessory accessory = null :: header == false && reorder == false; // accessory
   array<Button> buttons = null :: header == false;        // Buttons associated with this entry.
+ };
+ string;                     // Just the title.
 };
 
 union Icon {
