@@ -3,52 +3,75 @@
 struct GPTableViewAlert {
   array<Button> buttons = ({label="Close";});  // Buttons of the alert. Requires at least 1 button. 
   array<Entry> entries;                        // Table entries.
-  
 };
 
 struct Button {
-  string<:localizable> label; // Label of the button.
+  string(localizable) label; // Label of the button.
   string id = label;          // Identifier of the button.
   Icon icon = null;           // Icon for this button. May be ignored.
 };
 
 struct Entry {
+  bool header = false;        // Whether to treat this entry as a section header.
   string title;               // Entry title.
   string id = title;          // Identifier of this entry. Should be unique.
-  Icon icon = null;           // Icon of the entry.
-  bool reorder = false;       // Whether to display the reorder control for this row.
-  string<:enum{Add,Delete}> edit = null; // Display a "+" or "-" sign.
-  string<:html> description = null;    // HTML description.
-  array<Button> buttons = null;        // Buttons associated with this entry.
-  array<Entry> children = null;        // Sub entries.
+  Icon icon = null :: header == false;           // Icon of the entry.
+  bool reorder = false :: header == false && accessory == null;       // Whether to display the reorder control for this row.
+  enum{Add,Delete} edit = null :: header == false; // Display a "+" or "-" sign.
+  string(html) description = null :: header == false;    // HTML description.
+  bool textview = false :: header == false;              // Make the description as a text view.
+  bool atBegin = false :: header == false && textview == true; // Place the cursor at the beginning or end.
+  Accessory accessory = null :: header == false && reorder == false; // accessory
+  array<Button> buttons = null :: header == false;        // Buttons associated with this entry.
 };
 
 union Icon {
-  data<:image> image;         // Icon as image.
-  string<:bundleID> bundleID; // Icon with display identifier
-  string<:regex/^[\uE000-\uE5FF]$/> emoji;               // Emoji icon.
+  data(image);                       // Icon as image.
+  string(bundleID);                  // Icon with display identifier
+  string(regex/^[\uE000-\uE5FF]$/);  // Emoji icon.
+};
+
+union Accessory {
+  enum {
+    Checkmark,
+    DisclosureIndicator,
+    DisclosureButton,
+    InfoButton,
+    ContactAddButton,
+    Switch
+  };                    // Standard accessories
+  Icon;                 // an image as a button.
 };
 
 }}}
 
 When a button is clicked, the following method will be called:
 {{{
--(BOOL)tableViewAlert:(int)alertUID buttonClicked:(NSString*)identifier;
+-(BOOL)tableViewAlert:(GPTableViewAlert*)alert buttonClicked:(NSString*)identifier forItem:(NSString*)item;
 }}}
-return `YES` if you want to keep the alert view on screen.
+return `YES` if you want to keep the alert view on screen. `item` is nil if it's a button from the alert view instead of an item.
 
 When two entries are rearranged, the following method will be called:
 {{{
--(void)tableViewAlert:(int)alertUID movedItem:(NSString*)targetID below:(NSString*)belowID atLevel:(unsigned)level;
+-(void)tableViewAlert:(GPTableViewAlert*)alert movedItem:(NSString*)targetID below:(NSString*)belowID;
 }}}
 If the item is moved to the top, `belowID` will be `nil`. 
 
 When an editing control (+ or -) is pressed, the following method will be called:
 {{{
--(void)tableViewAlert:(int)alertUID editedWithAction:(UITableViewCellEditingStyle)action forItem:(NSString*)item atLevel:(unsigned)level;
+-(void)tableViewAlert:(GPTableViewAlert*)alert editedWithAction:(UITableViewCellEditingStyle)action forItem:(NSString*)item atLevel:(unsigned)level;
 }}}
 
-When a leaf entry is clicked, the following method will be called:
+When a leaf entry is tapped, the following method will be called:
 {{{
--(void)tableViewAlert:(int)alertUID touchedItem:(NSString*)item atLevel:(unsigned)level;
+-(void)tableViewAlert:(GPTableViewAlert*)alert touchedItem:(NSString*)item atLevel:(unsigned)level;
 }}}
+
+You can display a GPTableViewAlert using:
+{{{
+NSDictionary* alertSpec = ...;
+GPTableViewAlert* alert = [GPTableViewAlert showAlertWithDictionary:alertSpec];
+}}}
+and request to update the view using:
+{{{
+[alert updateToDictionary:alertSpec2 withAnimation:
