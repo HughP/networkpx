@@ -74,4 +74,18 @@ GPTableViewAlert* alert = [GPTableViewAlert showAlertWithDictionary:alertSpec];
 }}}
 and request to update the view using:
 {{{
-[alert updateToDictionary:alertSpec2 withAnimation:
+GPTableViewAlertAnimation animation = ...;
+[alert updateToDictionary:alertSpec2 withAnimation:animation];
+}}}
+where
+{{{
+typedef enum GPTableViewAlertAnimation {
+  GPAnimation_PushToLeft = -2,
+  GPAnimation_PopToRight = -1,
+  GPAnimation_None = UIViewAnimationTransitionNone,
+  GPAnimation_FlipFromLeft = UIViewAnimationTransitionFlipFromLeft,
+  GPAnimation_FlipFromRight = UIViewAnimationTransitionFlipFromRight
+  GPAnimation_CurlUp = UIViewAnimationTransitionCurlUp,
+  GPAnimation_CurlDown = UIViewAnimationTransitionCurlDown,
+} GPTableViewAlertAnimation;
+}}}
