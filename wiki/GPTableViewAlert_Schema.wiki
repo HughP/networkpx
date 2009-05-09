@@ -1,4 +1,8 @@
+= Specification =
+
 {{{
+
+// TODO: Transform into human-readable format.
 
 struct GPTableViewAlert {
   array<Button> buttons = ({});  // Buttons of the alert. Requires at least 1 button. 
@@ -20,12 +24,16 @@ union Entry {
   bool header = false;        // Whether to treat this entry as a section header.
   string title;               // Entry title.
   string id = title;          // Identifier of this entry. Should be unique.
+  string subtitle = nil :: header == false;  // subtitle.
+  bool noselect = false :: header == false;  // Mark that this item cannot be selected.
   Icon icon = null :: header == false;           // Icon of the entry.
   bool reorder = false :: header == false && accessory == null;       // Whether to display the reorder control for this row.
   enum{Add,Delete} action = null :: header == false; // Display a "+" or "-" sign.
-  string(html) description = null :: header == false;    // HTML description.
+  string description = null :: header == false;    // description.
   bool edit = false :: header == false;   // Make the description as an editing text view.
-  bool atBegin = false :: header == false && textview == true; // Place the cursor at the beginning or end.
+  int lines = 5 :: description != null;   // _Maximum_ number of lines the description view should occupy. Put a nonpositive number here for unbounded height when edit == false.
+  bool secure = false :: lines == 1 && edit == true; // The editing text view contains secure text (i.e. shown as • and disable copy&cut.)
+  string placeholder = "" :: lines == 1 && edit == true; // The placeholder of the editing text view when it is empty.
   Accessory accessory = null :: header == false && reorder == false; // accessory
   array<Button> buttons = null :: header == false;        // Buttons associated with this entry.
  };
@@ -38,52 +46,52 @@ union Icon {
   string(regex/^[\uE000-\uE5FF]$/);  // Emoji icon.
 };
 
-union Accessory {
-  enum {
+enum Accessory {
     Checkmark,
     DisclosureIndicator,
     DisclosureButton,
-    InfoButton,
-    ContactAddButton,
-    SwitchOn,
-    SwitchOff
-  };                    // Standard accessories
-  Icon;                 // an image as a button.
 };
 
 }}}
 
+= Delegate methods =
+
 When a button is clicked, the following method will be called:
 {{{
--(BOOL)tableViewAlert:(GPTableViewAlert*)alert buttonClicked:(NSString*)identifier forItem:(NSString*)item;
+-(void)tableViewAlert:(GPTableViewAlert*)alert buttonClicked:(NSString*)identifier forItem:(NSString*)item;
 }}}
-return `YES` if you want to keep the alert view on screen. `item` is nil if it's a button from the alert view instead of an item. `identifier` is `@"__BACK__"` if the back button is tapped.
+`item` is nil if it's a button from the alert view instead of an item. `identifier` is `@"__BACK__"` if the back button is tapped.
 
 When two entries are rearranged, the following method will be called:
 {{{
 -(void)tableViewAlert:(GPTableViewAlert*)alert movedItem:(NSString*)targetID below:(NSString*)belowID;
 }}}
-If the item is moved to the top, `belowID` will be `nil`. 
+If the item is moved to the start of a group, `belowID` will be the ID of the header. If the group is headerless, `belowID` will be `@""`.
 
 When an editing control (+ or -) is pressed, the following method will be called:
 {{{
--(void)tableViewAlert:(GPTableViewAlert*)alert editedWithAction:(UITableViewCellEditingStyle)action forItem:(NSString*)item atLevel:(unsigned)level;
+-(void)tableViewAlert:(GPTableViewAlert*)alert editedWithAction:(UITableViewCellEditingStyle)action forItem:(NSString*)item;
 }}}
 
 When a leaf entry is tapped, the following method will be called:
 {{{
--(void)tableViewAlert:(GPTableViewAlert*)alert touchedItem:(NSString*)item atLevel:(unsigned)level;
+-(void)tableViewAlert:(GPTableViewAlert*)alert selectedItem:(NSString*)item;
 }}}
+
+= Usage =
 
 You can display a GPTableViewAlert using:
 {{{
 NSDictionary* alertSpec = ...;
-GPTableViewAlert* alert = [GPTableViewAlert showAlertWithDictionary:alertSpec delegate:self];
+GPTableViewAlert* alert = [GPTableViewAlert alertWithDictionary:alertSpec];
+alert.delegate = ...;
 }}}
-and request to update the view using:
+and request to update the view using one of:
 {{{
-NSString* animationType = kCATransitionPush;
-NSString* animationSubtype = kCATransitionFromRight;
-[alert updateToDictionary:alertSpec2 withAnimationType:animationType subtype:animationSubtype];
+// custom animation.
+[alert updateToDictionary:alertSpec2 withAnimation:GPTVAAnimationTransitionCurlUp];
+// use predefined animations
+[alert pushDictionary:alertSpec2];
+[alert popToDictionary:alertSpec2];
 }}}
-The `buttons` in this the dictionary of this method will be ignored.
+The `buttons` in `alertSpec2` of this method will be ignored.
