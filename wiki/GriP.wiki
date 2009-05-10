@@ -21,7 +21,7 @@ However, you should not completely replace every alert box with GriP messages. B
 
 You should first Jailbreak your device. GriP cannot function without Jailbreaking. Please refer to http://thebigboss.org/guides/quickpwn-guide/ for how to Jailbreak and http://thebigboss.org/why-jailbreak-iphone/ for myths/concerns of Jailbreaking.
 
-You can install the latest stable version of GriP from the !BigBoss repository (http://www.thebigboss.org/). Legitimate `dpkg` implementations like Cydia, `apt-get` and `aptitude` are recommended.
+~~You can install the latest stable version of GriP from the !BigBoss repository (http://www.thebigboss.org/). Legitimate `dpkg` implementations like Cydia, `apt-get` and `aptitude` are recommended.~~ (*Not released yet*)
 
 The beta versions can be found from this site's download page. You will obtain a `.deb` file, which can be installed on your device with the following steps:
 
