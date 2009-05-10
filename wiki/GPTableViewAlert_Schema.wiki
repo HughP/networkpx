@@ -34,6 +34,8 @@ union Entry {
   int lines = 5 :: description != null;   // _Maximum_ number of lines the description view should occupy. Put a nonpositive number here for unbounded height when edit == false.
   bool secure = false :: lines == 1 && edit == true; // The editing text view contains secure text (i.e. shown as • and disable copy&cut.)
   string placeholder = "" :: lines == 1 && edit == true; // The placeholder of the editing text view when it is empty.
+  bool html = false :: lines != 1 && edit == true; // Set the text view to show HTML instead of plain text.
+  bool readonly = false :: edit == true; // "editable" but "read only".
   Accessory accessory = null :: header == false && reorder == false; // accessory
   array<Button> buttons = null :: header == false;        // Buttons associated with this entry.
  };
