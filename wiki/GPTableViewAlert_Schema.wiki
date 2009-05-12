@@ -25,18 +25,20 @@ union Entry {
   string title;               // Entry title.
   string id = title;          // Identifier of this entry. Should be unique.
   string subtitle = nil :: header == false;  // subtitle.
+  bool compact = false :: subtitle != nil;   // Move the subtitle to inline with the title. This makes the title like an icon.
   bool noselect = false :: header == false;  // Mark that this item cannot be selected.
   Icon icon = null :: header == false;           // Icon of the entry.
   bool reorder = false :: header == false && accessory == null;       // Whether to display the reorder control for this row.
   enum{Add,Delete} action = null :: header == false; // Display a "+" or "-" sign.
   string description = null :: header == false;    // description.
   bool edit = false :: header == false;   // Make the description as an editing text view.
-  int lines = 5 :: description != null;   // _Maximum_ number of lines the description view should occupy. Put a nonpositive number here for unbounded height when edit == false.
+  int lines = 0 :: description != null;   // _Maximum_ number of lines the description view should occupy. Put a nonpositive number here for unbounded height when edit == false.
   bool secure = false :: lines == 1 && edit == true; // The editing text view contains secure text (i.e. shown as • and disable copy&cut.)
   string placeholder = "" :: lines == 1 && edit == true; // The placeholder of the editing text view when it is empty.
   bool html = false :: lines != 1 && edit == true; // Set the text view to show HTML instead of plain text.
   bool readonly = false :: edit == true; // "editable" but "read only".
   Accessory accessory = null :: header == false && reorder == false; // accessory
+  Keyboard keyboard = "ASCIICapable" :: edit == true; // keyboard type to use.
   array<Button> buttons = null :: header == false;        // Buttons associated with this entry.
  };
  string;                     // Just the title.
@@ -52,6 +54,16 @@ enum Accessory {
     Checkmark,
     DisclosureIndicator,
     DisclosureButton,
+};
+
+enum Keyboard {
+  ASCIICapable,
+  NumbersAndPunctuation,
+  URL,
+  NumberPad,
+  PhonePad,
+  NamePhonePad,
+  EmailAddress
 };
 
 }}}
