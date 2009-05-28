@@ -39,12 +39,13 @@ extern "C" {
 #include <CoreFoundation/CoreFoundation.h>
 	
 	CFArrayRef GPEnqueueMessage(CFDictionaryRef message);
-	CFArrayRef GPCopyAndDequeueMessages();
+	CFArrayRef GPCopyAndDequeueMessages(unsigned maxCount);
 	
 	void GPSetLocked(Boolean locked);
 	void GPSetGaming(Boolean gaming);
 	void GPFlushSuspensionBehavior();
 	
+	CFNotificationSuspensionBehavior GPCurrentSuspensionBehaviorForPriorityIndex(int i);
 	void GPCleanUpSuspensionQueues();
 	
 #ifdef __cplusplus

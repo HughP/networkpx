@@ -261,6 +261,13 @@ static UIColor* _backgroundColor = nil;
 	return window;
 }
 
++(GPMessageWindow*)windowForIdentifier:(NSString*)identifier {
+	for (GPMessageWindow* window in unreleasedMessageWindows)
+		if ([window->identitifer isEqualToString:identifier])
+			return window;
+	return nil;
+}
+
 -(id)initWithView:(UIView*)view_ message:(NSDictionary*)message {
 	if ((self = [super init])) {
 		helper = [[GPRawThemeHelper alloc] init];
@@ -284,7 +291,7 @@ static UIColor* _backgroundColor = nil;
 -(void)refreshWithMessage:(NSDictionary*)message {
 	[self stopHiding];
 	
-	[helper ignoredMessageID:helperUID];
+	[helper dismissedMessageID:helperUID forAction:GriPMessage_CoalescedNotification];
 	helperUID = [helper registerMessage:message];
 	priority = [[message objectForKey:GRIP_PRIORITY] integerValue];
 	
@@ -309,7 +316,6 @@ static UIColor* _backgroundColor = nil;
 		
 		NSDictionary* prefs = GPCopyPreferences();
 		NSTimeInterval interval = [[[[prefs objectForKey:@"PerPrioritySettings"] objectAtIndex:priority+2] objectAtIndex:GPPrioritySettings_Timer] doubleValue];
-		NSLog(@"%d -> %lg", priority, interval);
 		hideTimer = [[NSTimer scheduledTimerWithTimeInterval:interval target:self selector:@selector(hide) userInfo:nil repeats:NO] retain];
 		[prefs release];
 	}
@@ -331,10 +337,7 @@ static UIColor* _backgroundColor = nil;
 -(void)hide { [self hide:YES]; }
 
 -(void)hide:(BOOL)ignored {
-	if (ignored)
-		[helper ignoredMessageID:helperUID];
-	else
-		[helper touchedMessageID:helperUID];
+	[helper dismissedMessageID:helperUID forAction:(ignored ? GriPMessage_IgnoredNotification : GriPMessage_ClickedNotification)];
 	
 	[self stopTimer];
 	hiding = YES;
@@ -357,8 +360,6 @@ static UIColor* _backgroundColor = nil;
 -(void)dealloc {
 	[self stopTimer];
 	[helper release];
-	if (identitifer != nil)
-		[GPDuplexClient sendMessage:GriPMessage_DisposeIdentifier data:[identitifer dataUsingEncoding:NSUTF8StringEncoding]];
 	[identitifer release];
 	[super dealloc];
 }

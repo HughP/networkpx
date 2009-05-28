@@ -40,6 +40,6 @@ void GPStopServer();
 void GPSetAlternateHandler(CFMessagePortCallBack handler, SInt32 startMessage, SInt32 endMessage);
 
 CFDataRef GPServerCallback(CFMessagePortRef serverPort, SInt32 type, CFDataRef data, void* reserved2);
-Boolean GPServerForwardMessage(CFStringRef clientPortID, SInt32 type, CFDataRef data);
+Boolean GPServerForwardMessage(CFStringRef clientPortID, SInt32 type, CFDataRef data, __unused CFDataRef* result);
 
 #endif

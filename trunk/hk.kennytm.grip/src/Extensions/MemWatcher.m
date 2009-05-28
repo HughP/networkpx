@@ -30,14 +30,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  
 */
 
-#import <GriP/GPExtensions.h>
-#import <GriP/GriP.h>
 #import <sys/sysctl.h>
 #if !TARGET_IPHONE_SIMULATOR
 #import <libkern/OSMemoryNotification.h>
 #endif
 #import <CoreFoundation/CoreFoundation.h>
 #import <Foundation/Foundation.h>
+#import <GriP/GPExtensions.h>
+#import <GriP/GriP.h>
 
 static CFStringRef const names[3] = {CFSTR("Memory Warning"), CFSTR("Memory Urgent"), CFSTR("Memory Critical")};
 static GPApplicationBridge* memWatcherBridge = nil;

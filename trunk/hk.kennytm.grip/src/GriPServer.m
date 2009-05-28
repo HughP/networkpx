@@ -42,6 +42,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #import <UIKit/UIApplication.h>
 #import <GriP/GPSingleton.h>
 #import <GriP/GPMessageQueue.h>
+#import <GriP/GPModalTableViewServer.h>
 
 #if GRIP_JAILBROKEN
 #import <substrate.h>
@@ -58,6 +59,7 @@ static NSObject<GPTheme>* activeTheme = nil;
 static const int MemoryAlertObserver = 12345678, DisplayOnOffObserver = 87654321;
 
 static CFDataRef GriPCallback (CFMessagePortRef serverPort, SInt32 type, CFDataRef data, void* info) {
+	NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
 	CFDataRef retData = NULL;
 	NSArray* array = nil;
 	
@@ -92,7 +94,7 @@ static CFDataRef GriPCallback (CFMessagePortRef serverPort, SInt32 type, CFDataR
 		case GriPMessage_DequeueMessages:
 dequeue_messages:
 		{
-			NSArray* dequeuedMessages = (NSArray*)GPCopyAndDequeueMessages();
+			NSArray* dequeuedMessages = (NSArray*)GPCopyAndDequeueMessages(0);
 			if ([dequeuedMessages count] != 0) {
 			
 #if GRIP_JAILBROKEN
@@ -126,9 +128,12 @@ dequeue_messages:
 				NSArray* dismissedMessages = (NSArray*)GPEnqueueMessage((CFDictionaryRef)messageDict);
 				for (NSDictionary* message in dismissedMessages) {
 					if ([message objectForKey:GRIP_CONTEXT] != nil) {
+						int priorityIndex = [[message objectForKey:GRIP_PRIORITY] integerValue]+2;
+						CFNotificationSuspensionBehavior suspensionBehavior = GPCurrentSuspensionBehaviorForPriorityIndex(priorityIndex);
 						NSArray* arr = [message objectsForKeys:[NSArray arrayWithObjects:GRIP_PID, GRIP_CONTEXT, GRIP_ISURL, nil] notFoundMarker:@""];
 						NSData* arrData = [NSPropertyListSerialization dataFromPropertyList:arr format:NSPropertyListBinaryFormat_v1_0 errorDescription:NULL];
-						GriPCallback(NULL, GriPMessage_IgnoredNotification, (CFDataRef)arrData, NULL);
+						GriPCallback(NULL, suspensionBehavior == CFNotificationSuspensionBehaviorCoalesce ? GriPMessage_CoalescedNotification : GriPMessage_IgnoredNotification,
+									 (CFDataRef)arrData, NULL);
 					}
 				}
 				[dismissedMessages release];
@@ -145,6 +150,7 @@ dequeue_messages:
 			
 		case GriPMessage_ClickedNotification:
 		case GriPMessage_IgnoredNotification:
+		case GriPMessage_CoalescedNotification:
 			array = [NSPropertyListSerialization propertyListFromData:(NSData*)data mutabilityOption:NSPropertyListImmutable format:NULL errorDescription:NULL];
 			if ([array isKindOfClass:[NSArray class]] && [array count] >= 3)
 ignored_message:
@@ -160,7 +166,7 @@ ignored_message:
 						type = GriPMessage_LaunchURL;
 				}
 				
-				if (!GPServerForwardMessage((CFStringRef)pid, type, (CFDataRef)context) && isURL) {
+				if (!GPServerForwardMessage((CFStringRef)pid, type, (CFDataRef)context, NULL) && isURL) {
 					NSURL* url = [NSURL URLWithString:(NSString*)[array objectAtIndex:1]];
 #if GRIP_JAILBROKEN
 					SpringBoard* springBoard = (SpringBoard*)[UIApplication sharedApplication];
@@ -168,9 +174,9 @@ ignored_message:
 						[springBoard applicationOpenURL:url asPanel:NO publicURLsOnly:NO];
 					else if ([springBoard respondsToSelector:@selector(applicationOpenURL:publicURLsOnly:)])
 						[springBoard applicationOpenURL:url publicURLsOnly:NO];
-#else
-					[[UIApplication sharedApplication] openURL:url];
+					else
 #endif
+						[[UIApplication sharedApplication] openURL:url];
 				}
 			}
 			break;
@@ -193,25 +199,18 @@ ignored_message:
 				if (arrCount >= 1) {
 					NSString* appName = [array objectAtIndex:0];
 					NSString* appMsg = arrCount >= 2 ? [array objectAtIndex:1] : nil;
-					retval = GPCheckEnabled(appName, appMsg);
+					retval = GPCheckEnabled(appName, appMsg, YES);
 				}
 			}
 			retData = CFDataCreate(NULL, (const UInt8*)&retval, sizeof(BOOL));
 			break;
 		}
 			
-		case GriPMessage_DisposeIdentifier:
-			if ([activeTheme respondsToSelector:@selector(messageClosed:)]) {
-				NSString* identifier = [[NSString alloc] initWithData:(NSData*)data encoding:NSUTF8StringEncoding];
-				[activeTheme messageClosed:identifier];
-				[identifier release];
-			}
-			break;
-
 		default:
 			break;
 	}
 
+	[pool drain];
 	return retData;
 }
 
@@ -250,23 +249,19 @@ static void GPUpdateGamingForDisplayID(NSString* displayID) {
 }
 #endif
 
-static void GPMemoryAlert (CFNotificationCenterRef center, void* observer, CFStringRef name, const void* object, CFDictionaryRef userInfo) {
-	// basically the same action.
-	GriPCallback(NULL, GriPMessage_FlushPreferences, NULL, NULL);
-}
-
 static void GPDisplayOnOff (CFNotificationCenterRef center, void* observer, CFStringRef name, const void* object, CFDictionaryRef userInfo) {
 	Boolean locked = (CFStringCompare(name, CFSTR("SBDidTurnOnDisplayNotification"), 0) != kCFCompareEqualTo);
 	GPSetLocked(locked);
 	if (!locked)
 		GriPCallback(NULL, GriPMessage_DequeueMessages, NULL, NULL);
 }
- 
+
 static void terminate () {
 	CFNotificationCenterRemoveObserver(CFNotificationCenterGetLocalCenter(), &MemoryAlertObserver,
 									   (CFStringRef)UIApplicationDidReceiveMemoryWarningNotification, NULL);
 	CFNotificationCenterRemoveEveryObserver(CFNotificationCenterGetDarwinNotifyCenter(), &DisplayOnOffObserver);
 	GPStopServer();
+	GPStopModalTableViewServer();
 	[GPMessageWindow _cleanup];
 	[activeTheme release];
 	GPFlushPreferences();
@@ -276,7 +271,7 @@ static void terminate () {
 void GPStartGriPServer () {
 #if GRIP_JAILBROKEN
 	CFStringRef bundleID = CFBundleGetIdentifier(CFBundleGetMainBundle());
-	if (kCFCompareEqualTo == CFStringCompare(bundleID, CFSTR("com.apple.springboard"), 0)) {
+	if (kCFCompareEqualTo != CFStringCompare(bundleID, CFSTR("com.apple.Preferences"), 0)) {
 #endif
 	
 		if (GPStartServer() != 0) {
@@ -285,18 +280,17 @@ void GPStartGriPServer () {
 		}
 		
 		GPSetAlternateHandler(&GriPCallback, GriPMessage__Start, GriPMessage__End);
+		if (objc_getClass("GPModalTableViewNavigationController") != Nil) {
+			GPSetAlternateHandler(&GPModalTableViewServerCallback, GPTVAMessage__Start, GPTVAMessage__End);
+		}
 		atexit(&terminate);
 		
 		NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
 		[GPMessageWindow _initialize];
 		
 		// Notify any waiting MS extensions that GriP is ready.
-		CFNotificationCenterRef localCenter = CFNotificationCenterGetLocalCenter();
-		
+		CFNotificationCenterRef localCenter = CFNotificationCenterGetLocalCenter();		
 		CFNotificationCenterPostNotification(localCenter, CFSTR("hk.kennytm.GriP.ready"), NULL, NULL, false);
-		CFNotificationCenterAddObserver(localCenter, &MemoryAlertObserver, &GPMemoryAlert,
-										(CFStringRef)UIApplicationDidReceiveMemoryWarningNotification,
-										NULL, CFNotificationSuspensionBehaviorDeliverImmediately);
 		
 		// Set to suspension when screen is locked.
 		// ** Only available for >=2.1 **
@@ -309,6 +303,8 @@ void GPStartGriPServer () {
 		MSHookMessage(SBApplication_class, @selector(launchSucceeded), (IMP)&GP_SBApplication_launchSucceeded, "hk_kennytm_grip_");
 		MSHookMessage(SBApplication_class, @selector(exitedCommon), (IMP)&GP_SBApplication_exitedCommon, "hk_kennytm_grip_");
 #endif
+		GPStartModalTableViewServer();
+		
 		[pool drain];
 		
 #if GRIP_JAILBROKEN

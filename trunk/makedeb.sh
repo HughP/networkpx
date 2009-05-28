@@ -8,7 +8,7 @@ for PackageName in `ls -d hk.*/`; do
 		if [[ $1 == "--clean" ]]; then
 			make clean;
 		fi;
-		make;
+#		make;
 		cd $OLDPWD;
 	fi
 	./dpkg-deb-nodot ${PackageName%%/}/deb ../../${PackageName%%/};

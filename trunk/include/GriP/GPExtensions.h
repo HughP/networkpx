@@ -43,6 +43,12 @@ NSDictionary* GPPropertyListCopyLocalizableStringsDictionary(NSURL* url);
 #include <CoreFoundation/CoreFoundation.h>
 CFDictionaryRef GPPropertyListCopyLocalizableStringsDictionary(CFURLRef url);
 #endif
+static inline CFPropertyListRef GPPropertyListCreateFromString(CFStringRef string, CFPropertyListMutabilityOptions mutability) {
+	CFDataRef data = CFStringCreateExternalRepresentation(NULL, string, kCFStringEncodingUTF8, 0);
+	CFTypeRef retval = CFPropertyListCreateFromXMLData(NULL, data, mutability, NULL);
+	CFRelease(data);
+	return retval;
+}
 #ifdef __cplusplus
 }
 #endif

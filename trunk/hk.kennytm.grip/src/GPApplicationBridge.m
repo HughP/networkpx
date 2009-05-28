@@ -47,6 +47,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	[sharedDelegate release];
 	[cachedRegistrationDictionary release];
 	[appName release];
+	[duplex removeObserver:self selector:@selector(messageClickedOrIgnored:type:)];
+	[duplex removeObserver:self selector:@selector(launchURL:)];
 	[duplex release];
 	[super dealloc];
 }
@@ -57,9 +59,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 			if (duplex == nil) {
 				NSLog(@"GPTryInitialize: Cannot initialize duplex client. Is GriP installed?");
 			} else {
-				[duplex addObserver:self selector:@selector(messageClickedOrIgnored:type:) forMessage:GriPMessage_ClickedNotification];
-				[duplex addObserver:self selector:@selector(messageClickedOrIgnored:type:) forMessage:GriPMessage_IgnoredNotification];
-				[duplex addObserver:self selector:@selector(launchURL:) forMessage:GriPMessage_LaunchURL];
+				NSIndexSet* messages = GPIndexSetCreateWithIndices(3, GriPMessage_ClickedNotification, GriPMessage_IgnoredNotification, GriPMessage_CoalescedNotification);
+				[duplex addObserver:self selector:@selector(messageClickedOrIgnored:type:) forMessages:messages];
+				[duplex addObserver:self selector:@selector(launchURL:) forMessages:[NSIndexSet indexSetWithIndex:GriPMessage_LaunchURL]];
+				[messages release];
 			}
 		}
 		
@@ -87,7 +90,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 			if ([sharedDelegate respondsToSelector:@selector(growlNotificationWasClicked:)])
 				[sharedDelegate growlNotificationWasClicked:context];
 		} else {
-			if ([sharedDelegate respondsToSelector:@selector(growlNotificationTimedOut:)])
+			if (type == GriPMessage_CoalescedNotification && [sharedDelegate respondsToSelector:@selector(growlNotificationCoalesced:)])
+				[sharedDelegate growlNotificationCoalesced:context];
+			else if ([sharedDelegate respondsToSelector:@selector(growlNotificationTimedOut:)])
 				[sharedDelegate growlNotificationTimedOut:context];
 		}
 	}
@@ -96,7 +101,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 -(void)launchURL:(NSData*)urlData {
 	NSString* urlString = [NSPropertyListSerialization propertyListFromData:urlData mutabilityOption:NSPropertyListImmutable format:NULL errorDescription:NULL];
 	if ([urlString isKindOfClass:[NSString class]])
-		[[UIApplication sharedApplication] openURL:[NSURL URLWithString:urlString]];
+		[([UIApplication sharedApplication] ?: [[[UIApplication alloc] init] autorelease]) openURL:[NSURL URLWithString:urlString]];
 }
 
 @dynamic installed, running;
@@ -140,10 +145,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		[inDelegate growlIsReady];
 }
 
--(void)notifyWithTitle:(NSString*)title description:(NSString*)description notificationName:(NSString*)notifName iconData:(NSObject*)iconData priority:(signed)priority isSticky:(BOOL)isSticky clickContext:(NSObject*)clickContext {
+-(void)notifyWithTitle:(NSString*)title description:(NSString*)description notificationName:(NSString*)notifName iconData:(id)iconData priority:(signed)priority isSticky:(BOOL)isSticky clickContext:(NSObject*)clickContext {
 	[self notifyWithTitle:title description:description notificationName:notifName iconData:iconData priority:priority isSticky:isSticky clickContext:clickContext identifier:nil];
 }
--(void)notifyWithTitle:(NSString*)title description:(NSString*)description notificationName:(NSString*)notifName iconData:(NSObject*)iconData priority:(signed)priority isSticky:(BOOL)isSticky clickContext:(NSObject*)clickContext identifier:(NSString*)identifier {
+-(void)notifyWithTitle:(NSString*)title description:(NSString*)description notificationName:(NSString*)notifName iconData:(id)iconData priority:(signed)priority isSticky:(BOOL)isSticky clickContext:(NSObject*)clickContext identifier:(NSString*)identifier {
 	if (duplex == nil || appName == nil)
 		return;
 	

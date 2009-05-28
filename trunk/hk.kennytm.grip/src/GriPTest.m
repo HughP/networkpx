@@ -34,10 +34,75 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <unistd.h>
 #import <Foundation/Foundation.h>
 #import <GriP/GriP.h>
+#import <GriP/GPModalTableViewClient.h>
 
 #if !TARGET_IPHONE_SIMULATOR
 #define GPGriPTest main
 #endif
+
+@interface GPGriPTestDelegate : NSObject<GPModalTableViewDelegate,GrowlApplicationBridgeDelegate> {
+	BOOL completed;
+}
+@property(assign) BOOL completed;
+-(NSString*)applicationNameForGrowl;
+-(NSDictionary*)registrationDictionaryForGrowl;
+-(void)growlNotificationWasClicked:(NSObject*)context;
+-(void)growlNotificationTimedOut:(NSObject*)context;
+-(void)growlNotificationCoalesced:(NSObject*)context;
+-(void)modalTableView:(GPModalTableViewClient*)client clickedButton:(NSString*)identifier;
+-(void)modalTableView:(GPModalTableViewClient*)client movedItem:(NSString*)targetItem below:(NSString*)belowItem;
+-(void)modalTableView:(GPModalTableViewClient*)client deletedItem:(NSString*)item;
+-(void)modalTableView:(GPModalTableViewClient*)client selectedItem:(NSString*)item;
+-(void)modalTableView:(GPModalTableViewClient*)client changedDescription:(NSString*)newDescription forItem:(NSString*)item;
+-(void)modalTableView:(GPModalTableViewClient*)client tappedAccessoryButtonInItem:(NSString*)item;
+-(void)modalTableViewDismissed:(GPModalTableViewClient*)client;
+@end
+@implementation GPGriPTestDelegate
+@synthesize completed;
+-(NSString*)applicationNameForGrowl { return @"GriP Command line utility"; }
+-(NSDictionary*)registrationDictionaryForGrowl {
+	return [NSDictionary dictionaryWithObjectsAndKeys:
+			[NSArray arrayWithObject:@"Command line message"], GROWL_NOTIFICATIONS_ALL,
+			[NSArray array], GROWL_NOTIFICATIONS_DEFAULT,
+			nil];
+}
+-(void)growlNotificationWasClicked:(NSObject*)context {
+	printf("GPGriPTest: growlNotificationWasClicked:\n");
+	completed = YES;
+}
+-(void)growlNotificationTimedOut:(NSObject*)context {
+	printf("GPGriPTest: growlNotificationTimedOut:\n");
+	completed = YES;
+}
+-(void)growlNotificationCoalesced:(NSObject*)context {
+	printf("GPGriPTest: growlNotificationCoalesced:\n");
+	completed = YES;
+}
+-(void)modalTableView:(GPModalTableViewClient*)client clickedButton:(NSString*)identifier {
+	printf("GPGriPTest: modalTableView:clickedButton: (identifier=\"%s\")\n", [identifier UTF8String]);
+}
+-(void)modalTableView:(GPModalTableViewClient*)client movedItem:(NSString*)targetItem below:(NSString*)belowItem {
+	printf("GPGriPTest: modalTableView:movedItem:below: (targetItem=\"%s\", belowItem=\"%s\")\n", [targetItem UTF8String], [belowItem UTF8String]);
+}
+-(void)modalTableView:(GPModalTableViewClient*)client deletedItem:(NSString*)item {
+	printf("GPGriPTest: modalTableView:deletedItem: (item=\"%s\")\n", [item UTF8String]);
+}
+-(void)modalTableView:(GPModalTableViewClient*)client selectedItem:(NSString*)item {
+	printf("GPGriPTest: modalTableView:selectedItem: (item=\"%s\")\n", [item UTF8String]);
+}
+-(void)modalTableView:(GPModalTableViewClient*)client changedDescription:(NSString*)newDescription forItem:(NSString*)item {
+	printf("GPGriPTest: modalTableView:changedDescription:forItem (newDescription=\"%s\", item=\"%s\")\n", [newDescription UTF8String], [item UTF8String]);
+}
+-(void)modalTableView:(GPModalTableViewClient*)client tappedAccessoryButtonInItem:(NSString*)item {
+	printf("GPGriPTest: modalTableView:tappedAccessoryButtonInItem: (item=\"%s\")\n", [item UTF8String]);
+}
+-(void)modalTableViewDismissed:(GPModalTableViewClient*)client {
+	printf("GPGriPTest: modalTableViewDismissed:\n");
+	completed = YES;
+}
+@end
+
+
 
 int GPGriPTest(int argc, char* argv[]) {
 	if (argc == 1) {
@@ -50,6 +115,7 @@ int GPGriPTest(int argc, char* argv[]) {
 			   "		-p  <priority>     Priority of message. Must be \"-2\" to \"2\"\n"
 			   "		-s	               Set message as sticky.\n"
 			   "		-e  <id>           Identifier (for coalescing).\n"
+			   "		-a	<filename>     Display a GPTableViewAlert using filename as the dictionary.\n"
 		);
 	} else {
 		// get options.
@@ -59,13 +125,16 @@ int GPGriPTest(int argc, char* argv[]) {
 		NSString* title = nil;
 		NSString* desc = nil;
 		NSObject* icon = nil;
-		NSURL* url = nil;
+		id url = @"context";
 		int priority = 0;
 		NSString* identifier = nil;
+		NSDictionary* gptvaDict = nil;
+		
+		GPModalTableViewClient* mtvClient = nil;
 		
 		int c;
 		optind = 1;
-		while ((c = getopt(argc, argv, "t:d:i:u:p:se:")) != -1) {
+		while ((c = getopt(argc, argv, "t:d:i:u:p:se:a:")) != -1) {
 			switch (c) {
 				case 't':
 					title = [NSString stringWithUTF8String:optarg];
@@ -97,9 +166,14 @@ int GPGriPTest(int argc, char* argv[]) {
 				case 'e':
 					identifier = [NSString stringWithUTF8String:optarg];
 					break;
+					
+				case 'a':
+					gptvaDict = [NSDictionary dictionaryWithContentsOfFile:[NSString stringWithUTF8String:optarg]];
+					break;
 			}
 		}
 		
+		GPGriPTestDelegate* delegate = [[GPGriPTestDelegate alloc] init];
 		GPApplicationBridge* bridge = [[GPApplicationBridge alloc] init];
 		
 		if (bridge == nil) {
@@ -107,21 +181,32 @@ int GPGriPTest(int argc, char* argv[]) {
 			goto cleanup;
 		}
 		
-		[bridge registerWithDictionary:[NSDictionary dictionaryWithObjectsAndKeys:
-										[NSArray arrayWithObject:@"Command line message"], GROWL_NOTIFICATIONS_ALL,
-										[NSArray array], GROWL_NOTIFICATIONS_DEFAULT,
-										@"GriP Command line utility", GROWL_APP_NAME,
-										nil]];
+		bridge.growlDelegate = delegate;
+		
 		if (![bridge enabledForName:@"Command line message"]) {
 			printf("Error: I am being disabled. Nothing can be shown.\n"
 				   "Please go to \"Settings\" -> \"GriP\" -> \"GriP Command line utility\" -> \"GriP Command line utility\" and turn ON \"Enabled\".\n");
 			goto cleanup;
 		}
 		
-		[bridge notifyWithTitle:title description:desc notificationName:@"Command line message" iconData:icon priority:priority isSticky:sticky clickContext:url identifier:identifier];
+		if (gptvaDict == nil)
+			[bridge notifyWithTitle:title description:desc notificationName:@"Command line message" iconData:icon priority:priority isSticky:sticky clickContext:url identifier:identifier];
+		else {
+			mtvClient = [[GPModalTableViewClient alloc] initWithDictionary:gptvaDict applicationBridge:bridge name:@"Command line message"];
+			mtvClient.delegate = delegate;
+		}
 		
+		/*
+		while (!delegate.completed) {
+			CFRunLoopRunInMode(kCFRunLoopDefaultMode, 1, NO);
+		}
+		 */
+		 
 cleanup:
+		[mtvClient release];
 		[bridge release];
+		[delegate release];
+				
 		[pool drain];
 	}
 	

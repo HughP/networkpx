@@ -47,12 +47,16 @@ struct GPAlternativeHandler {
 };
 static CFMutableArrayRef alternateHandlers = NULL;
 static CFMutableDictionaryRef directMessagingFPtrs = NULL;
+struct GPClientObject {
+	CFMessagePortCallBack clientFPtr;
+	void* clientPtr;
+};
 
 // static Boolean CFStringEqual (CFStringRef a, CFStringRef b) { return CFStringCompare(a, b, 0) == kCFCompareEqualTo; }
 
 
 
-extern CFDataRef GPServerCallback(CFMessagePortRef serverPort, SInt32 type, CFDataRef data, void* reserved2) {
+extern CFDataRef GPServerCallback(CFMessagePortRef serverPort, SInt32 type, CFDataRef data, void* reserved2) {	
 	if (type == GPMessage_GetClientPortID) {
 		int portID = OSAtomicIncrement32(&clientPortID);
 		
@@ -81,10 +85,11 @@ extern CFDataRef GPServerCallback(CFMessagePortRef serverPort, SInt32 type, CFDa
 	} else if (type == GPMessage_ExchangeDirectMessagingFPtr) {
 		
 		const char* clientPortID = (const char*)CFDataGetBytePtr(data);
-		CFMessagePortCallBack clientFPtr = *(CFMessagePortCallBack*)clientPortID;
-		clientPortID += sizeof(CFMessagePortCallBack);
-		CFStringRef clientPortIDString = CFStringCreateWithCString(NULL, clientPortID, kCFStringEncodingUTF8);
-		CFDictionarySetValue(directMessagingFPtrs, clientPortIDString, clientFPtr);
+		struct GPClientObject* clientObj = malloc(sizeof(struct GPClientObject));
+		*clientObj = *(struct GPClientObject*)clientPortID;
+		CFStringRef clientPortIDString = CFStringCreateWithCString(NULL, clientPortID + sizeof(struct GPClientObject), kCFStringEncodingUTF8);
+		
+		CFDictionarySetValue(directMessagingFPtrs, clientPortIDString, clientObj);
 		CFRelease(clientPortIDString);
 		
 		const void* callbackPointer = &GPServerCallback;
@@ -101,7 +106,7 @@ extern CFDataRef GPServerCallback(CFMessagePortRef serverPort, SInt32 type, CFDa
 		
 	} else {
 		for (int i = CFArrayGetCount(alternateHandlers)-1; i >= 0; -- i) {
-			struct GPAlternativeHandler* altHandler = (struct GPAlternativeHandler*)CFDataGetBytePtr( (CFDataRef)CFArrayGetValueAtIndex(alternateHandlers, i) );
+			struct GPAlternativeHandler* altHandler = (struct GPAlternativeHandler*)CFArrayGetValueAtIndex(alternateHandlers, i);
 			if (type >= altHandler->start && type <= altHandler->end)
 				return (altHandler->handler)(serverPort, type, data, reserved2);
 		}
@@ -111,13 +116,15 @@ extern CFDataRef GPServerCallback(CFMessagePortRef serverPort, SInt32 type, CFDa
 
 #pragma mark -
 
+static void free2(CFAllocatorRef allocator, void* ptr) { free(ptr); }
+
 int GPStartServer() {
-	// clientPorts = CFSetCreateMutable(NULL, 0, &kCFTypeSetCallBacks);
-	alternateHandlers = CFArrayCreateMutable(NULL, 0, &kCFTypeArrayCallBacks);
-	directMessagingFPtrs = CFDictionaryCreateMutable(NULL, 0, &kCFCopyStringDictionaryKeyCallBacks, NULL);
+	CFDictionaryValueCallBacks callbacks = {0, NULL, (CFDictionaryReleaseCallBack)&free2, NULL, NULL};
+	alternateHandlers = CFArrayCreateMutable(NULL, 0, (CFArrayCallBacks*)&callbacks);
+	directMessagingFPtrs = CFDictionaryCreateMutable(NULL, 0, &kCFCopyStringDictionaryKeyCallBacks, &callbacks);
 	
 	// (1) Create server port.
-	CFMessagePortRef serverPort = CFMessagePortCreateLocal(NULL, CFSTR("hk.kennytm.GriP.server"), &GPServerCallback, NULL, NULL);
+	serverPort = CFMessagePortCreateLocal(NULL, CFSTR("hk.kennytm.GriP.server"), &GPServerCallback, NULL, NULL);
 	if (serverPort == NULL) {
 		CFShow(CFSTR("GPStartServer: Cannot create server port. Is GriP already running?"));
 		return -1;
@@ -144,16 +151,19 @@ void GPStopServer() {
 }
 
 void GPSetAlternateHandler(CFMessagePortCallBack handler, SInt32 startMessage, SInt32 endMessage) {
-	struct GPAlternativeHandler handlerStruct = {handler, startMessage, endMessage};
-	CFDataRef handlerData = CFDataCreate(NULL, (const UInt8*)&handlerStruct, sizeof(struct GPAlternativeHandler));
-	CFArrayAppendValue(alternateHandlers, handlerData);
-	CFRelease(handlerData);
+	struct GPAlternativeHandler* handlerStruct = malloc(sizeof(struct GPAlternativeHandler));
+	handlerStruct->handler = handler;
+	handlerStruct->start = startMessage;
+	handlerStruct->end = endMessage;
+	CFArrayAppendValue(alternateHandlers, handlerStruct);
 }
 
-Boolean GPServerForwardMessage(CFStringRef clientPortID, SInt32 type, CFDataRef data) {
-	CFMessagePortCallBack clientFPtr = (CFMessagePortCallBack)CFDictionaryGetValue(directMessagingFPtrs, clientPortID);
-	if (clientFPtr != NULL) {
-		clientFPtr(NULL, type, data, NULL);
+Boolean GPServerForwardMessage(CFStringRef clientPortID, SInt32 type, CFDataRef data, CFDataRef* pResult) {
+	if (clientPortID == NULL)
+		return false;
+	struct GPClientObject* clientObj = (struct GPClientObject*)(CFMessagePortCallBack)CFDictionaryGetValue(directMessagingFPtrs, clientPortID);
+	if (clientObj != NULL) {
+		(clientObj->clientFPtr)(NULL, type, data, clientObj->clientPtr);
 		return true;
 	} else {
 		CFMessagePortRef clientPort = CFMessagePortCreateRemote(NULL, clientPortID);

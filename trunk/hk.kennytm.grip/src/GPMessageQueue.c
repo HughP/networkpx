@@ -52,7 +52,7 @@ CFNotificationSuspensionBehavior lockedSuspensionBehaviors[5] = {
 };
 Boolean isGaming = false, isLocked = false;
 
-static inline CFNotificationSuspensionBehavior GPCurrentSuspensionBehaviorForPriorityIndex(int i) {
+CFNotificationSuspensionBehavior GPCurrentSuspensionBehaviorForPriorityIndex(int i) {
 	return isLocked ? lockedSuspensionBehaviors[i] : isGaming ? gamingSuspensionBehaviors[i] : CFNotificationSuspensionBehaviorDeliverImmediately;
 }
 
@@ -70,7 +70,7 @@ CFArrayRef GPEnqueueMessage(CFDictionaryRef message) {
 	
 	CFNotificationSuspensionBehavior currentSuspensionBehavior = GPCurrentSuspensionBehaviorForPriorityIndex(priorityIndex);
 	if (currentSuspensionBehavior == CFNotificationSuspensionBehaviorDrop) {
-		return CFArrayCreate(NULL, &message, 1, &kCFTypeArrayCallBacks);
+		return CFArrayCreate(NULL, (const void**)&message, 1, &kCFTypeArrayCallBacks);
 	}
 	
 	GPSingletonConstructor(messageQueues[priorityIndex],
@@ -79,8 +79,8 @@ CFArrayRef GPEnqueueMessage(CFDictionaryRef message) {
 	
 	if (currentSuspensionBehavior == CFNotificationSuspensionBehaviorCoalesce) {
 		CFArrayRef queues = messageQueues[priorityIndex];
-		CFArrayRef coalescedQueue = CFArrayCreateMutable(NULL, 0, &kCFTypeArrayCallBacks);
-		CFArrayAppendValue(coalescedQueue, &message);
+		CFMutableArrayRef coalescedQueue = CFArrayCreateMutable(NULL, 0, &kCFTypeArrayCallBacks);
+		CFArrayAppendValue(coalescedQueue, (const void*)message);
 		if (!OSAtomicCompareAndSwapPtrBarrier((void*)queues, (void*)coalescedQueue, (void*volatile*)&(messageQueues[priorityIndex])))
 			CFRelease(coalescedQueue);
 		return queues;
@@ -92,7 +92,10 @@ CFArrayRef GPEnqueueMessage(CFDictionaryRef message) {
 }
 
 // TODO: Thread safety check.
-CFArrayRef GPCopyAndDequeueMessages() {
+CFArrayRef GPCopyAndDequeueMessages(unsigned maxCount) {
+	if (maxCount == 0)
+		maxCount = UINT_MAX;
+	
 	CFMutableArrayRef resArray = CFArrayCreateMutable(NULL, 0, &kCFTypeArrayCallBacks);
 	
 	for (int i = 4; i >= 0; --i) {
@@ -104,8 +107,18 @@ CFArrayRef GPCopyAndDequeueMessages() {
 			if (count == 0)
 				continue;
 			
-			CFArrayAppendArray(resArray, messageQueues[i], CFRangeMake(0, count)); 
-			CFArrayRemoveAllValues(messageQueues[i]);
+			if (count < maxCount) {
+				CFArrayAppendArray(resArray, messageQueues[i], CFRangeMake(0, count)); 
+				CFArrayRemoveAllValues(messageQueues[i]);
+				maxCount -= count;
+			} else {
+				CFIndex delta = count - maxCount;
+				CFArrayAppendArray(resArray, messageQueues[i], CFRangeMake(0, delta));
+				for (CFIndex j = delta-1;; -- j) {
+					CFArrayRemoveValueAtIndex(messageQueues[i], j);
+					if (j == 0) break;
+				}
+			}
 		}
 	}
 	

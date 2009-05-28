@@ -35,6 +35,4 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 @protocol GPTheme
 -(id)initWithBundle:(NSBundle*)bundle;
 -(void)display:(NSDictionary*)message;
-@optional
--(void)messageClosed:(NSString*)identifier;
 @end

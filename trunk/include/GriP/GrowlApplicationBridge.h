@@ -423,13 +423,15 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *	 See also <code>GrowlApplicationBridgeDelegate_InformalProtocol</code>.
  */
 
-@protocol GrowlApplicationBridgeDelegate
+@protocol GrowlApplicationBridgeDelegate<NSObject>
 @optional
 -(NSDictionary*)registrationDictionaryForGrowl;
 -(NSString*)applicationNameForGrowl;
 -(void)growlIsReady;
 -(void)growlNotificationWasClicked:(NSObject*)context;
 -(void)growlNotificationTimedOut:(NSObject*)context;
+// Addition for GriP:
+-(void)growlNotificationCoalesced:(NSObject*)context;
 @end
 
 #endif /* __GrowlApplicationBridge_h__ */

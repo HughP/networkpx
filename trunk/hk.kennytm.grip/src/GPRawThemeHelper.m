@@ -39,11 +39,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 @implementation GPRawThemeHelper
 -(id)init {
 	if ((self = [super init]))
-		registeredMessages = [[NSMutableDictionary alloc] init];
+		registeredMessages = CFDictionaryCreateMutable(NULL, 0, NULL, &kCFTypeDictionaryValueCallBacks);
 	return self;
 }
 -(void)dealloc {
-	[registeredMessages release];
+	CFRelease(registeredMessages);
 	[super dealloc];
 }
 -(int)registerMessage:(NSDictionary*)message {
@@ -52,28 +52,19 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		return -1;
 	
 	int myUID = OSAtomicIncrement32(&uid);
-	NSNumber* myUIDNumber = [NSNumber numberWithInt:myUID];
-	// dedicated to all bracket lovers.
-	[registeredMessages setObject:[NSPropertyListSerialization dataFromPropertyList:[message objectsForKeys:[NSArray arrayWithObjects:GRIP_PID, GRIP_CONTEXT, GRIP_ISURL, nil]
-																							 notFoundMarker:@""]
-																			 format:NSPropertyListBinaryFormat_v1_0
-																   errorDescription:NULL] forKey:myUIDNumber];
+	CFDictionarySetValue(registeredMessages, (const void*)myUID, [NSPropertyListSerialization dataFromPropertyList:[message objectsForKeys:[NSArray arrayWithObjects:GRIP_PID, GRIP_CONTEXT, GRIP_ISURL, nil]
+																															notFoundMarker:@""]
+																											format:NSPropertyListBinaryFormat_v1_0
+																								  errorDescription:NULL]);
 	return myUID;
 }
--(void)ignoredMessageID:(int)msgid {
+-(void)dismissedMessageID:(int)msgid forAction:(SInt32)action {
 	if (msgid == -1)
 		return;
-	NSNumber* myUIDNumber = [NSNumber numberWithInt:msgid];
-	NSData* dataToSend = [registeredMessages objectForKey:myUIDNumber];
-	[GPDuplexClient sendMessage:GriPMessage_IgnoredNotification data:dataToSend];
-	[registeredMessages removeObjectForKey:myUIDNumber];
+	NSData* dataToSend = (NSData*)CFDictionaryGetValue(registeredMessages, (const void*)msgid);
+	[GPDuplexClient sendMessage:action data:dataToSend];
+	CFDictionaryRemoveValue(registeredMessages, (const void*)msgid);
 }
--(void)touchedMessageID:(int)msgid {
-	if (msgid == -1)
-		return;
-	NSNumber* myUIDNumber = [NSNumber numberWithInt:msgid];
-	NSData* dataToSend = [registeredMessages objectForKey:myUIDNumber];
-	[GPDuplexClient sendMessage:GriPMessage_ClickedNotification data:dataToSend];
-	[registeredMessages removeObjectForKey:myUIDNumber];
-}
+-(void)touchedMessageID:(int)msgid { [self dismissedMessageID:msgid forAction:GriPMessage_ClickedNotification]; }
+-(void)ignoredMessageID:(int)msgid { [self dismissedMessageID:msgid forAction:GriPMessage_IgnoredNotification]; }
 @end

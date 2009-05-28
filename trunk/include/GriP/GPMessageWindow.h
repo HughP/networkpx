@@ -74,6 +74,8 @@ typedef struct GPGap {
 +(void)setMaxWidth:(CGFloat)maxWidth;
 +(UIColor*)backgroundColor;
 +(void)setBackgroundColor:(UIColor*)backgroundColor;
+
++(GPMessageWindow*)windowForIdentifier:(NSString*)identifier;
 @end
 
 @interface GPMessageWindow ()

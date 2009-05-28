@@ -1,6 +1,6 @@
 /*
 
-GPPreferences.h ... Obtain preferences for GriP.
+GPModalTableViewServer.h ... GriP Modal Table View Server.
  
 Copyright (c) 2009, KennyTM~
 All rights reserved.
@@ -30,43 +30,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  
 */
 
-#ifndef GRIP_GPPreferences_H
-#define GRIP_GPPreferences_H
+#ifndef GRIP_GPMODALTABLEVIEWSERVER_H
+#define GRIP_GPMODALTABLEVIEWSERVER_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-	
 #include <CoreFoundation/CoreFoundation.h>
-	
-#if __OBJC__
-#include <Foundation/Foundation.h>
-	@class UIColor;
-	NSDictionary* GPCopyPreferences();
-	void GPFlushPreferences();
-		
-	void GPUpdateRegistrationDictionaryForAppName(NSString* appName, NSDictionary* registrationDictionary);
-	void GPModifyMessageForUserPreference(NSMutableDictionary* message);
-		
-	BOOL GPCheckEnabled(NSString* appName, NSString* msgName, BOOL respectStealth);
-	
-//#define GPPreferences() [GPCopyPreferences() autorelease]
-#else
-	typedef struct UIColor UIColor;
-	
-	CFDictionaryRef GPPreferences();
-	void GPFlushPreferences();
-	
-	void GPUpdateRegistrationDictionaryForAppName(CFStringRef appName, CFDictionaryRef registrationDictionary);
-	void GPModifyMessageForUserPreference(CFMutableDictionaryRef message);
-	
-	Boolean GPCheckEnabled(CFStringRef appName, CFStringRef msgName, Boolean respectStealth);	
-#endif
-	
-	void GPCopyColorsForPriority(int priority, UIColor** restrict outBGColor, UIColor** restrict outFGColor);
-	
-#ifdef __cplusplus
-}
-#endif
+
+void GPStartModalTableViewServer();
+void GPStopModalTableViewServer();
+CFDataRef GPModalTableViewServerCallback (CFMessagePortRef serverPort, SInt32 type, CFDataRef data, void* info);
 
 #endif

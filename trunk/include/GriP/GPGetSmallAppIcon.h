@@ -32,8 +32,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 @class UIImage, NSString;
 UIImage* GPGetSmallAppIcon(NSString* identifier);
-
 UIImage* GPGetSmallAppIconFromObject(NSObject* object);
+void GPDrawSmallAppIconInRect(NSObject* object, CGRect rect);
 
 static inline BOOL GPStringIsEmoji(NSString* str) {
 	if ([str isKindOfClass:[NSString class]] && [str length] == 1) {
