@@ -44,7 +44,7 @@ enum {
 #import <Foundation/NSObject.h>
 #include <CoreFoundation/CFMessagePort.h>
 #include <pthread.h>
-@class NSMutableDictionary, NSData, NSString;
+@class NSMutableDictionary, NSData, NSString, NSIndexSet;
 
 @interface GPDuplexClient : NSObject {
 	CFMessagePortRef clientPort, serverPort;
@@ -58,11 +58,12 @@ enum {
 -(NSData*)sendMessage:(SInt32)type data:(NSData*)data expectsReturn:(BOOL)expectsReturn;
 +(oneway void)sendMessage:(SInt32)type data:(NSData*)data;
 +(NSData*)sendMessage:(SInt32)type data:(NSData*)data expectsReturn:(BOOL)expectsReturn;
--(void)addObserver:(id)observer selector:(SEL)selector forMessage:(SInt32)type;
+-(void)addObserver:(id)observer selector:(SEL)selector forMessages:(NSIndexSet*)messageSet;
 -(void)removeObserver:(id)observer selector:(SEL)selector;
--(void)removeObserver:(id)observer selector:(SEL)selector forMessage:(SInt32)type;
 @property(readonly,retain) NSString* name;
 @end
+
+NSIndexSet* GPIndexSetCreateWithIndices(unsigned count, ...);
 
 #endif
 

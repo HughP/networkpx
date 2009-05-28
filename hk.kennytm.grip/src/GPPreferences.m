@@ -199,8 +199,8 @@ void GPModifyMessageForUserPreference(NSMutableDictionary* message) {
 		[message setObject:[NSNumber numberWithBool:NO] forKey:GRIP_STICKY];
 }
 
-BOOL GPCheckEnabled(NSString* appName, NSString* msgName) {
-	return appName != nil && GPCheckEnabledWithTicket(GPGetTicket(appName), msgName, NULL, YES);
+BOOL GPCheckEnabled(NSString* appName, NSString* msgName, BOOL respectStealth) {
+	return appName != nil && GPCheckEnabledWithTicket(GPGetTicket(appName), msgName, NULL, respectStealth);
 }
 
 void GPCopyColorsForPriority(int priority, UIColor** outBGColor, UIColor** outFGColor) {

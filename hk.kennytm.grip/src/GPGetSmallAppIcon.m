@@ -81,6 +81,7 @@ UIImage* GPGetSmallAppIcon (NSString* bundleIdentifier) {
 			CFSTR("/System/Library/PreferenceBundles/Wallpaper.bundle/icon.png"),
 			CFSTR("/Applications/Preferences.app/Safari.png"),
 			CFSTR("/Applications/Preferences.app/iPod.png"),
+			CFSTR("/Applications/Preferences.app/iPod.png"),
 			CFSTR("/Applications/Preferences.app/AppStore.png"),
 			CFSTR("/Applications/Preferences.app/Camera.png"),
 			CFSTR("/Applications/Preferences.app/iTunes.png"),
@@ -104,6 +105,7 @@ UIImage* GPGetSmallAppIcon (NSString* bundleIdentifier) {
 			CFSTR("(wallpaper)"),
 			CFSTR("com.apple.mobilesafari"),
 			CFSTR("com.apple.mobileipod"),
+			CFSTR("com.apple.mobileipod-MediaPlayer"),
 			CFSTR("com.apple.AppStore"),
 			CFSTR("com.apple.mobileslideshow-Camera"),
 			CFSTR("com.apple.MobileStore"),
@@ -151,18 +153,33 @@ UIImage* GPGetSmallAppIcon(NSString* bundleIdentifier) {
 
 UIImage* GPGetSmallAppIconFromObject(NSObject* object) {
 	if ([object isKindOfClass:[NSString class]]) {
-#define str (NSString*)object
-		if (GPStringIsEmoji(str)) {
-			UIGraphicsBeginImageContext(CGSizeMake(29, 29));
-			[str drawInRect:CGRectMake(0,0,29,29) withFont:[UIFont systemFontOfSize:27.5f] lineBreakMode:UILineBreakModeWordWrap alignment:UITextAlignmentCenter];
-			UIImage* retimg = UIGraphicsGetImageFromCurrentImageContext();
-			UIGraphicsEndImageContext();
+		if (GPStringIsEmoji((NSString*)object)) {
+			CGColorSpaceRef rgbColorSpace = CGColorSpaceCreateDeviceRGB();
+			CGContextRef context = CGBitmapContextCreate(NULL, 29, 29, 8, 4*29, rgbColorSpace, kCGImageAlphaPremultipliedLast);
+			CGColorSpaceRelease(rgbColorSpace);
+			CGContextScaleCTM(context, 1, -1);
+			CGContextTranslateCTM(context, 0, -29);
+			UIGraphicsPushContext(context);
+			[(NSString*)object drawInRect:CGRectMake(0,0,29,29) withFont:[UIFont systemFontOfSize:27.5f] lineBreakMode:UILineBreakModeWordWrap alignment:UITextAlignmentCenter];
+			UIGraphicsPopContext();
+			CGImageRef rawRetimg = CGBitmapContextCreateImage(context);
+			CGContextRelease(context);
+			UIImage* retimg = [UIImage imageWithCGImage:rawRetimg];
+			CGImageRelease(rawRetimg);
 			return retimg;
 		} else
-			return GPGetSmallAppIcon(str);
-#undef str
+			return GPGetSmallAppIcon((NSString*)object);
 	} else if ([object isKindOfClass:[NSData class]])
 		return [UIImage imageWithData:(NSData*)object];
 	else
 		return nil;
+}
+
+void GPDrawSmallAppIconInRect(NSObject* icon, CGRect rect) {
+	if (GPStringIsEmoji((NSString*)icon))
+		[(NSString*)icon drawInRect:rect withFont:[UIFont systemFontOfSize:27.5f] lineBreakMode:UILineBreakModeWordWrap alignment:UITextAlignmentCenter];
+	else if ([icon isKindOfClass:[UIImage class]])
+		[(UIImage*)icon drawInRect:rect];
+	else
+		[GPGetSmallAppIconFromObject(icon) drawInRect:rect];
 }

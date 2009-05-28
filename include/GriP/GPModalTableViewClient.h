@@ -1,6 +1,6 @@
 /*
 
-GPApplicationBridge.h ... GriP Application Bridge
+FILE_NAME ... DESCRIPTION
  
 Copyright (c) 2009, KennyTM~
 All rights reserved.
@@ -31,33 +31,37 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #import <Foundation/NSObject.h>
-//#import <GriP/GPApplicationBridgeC.h>
 
-@protocol GrowlApplicationBridgeDelegate;
-@class NSDictionary, NSString, GPDuplexClient, GPModalTableViewClient;
+@class NSString, GPApplicationBridge, NSNumber, GPDuplexClient, NSDictionary, NSArray;
+@protocol GPModalTableViewDelegate;
 
-@interface GPApplicationBridge : NSObject {
-	NSObject<GrowlApplicationBridgeDelegate>* sharedDelegate;
-	NSDictionary* cachedRegistrationDictionary;
-	NSString* appName;
+@interface GPModalTableViewClient : NSObject {
 	GPDuplexClient* duplex;
+	int uid;
+	id<GPModalTableViewDelegate> delegate;
+	id context;
 }
-
+@property(retain) id context;
+@property(assign) id<GPModalTableViewDelegate> delegate;
+-(id)initWithDictionary:(NSDictionary*)dictionary applicationBridge:(GPApplicationBridge*)bridge name:(NSString*)name;
 -(void)dealloc;
--(id)init;
+-(void)pushDictionary:(NSDictionary*)dictionary;
+@property(assign,readonly,nonatomic,getter=isVisible) BOOL visible;
+@property(retain,readonly,nonatomic) NSString* currentIdentifier;
+-(void)dismiss;
+-(void)reloadDictionary:(NSDictionary*)dictionary forIdentifier:(NSString*)identifier;
+-(void)updateButtons:(NSArray*)buttons forIdentifier:(NSString*)identifier;
+-(void)pop;
+@end
 
-@property(readonly,assign,nonatomic,getter=isGrowlInstalled) BOOL installed;
-@property(readonly,assign,nonatomic,getter=isGrowlRunning) BOOL running;
-@property(assign,nonatomic) NSObject<GrowlApplicationBridgeDelegate>* growlDelegate;
 
--(void)notifyWithTitle:(NSString*)title description:(NSString*)description notificationName:(NSString*)notifName iconData:(id)iconData priority:(signed)priority isSticky:(BOOL)isSticky clickContext:(NSObject*)clickContext;
--(void)notifyWithTitle:(NSString*)title description:(NSString*)description notificationName:(NSString*)notifName iconData:(id)iconData priority:(signed)priority isSticky:(BOOL)isSticky clickContext:(NSObject*)clickContext identifier:(NSString*)identifier;
--(void)notifyWithDictionary:(NSDictionary*)userInfo;
-
--(BOOL)registerWithDictionary:(NSDictionary*)potentialDictionary;
-
-// Addition for GriP
-// Check if GriP is enabled for this application.
-@property(readonly,assign,nonatomic) BOOL enabled;
--(BOOL)enabledForName:(NSString*)notifName;
+@protocol GPModalTableViewDelegate<NSObject>
+@optional
+-(void)modalTableView:(GPModalTableViewClient*)client clickedButton:(NSString*)identifier;
+-(void)modalTableView:(GPModalTableViewClient*)client movedItem:(NSString*)targetID below:(NSString*)belowID;
+-(void)modalTableView:(GPModalTableViewClient*)client deletedItem:(NSString*)item;
+-(void)modalTableView:(GPModalTableViewClient*)client selectedItem:(NSString*)item;
+-(void)modalTableView:(GPModalTableViewClient*)client changedDescription:(NSString*)newDescription forItem:(NSString*)item;
+-(void)modalTableView:(GPModalTableViewClient*)client tappedAccessoryButtonInItem:(NSString*)item;
+-(void)modalTableViewDismissed:(GPModalTableViewClient*)client;
 @end

@@ -32,38 +32,45 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #import <GriP/Duplex/Client.h>
 #import <Foundation/Foundation.h>
+#import <objc/message.h>
 
 typedef struct {
 	id observer;
 	SEL selector;
 } GPObserver;
 
+struct GPMessageStruct {
+	SInt32 type;
+	CFDataRef data;
+};
+
 @interface GPDuplexClient ()
--(void)removeObserver:(id)observer selector:(SEL)selector forMessageNumber:(NSNumber*)msgNumber;
-@property(readonly,retain) NSMutableDictionary* observers;
 +(NSData*)sendMessage:(SInt32)type data:(NSData*)data expectsReturn:(BOOL)expectsReturn withServerPort:(CFMessagePortRef)serverPort;
 @end
 
-CFMessagePortCallBack serverCallback = NULL;
+static CFMessagePortCallBack serverCallback = NULL;
 
+static void GPClientCallObserver (NSValue* observer, NSIndexSet* indexSet, const struct GPMessageStruct* message) {
+	if ([indexSet containsIndex:message->type]) {
+		GPObserver obs;
+		[observer getValue:&obs];
+		objc_msgSend(obs.observer, obs.selector, message->data, message->type);
+	}
+}
 
-static CFDataRef GPClientCallback (CFMessagePortRef serverPort_, SInt32 type, CFDataRef data, void* info) {
+@implementation GPDuplexClient
+
+static CFDataRef GPClientCallback (CFMessagePortRef clientPort_, SInt32 type, CFDataRef data, GPDuplexClient* info) {
 	switch (type) {
 		default: {
-			NSSet* observerSet = [((GPDuplexClient*)info).observers objectForKey:[NSNumber numberWithInteger:type]];
-			for (NSValue* observer in observerSet) {
-				GPObserver obs;
-				[observer getValue:&obs];
-				[obs.observer performSelector:obs.selector withObject:(NSData*)data withObject:(id)type];
-			}
+			struct GPMessageStruct message = {type, data};
+			CFDictionaryApplyFunction((CFDictionaryRef)info->observers, (CFDictionaryApplierFunction)&GPClientCallObserver, &message);
 			break;
 		}
 	}
 	return NULL;
 }
 
-@implementation GPDuplexClient
-@synthesize observers;
 -(id)init {
 	CFRunLoopRef runLoop = CFRunLoopGetCurrent();
 
@@ -90,9 +97,11 @@ static CFDataRef GPClientCallback (CFMessagePortRef serverPort_, SInt32 type, CF
 		}
 		
 		// (3) check if direct messaging is supported.
-		clientPortName = [[NSString alloc] initWithData:(NSData*)pidData encoding:NSUTF8StringEncoding];
+		clientPortName = [[NSString alloc] initWithUTF8String:(const char*)[pidData bytes]];
 		if (serverCallback != NULL || [clientPortName rangeOfString:@".direct."].location != NSNotFound) {
-			NSMutableData* clientFPtrData = [NSMutableData dataWithBytes:&GPClientCallback length:sizeof(CFMessagePortCallBack)];
+			CFMessagePortCallBack clientCallback = (CFMessagePortCallBack)&GPClientCallback;
+			NSMutableData* clientFPtrData = [NSMutableData dataWithBytes:&clientCallback length:sizeof(CFMessagePortCallBack)];
+			[clientFPtrData appendBytes:&self length:sizeof(GPDuplexClient*)];
 			[clientFPtrData appendData:pidData];
 			NSData* serverFPtrData = [GPDuplexClient sendMessage:GPMessage_ExchangeDirectMessagingFPtr data:clientFPtrData expectsReturn:(serverCallback == NULL) withServerPort:serverPort];
 			
@@ -110,7 +119,7 @@ static CFDataRef GPClientCallback (CFMessagePortRef serverPort_, SInt32 type, CF
 		// (4) Create client port from UID.
 		CFMessagePortContext clientContext = {0, self, NULL, NULL, NULL};
 		Boolean shouldFreeInfo = false;
-		clientPort = CFMessagePortCreateLocal(NULL, (CFStringRef)clientPortName, &GPClientCallback, &clientContext, &shouldFreeInfo);
+		clientPort = CFMessagePortCreateLocal(NULL, (CFStringRef)clientPortName, (CFMessagePortCallBack)&GPClientCallback, &clientContext, &shouldFreeInfo);
 		if (shouldFreeInfo || clientPort == NULL) {
 			NSLog(@"-[GPDuplexClient init]: Cannot create client port with port name %@.", clientPortName);
 			[self release];
@@ -141,8 +150,11 @@ static CFDataRef GPClientCallback (CFMessagePortRef serverPort_, SInt32 type, CF
 			CFRelease(clientSource);
 		CFRelease(clientPort);
 	}
-	if (serverCallback != NULL)
-		[GPDuplexClient sendMessage:GPMessage_UnsubscribeFromDirectMessaging data:[clientPortName dataUsingEncoding:NSUTF8StringEncoding] expectsReturn:NO withServerPort:nil];
+	if (serverCallback != NULL) {
+		[GPDuplexClient sendMessage:GPMessage_UnsubscribeFromDirectMessaging
+							   data:[NSData dataWithBytes:[clientPortName UTF8String] length:[clientPortName length]+1]	// since the clientPortName is always ASCII, the length is valid.
+					  expectsReturn:NO withServerPort:nil];
+	}
 	
 	[clientPortName release];
 	[observers release];
@@ -191,35 +203,31 @@ static CFDataRef GPClientCallback (CFMessagePortRef serverPort_, SInt32 type, CF
 
 
 // FIXME: Make these thread-safe / re-entrant.
--(void)addObserver:(id)observer selector:(SEL)selector forMessage:(SInt32)type {
+-(void)addObserver:(id)observer selector:(SEL)selector forMessages:(NSIndexSet*)messageSet {
 	GPObserver obs = {observer, selector};
-	NSNumber* typeNumber = [NSNumber numberWithInteger:type];
 	NSValue* observerObject = [NSValue valueWithBytes:&obs objCType:@encode(GPObserver)];
-	NSMutableSet* observerSet = [observers objectForKey:typeNumber];
-	if (observerSet == nil)
-		observerSet = [NSMutableSet setWithObject:observerObject];
-	else
-		[observerSet addObject:observerObject];
-	
-	[observers setObject:observerSet forKey:typeNumber];
+	NSMutableIndexSet* observerIndexSet = [observers objectForKey:observerObject];
+	if (observerIndexSet == nil) {
+		observerIndexSet = [messageSet mutableCopy];
+		[observers setObject:observerIndexSet forKey:observerObject];
+		[observerIndexSet release];
+	} else
+		[observerIndexSet addIndexes:messageSet];
 }
 -(void)removeObserver:(id)observer selector:(SEL)selector {
-	// use -allKeys to allow us to modify observers.
-	for (NSNumber* typeNumber in [observers allKeys])
-		[self removeObserver:observer selector:(SEL)selector forMessageNumber:typeNumber];
-}
--(void)removeObserver:(id)observer selector:(SEL)selector forMessage:(SInt32)type {
-	[self removeObserver:observer selector:selector forMessageNumber:[NSNumber numberWithInteger:type]];
-}
--(void)removeObserver:(id)observer selector:(SEL)selector forMessageNumber:(NSNumber*)typeNumber {
-	@synchronized(observers) {
-		NSMutableSet* observerSet = [observers objectForKey:typeNumber];
-		GPObserver obs = {observer, selector};
-		[observerSet removeObject:[NSValue valueWithBytes:&obs objCType:@encode(GPObserver)]];
-		if ([observerSet count] == 0)
-			[observers removeObjectForKey:typeNumber];
-		else
-			[observers setObject:observerSet forKey:typeNumber];
-	}
+	GPObserver obs = {observer, selector};
+	[observers removeObjectForKey:[NSValue valueWithBytes:&obs objCType:@encode(GPObserver)]];
 }
 @end
+
+
+NSIndexSet* GPIndexSetCreateWithIndices(unsigned count, ...) {
+	NSMutableIndexSet* resset = [[NSMutableIndexSet alloc] init];
+	va_list val;
+	va_start(val, count);
+	for (unsigned i = 0; i < count; ++ i) {
+		[resset addIndex:va_arg(val, int)];
+	}
+	va_end(val);
+	return resset;
+}

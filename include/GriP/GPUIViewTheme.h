@@ -36,7 +36,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 @class NSDictionary, NSMutableDictionary, UIView, NSBundle, UIColor, NSString, UIButton;
 
 @interface GPUIViewTheme : NSObject<GPTheme> {
-	NSMutableDictionary* identifiedViews;
 	NSBundle* selfBundle;
 	UIColor* fgColors[5];
 	UIColor* bgColors[5];
@@ -44,9 +43,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 -(id)initWithBundle:(NSBundle*)bundle;
 -(void)dealloc;
 
-// these two should be "final".
+// this should be "final".
 -(void)display:(NSDictionary*)message;
--(void)messageClosed:(NSString*)identifier;
 
 // subclasses can override these methods for custom behaviors.
 -(void)modifyView:(UIView*)inoutView asNew:(BOOL)asNew withMessage:(NSDictionary*)message;

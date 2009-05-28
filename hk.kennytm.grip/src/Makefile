@@ -9,9 +9,8 @@ PrefsBundlePath=../deb/System/Library/PreferenceBundles
 
 GriPIncPath=../../include/GriP
 
-libVersion               =1.11.10
-libGriPCompatVersion     =1.11.4
-libGriPExtraCompatVersion=1.11.9
+libVersion               =1.11.13
+libGriPCompatVersion     =1.11.13
 
 Compiler=$(iPhoneDevPath)/usr/bin/gcc-4.2
 CodeSign=ldid -S
@@ -50,26 +49,22 @@ SDKOptionsSim=-arch i686 \
 	-O2 \
 	-UGRIP_JAILBROKEN
 
-DontThumbSources=GPDefaultTheme.m | GPMessageWindow.m | GPPreferences.m | $(SharedSrcPath)/GraphicsUtitlities.m
+DontThumbSources=GPDefaultTheme.m | GPMessageWindow.m | GPPreferences.m | GPModalTableViewController.m | GPModalTableViewSupport.m | $(SharedSrcPath)/GraphicsUtitlities.m
 
-AllTargets=libGriP libGriPExtra DefaultTheme XGriP GriPTest Preferences MemWatcher YouveGotMail DefaultThemePrefs
+AllTargets=libGriP DefaultTheme XGriP GriPTest Preferences MemWatcher YouveGotMail DefaultThemePrefs
 AllSDKTarget=libGriP libGriPServer libGPDefaultTheme
 
-libGriP_Sources=Duplex/Client.o GPApplicationBridge.o GPExtensions.o NSString-stringByEscapingXMLEntities.o
+libGriP_Sources=Duplex/Client.o GPApplicationBridge.o GPExtensions.o GPModalTableViewClient.o GPMessageWindow.o GPPreferences.o GPGetSmallAppIcon.o GPUIViewTheme.o GPRawThemeHelper.o
 libGriP_Target=../deb/usr/lib/libGriP.dylib
-libGriP_Options=-dynamiclib -install_name /usr/lib/libGriP.dylib -compatibility_version $(libGriPCompatVersion) -current_version $(libVersion) -framework CoreFoundation -framework Foundation -framework UIKit
+libGriP_Options=-dynamiclib -install_name /usr/lib/libGriP.dylib -compatibility_version $(libGriPCompatVersion) -current_version $(libVersion) -framework CoreFoundation -framework Foundation -framework UIKit -framework CoreGraphics
 
-libGriPExtra_Sources=GPMessageWindow.o GPPreferences.o GPGetSmallAppIcon.o GPUIViewTheme.o GPRawThemeHelper.o
-libGriPExtra_Target=../deb/usr/lib/libGriPExtra.dylib
-libGriPExtra_Options=-lGriP -dynamiclib -install_name /usr/lib/libGriPExtra.dylib -compatibility_version $(libGriPExtraCompatVersion) -current_version $(libVersion) -framework Foundation -framework CoreFoundation -framework UIKit -framework CoreGraphics
-
-XGriP_Sources=GriPServer.o Duplex/Server.o ../../src/PrefsLinkHooker.o GPMessageQueue.o
+XGriP_Sources=GriPServer.o Duplex/Server.o ../../src/PrefsLinkHooker.o GPMessageQueue.o GPModalTableViewController.o GPModalTableViewSupport.o GPModalTableViewServer.o 
 XGriP_Target=$(MobileSubstratePath)/%GriP.dylib
-XGriP_Options=-lobjc -lGriPExtra -lsubstrate -dynamiclib -framework Foundation -framework CoreFoundation -framework Preferences -framework UIKit -init _GPStartGriPServer
+XGriP_Options=-lobjc -lGriP -lsubstrate -dynamiclib -framework Foundation -framework CoreFoundation -framework Preferences -framework UIKit -framework CoreGraphics -framework AddressBook -framework AddressBookUI -init _GPStartGriPServer
 
 DefaultTheme_Sources=GPDefaultTheme.o $(SharedSrcPath)/GraphicsUtilities.o
 DefaultTheme_Target=$(ThemesPath)/Default.griptheme/Default
-DefaultTheme_Options=-lGriPExtra -framework UIKit -framework Foundation -framework CoreGraphics -bundle
+DefaultTheme_Options=-lGriP -framework UIKit -framework Foundation -framework CoreGraphics -bundle
 
 DefaultThemePrefs_Sources=GPDefaultThemePrefs.o
 DefaultThemePrefs_Target=$(ThemesPath)/Default.griptheme/Preferences.bundle/Preferences
@@ -77,7 +72,7 @@ DefaultThemePrefs_Options=-framework Preferences -framework Foundation -lGriP -b
 
 DoubleHeightTheme_Sources=GPDoubleHeightTheme.o $(SharedSrcPath)/UIKit3/UIUtilities.o
 DoubleHeightTheme_Target=$(ThemesPath)/DoubleHeight.griptheme/DoubleHeight
-DoubleHeightTheme_Options=-lGriPExtra -framework UIKit -framework Foundation -bundle
+DoubleHeightTheme_Options=-lGriP -framework UIKit -framework Foundation -bundle
 
 GriPTest_Sources=GriPTest.o
 GriPTest_Target=../deb/usr/bin/GriP
@@ -85,7 +80,7 @@ GriPTest_Options=-lGriP -framework Foundation
 
 Preferences_Sources=Preferences.o
 Preferences_Target=$(PrefsBundlePath)/GriP.bundle/GriP
-Preferences_Options=-lGriPExtra -lGriP -framework Preferences -framework Foundation -framework UIKit -framework SpringBoardServices -bundle
+Preferences_Options=-lGriP -lGriP -framework Preferences -framework Foundation -framework UIKit -framework SpringBoardServices -bundle
 
 MemWatcher_Sources=Extensions/MemWatcher.o
 MemWatcher_Target=$(MobileSubstratePath)/MemoryWatcher.dylib
@@ -139,7 +134,7 @@ endef
 define MakeTemplate
 $$($(1)_Target):	$$($(1)_Sources)
 	@$(Compiler) $(Options) $$($(1)_Options) -o $$@ $$^;
-	@strip -x $$@;
+#	@strip -x $$@;
 	$(CodeSign) $$@
 
 endef

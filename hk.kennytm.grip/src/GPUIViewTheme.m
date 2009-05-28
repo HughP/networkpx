@@ -54,7 +54,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 -(id)initWithBundle:(NSBundle*)bundle {
 	if ((self = [super init])) {
-		identifiedViews = [[NSMutableDictionary alloc] init];
 		selfBundle = [bundle retain];		
 		for (int i = 0; i < 5; ++ i)
 			GPCopyColorsForPriority(i-2, bgColors+i, fgColors+i);
@@ -67,22 +66,19 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	
 	// Manufactor a the new view from nib if required. Reuse a view if identifier is given.
 	BOOL asNew = NO;
+	GPMessageWindow* window = nil;
 	if (identifier != nil)
-		newView = [identifiedViews objectForKey:identifier];
-	if (newView == nil) {
+		window = [GPMessageWindow windowForIdentifier:identifier];
+	if (window == nil) {
 		asNew = YES;
 		newView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, [GPMessageWindow maxWidth], 60)];
-	}
-	
-	GPMessageWindow* window = (GPMessageWindow*)newView.window;
+	} else
+		newView = window.view;
+
 	[window prepareForResizing];
 	
 	[self modifyView:newView asNew:asNew withMessage:message];
 	
-	if (identifier != nil) {
-		[identifiedViews setObject:newView forKey:identifier];
-	}
-		
 	if (window == nil) {
 		[GPMessageWindow registerWindowWithView:newView message:message];
 	} else {
@@ -94,17 +90,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		[newView release];
 }
 
--(void)messageClosed:(NSString*)identifier {
-	NSLog(@"%@", identifier);
-	[identifiedViews removeObjectForKey:identifier];
-}
-
 -(void)dealloc {
 	for (int i = 0; i < 5; ++ i) {
 		[fgColors[i] release];
 		[bgColors[i] release];
 	}	
-	[identifiedViews release];
 	[selfBundle release];
 	[super dealloc];
 }

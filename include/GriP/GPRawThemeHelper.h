@@ -31,18 +31,20 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #import <Foundation/NSObject.h>
+#import <CoreFoundation/CFDictionary.h>
 
-@class NSMutableDictionary, NSDictionary;
+@class NSDictionary;
 
 @interface GPRawThemeHelper : NSObject {
 @private
 	int uid;
-	NSMutableDictionary* registeredMessages;
+	CFMutableDictionaryRef registeredMessages;
 }
 -(id)init;
 -(void)dealloc;
 
 -(int)registerMessage:(NSDictionary*)message;
--(void)ignoredMessageID:(int)uid;
--(void)touchedMessageID:(int)uid;
+-(void)dismissedMessageID:(int)uid forAction:(SInt32)action;
+-(void)ignoredMessageID:(int)uid DEPRECATED_ATTRIBUTE;
+-(void)touchedMessageID:(int)uid DEPRECATED_ATTRIBUTE;
 @end

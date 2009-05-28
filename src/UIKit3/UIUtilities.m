@@ -30,11 +30,11 @@
  
  */
 
-#import <UIKit3/UIUtilities.h>
+// #import <UIKit3/UIUtilities.h>
 #import <Foundation/Foundation.h>
 #import <UIKit/UIView.h>
 #import <UIKit/UIGeometry.h>
-#import <UIKit2/UIPickerTable.h>
+@protocol UIPickerTable;
 #ifdef UIUTILITIES_SHOW_WEBTEXT
 #import <WebCore/PublicDOMInterfaces.h>
 #import <WebCore/wak/WebCoreThread.h>

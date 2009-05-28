@@ -42,10 +42,28 @@ enum {
 	GriPMessage_UpdateTicket,
 	GriPMessage_LaunchURL,
 	GriPMessage_CheckEnabled,
-	GriPMessage_DisposeIdentifier,
+	GriPMessage_CoalescedNotification,
 	GriPMessage_DequeueMessages,
-	GriPMessage__End = 1010
-};
+	GriPMessage__End = 1009,
+	
+	GPTVAMessage__Start = 1100,
+	GPTVAMessage_Show = GPTVAMessage__Start,
+	GPTVAMessage_Push,
+	GPTVAMessage_ButtonClicked,
+	GPTVAMessage_MovedItem,
+	GPTVAMessage_Deleted,
+	GPTVAMessage_Selected,
+	GPTVAMessage_Dismiss,
+	GPTVAMessage_AccessoryTouched,
+	GPTVAMessage_DescriptionChanged,
+	GPTVAMessage_CheckVisible,
+	GPTVAMessage_UpdateEntry,
+	GPTVAMessage_UpdateButtons,
+	GPTVAMessage_Reload,
+	GPTVAMessage_Pop,
+	GPTVAMessage_GetCurrentIdentifier,
+	GPTVAMessage__End = 1119,
+}; 
 
 #if __OBJC__
 #define GPSTR(s) @#s

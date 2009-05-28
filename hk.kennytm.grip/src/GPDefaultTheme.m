@@ -37,12 +37,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #import <GraphicsUtilities.h>
 #import <GriP/GPMessageWindow.h>
 
-#if GRIP_JAILBROKEN
-@interface UITextView ()
--(void)setContentToHTMLString:(NSString*)html;
-@end
-#endif
-
 __attribute__((visibility("hidden")))
 @interface GPDTStaticView : UIView {
 	NSString* title;
@@ -61,12 +55,7 @@ __attribute__((visibility("hidden")))
 @synthesize title, icon, fgColor;
 -(void)drawRect:(CGRect)rect {	
 	if (icon != nil) {
-		if ([icon isKindOfClass:[UIImage class]])
-			[icon drawInRect:iconRect];
-		else {
-			// must be a NSString* here.
-			[icon drawInRect:iconRect withFont:[UIFont systemFontOfSize:27.5f] lineBreakMode:UILineBreakModeWordWrap alignment:UITextAlignmentCenter];
-		}
+		GPDrawSmallAppIconInRect(icon, iconRect);
 	}
 	if (title != nil) {
 		[fgColor setFill];
@@ -85,13 +74,13 @@ __attribute__((visibility("hidden")))
 __attribute__((visibility("hidden")))
 @interface GPDTWrapperView : UIView {
 	UIButton* clickContext, *closeButton, *disclosureButton;
-	UITextView* descriptionView;
+	UIScrollView* descriptionView;
 	UIImageView* backgroundView;
 	GPDTStaticView* staticView;
 	BOOL disclosed;
 }
 -(id)init;
--(void)setTitle:(NSString*)title icon:(UIImage*)icon description:(NSString*)description fgColor:(UIColor*)fgColor activeImage:(UIImage*)activeImage bgImage:(UIImage*)bgImage;
+-(void)setTitle:(NSString*)title icon:(id)icon description:(NSString*)description fgColor:(UIColor*)fgColor activeImage:(UIImage*)activeImage bgImage:(UIImage*)bgImage;
 -(void)disclose;
 @end
 @implementation GPDTWrapperView
@@ -134,13 +123,11 @@ __attribute__((visibility("hidden")))
 		[self addSubview:disclosureButton];
 		[disclosureButton release];
 		
-		// the description UITextView.
-		// argh. we really need to find a replacement of this UITextView. it bloats up the memory a lot.
-		descriptionView = [[UITextView alloc] initWithFrame:CGRectMake(0, 0, 1, 1)];
+		// the UIScrollView containing the description.
+		descriptionView = [[UIScrollView alloc] initWithFrame:CGRectMake(0, 0, 1, 1)];
 		descriptionView.contentMode = UIViewContentModeScaleToFill;
 		descriptionView.autoresizingMask = UIViewAutoresizingFlexibleHeight;
 		descriptionView.backgroundColor = [UIColor clearColor];
-		descriptionView.editable = NO;
 		[self addSubview:descriptionView];
 		[descriptionView release];
 	}
@@ -195,12 +182,22 @@ __attribute__((visibility("hidden")))
 	descriptionView.frame = CGRectMake(0, titleHeight, maxWidth-6, descriptionFrame.size.height);
 	self.autoresizesSubviews = YES;
 	
-	descriptionView.textColor = fgColor_;
-#if GRIP_JAILBROKEN
-	[descriptionView setContentToHTMLString:[description stringByReplacingOccurrencesOfString:@"\n" withString:@"<br/>"]];
-#else
-	descriptionView.text = description;
-#endif
+	NSArray* subviews = descriptionView.subviews;
+	if ([subviews count] != 0)
+		[[subviews lastObject] removeFromSuperview];
+
+	if (description != nil) {
+		CGSize descriptionSize = [description sizeWithFont:[UIFont systemFontOfSize:[UIFont smallSystemFontSize]] constrainedToSize:CGSizeMake(maxWidth-16, INFINITY)];
+		UILabel* descriptionLabelView = [[UILabel alloc] initWithFrame:CGRectMake(5, 5, descriptionSize.width, descriptionSize.height)];
+		descriptionLabelView.text = description;
+		descriptionLabelView.textColor = fgColor_;
+		descriptionLabelView.backgroundColor = [UIColor clearColor];
+		descriptionLabelView.numberOfLines = 0;
+		descriptionLabelView.font = [UIFont systemFontOfSize:[UIFont smallSystemFontSize]];
+		[descriptionView addSubview:descriptionLabelView];
+		descriptionView.contentSize = CGSizeMake(descriptionSize.width+10, descriptionSize.height+10);
+		[descriptionLabelView release];
+	}
 	
 	[staticView setNeedsDisplay];
 }
@@ -274,6 +271,6 @@ __attribute__((visibility("hidden")))
 +(void)updateViewForDisclosure:(UIView*)view {
 	GPDTWrapperView* v = [view.subviews objectAtIndex:0];
 	[v disclose];
-	view.frame = v.frame;	
+	view.frame = v.frame;
 }
 @end
