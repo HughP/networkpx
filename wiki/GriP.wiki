@@ -212,7 +212,14 @@ NSArray* supportedMessages = [NSArray arrayWithObject:@"Test Message"];
                                 supportedMessages, GROWL_NOTIFICATIONS_DEFAULT,
                                 nil]];
 
-// Display a new message with title "Hello world!" and an icon of Safari, which will launch Google when tapped.
+// You only need to call the above statements once in a lifetime.
+// Make sure the "bridge" is globally accessible.
+
+...
+
+// Display a new message with title "Hello world!" and an icon of Safari,
+//  which will launch Google when tapped.
+// Call this whenever you need to.
 [bridge notifyWithTitle:@"Hello world!"
             description:@"Fill in some detail here."
        notificationName:@"Test Message"
@@ -221,6 +228,9 @@ NSArray* supportedMessages = [NSArray arrayWithObject:@"Test Message"];
                isSticky:NO
            clickContext:[NSURL URLWithString:@"http://www.google.com/"]];
 
+...
+
+// Always kill the bridge when the app terminates.
 [bridge release];
 }}}
 
