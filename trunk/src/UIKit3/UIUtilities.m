@@ -81,7 +81,7 @@ NSString* UITextOf(UIView* v) {
 
 
 void UILogViewHierarchyWithDots(UIView* v, NSString* dots) {
-	NSLog(@"%@%@\t(frame=%@, text=%@, tag=%d)", dots, v, NSStringFromCGRect(v.frame), UITextOf(v), v.tag);
+	NSLog(@"%@%@\t(%@, %@, #%d, %d)", dots, v, NSStringFromCGRect(v.frame), UITextOf(v), v.tag, [v retainCount]);
 	NSString* moreDots = [dots stringByAppendingString:@".."];
 	for (UIView* w in v.subviews) {
 		UILogViewHierarchyWithDots(w, moreDots);
@@ -94,7 +94,7 @@ extern void UILogSuperviews (UIView* v) {
 	NSMutableString* tildes = [NSMutableString string];
 	UIView* w = v;
 	while (w != nil) {
-		NSLog(@"%@%@\t(frame=%@, text=%@, tag=%d)", tildes, w, NSStringFromCGRect(w.frame), UITextOf(w), w.tag);
+		NSLog(@"%@%@\t(%@, %@, #%d, %d)", tildes, w, NSStringFromCGRect(w.frame), UITextOf(w), w.tag, [w retainCount]);
 		w = w.superview;
 		[tildes appendString:@"~~"];
 	}
