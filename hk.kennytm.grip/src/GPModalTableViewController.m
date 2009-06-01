@@ -40,6 +40,12 @@
 #import <GriP/GPModalTableViewController.h>
 
 
+extern UIWindowLevel UITextEffectsAboveStatusBarWindowLevel, UITextEffectsBeneathStatusBarWindowLevel;
+@interface UITextEffectsWindow : UIWindow
++(UITextEffectsWindow*)sharedTextEffectsWindow;
+@end
+
+
 @interface UITextView ()
 -(NSString*)contentAsHTMLString;
 @end
@@ -62,11 +68,11 @@ static UIViewController* deepestController = nil;
 		BOOL isWindowNil = window == nil;
 		if (isWindowNil) {
 			window = [[UIWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
-			window.windowLevel = UIWindowLevelAlert;
 			window.exclusiveTouch = YES;
+			window.windowLevel = UIWindowLevelStatusBar;
 			masterController = [[UIViewController alloc] init];
 			[window addSubview:masterController.view];
-			window.hidden = NO;
+			[window makeKeyAndVisible];
 			deepestController = masterController;
 		} else
 			deepestController = deepestController.modalViewController;
@@ -96,9 +102,10 @@ static UIViewController* deepestController = nil;
 }
 -(void)dealloc {
 	if (deepestController == nil) {
-		//[masterController.view removeFromSuperview];
 		[masterController release];
 		masterController = nil;
+		window.userInteractionEnabled = NO;
+		window.hidden = YES;
 		[window release];
 		window = nil;
 	}
@@ -236,7 +243,6 @@ static UIViewController* deepestController = nil;
 
 @implementation GPModalTableViewController
 @synthesize identifier;
--(void)loadView { self.view = [[[UIView alloc] init] autorelease]; }
 
 #define ActualIndex(indexPath) ((int)CFArrayGetValueAtIndex(sectionIndices, (indexPath).section) + 1 + (indexPath).row)
 #define ActualObjectAtIndex(index) ((GPModalTableViewObject*)[entries objectAtIndex:(int)(index)])
@@ -334,6 +340,8 @@ static UIViewController* deepestController = nil;
 		ForwardMessage(GPTVAMessage_DescriptionChanged, detail, object->identifier);
 		activeTextView = nil;
 		[table scrollToRowAtIndexPath:indexPath atScrollPosition:UITableViewScrollPositionTop animated:YES];
+		
+		[UITextEffectsWindow sharedTextEffectsWindow].windowLevel = UITextEffectsBeneathStatusBarWindowLevel;
 	}
 	
 }
@@ -354,8 +362,6 @@ static UIViewController* deepestController = nil;
 	UITableView* table = self.tableView;
 	table.editing = YES;
 	table.allowsSelectionDuringEditing = YES;
-	
-	// check if we are on the top level. if yes, add a close button.
 }
 -(void)viewDidAppear:(BOOL)animated {
 	[super viewDidAppear:animated];
@@ -504,6 +510,8 @@ static UIViewController* deepestController = nil;
 	CGFloat maximumY = table.contentSize.height - keyboardHeight + MIN(cellFrame.size.height, keyboardHeight);
 	if (cellFrame.origin.y > maximumY)
 		cellFrame.origin.y = maximumY;
+	
+	[UITextEffectsWindow sharedTextEffectsWindow].windowLevel = UITextEffectsAboveStatusBarWindowLevel;
 	
 	[table setContentOffset:cellFrame.origin animated:YES];
 	return YES;

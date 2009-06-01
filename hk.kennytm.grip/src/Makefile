@@ -1,7 +1,7 @@
 iPhoneDevPath=/Developer/Platforms/iPhoneOS.platform/Developer
-iPhoneSDKPath=$(iPhoneDevPath)/SDKs/iPhoneOS3.0.sdk
+iPhoneSDKPath=$(iPhoneDevPath)/SDKs/iPhoneOS2.2.1.sdk
 iPhoneSimDevPath=/Developer/Platforms/iPhoneSimulator.platform/Developer
-iPhoneSimSDKPath=$(iPhoneSimDevPath)/SDKs/iPhoneSimulator3.0.sdk
+iPhoneSimSDKPath=$(iPhoneSimDevPath)/SDKs/iPhoneSimulator2.2.1.sdk
 MobileSubstratePath=../deb/Library/MobileSubstrate/DynamicLibraries
 ThemesPath=../deb/Library/GriP/Themes
 SharedSrcPath=../../src
@@ -12,7 +12,7 @@ GriPIncPath=../../include/GriP
 libVersion               =1.11.13
 libGriPCompatVersion     =1.11.13
 
-Compiler=$(iPhoneDevPath)/usr/bin/gcc-4.2
+Compiler=$(iPhoneDevPath)/usr/bin/gcc-4.0
 CodeSign=ldid -S
 
 Options=-arch armv6 \
@@ -58,7 +58,7 @@ libGriP_Sources=Duplex/Client.o GPApplicationBridge.o GPExtensions.o GPModalTabl
 libGriP_Target=../deb/usr/lib/libGriP.dylib
 libGriP_Options=-dynamiclib -install_name /usr/lib/libGriP.dylib -compatibility_version $(libGriPCompatVersion) -current_version $(libVersion) -framework CoreFoundation -framework Foundation -framework UIKit -framework CoreGraphics
 
-XGriP_Sources=GriPServer.o Duplex/Server.o ../../src/PrefsLinkHooker.o GPMessageQueue.o GPModalTableViewController.o GPModalTableViewSupport.o GPModalTableViewServer.o 
+XGriP_Sources=GriPServer.o Duplex/Server.o ../../src/PrefsLinkHooker.o ../../src/UIKit3/UIUtilities.o GPMessageQueue.o GPModalTableViewController.o GPModalTableViewSupport.o GPModalTableViewServer.o 
 XGriP_Target=$(MobileSubstratePath)/%GriP.dylib
 XGriP_Options=-lobjc -lGriP -lsubstrate -dynamiclib -framework Foundation -framework CoreFoundation -framework Preferences -framework UIKit -framework CoreGraphics -framework AddressBook -framework AddressBookUI -init _GPStartGriPServer
 
