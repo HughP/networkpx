@@ -40,10 +40,16 @@
 #import <GriP/GPModalTableViewController.h>
 
 
-extern UIWindowLevel UITextEffectsAboveStatusBarWindowLevel, UITextEffectsBeneathStatusBarWindowLevel;
-@interface UITextEffectsWindow : UIWindow
-+(UITextEffectsWindow*)sharedTextEffectsWindow;
+@interface UIKeyboard : UIView
++(UIKeyboard*)automaticKeyboard;
+-(void)orderInWithAnimation:(BOOL)animated;
+-(void)orderOutWithAnimation:(BOOL)animated;
 @end
+@interface UITableViewCell ()
+-(void)setEditingAccessoryView:(UIView*)view;
+-(void)setEditingAccessoryType:(UITableViewCellAccessoryType)type;
+@end
+
 
 
 @interface UITextView ()
@@ -69,10 +75,10 @@ static UIViewController* deepestController = nil;
 		if (isWindowNil) {
 			window = [[UIWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
 			window.exclusiveTouch = YES;
-			window.windowLevel = UIWindowLevelStatusBar;
 			masterController = [[UIViewController alloc] init];
 			[window addSubview:masterController.view];
 			[window makeKeyAndVisible];
+			window.windowLevel = UIWindowLevelAlert;
 			deepestController = masterController;
 		} else
 			deepestController = deepestController.modalViewController;
@@ -256,6 +262,9 @@ static UIViewController* deepestController = nil;
 
 -(id)initWithDictionary:(NSDictionary*)dictionary controller:(GPModalTableViewNavigationController*)rootCtrler_ {
 	if ((self = [super initWithStyle:UITableViewStylePlain])) {
+		NSNotificationCenter* center = [NSNotificationCenter defaultCenter];
+		[center addObserver:self selector:@selector(beginEditing:) name:UITextFieldTextDidBeginEditingNotification object:nil];
+		[center addObserver:self selector:@selector(beginEditing:) name:UITextViewTextDidBeginEditingNotification object:nil];
 		rootCtrler = rootCtrler_;
 		[self updateDictionary:dictionary];
 	}
@@ -292,6 +301,7 @@ static UIViewController* deepestController = nil;
 	[imageCache release];
 }
 -(void)dealloc {
+	[[NSNotificationCenter defaultCenter] removeObserver:self];
 	[entries release];
 	[identifier release];
 	CFRelease(sectionIndices);
@@ -303,8 +313,10 @@ static UIViewController* deepestController = nil;
 -(void)showAddressBook:(UIButton*)button {
 	[self endEditing];
 	
-	activeTextView = (UITextView*)[button.superview viewWithTag:1966];
-	activeABObject = ActualObjectAtIndex(button.tag);
+	UITableViewCell* cell = (UITableViewCell*)button.superview;
+	activeTextView = (UITextView*)[cell viewWithTag:1966];
+	NSIndexPath* indexPath = [self.tableView indexPathForCell:cell];
+	activeABObject = ActualObject(indexPath);
 	ABPeoplePickerNavigationController* addressBookController = [[ABPeoplePickerNavigationController alloc] init];
 	addressBookController.peoplePickerDelegate = self;
 	addressBookController.displayedProperties = [NSArray arrayWithObject:[NSNumber numberWithInt:activeABObject->addressbook]];
@@ -339,9 +351,9 @@ static UIViewController* deepestController = nil;
 		object.detail = detail;
 		ForwardMessage(GPTVAMessage_DescriptionChanged, detail, object->identifier);
 		activeTextView = nil;
-		[table scrollToRowAtIndexPath:indexPath atScrollPosition:UITableViewScrollPositionTop animated:YES];
+		[table scrollToRowAtIndexPath:indexPath atScrollPosition:UITableViewScrollPositionBottom animated:YES];
 		
-		[UITextEffectsWindow sharedTextEffectsWindow].windowLevel = UITextEffectsBeneathStatusBarWindowLevel;
+		[[UIKeyboard automaticKeyboard] orderOutWithAnimation:YES];
 	}
 	
 }
@@ -390,7 +402,6 @@ static UIViewController* deepestController = nil;
 		if (object->addressbook != 0 && object->edit) {
 			UIButton* abButton = [UIButton buttonWithType:UIButtonTypeContactAdd];
 			[abButton addTarget:self action:@selector(showAddressBook:) forControlEvents:UIControlEventTouchUpInside];
-			abButton.tag = index;
 			cell.accessoryView = abButton;
 			if ([cell respondsToSelector:@selector(setEditingAccessoryView:)])
 				[cell setEditingAccessoryView:abButton];
@@ -495,28 +506,26 @@ static UIViewController* deepestController = nil;
 #pragma mark -
 #pragma mark UITextFieldDelegate & UITextViewDelegate
 
--(BOOL)textViewShouldBeginEditing:(UITextView*)textView {
+-(void)beginEditing:(NSNotification*)notif {
 	UIBarButtonItem* doneButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemDone target:self action:@selector(endEditing)];
 	self.navigationItem.rightBarButtonItem = doneButtonItem;
 	[doneButtonItem release];
-	activeTextView = textView;
+	activeTextView = [notif object];
 	
 	UITableView* table = self.tableView;
 	table.scrollEnabled = NO;
 	[table deselectRowAtIndexPath:[table indexPathForSelectedRow] animated:NO];
-	CGRect cellFrame = textView.superview.superview.superview.frame;
+	CGRect cellFrame = activeTextView.superview.superview.superview.frame;
 	UIInterfaceOrientation curOrientation = self.interfaceOrientation;
 	CGFloat keyboardHeight = ((curOrientation == UIInterfaceOrientationLandscapeLeft || curOrientation == UIInterfaceOrientationLandscapeRight) ? 160 : 240);
 	CGFloat maximumY = table.contentSize.height - keyboardHeight + MIN(cellFrame.size.height, keyboardHeight);
 	if (cellFrame.origin.y > maximumY)
 		cellFrame.origin.y = maximumY;
 	
-	[UITextEffectsWindow sharedTextEffectsWindow].windowLevel = UITextEffectsAboveStatusBarWindowLevel;
+	[[UIKeyboard automaticKeyboard] orderInWithAnimation:YES];
 	
 	[table setContentOffset:cellFrame.origin animated:YES];
-	return YES;
 }
--(BOOL)textFieldShouldBeginEditing:(UITextField*)textField { return [self textViewShouldBeginEditing:(UITextView*)textField]; }
 
 #pragma mark -
 #pragma mark ABPeoplePickerNavigationControllerDelegate
@@ -535,6 +544,7 @@ static UIViewController* deepestController = nil;
 
 -(BOOL)peoplePickerNavigationController:(ABPeoplePickerNavigationController*)peoplePicker shouldContinueAfterSelectingPerson:(ABRecordRef)person {
 	CFTypeRef value = ABRecordCopyValue(person, activeABObject->addressbook);
+	NSLog(@"%@, %d", activeABObject, activeABObject->addressbook);
 	if (value == NULL)
 		return NO;
 	if ((ABPersonGetTypeOfProperty(activeABObject->addressbook) & kABMultiValueMask) && ABMultiValueGetCount(value) == 1) {

@@ -304,7 +304,7 @@ static int globalUid = 0;
 			SEL selector = (object->lines != 1 && object->html) ? @selector(setContentToHTMLString:) : @selector(setText:);
 			objc_msgSend(view, selector, object->detail);
 			[self performSelector:@selector(setNeedsLayout) withObject:nil afterDelay:0.5];
-			view.delegate = controller;
+//			view.delegate = controller;
 			view.font = sysFont;
 			view.textColor = textColor;
 			view.autoresizingMask = UIViewAutoresizingFlexibleWidth;
