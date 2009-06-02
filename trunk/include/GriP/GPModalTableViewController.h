@@ -60,7 +60,7 @@
 
 //------------------------------------------------------------------------------
 
-@interface GPModalTableViewController : UITableViewController<UITextViewDelegate, UITextFieldDelegate, ABPeoplePickerNavigationControllerDelegate> {
+@interface GPModalTableViewController : UITableViewController<ABPeoplePickerNavigationControllerDelegate> {
 	// views:
 	UIToolbar* toolbar;
 	UITextView* activeTextView;
