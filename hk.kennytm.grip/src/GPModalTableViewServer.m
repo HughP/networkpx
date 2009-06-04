@@ -111,7 +111,9 @@ CFDataRef GPModalTableViewServerCallback (CFMessagePortRef serverPort, SInt32 ty
 			break;
 			
 		case GPTVAMessage_Pop:
+			NSLog(@"%@", data);
 			AssignArray(1);
+			NSLog(@"%@", array);
 			[GPGetModalTableViewNagivationController(array) pop];
 			break;
 			
@@ -135,7 +137,7 @@ CFDataRef GPModalTableViewServerCallback (CFMessagePortRef serverPort, SInt32 ty
 			
 		case GPTVAMessage_GetCurrentIdentifier: {
 			if (data != NULL) {
-				NSString* string = ((GPModalTableViewController*)((UINavigationController*)CFDictionaryGetValue(identifiedAlerts, *(const void**)CFDataGetBytePtr(data))).topViewController).identifier;
+				NSString* string = ((GPModalTableViewNavigationController*)CFDictionaryGetValue(identifiedAlerts, *(const void**)CFDataGetBytePtr(data))).topViewController.identifier;
 				retData = CFDataCreate(NULL, (const UInt8*)[string UTF8String], [string length]+1);
 			}
 			break;

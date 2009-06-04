@@ -66,7 +66,7 @@ static UIViewController* masterController = nil;
 static UIViewController* deepestController = nil;
 
 @synthesize uid, clientPortID;
-@dynamic visible;
+@dynamic visible, topViewController;
 -(id)initWithDictionary:(NSDictionary*)dictionary {
 	if ((self = [super init])) {
 		toolbarButtons = [[NSMutableDictionary alloc] init];
@@ -243,6 +243,8 @@ static UIViewController* deepestController = nil;
 	[mainView insertSubview:navView atIndex:0];
 	[navCtrler viewDidAppear:NO];
 }
+
+-(GPModalTableViewController*)topViewController { return (GPModalTableViewController*)navCtrler.topViewController; }
 @end
 	
 
@@ -270,6 +272,19 @@ static UIViewController* deepestController = nil;
 	}
 	return self;
 }
+-(void)recomputeSectionIndices {
+	if (sectionIndices != NULL)
+		CFRelease(sectionIndices);
+	CFMutableArrayRef mutableSectionIndices = CFArrayCreateMutable(NULL, [entries count], NULL);
+	int i = 0;
+	for (GPModalTableViewObject* entry in entries) {
+		if (entry->header)
+			CFArrayAppendValue(mutableSectionIndices, (const void*)i);
+		++ i;
+	}
+	sectionIndices = CFArrayCreateCopy(NULL, mutableSectionIndices);
+	CFRelease(mutableSectionIndices);
+}
 -(void)updateDictionary:(NSDictionary*)dictionary {
 	[self endEditing];
 	NSString* title = self.title = [dictionary objectForKey:@"title"];
@@ -278,27 +293,28 @@ static UIViewController* deepestController = nil;
 	
 	[entries release];
 	entries = [[NSMutableArray alloc] init];
-	if (sectionIndices != NULL)
-		CFRelease(sectionIndices);
-	sectionIndices = CFArrayCreateMutable(NULL, 0, NULL);
 	NSMutableDictionary* imageCache = [[NSMutableDictionary alloc] init];
-	int i = 0;
-	for (NSDictionary* entry in [dictionary objectForKey:@"entries"]) {
-		GPModalTableViewObject* object = [[GPModalTableViewObject alloc] initWithEntry:entry imageCache:imageCache];
-		if (i == 0 && !object->header) {
-			GPModalTableViewObject* headerObject = [GPModalTableViewObject newEmptyHeaderObject];
-			[entries addObject:headerObject];
-			[headerObject release];
-			++i;
-			CFArrayAppendValue(sectionIndices, (const void*)0);
+	BOOL checkHeader = YES;
+	NSArray* rawEntries = [dictionary objectForKey:@"entries"];
+	if ([rawEntries count] > 0) {
+		for (NSDictionary* entry in rawEntries) {
+			GPModalTableViewObject* object = [[GPModalTableViewObject alloc] initWithEntry:entry imageCache:imageCache];
+			if (checkHeader && !object->header) {
+				GPModalTableViewObject* headerObject = [GPModalTableViewObject newEmptyHeaderObject];
+				[entries addObject:headerObject];
+				[headerObject release];
+				checkHeader = NO;
+			}
+			[entries addObject:object];
+			[object release];
 		}
-		[entries addObject:object];
-		[object release];
-		if (object->header)
-			CFArrayAppendValue(sectionIndices, (const void*)i);
-		++i;
+	} else {
+		GPModalTableViewObject* headerObject = [GPModalTableViewObject newEmptyHeaderObject];
+		[entries addObject:headerObject];
+		[headerObject release];
 	}
 	[imageCache release];
+	[self recomputeSectionIndices];
 }
 -(void)dealloc {
 	[[NSNotificationCenter defaultCenter] removeObserver:self];
@@ -462,6 +478,7 @@ static UIViewController* deepestController = nil;
 	[entries removeObjectAtIndex:fromIndex];
 	[entries insertObject:fromObject atIndex:toIndex];
 	[fromObject release];
+	[self recomputeSectionIndices];
 	ForwardMessage(GPTVAMessage_MovedItem, fromObject->identifier, toObject->identifier);
 }
 -(void)tableView:(UITableView*)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath*)indexPath {
@@ -469,6 +486,7 @@ static UIViewController* deepestController = nil;
 		int index = ActualIndex(indexPath);
 		ForwardMessage(GPTVAMessage_Deleted, ActualObjectAtIndex(index)->identifier);
 		[entries removeObjectAtIndex:index];
+		[self recomputeSectionIndices];
 		[tableView deleteRowsAtIndexPaths:[NSArray arrayWithObject:indexPath] withRowAnimation:UITableViewRowAnimationLeft];
 	}
 }
@@ -544,7 +562,6 @@ static UIViewController* deepestController = nil;
 
 -(BOOL)peoplePickerNavigationController:(ABPeoplePickerNavigationController*)peoplePicker shouldContinueAfterSelectingPerson:(ABRecordRef)person {
 	CFTypeRef value = ABRecordCopyValue(person, activeABObject->addressbook);
-	NSLog(@"%@, %d", activeABObject, activeABObject->addressbook);
 	if (value == NULL)
 		return NO;
 	if ((ABPersonGetTypeOfProperty(activeABObject->addressbook) & kABMultiValueMask) && ABMultiValueGetCount(value) == 1) {

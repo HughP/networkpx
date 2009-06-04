@@ -61,10 +61,12 @@ static void GPClientCallObserver (NSValue* observer, NSIndexSet* indexSet, const
 @implementation GPDuplexClient
 
 static CFDataRef GPClientCallback (CFMessagePortRef clientPort_, SInt32 type, CFDataRef data, GPDuplexClient* info) {
+	CFNotificationCenterPostNotification(CFNotificationCenterGetLocalCenter(), CFSTR("GPClientWillReceiveMessage"), NULL, NULL, false);
+	
 	switch (type) {
 		default: {
 			struct GPMessageStruct message = {type, data};
-			CFDictionaryApplyFunction((CFDictionaryRef)info->observers, (CFDictionaryApplierFunction)&GPClientCallObserver, &message);
+			CFDictionaryApplyFunction(info->observers, (CFDictionaryApplierFunction)&GPClientCallObserver, &message);
 			break;
 		}
 	}
@@ -75,7 +77,7 @@ static CFDataRef GPClientCallback (CFMessagePortRef clientPort_, SInt32 type, CF
 	CFRunLoopRef runLoop = CFRunLoopGetCurrent();
 
 	if ((self = [super init])) {
-		observers = [[NSMutableDictionary alloc] init];
+		observers = CFDictionaryCreateMutable(NULL, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
 
 		// (1) Obtain the server port if necessary.
 		if (serverCallback == NULL) {
@@ -157,7 +159,8 @@ static CFDataRef GPClientCallback (CFMessagePortRef clientPort_, SInt32 type, CF
 	}
 	
 	[clientPortName release];
-	[observers release];
+	if (observers != NULL)
+		CFRelease(observers);
 	[super dealloc];
 }
 
@@ -206,17 +209,17 @@ static CFDataRef GPClientCallback (CFMessagePortRef clientPort_, SInt32 type, CF
 -(void)addObserver:(id)observer selector:(SEL)selector forMessages:(NSIndexSet*)messageSet {
 	GPObserver obs = {observer, selector};
 	NSValue* observerObject = [NSValue valueWithBytes:&obs objCType:@encode(GPObserver)];
-	NSMutableIndexSet* observerIndexSet = [observers objectForKey:observerObject];
+	NSMutableIndexSet* observerIndexSet = CFDictionaryGetValue(observers, observerObject);
 	if (observerIndexSet == nil) {
 		observerIndexSet = [messageSet mutableCopy];
-		[observers setObject:observerIndexSet forKey:observerObject];
+		CFDictionaryAddValue(observers, observerObject, observerIndexSet);
 		[observerIndexSet release];
 	} else
 		[observerIndexSet addIndexes:messageSet];
 }
 -(void)removeObserver:(id)observer selector:(SEL)selector {
 	GPObserver obs = {observer, selector};
-	[observers removeObjectForKey:[NSValue valueWithBytes:&obs objCType:@encode(GPObserver)]];
+	CFDictionaryRemoveValue(observers, [NSValue valueWithBytes:&obs objCType:@encode(GPObserver)]);
 }
 @end
 

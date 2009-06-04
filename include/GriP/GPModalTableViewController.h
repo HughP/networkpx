@@ -34,7 +34,7 @@
 #import <CoreFoundation/CFArray.h>
 #import <CoreGraphics/CGGeometry.h>
 
-@class UIWindow, NSDictionary, UITableView, UIToolbar, UITextView, NSArray, NSMutableArray, UIBarButtonItem, GPModalTableViewObject, UINavigationController;
+@class UIWindow, NSDictionary, UITableView, UIToolbar, UITextView, NSArray, NSMutableArray, UIBarButtonItem, GPModalTableViewObject, UINavigationController, GPModalTableViewController;
 @protocol UITextViewDelegate, UITextFieldDelegate, ABPeoplePickerNavigationControllerDelegate;
 
 @interface GPModalTableViewNavigationController : UIViewController {
@@ -55,6 +55,7 @@
 -(void)updateItem:(NSString*)identifier toEntry:(NSDictionary*)entry;
 -(void)updateButtons:(NSArray*)buttons forIdentifier:(NSString*)identifier;
 -(void)animateOut;
+@property(retain,readonly) GPModalTableViewController* topViewController;
 @end
 
 
@@ -66,7 +67,7 @@
 	UITextView* activeTextView;
 	// data:
 	NSMutableArray* entries;
-	CFMutableArrayRef sectionIndices;
+	CFArrayRef sectionIndices;
 	CGFloat lastRowHeight;
 	GPModalTableViewObject* activeABObject;
 	NSString* identifier;

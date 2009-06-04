@@ -102,6 +102,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	NSString* urlString = [NSPropertyListSerialization propertyListFromData:urlData mutabilityOption:NSPropertyListImmutable format:NULL errorDescription:NULL];
 	if ([urlString isKindOfClass:[NSString class]])
 		[([UIApplication sharedApplication] ?: [[[UIApplication alloc] init] autorelease]) openURL:[NSURL URLWithString:urlString]];
+	[self messageClickedOrIgnored:urlData type:GriPMessage_ClickedNotification];
 }
 
 @dynamic installed, running;

@@ -51,10 +51,15 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	if (uid == -1)
 		return;
 	NSArray* arr = [NSPropertyListSerialization propertyListFromData:data mutabilityOption:NSPropertyListImmutable format:NULL errorDescription:NULL];
-	if ([arr isKindOfClass:[NSArray class]] && [arr count] <= 3) {
+	if (type == GPTVAMessage_Dismiss) {
+		arr = nil;
+		uid = -1;
+	}
+		
+	if (uid == -1 || ([arr isKindOfClass:[NSArray class]] && [arr count] <= 3)) {
 		NSNumber* decodedArr[] = {nil, nil, nil};
 		[arr getObjects:decodedArr];
-		if (uid == [decodedArr[0] integerValue]) {
+		if (uid == -1 || uid == [decodedArr[0] integerValue]) {
 			SEL delegateMethods[] = {
 				@selector(modalTableView:clickedButton:),
 				@selector(modalTableView:movedItem:below:),
@@ -158,7 +163,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		NSString* duplexName = duplex.name;
 		[dataToSend appendBytes:[duplexName UTF8String] length:[duplexName length]+1];
 		[duplex sendMessage:GPTVAMessage_Dismiss data:dataToSend];
-		uid = -1;
 	}
 }
 
