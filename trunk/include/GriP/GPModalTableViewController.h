@@ -56,6 +56,7 @@
 -(void)updateButtons:(NSArray*)buttons forIdentifier:(NSString*)identifier;
 -(void)animateOut;
 @property(retain,readonly) GPModalTableViewController* topViewController;
+-(void)sendDismissMessage;
 @end
 
 
