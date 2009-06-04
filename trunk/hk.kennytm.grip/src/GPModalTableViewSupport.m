@@ -250,7 +250,7 @@ static int globalUid = 0;
 			
 			titleLabel.font = [UIFont boldSystemFontOfSize:[UIFont labelFontSize]];
 			titleLabel.text = object->title;
-			titleLabel.numberOfLines = 0;
+			titleLabel.lineBreakMode = UILineBreakModeMiddleTruncation;
 			[titleLabel sizeToFit];
 			
 			CGRect adjustedTitleRect = titleLabel.frame;
@@ -268,7 +268,7 @@ static int globalUid = 0;
 		UIFont* sysFont = [UIFont systemFontOfSize:[UIFont systemFontSize]];
 		CGRect subtitleRect;
 		if (object->compact)
-			subtitleRect = CGRectMake(titleRect.origin.x + titleSize.width, titleRect.origin.y, titleRect.size.width - titleSize.width, 1);
+			subtitleRect = CGRectMake(titleRect.origin.x + titleSize.width, titleRect.origin.y, titleRect.size.width - titleSize.width, titleRect.size.height);
 		else
 			subtitleRect = CGRectMake(titleRect.origin.x, titleRect.origin.y + titleRect.size.height, titleRect.size.width, 1);
 		if (object->subtitle != nil) {
@@ -283,14 +283,18 @@ static int globalUid = 0;
 			
 			CGRect adjustedSubtitleRect = subtitleLabel.frame;
 			adjustedSubtitleRect.size.width = subtitleRect.size.width;
-			subtitleRect.size.height = adjustedSubtitleRect.size.height;
+			if (subtitleRect.size.height < adjustedSubtitleRect.size.height) {
+				subtitleRect.size.height = adjustedSubtitleRect.size.height;
+			} else if (object->compact) {
+				adjustedSubtitleRect.origin.y += roundf((subtitleRect.size.height-adjustedSubtitleRect.size.height)/3);
+			}
 			subtitleLabel.frame = adjustedSubtitleRect;
 			subtitleLabel.autoresizingMask = UIViewAutoresizingFlexibleWidth;
 		} else
 			subtitleRect.size.height = -4;
 		
 		// Recompute detail rect size.
-		CGRect detailRect = CGRectMake(0, subtitleRect.size.height + subtitleRect.origin.y + 4, size_width, sysFont.leading);
+		CGRect detailRect = CGRectMake(0, subtitleRect.size.height + subtitleRect.origin.y + 4, size_width, sysFont.leading * object->lines);
 		UIColor* textColor = [UIColor colorWithWhite:1.f/3.f alpha:1];
 		if (object->edit) {
 			if (object->lines <= 0)

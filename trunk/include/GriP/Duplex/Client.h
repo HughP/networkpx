@@ -42,14 +42,13 @@ enum {
 #ifdef __OBJC__
 
 #import <Foundation/NSObject.h>
-#include <CoreFoundation/CFMessagePort.h>
-#include <pthread.h>
-@class NSMutableDictionary, NSData, NSString, NSIndexSet;
+#include <CoreFoundation/CoreFoundation.h>
+@class NSData, NSString, NSIndexSet;
 
 @interface GPDuplexClient : NSObject {
 	CFMessagePortRef clientPort, serverPort;
 	CFRunLoopSourceRef clientSource;
-	NSMutableDictionary* observers;
+	CFMutableDictionaryRef observers;
 	NSString* clientPortName;
 }
 -(id)init;

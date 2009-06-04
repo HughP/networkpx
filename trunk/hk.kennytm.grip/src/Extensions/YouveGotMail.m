@@ -50,20 +50,14 @@ __attribute__((visibility("hidden")))
 @end
 
 __attribute__((visibility("hidden")))
-@interface MailAccount : NSObject
+@interface MailAccount : NSObject { NSString* simtest_address; }
 @property(readonly) NSArray* emailAddresses;
-@end
-
-__attribute__((visibility("hidden")))
-@interface MailMimePart : NSObject
--(NSString*)decodeTextPlain;
 @end
 
 __attribute__((visibility("hidden")))
 @interface MessageStore : NSObject
 -(void)deleteMessages:(NSArray*)messages moveToTrash:(BOOL)moveToTrash;
 @end
-
 
 __attribute__((visibility("hidden")))
 @interface WebMessageDocument : NSObject
@@ -77,7 +71,7 @@ __attribute__((visibility("hidden")))
 @end
 
 __attribute__((visibility("hidden")))
-@interface Message : NSObject
+@interface Message : NSObject { int simtest_rannum; }
 @property(retain) NSString* subject;
 @property(retain) NSString* senderAddressComment;
 @property(retain) NSString* sender, *to, *cc;
@@ -94,6 +88,60 @@ __attribute__((visibility("hidden")))
 -(void)launchApplicationWithIdentifier:(NSString*)iden suspended:(BOOL)suspended;
 @end
 
+#if TARGET_IPHONE_SIMULATOR
+@implementation ActivityMonitor
++(ActivityMonitor*)currentMonitor { return [[[self alloc] init] autorelease]; }
+-(BOOL)gotNewMessages { return YES; }
+-(void)reset {}
+@end
+static NSString* const randomAddresses[4] = {@"test@example.com", @"another_test@example.com", @"hello.world@test.com", @"example@qwertyuiopasdfghjklzxcvbnm.qwertyuiopasdfghjklzxcvbnm.com"};
+@implementation MailAccount
+-(id)initWithAddress:(NSString*)addr { if ((self = [super init])) simtest_address = [addr retain]; return self; }
+-(void)dealloc { [simtest_address release]; [super dealloc]; }
+-(NSArray*)emailAddresses { return [NSArray arrayWithObject:simtest_address]; }
+@end
+@implementation MessageStore
+-(void)deleteMessages:(NSArray*)messages moveToTrash:(BOOL)moveToTrash {}
+@end
+@implementation WebMessageDocument
+@dynamic htmlData, preferredCharacterSet;
+-(NSData*)htmlData {
+	static const char* rawHTML = "<html><head><title>title</title></head><body><p>This is a test mail message.</p><p style='font-size:120pt;'>Some huge text to let to scroll.</p><p>Rest of the message.</p></body></html>";
+	return [NSData dataWithBytes:rawHTML length:strlen(rawHTML)+1];
+}
+-(NSString*)preferredCharacterSet { return @"utf8"; }
+@end
+@implementation MessageBody
+-(NSArray*)htmlContent { return [NSArray arrayWithObject:[[[WebMessageDocument alloc] init] autorelease]]; }
+@end
+@implementation Message
+@dynamic subject, sender, to, cc, messageFlags, messageStore, senderAddressComment;
+-(id)initWithRandomNumber:(int)x { if ((self = [super init])) simtest_rannum = x; return self; }
+-(NSString*)subject {
+	static NSString* const randomSubjects[4] = {@"Test", @"Very very very very very very very very long subject", @"Re: Re: Fw: Forward: Very very very very very very very very long subject", @"Re: Re: Fw: Fw: Re: Test"};
+	return randomSubjects[simtest_rannum];
+}
+-(NSString*)senderAddressComment { return self.sender; }
+-(NSString*)sender { return randomAddresses[simtest_rannum]; }
+-(NSString*)to { return randomAddresses[3-simtest_rannum]; }
+-(NSString*)cc { return simtest_rannum < 2 ? nil : randomAddresses[simtest_rannum]; }
+-(MailAccount*)account { return [[[MailAccount alloc] initWithAddress:randomAddresses[simtest_rannum]] autorelease]; }
+-(unsigned long)messageFlags { return 0x30000; }
+-(MessageBody*)messageBody { return [[[MessageBody alloc] init] autorelease]; }
+-(NSDate*)dateSent { return [NSDate date]; }
+-(void)markAsViewed {}
+-(void)markAsNotViewed {}
+-(MessageStore*)messageStore { return nil; }
+@end
+
+void TestYGM () {
+	NSMutableArray* allMessages = [NSMutableArray arrayWithCapacity:16];
+	for (int i = 0; i < 1; ++ i)
+		[allMessages addObject:[[[Message alloc] initWithRandomNumber:rand()%4] autorelease]];
+	[[NSNotificationCenter defaultCenter] postNotificationName:@"MessageStoreMessagesAdded" object:nil userInfo:[NSDictionary dictionaryWithObject:allMessages forKey:@"messages"]];
+}
+#endif
+
 //------------------------------------------------------------------------------
 
 static NSString* YGMCopyMessageBody (Message* msg) {
@@ -102,6 +150,7 @@ static NSString* YGMCopyMessageBody (Message* msg) {
 	return (NSString*)CFStringCreateFromExternalRepresentation(NULL, (CFDataRef)content.htmlData, encoding);
 }
 
+/*
 static Message* YGMGetMessageFromItem (GPModalTableViewClient* client, NSString* item, NSString** pAccount, int* pIndex) {
 	int exclLoc = [item rangeOfString:@"!"].location;
 	if (exclLoc != NSNotFound) {
@@ -115,6 +164,7 @@ static Message* YGMGetMessageFromItem (GPModalTableViewClient* client, NSString*
 	} else
 		return nil;
 }
+ */
 
 /*
 static void YGMAppendMessageToString(Message* message, NSMutableString* string) {
@@ -133,20 +183,12 @@ __attribute__((visibility("hidden")))
 @interface YouveGotMail : NSObject <GrowlApplicationBridgeDelegate, GPModalTableViewDelegate> {
 	GPApplicationBridge* bridge;
 	NSString* oneNewMail, *manyNewMails, *newMails, *multipleAccounts;
-	NSMutableDictionary* newMessagesForEachMail;
+	NSMutableSet* dirtyAccounts;
+	CFMutableDictionaryRef messages;
+	NSInteger msgid;
 	Class DAMessageStore;
 	pthread_mutex_t messageLock;
 }
--(id)init;
--(void)dealloc;
--(void)messagesAdded:(NSNotification*)notif;
-
--(NSDictionary*)constructHomeDictionary:(NSDictionary*)nm4em;
-
--(NSString*)applicationNameForGrowl;
--(NSDictionary*)registrationDictionaryForGrowl;
--(void)growlNotificationWasClicked:(NSObject*)context;
--(void)growlNotificationTimedOut:(NSObject*)context;
 @end
 
 @implementation YouveGotMail
@@ -155,13 +197,15 @@ __attribute__((visibility("hidden")))
 		NSURL* myDictURL = [NSURL fileURLWithPath:@"/Library/MobileSubstrate/DynamicLibraries/YouveGotMail.plist" isDirectory:NO];
 		NSDictionary* localizationStrings = GPPropertyListCopyLocalizableStringsDictionary(myDictURL);
 		
-		oneNewMail = [[localizationStrings objectForKey:@"1 new mail (%@)"] retain];
-		manyNewMails = [[localizationStrings objectForKey:@"%d new mails (%@)"] retain];
-		multipleAccounts = [[localizationStrings objectForKey:@"multiple accounts"] retain];
+		oneNewMail = [([localizationStrings objectForKey:@"1 new mail (%@)"] ?: @"1 new mail (%@)") retain];
+		manyNewMails = [([localizationStrings objectForKey:@"%d new mails (%@)"] ?: @"%d new mails (%@)") retain];
+		multipleAccounts = [([localizationStrings objectForKey:@"multiple accounts"] ?: @"multiple accounts") retain];
 		
 		[localizationStrings release];
 		
-		newMessagesForEachMail = [[NSMutableDictionary alloc] init];
+		messages = CFDictionaryCreateMutable(NULL, 0, NULL, &kCFTypeDictionaryValueCallBacks);
+		dirtyAccounts = [[NSMutableSet alloc] init];
+		msgid = 0;
 		
 		DAMessageStore = objc_getClass("DAMessageStore");
 		
@@ -181,42 +225,40 @@ __attribute__((visibility("hidden")))
 	[oneNewMail release];
 	[manyNewMails release];
 	[multipleAccounts release];
-	[newMessagesForEachMail release];
+	CFRelease(messages);
+	CFRelease(dirtyAccounts);
 	pthread_mutex_destroy(&messageLock);
 	[super dealloc];
 }
 -(void)messagesAdded:(NSNotification*)notif {
 	ActivityMonitor* mon = [ActivityMonitor currentMonitor];
 	
+	NSLog(@"%@", notif);
+	
 	if (!(mon.gotNewMessages || [notif.object isKindOfClass:DAMessageStore]))
-			return;
-			
-		NSDictionary* userInfo = [notif userInfo];
-		NSArray* messages = [userInfo objectForKey:@"messages"];
+		return;
+		
+	[mon reset];
+	
+	NSDictionary* userInfo = [notif userInfo];
+	NSArray* theMessages = [userInfo objectForKey:@"messages"];
 	
 	pthread_mutex_lock(&messageLock);
-		// insert all messeages into each account's set.
-		for (Message* message in messages) {
-			// ignore read mails.
-			if (message.messageFlags & 1)
-				continue;
-			NSString* account = [message.account.emailAddresses objectAtIndex:0];
-			NSMutableArray* messages = [newMessagesForEachMail objectForKey:account];
-			if (messages != nil)
-				[messages addObject:message];
-			else
-				[newMessagesForEachMail setObject:[NSMutableArray arrayWithObject:message] forKey:account];
-		}
+	for (Message* message in theMessages) {
+		// ignore read mails.
+		if (message.messageFlags & 1)
+			continue;
+		CFDictionaryAddValue(messages, (const void*)(msgid++), message);
+		[dirtyAccounts addObject:[message.account.emailAddresses objectAtIndex:0]];
+	}
 	pthread_mutex_unlock(&messageLock);
 
 	// count number of new mails coming in.
-	int msgCount = 0;
+	int msgCount = CFDictionaryGetCount(messages);
 	NSString* accountString = multipleAccounts;
-	if ([newMessagesForEachMail count] == 1)
-		accountString = [[newMessagesForEachMail keyEnumerator] nextObject];
+	if ([dirtyAccounts count] == 1)
+		accountString = [dirtyAccounts anyObject];
 	
-	for (NSArray* messages in newMessagesForEachMail)
-		msgCount += [[newMessagesForEachMail objectForKey:messages] count];
 	NSString* title;
 	if (msgCount == 1)
 		title = [NSString stringWithFormat:oneNewMail, accountString];
@@ -239,22 +281,33 @@ __attribute__((visibility("hidden")))
 	return [NSDictionary dictionaryWithObjectsAndKeys:names, GROWL_NOTIFICATIONS_ALL, names, GROWL_NOTIFICATIONS_DEFAULT, nil];
 }
 
--(NSDictionary*)constructHomeDictionary:(NSDictionary*)nm4em {
+//------------------------------------------------------------------------------
+
+static void prepareEntriesDictionary(unsigned _msgid, Message* msg, NSMutableDictionary* entriesPerAccount) {
+	NSString* account = [msg.account.emailAddresses objectAtIndex:0];
+	NSMutableArray* msgs = [entriesPerAccount objectForKey:account];
+	NSDictionary* entry = [NSDictionary dictionaryWithObjectsAndKeys:
+						   msg.senderAddressComment, @"title",
+						   msg.subject, @"subtitle",
+						   (NSNumber*)kCFBooleanTrue, @"delete",
+						   @"DisclosureIndicator", @"accessory",
+						   [NSString stringWithFormat:@"%u", _msgid], @"id",
+						   nil];
+	if (msgs != nil)
+		[msgs addObject:entry];
+	else
+		[entriesPerAccount setObject:[NSMutableArray arrayWithObject:entry] forKey:account];
+}
+static void constructEntriesArray(NSString* account, NSArray* entriesInAccount, NSMutableArray* entries) {
+	[entries addObject:[NSDictionary dictionaryWithObjectsAndKeys:account, @"title", (NSNumber*)kCFBooleanTrue, @"header", nil]];
+	[entries addObjectsFromArray:entriesInAccount];
+}
+
+-(NSDictionary*)constructHomeDictionary:(CFDictionaryRef)msgs {
 	NSMutableArray* entries = [NSMutableArray array];
-	for (NSString* account in nm4em) {
-		[entries addObject:[NSDictionary dictionaryWithObjectsAndKeys:account, @"title", (NSNumber*)kCFBooleanTrue, @"header", nil]];
-		int i = 0;
-		for (Message* msg in [nm4em objectForKey:account]) {
-			[entries addObject:[NSDictionary dictionaryWithObjectsAndKeys:
-								msg.senderAddressComment, @"title",
-								msg.subject, @"subtitle",
-								(NSNumber*)kCFBooleanTrue, @"candelete",
-								@"DisclosureIndicator", @"accessory",
-								[NSString stringWithFormat:@"%d!%@", i, account], @"id",
-								nil]];
-			++ i;
-		}
-	}
+	NSMutableDictionary* entriesPerAccount = [NSMutableDictionary dictionary];
+	CFDictionaryApplyFunction(msgs, (CFDictionaryApplierFunction)&prepareEntriesDictionary, entriesPerAccount);
+	CFDictionaryApplyFunction((CFDictionaryRef)entriesPerAccount, (CFDictionaryApplierFunction)&constructEntriesArray, entries);
 	
 	return [NSDictionary dictionaryWithObjectsAndKeys:
 			[NSArray arrayWithObject:[NSDictionary dictionaryWithObjectsAndKeys:
@@ -262,6 +315,7 @@ __attribute__((visibility("hidden")))
 									  @"Launch Mail", @"id",
 									  nil]], @"buttons",
 			@"You've Got Mail", @"title",
+			@"You've Got Mail", @"id",
 			entries, @"entries",
 			nil];
 }
@@ -269,35 +323,33 @@ __attribute__((visibility("hidden")))
 -(void)growlNotificationWasClicked:(NSObject*)context {
 	pthread_mutex_lock(&messageLock);
 		
-	GPModalTableViewClient* client = [[GPModalTableViewClient alloc] initWithDictionary:[self constructHomeDictionary:newMessagesForEachMail]
+	GPModalTableViewClient* client = [[GPModalTableViewClient alloc] initWithDictionary:[self constructHomeDictionary:messages]
 																	  applicationBridge:bridge name:@"You've Got Mail"];
 	client.delegate = self;
-	client.context = newMessagesForEachMail;
-	[newMessagesForEachMail release];
-	newMessagesForEachMail = [[NSMutableDictionary alloc] init];
+	client.context = (id)messages;
+	CFRelease(messages);
+	messages = CFDictionaryCreateMutable(NULL, 0, NULL, &kCFTypeDictionaryValueCallBacks);
+	[dirtyAccounts removeAllObjects];
 	
 	pthread_mutex_unlock(&messageLock);
 }
 -(void)growlNotificationCoalesced:(NSObject*)context {}
 -(void)growlNotificationTimedOut:(NSObject*)context {
 	pthread_mutex_lock(&messageLock);
-	[newMessagesForEachMail removeAllObjects];
+	CFDictionaryRemoveAllValues(messages);
+	[dirtyAccounts removeAllObjects];
 	pthread_mutex_unlock(&messageLock);
 }
 
+#pragma mark -
 
 -(void)modalTableView:(GPModalTableViewClient*)client deletedItem:(NSString*)item {
-	NSString* account;
-	int index;
-	Message* msg = YGMGetMessageFromItem(client, item, &account, &index);
+	CFMutableDictionaryRef msgs = (CFMutableDictionaryRef)client.context;
+	const void* _msgid = (const void*)[item integerValue];
+	Message* msg = (Message*)CFDictionaryGetValue(msgs, _msgid);
 	if (msg != nil) {
 		[msg.messageStore deleteMessages:[NSArray arrayWithObject:msg] moveToTrash:YES];
-
-		NSMutableArray* arr = [client.context objectForKey:account];
-		if ([arr count] == 1)
-			[client.context removeObjectForKey:account];
-		else
-			[arr removeObjectAtIndex:index];
+		CFDictionaryRemoveValue(msgs, _msgid);
 	}
 }
 
@@ -305,26 +357,21 @@ __attribute__((visibility("hidden")))
 	if ([@"Launch Mail" isEqualToString:buttonID]) {
 		[client dismiss];
 		[[UIApplication sharedApplication] launchApplicationWithIdentifier:@"com.apple.mobilemail" suspended:NO];
-	} else {
-		NSString* item = client.currentIdentifier;
-		Message* msg = YGMGetMessageFromItem(client, item, NULL, NULL);
-		if (msg != nil) {
-			if ([@"Mark as Unread" isEqualToString:buttonID])
-				[msg markAsNotViewed];
-			else if ([@"Trash" isEqualToString:buttonID]) {
-				[self modalTableView:client deletedItem:item];
-				[client pop];
-			}
-		}
+	} else if ([@"Trash" isEqualToString:buttonID]) {
+		[self modalTableView:client deletedItem:client.currentIdentifier];
+		[client reloadDictionary:[self constructHomeDictionary:(CFDictionaryRef)client.context] forIdentifier:@"You've Got Mail"];
+		[client pop];
+	} else if ([@"Mark as Unread" isEqualToString:buttonID]) {
+		[(Message*)CFDictionaryGetValue((CFDictionaryRef)client.context, (const void*)[client.currentIdentifier integerValue]) markAsNotViewed];
 	}
 }
 
 -(void)modalTableViewDismissed:(GPModalTableViewClient*)client {
 	[client release];
 }
-	
+
 -(void)modalTableView:(GPModalTableViewClient*)client selectedItem:(NSString*)item {
-	Message* msg = YGMGetMessageFromItem(client, item, NULL, NULL);
+	Message* msg = (Message*)CFDictionaryGetValue((CFDictionaryRef)client.context, (const void*)[item integerValue]);
 	
 	if (msg != nil) {
 		NSBundle* mainBundle = [NSBundle mainBundle];
@@ -353,14 +400,14 @@ __attribute__((visibility("hidden")))
 									(NSNumber*)kCFBooleanTrue, @"noselect",
 									nil],
 								   [NSDictionary dictionaryWithObjectsAndKeys:
-									msg.subject, @"title",
-									formattedDate, @"subtitle",
+									formattedDate, @"title",
+									msg.subject, @"subtitle",
 									messageBody, @"description",
 									(NSNumber*)kCFBooleanTrue, @"edit",
 									(NSNumber*)kCFBooleanTrue, @"readonly",
 									(NSNumber*)kCFBooleanTrue, @"html",
 									(NSNumber*)kCFBooleanTrue, @"noselect",
-									[NSNumber numberWithInteger:0], @"lines",
+									[NSNumber numberWithInteger:10], @"lines",
 									nil],
 								   nil];
 		NSString* cc = msg.cc;
@@ -401,6 +448,10 @@ static void terminate () {
 }
 
 extern void initialize () {
+#if TARGET_IPHONE_SIMULATOR
+	srand(0);
+#endif
+	
 	NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
 	atexit(&terminate);
 	youveGotMail = [[YouveGotMail alloc] init];
