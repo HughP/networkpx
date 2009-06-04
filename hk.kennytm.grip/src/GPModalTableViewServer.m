@@ -80,20 +80,23 @@ static void GPModalTableViewHookSpringBoard () {
 	// Hook some SpringBoard commands so that:
 	//  - Pressing the Home button will dismiss the active Modal Table View instead of closing the active app
 	//  - The lock screen will appear indefinitely until all Modal Table View are dismissed.
-	
+#if !TARGET_IPHONE_SIMULATOR
 	if (CFDictionaryGetCount(identifiedAlerts) == 0) {
 		original_clickedMenuButton = method_setImplementation(class_getInstanceMethod(objc_getClass("SBUIController"), @selector(clickedMenuButton)), (IMP)&replaced_clickedMenuButton);
 		original_restartDimTimer = method_setImplementation(class_getInstanceMethod(objc_getClass("SBAwayController"), @selector(restartDimTimer:)), (IMP)&replaced_restartDimTimer);
 	}
+#endif
 }
 
 static void GPModalTableViewUnhookSpringBoard() {
+#if !TARGET_IPHONE_SIMULATOR
 	if (CFDictionaryGetCount(identifiedAlerts) == 0) {
 		method_setImplementation(class_getInstanceMethod(objc_getClass("SBUIController"), @selector(clickedMenuButton)), original_clickedMenuButton);
 		Class _SBAwayController = objc_getClass("SBAwayController");
 		method_setImplementation(class_getInstanceMethod(_SBAwayController, @selector(restartDimTimer:)), original_restartDimTimer);
 		original_restartDimTimer(objc_msgSend(_SBAwayController, @selector(sharedAwayController)), @selector(restartDimTimer:), 0x41000000);
 	}
+#endif
 }
 
 

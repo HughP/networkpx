@@ -79,6 +79,7 @@ __attribute__((visibility("hidden")))
 @property(assign) unsigned long messageFlags;
 @property(readonly) MessageBody* messageBody;
 @property(readonly) NSDate* dateSent;
+@property(retain) NSString* summary;
 -(void)markAsViewed;
 -(void)markAsNotViewed;
 @property(retain) MessageStore* messageStore;
@@ -115,13 +116,14 @@ static NSString* const randomAddresses[4] = {@"test@example.com", @"another_test
 -(NSArray*)htmlContent { return [NSArray arrayWithObject:[[[WebMessageDocument alloc] init] autorelease]]; }
 @end
 @implementation Message
-@dynamic subject, sender, to, cc, messageFlags, messageStore, senderAddressComment;
+@dynamic subject, sender, to, cc, messageFlags, messageStore, senderAddressComment, summary;
 -(id)initWithRandomNumber:(int)x { if ((self = [super init])) simtest_rannum = x; return self; }
 -(NSString*)subject {
-	static NSString* const randomSubjects[4] = {@"Test", @"Very very very very very very very very long subject", @"Re: Re: Fw: Forward: Very very very very very very very very long subject", @"Re: Re: Fw: Fw: Re: Test"};
+	static NSString* const randomSubjects[4] = {@"Test", @"Very very very very very very very very long subject", @"Reply To: Re: Fw: Forward: Very very very very very very very very long subject", @"Re: Re: Fw: Fw: Re: Test"};
 	return randomSubjects[simtest_rannum];
 }
 -(NSString*)senderAddressComment { return self.sender; }
+-(NSString*)summary { return self.subject; }
 -(NSString*)sender { return randomAddresses[simtest_rannum]; }
 -(NSString*)to { return randomAddresses[3-simtest_rannum]; }
 -(NSString*)cc { return simtest_rannum < 2 ? nil : randomAddresses[simtest_rannum]; }
@@ -233,8 +235,6 @@ __attribute__((visibility("hidden")))
 -(void)messagesAdded:(NSNotification*)notif {
 	ActivityMonitor* mon = [ActivityMonitor currentMonitor];
 	
-	NSLog(@"%@", notif);
-	
 	if (!(mon.gotNewMessages || [notif.object isKindOfClass:DAMessageStore]))
 		return;
 		
@@ -286,12 +286,23 @@ __attribute__((visibility("hidden")))
 static void prepareEntriesDictionary(unsigned _msgid, Message* msg, NSMutableDictionary* entriesPerAccount) {
 	NSString* account = [msg.account.emailAddresses objectAtIndex:0];
 	NSMutableArray* msgs = [entriesPerAccount objectForKey:account];
+	
+	NSString* summary = msg.summary;
+	if (summary == nil) {
+		NSString* msgbody = YGMCopyMessageBody(msg);
+		Class HTMLParser = objc_getClass("MFHTMLParser") ?: objc_getClass("HTMLParser");
+		msg.summary = summary = objc_msgSend(HTMLParser, @selector(plainTextFromHTML:), msgbody) ?: @"";
+		[msgbody release];
+	}
+	
 	NSDictionary* entry = [NSDictionary dictionaryWithObjectsAndKeys:
 						   msg.senderAddressComment, @"title",
 						   msg.subject, @"subtitle",
 						   (NSNumber*)kCFBooleanTrue, @"delete",
 						   @"DisclosureIndicator", @"accessory",
 						   [NSString stringWithFormat:@"%u", _msgid], @"id",
+						   summary, @"description",
+						   [NSNumber numberWithInteger:2], @"lines",
 						   nil];
 	if (msgs != nil)
 		[msgs addObject:entry];

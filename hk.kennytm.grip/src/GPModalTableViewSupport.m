@@ -329,13 +329,16 @@ static int globalUid = 0;
 			detailLabel.text = object->detail;
 			detailLabel.font = sysFont;
 			detailLabel.textColor = textColor;
-			detailLabel.numberOfLines = MAX(0, object->lines);
-			[detailLabel sizeToFit];
-			
-			CGRect adjustedDetailRect = detailLabel.frame;
-			adjustedDetailRect.size.width = detailRect.size.width;
-			detailRect.size.height = adjustedDetailRect.size.height;
-			detailLabel.frame = adjustedDetailRect;
+			if (object->lines > 0)
+				detailLabel.numberOfLines = object->lines;
+			else {
+				detailLabel.numberOfLines = 0;
+				[detailLabel sizeToFit];
+				CGRect adjustedDetailRect = detailLabel.frame;
+				adjustedDetailRect.size.width = detailRect.size.width;
+				detailRect.size.height = adjustedDetailRect.size.height;
+				detailLabel.frame = adjustedDetailRect;
+			}
 			
 			detailLabel.autoresizingMask = UIViewAutoresizingFlexibleWidth;
 			
