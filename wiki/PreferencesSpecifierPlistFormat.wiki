@@ -67,6 +67,21 @@ If you just want to use _pane_ without messing up the detail controller, supply 
 detail = "PSDetailController";
 }}}
 
+If you want to dynamically add a specifier for a PSLinkCell linking to a bundle, do it like this:
+{{{
+PSSpecifier* specifier = [PSSpecifier preferenceSpecifierNamed:@"title"
+                                                        target:self
+                                                           set:NULL
+                                                           get:NULL
+                                                        detail:Nil
+                                                          cell:PSLinkCell
+                                                          edit:Nil];
+NSBundle* bundle = [NSBundle bundleWithPath:@"/System/Library/PreferenceBundles/prefs.bundle"];
+[specifier setProperty:bundle forKey:@"lazy-bundle"];
+[specifier setProperty:@"lazyLoadBundle:" forKey:@"action"];
+// Add specifier to the PSListController
+}}}
+
 == Editing cells ==
 
 These keys are specific to editing cells.
