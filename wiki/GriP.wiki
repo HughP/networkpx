@@ -384,8 +384,8 @@ After the view is constructed, we can configure it:
 }
 @end
 }}}
-So the coding is done. To deploy the theme, you will need to link to `libGriPExtra.dylib` and compile into a Mach-O bundle:
-  {{{ gcc «other-options» -lGriPExtra -bundle -o ExampleTheme ExampleTheme.m }}}
+So the coding is done. To deploy the theme, you will need to link to `libGriP.dylib` and compile into a Mach-O bundle:
+  {{{ gcc «other-options» -lGriP -bundle -o ExampleTheme ExampleTheme.m }}}
 and then put it into a GriP Theme bundle, which is just a folder. Such folder must have this directory structure:
   {{{
 ExampleTheme.griptheme/
