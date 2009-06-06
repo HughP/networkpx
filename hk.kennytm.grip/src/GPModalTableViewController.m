@@ -87,9 +87,9 @@ static UIViewController* deepestController = nil;
 		toolbarButtons = [[NSMutableDictionary alloc] init];
 		
 		NSDictionary* prefs = GPCopyPreferences();
-#define TableThemesPath @"/Library/GriP/TableThemes/"
+#define TableThemesPath @"/Library/GriP/Themes/"
 		themeBundle = [[NSBundle alloc] initWithPath:[TableThemesPath stringByAppendingPathComponent:[prefs objectForKey:@"ActiveTableTheme"]]];
-		themeInfoDict = [[themeBundle infoDictionary] retain];
+		themeInfoDict = [[NSDictionary alloc] initWithContentsOfFile:[themeBundle pathForResource:@"Theme" ofType:@"plist"]];
 		[prefs release];
 		
 		BOOL isWindowNil = window == nil;
@@ -158,7 +158,10 @@ static UIViewController* deepestController = nil;
 	[navCtrler pushViewController:controller animated:YES];
 	[controller release];
 }
--(void)pop { [navCtrler popViewControllerAnimated:YES]; }
+-(void)pop {
+	[navCtrler.modalViewController dismissModalViewControllerAnimated:YES];
+	[navCtrler popViewControllerAnimated:YES];
+}
 -(void)wrapperDismissModalViewControllerAnimated { [self dismissModalViewControllerAnimated:NO]; }
 -(void)animateOut {
 	deepestController = deepestController.parentViewController;
@@ -350,8 +353,7 @@ static UIViewController* deepestController = nil;
 				return nil;
 		}
 	} else
-		return nil;
-	
+		return nil;	
 }
 @end
 	
@@ -550,6 +552,9 @@ static UIViewController* deepestController = nil;
 		}
 		if (useSimpleCell) {
 			cell.text = object->title;
+			UIColor* textColor = [rootCtrler colorForKey:@"TableTextColor"];
+			if (textColor != nil)
+				cell.textColor = textColor;
 			cell.font = [UIFont boldSystemFontOfSize:[UIFont labelFontSize]];
 			cell.image = object->icon;
 			lastRowHeight = 36;
