@@ -485,14 +485,14 @@ The deployment procedure is same as UIView theme.
 Theming modal tables is much easier than GriP themes because you need to deal with much less options. The theme resources should be placed inside a folder in `/Library/GriP/Themes/`, with this structure:
 {{{
 ExampleTheme.gpmtvtheme/
-  Info.plist
+  Theme.plist
   Background.png  (optional)
   Selection.png   (optional)
 }}}
 
 Background.png is the background image of the whole modal table window. Selection.png is the image which should be used when the user selects a table cell.
 
-GriP identifies the following keys in Info.plist:
+GriP identifies the following keys in Theme.plist:
 
   _struct_ `<GriP Modal Table Theme>` ::
 <table border="1" bordercolor="#AAAAAA" cellpadding="5">
