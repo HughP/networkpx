@@ -23,8 +23,8 @@ items = (
 		detail = PSListItemsController;
 		label = Theme;
 		id = ActiveTheme;
-		titlesDataSource = allThemeTitles;
-		valuesDataSource = allThemeValues;
+		titlesDataSource = allThemeTitles_Themes;
+		valuesDataSource = allThemeValues_Themes;
 		get = "get:";
 		set = "set:with:"; },
 	{ cell = PSLinkCell;
@@ -32,6 +32,14 @@ items = (
 		id = Customize;
 		action = "lazyLoadBundle:";
 		enabled = 0; },
+	{ cell = PSLinkListCell;
+		detail = PSListItemsController;
+		label = "Theme (Modal table)";
+		id = ActiveTableTheme;
+		titlesDataSource = allThemeTitles_TableThemes;
+		valuesDataSource = allThemeValues_TableThemes;
+		get = "get:";
+		set = "set:with:"; },
 
 	{ cell = PSGroupCell; label = "Per-Priority Settings"; },
 	{ cell = PSLinkCell;
@@ -60,6 +68,9 @@ items = (
 		label = "Game mode";
 		detail = GPGameModeController; },
 
-	{ cell = PSGroupCell; label = "Per-App Settings"; }
+	{ cell = PSGroupCell; },
+	{ cell = PSLinkCell;
+		label = "Per-App Settings"; 
+		detail = GPPerAppSettingsController; },
 );
 }

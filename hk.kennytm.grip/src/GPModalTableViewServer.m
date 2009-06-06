@@ -169,9 +169,7 @@ CFDataRef GPModalTableViewServerCallback (CFMessagePortRef serverPort, SInt32 ty
 			break;
 			
 		case GPTVAMessage_Pop:
-			NSLog(@"%@", data);
 			AssignArray(1);
-			NSLog(@"%@", array);
 			[GPGetModalTableViewNagivationController(array) pop];
 			break;
 			

@@ -1,6 +1,5 @@
 {
 	CFBundleDisplayName = GriP;
 	CFBundleExecutable = GriP;
-	PHAddToSettings = YES;
 	NSPrincipalClass = GPPrefsListController;
 }

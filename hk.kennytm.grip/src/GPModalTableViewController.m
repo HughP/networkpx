@@ -32,13 +32,14 @@
 
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
+#import <objc/runtime.h>
 #import <GriP/Duplex/Server.h>
 #import <GriP/common.h>
 #import <AddressBook/AddressBook.h>
 #import <AddressBookUI/ABPeoplePickerNavigationController.h>
 #import <GriP/GPModalTableViewSupport.h>
 #import <GriP/GPModalTableViewController.h>
-
+#import <GriP/GPPreferences.h>
 
 @interface UIKeyboard : UIView
 +(UIKeyboard*)automaticKeyboard;
@@ -48,6 +49,20 @@
 @interface UITableViewCell ()
 -(void)setEditingAccessoryView:(UIView*)view;
 -(void)setEditingAccessoryType:(UITableViewCellAccessoryType)type;
+@end
+
+
+__attribute__((visibility("hidden")))
+@interface TotallyTransparentNavigationBar : UINavigationBar
+@end
+@implementation TotallyTransparentNavigationBar
+-(void)drawRect:(CGRect)rect {}
+@end
+__attribute__((visibility("hidden")))
+@interface TotallyTransparentToolbar : UIToolbar
+@end
+@implementation TotallyTransparentToolbar
+-(void)drawRect:(CGRect)rect {}
 @end
 
 
@@ -71,26 +86,70 @@ static UIViewController* deepestController = nil;
 	if ((self = [super init])) {
 		toolbarButtons = [[NSMutableDictionary alloc] init];
 		
+		NSDictionary* prefs = GPCopyPreferences();
+#define TableThemesPath @"/Users/kennytm/XCodeProjects/iKeyEx/svn/trunk/hk.kennytm.grip/deb/Library/GriP/TableThemes/"
+		themeBundle = [[NSBundle alloc] initWithPath:[TableThemesPath stringByAppendingPathComponent:[prefs objectForKey:@"ActiveTableTheme"]]];
+		themeInfoDict = [[themeBundle infoDictionary] retain];
+		[prefs release];
+		
 		BOOL isWindowNil = window == nil;
 		if (isWindowNil) {
-			window = [[UIWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
+			CGRect winrect = [UIScreen mainScreen].applicationFrame;
+			CGFloat originalOriginY = winrect.origin.y;
+			winrect.origin.y += winrect.size.height;
+			window = [[UIWindow alloc] initWithFrame:winrect];
+			[UIView beginAnimations:@"InitialGPMTVShow" context:NULL];
+			[UIView setAnimationDuration:0.5];
+			winrect.origin.y = originalOriginY;
+			window.frame = winrect;
+			[UIView commitAnimations];
 			window.exclusiveTouch = YES;
+			winrect.origin = CGPointZero;
+			
+			UIImageView* backgroundView = [[UIImageView alloc] initWithImage:[self imageWithName:@"Background"]];
+			backgroundView.frame = winrect;
+			[window addSubview:backgroundView];
+			[backgroundView release];
+			
 			masterController = [[UIViewController alloc] init];
-			[window addSubview:masterController.view];
+			UIView* masterControllerView = masterController.view;
+			NSDictionary* paddings = [themeInfoDict objectForKey:@"Paddings"];
+			if ([paddings isKindOfClass:[NSDictionary class]]) {
+				CGFloat left = [[paddings objectForKey:@"left"] floatValue];
+				CGFloat top = [[paddings objectForKey:@"top"] floatValue];
+				CGFloat right = [[paddings objectForKey:@"right"] floatValue];
+				CGFloat bottom = [[paddings objectForKey:@"bottom"] floatValue];
+				winrect.origin.x += left;
+				winrect.origin.y += top;
+				winrect.size.width -= (left + right);
+				winrect.size.height -= (top + bottom);
+			}
+			masterControllerView.frame = winrect;
+			
+			[window addSubview:masterControllerView];
 			[window makeKeyAndVisible];
-			window.windowLevel = UIWindowLevelAlert;
+			
+			window.windowLevel = UIWindowLevelStatusBar;
 			deepestController = masterController;
 		} else
 			deepestController = deepestController.modalViewController;
 		
 		GPModalTableViewController* controller = [[GPModalTableViewController alloc] initWithDictionary:dictionary controller:self];
 		navCtrler = [[UINavigationController alloc] initWithRootViewController:controller];
+		UINavigationBar* navBar = navCtrler.navigationBar;
+		if ([[themeInfoDict objectForKey:@"ToolbarsTotallyTransparent"] boolValue]) {
+			navBar.backgroundColor = [UIColor clearColor];
+			object_setClass(navBar, [TotallyTransparentNavigationBar class]);
+		}
+		navBar.barStyle = [[themeInfoDict objectForKey:@"ToolbarsBarStyle"] integerValue];
+		navBar.tintColor = [self colorForKey:@"ToolbarsTintColor"];
+		
 		UIBarButtonItem* closeButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemStop target:self action:@selector(sendDismissMessage)];
 		controller.navigationItem.leftBarButtonItem = closeButtonItem;
 		[closeButtonItem release];
 		[controller release];
 		
-		[deepestController presentModalViewController:self animated:YES];
+		[deepestController presentModalViewController:self animated:!isWindowNil];
 	}
 	return self;
 }
@@ -99,12 +158,22 @@ static UIViewController* deepestController = nil;
 	[navCtrler pushViewController:controller animated:YES];
 	[controller release];
 }
--(void)pop {
-	[navCtrler popViewControllerAnimated:YES];
-}
+-(void)pop { [navCtrler popViewControllerAnimated:YES]; }
+-(void)wrapperDismissModalViewControllerAnimated { [self dismissModalViewControllerAnimated:NO]; }
 -(void)animateOut {
 	deepestController = deepestController.parentViewController;
-	[self dismissModalViewControllerAnimated:YES];
+	if (deepestController != nil)
+		[self dismissModalViewControllerAnimated:YES];
+	else {
+		[UIView beginAnimations:@"InitialGPMTVHide" context:NULL];
+		[UIView setAnimationDuration:0.5];
+		[UIView setAnimationDelegate:self];
+		[UIView setAnimationDidStopSelector:@selector(wrapperDismissModalViewControllerAnimated)];
+		CGRect winrect = window.frame;
+		winrect.origin.y += winrect.size.height;
+		window.frame = winrect;
+		[UIView commitAnimations];
+	}
 }
 -(void)dealloc {
 	if (deepestController == nil) {
@@ -115,6 +184,8 @@ static UIViewController* deepestController = nil;
 		[window release];
 		window = nil;
 	}
+	[themeInfoDict release];
+	[themeBundle release];
 	[uid release];
 	[clientPortID release];
 	[navCtrler release];
@@ -227,7 +298,14 @@ static UIViewController* deepestController = nil;
 	self.view = mainView;
 	[mainView release];
 	
-	toolbar = [[UIToolbar alloc] initWithFrame:selfFrame];
+	UINavigationBar* navBar = navCtrler.navigationBar;
+	if ([[themeInfoDict objectForKey:@"ToolbarsTotallyTransparent"] boolValue]) {
+		toolbar = [[TotallyTransparentToolbar alloc] initWithFrame:selfFrame];
+		toolbar.backgroundColor = [UIColor clearColor];
+	} else
+		toolbar = [[UIToolbar alloc] initWithFrame:selfFrame];
+	toolbar.barStyle = navBar.barStyle;
+	toolbar.tintColor = navBar.tintColor;
 	toolbar.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleTopMargin;
 	[toolbar sizeToFit];
 	
@@ -245,8 +323,39 @@ static UIViewController* deepestController = nil;
 }
 
 -(GPModalTableViewController*)topViewController { return (GPModalTableViewController*)navCtrler.topViewController; }
+
+-(UIImage*)imageWithName:(NSString*)name {
+	NSInteger leftCapWidth = [[themeInfoDict objectForKey:[name stringByAppendingString:@"LeftCapWidth"]] integerValue];
+	NSInteger topCapHeight = [[themeInfoDict objectForKey:[name stringByAppendingString:@"TopCapHeight"]] integerValue];
+	return [[UIImage imageWithContentsOfFile:[themeBundle pathForResource:name ofType:@"png"]] stretchableImageWithLeftCapWidth:leftCapWidth topCapHeight:topCapHeight];
+}
+-(id)objectForKey:(NSString*)key { return [themeInfoDict objectForKey:key]; }
+-(UIColor*)colorForKey:(NSString*)key {
+	NSArray* colorArray = [themeInfoDict objectForKey:key];
+	NSNumber* rgba[4];
+	NSInteger colorArrayCount = [colorArray count];
+	
+	if ([colorArray isKindOfClass:[NSArray class]] && colorArrayCount <= 4) {
+		[colorArray getObjects:rgba];
+		switch (colorArrayCount) {
+			case 1:
+				return [UIColor colorWithWhite:[rgba[0] floatValue] alpha:1];
+			case 2:
+				return [UIColor colorWithWhite:[rgba[0] floatValue] alpha:[rgba[1] floatValue]];
+			case 3:
+				return [UIColor colorWithRed:[rgba[0] floatValue] green:[rgba[1] floatValue] blue:[rgba[2] floatValue] alpha:1];
+			case 4:
+				return [UIColor colorWithRed:[rgba[0] floatValue] green:[rgba[1] floatValue] blue:[rgba[2] floatValue] alpha:[rgba[3] floatValue]];
+			default:
+				return nil;
+		}
+	} else
+		return nil;
+	
+}
 @end
 	
+#pragma mark -
 
 
 @implementation GPModalTableViewController
@@ -378,18 +487,16 @@ static UIViewController* deepestController = nil;
 
 #pragma mark -
 
-// Until I'm 100% sure auto-rotation works on 3.x... No autorotate for 3.x.
-/*-(BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)orientation {
-	if (orientation == UIInterfaceOrientationPortrait)
-		return YES;
-	else
-		return [[UIDevice currentDevice].systemVersion hasPrefix:@"2."];
-}*/
-
 -(void)viewDidLoad {
 	UITableView* table = self.tableView;
 	table.editing = YES;
 	table.allowsSelectionDuringEditing = YES;
+	UIColor* sepColor = [rootCtrler colorForKey:@"TableSeparatorColor"];
+	if (sepColor != nil)
+		table.separatorColor = sepColor;
+	UIColor* bgColor = [rootCtrler colorForKey:@"TableBackgroundColor"];
+	if (bgColor != nil)
+		table.backgroundColor = bgColor;
 }
 -(void)viewDidAppear:(BOOL)animated {
 	[super viewDidAppear:animated];
@@ -430,7 +537,17 @@ static UIViewController* deepestController = nil;
 			cell.accessoryType = object->accessoryType;			
 		}
 		cell.showsReorderControl = object->reorder;
-		cell.selectionStyle = object->noselect ? UITableViewCellSelectionStyleNone : UITableViewCellSelectionStyleBlue;
+		if (object->noselect)
+			cell.selectionStyle = UITableViewCellSelectionStyleNone;
+		else {
+			cell.selectionStyle = [[rootCtrler objectForKey:@"SelectionStyle"] integerValue] ?: UITableViewCellSelectionStyleBlue;
+			UIImage* selBg = [rootCtrler imageWithName:@"Selection"];
+			if (selBg != nil) {
+				UIImageView* selBgView = [[UIImageView alloc] initWithImage:selBg];
+				cell.selectedBackgroundView = selBgView;
+				[selBgView release];
+			}
+		}
 		if (useSimpleCell) {
 			cell.text = object->title;
 			cell.font = [UIFont boldSystemFontOfSize:[UIFont labelFontSize]];
@@ -442,7 +559,7 @@ static UIViewController* deepestController = nil;
 			CGRect curFrame = CGRectInset(contentView.bounds, 8, 8);
 			GPModalTableViewContentView* contentSubview = [[GPModalTableViewContentView alloc] initWithFrame:curFrame];
 			[contentView addSubview:contentSubview];
-			[contentSubview setObject:object withController:self];
+			[contentSubview setObject:object withRootController:rootCtrler];
 			contentSubview.autoresizesSubviews = YES;
 			contentSubview.contentMode = UIViewContentModeScaleToFill;
 			contentSubview.autoresizingMask = UIViewAutoresizingFlexibleWidth;
@@ -507,11 +624,6 @@ static UIViewController* deepestController = nil;
 }
 -(void)tableView:(UITableView*)tableView didSelectRowAtIndexPath:(NSIndexPath*)indexPath {
 	ForwardMessage(GPTVAMessage_Selected, ActualObject(indexPath)->identifier);
-	/*
-	static NSString* fn = @"Untitled2";
-	fn = (fn == @"Untitled2") ? @"Untitled1" : @"Untitled2";
-	[rootCtrler pushDictionary:[NSDictionary dictionaryWithContentsOfFile:[[NSBundle mainBundle] pathForResource:fn ofType:@"plist"]]];
-	 */
 }
 
 -(UITableViewCellEditingStyle)tableView:(UITableView*)tableView editingStyleForRowAtIndexPath:(NSIndexPath*)indexPath {

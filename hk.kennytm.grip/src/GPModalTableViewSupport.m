@@ -215,13 +215,16 @@ static int globalUid = 0;
 	[object release];
 	[super dealloc];
 }
--(void)setObject:(GPModalTableViewObject*)newObject withController:(GPModalTableViewController*)controller; {
+-(void)setObject:(GPModalTableViewObject*)newObject withRootController:(GPModalTableViewNavigationController*)controller; {
 	if (object != newObject) {
 		[object release];
 		object = [newObject retain];
 		
 		[self.subviews makeObjectsPerformSelector:@selector(removeFromSuperview)];
 			
+		UIColor* textColor = [controller colorForKey:@"TableTextColor"] ?: [UIColor blackColor];
+		UIColor* descriptionColor = [controller colorForKey:@"TableDescriptionColor"] ?: [UIColor colorWithWhite:1.f/3.f alpha:1];
+		
 		CGRect selfFrame = self.frame;
 #define size_width selfFrame.size.width
 		CGRect titleRect;
@@ -250,6 +253,7 @@ static int globalUid = 0;
 			
 			titleLabel.font = [UIFont boldSystemFontOfSize:[UIFont labelFontSize]];
 			titleLabel.text = object->title;
+			titleLabel.textColor = textColor;
 			titleLabel.lineBreakMode = UILineBreakModeMiddleTruncation;
 			[titleLabel sizeToFit];
 			
@@ -278,6 +282,7 @@ static int globalUid = 0;
 			
 			subtitleLabel.font = sysFont;
 			subtitleLabel.text = object->subtitle;
+			subtitleLabel.textColor = textColor;
 			subtitleLabel.numberOfLines = 0;
 			[subtitleLabel sizeToFit];
 			
@@ -295,7 +300,6 @@ static int globalUid = 0;
 		
 		// Recompute detail rect size.
 		CGRect detailRect = CGRectMake(0, subtitleRect.size.height + subtitleRect.origin.y + 4, size_width, sysFont.leading * object->lines);
-		UIColor* textColor = [UIColor colorWithWhite:1.f/3.f alpha:1];
 		if (object->edit) {
 			if (object->lines <= 0)
 				detailRect.size.height = sysFont.leading * 5;
@@ -308,9 +312,8 @@ static int globalUid = 0;
 			SEL selector = (object->lines != 1 && object->html) ? @selector(setContentToHTMLString:) : @selector(setText:);
 			objc_msgSend(view, selector, object->detail);
 			[self performSelector:@selector(setNeedsLayout) withObject:nil afterDelay:0.5];
-//			view.delegate = controller;
 			view.font = sysFont;
-			view.textColor = textColor;
+			view.textColor = descriptionColor;
 			view.autoresizingMask = UIViewAutoresizingFlexibleWidth;
 			view.tag = 1966;
 			[self addSubview:view];
@@ -328,7 +331,7 @@ static int globalUid = 0;
 			
 			detailLabel.text = object->detail;
 			detailLabel.font = sysFont;
-			detailLabel.textColor = textColor;
+			detailLabel.textColor = descriptionColor;
 			if (object->lines > 0)
 				detailLabel.numberOfLines = object->lines;
 			else {
@@ -349,6 +352,7 @@ static int globalUid = 0;
 		selfFrame.size.height = detailRect.origin.y + detailRect.size.height + 4;
 		self.frame = selfFrame;
 		
+		[self.subviews makeObjectsPerformSelector:@selector(setBackgroundColor:) withObject:[UIColor clearColor]];
 	}
 }
 @end

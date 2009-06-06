@@ -113,6 +113,7 @@ static NSComparisonResult comparePSSpecs(PSSpecifier* p1, PSSpecifier* p2, void*
 	NSMutableArray* systemSpecs = [NSMutableArray array];
 	mach_port_t port = SBSSpringBoardServerPort();
 	NSArray* sbApps = SBSCopyApplicationDisplayIdentifiers(NO, NO);
+	// TODO: switch back to enumeration to deal with categories & poof :<
 	
 	for (NSString* identifier in sbApps) {
 		NSString* localizedName = SBSCopyLocalizedApplicationNameForDisplayIdentifier(identifier);
@@ -420,6 +421,31 @@ __attribute__((visibility("hidden")))
 
 //------------------------------------------------------------------------------
 #pragma mark -
+@interface GPPerAppSettingsController : PSListController {}
+@end
+@implementation GPPerAppSettingsController
+-(NSArray*)specifiers {
+	if (_specifiers == nil) {
+		NSMutableArray* specs = [[NSMutableArray alloc] initWithObjects:[PSSpecifier emptyGroupSpecifier], nil];
+		
+		// populate the per-app settings.
+		for (NSString* filename in [[NSFileManager defaultManager] contentsOfDirectoryAtPath:@"/Library/GriP/Tickets/" error:NULL]) {
+			if ([filename hasSuffix:@".ticket"]) {
+				PSSpecifier* spec = [PSSpecifier preferenceSpecifierNamed:[filename stringByDeletingPathExtension] target:nil set:nil get:nil detail:[TicketController class] cell:PSLinkCell edit:Nil];
+				[spec setProperty:[@"/Library/GriP/Tickets/" stringByAppendingPathComponent:filename] forKey:@"fn"];
+				[specs addObject:spec];
+			}
+		}
+		
+		_specifiers = [specs copy];
+		[specs release];
+	}
+	return _specifiers;
+}
+@end
+
+//------------------------------------------------------------------------------
+#pragma mark -
 
 @interface GPPrefsListController : PSListController<GrowlApplicationBridgeDelegate> {}
 -(id)initForContentSize:(CGSize)size;
@@ -450,17 +476,6 @@ __attribute__((visibility("hidden")))
 -(NSArray*)specifiers {
 	if (_specifiers == nil) {
 		_specifiers = [[self loadSpecifiersFromPlistName:@"GriP" target:self] retain];
-		NSMutableArray* secondPart = [[NSMutableArray alloc] init];
-		// populate the per-app settings.
-		for (NSString* filename in [[NSFileManager defaultManager] contentsOfDirectoryAtPath:@"/Library/GriP/Tickets/" error:NULL]) {
-			if ([filename hasSuffix:@".ticket"]) {
-				PSSpecifier* spec = [PSSpecifier preferenceSpecifierNamed:[filename stringByDeletingPathExtension] target:nil set:nil get:nil detail:[TicketController class] cell:PSLinkCell edit:Nil];
-				[spec setProperty:[@"/Library/GriP/Tickets/" stringByAppendingPathComponent:filename] forKey:@"fn"];
-				[secondPart addObject:spec];
-			}
-		}
-		[self addSpecifiersFromArray:secondPart];
-		[secondPart release];
 		[self updateCustomizeLinkTo:[[NSDictionary dictionaryWithContentsOfFile:GRIP_PREFDICT] objectForKey:@"ActiveTheme"]];
 	}
 	return _specifiers;
@@ -491,13 +506,13 @@ __attribute__((visibility("hidden")))
 	[spec setProperty:[NSString stringWithFormat:@"/Library/GriP/Themes/%@/%@.bundle", theme, prefName] forKey:@"lazy-bundle"];
 	[self reloadSpecifier:spec];
 }
--(NSArray*)allThemeValues {
+-(NSArray*)allThemeValues:(NSString*)dir :(NSArray*)ext {
 	NSFileManager* fman = [NSFileManager defaultManager];
-	[fman changeCurrentDirectoryPath:@"/Library/GriP/Themes/"];
-	return [[fman contentsOfDirectoryAtPath:@"." error:NULL] pathsMatchingExtensions:[NSArray arrayWithObjects:@"griptheme", nil]];
+	[fman changeCurrentDirectoryPath:dir];
+	return [[fman contentsOfDirectoryAtPath:@"." error:NULL] pathsMatchingExtensions:ext];
 }
--(NSArray*)allThemeTitles {
-	NSArray* allThemeValues = [self allThemeValues];
+-(NSArray*)allThemeTitles:(NSString*)dir :(NSArray*)ext {
+	NSArray* allThemeValues = [self allThemeValues:dir :ext];
 	NSMutableArray* resArray = [NSMutableArray arrayWithCapacity:[allThemeValues count]];
 	
 	for (NSString* path in allThemeValues)
@@ -505,6 +520,10 @@ __attribute__((visibility("hidden")))
 	
 	return resArray;
 }
+-(NSArray*)allThemeValues_Themes { return [self allThemeValues:@"/Library/GriP/Themes/" :[NSArray arrayWithObject:@"griptheme"]]; }
+-(NSArray*)allThemeTitles_Themes { return [self allThemeTitles:@"/Library/GriP/Themes/" :[NSArray arrayWithObject:@"griptheme"]]; }
+-(NSArray*)allThemeValues_TableThemes { return [self allThemeValues:@"/Library/GriP/Themes/" :[NSArray arrayWithObject:@"gpmtvtheme"]]; }
+-(NSArray*)allThemeTitles_TableThemes { return [self allThemeTitles:@"/Library/GriP/Themes/" :[NSArray arrayWithObject:@"gpmtvtheme"]]; }
 
 -(void)preview {
 	NSBundle* myBundle = self.bundle;

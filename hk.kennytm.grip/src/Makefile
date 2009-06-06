@@ -9,7 +9,7 @@ PrefsBundlePath=../deb/System/Library/PreferenceBundles
 
 GriPIncPath=../../include/GriP
 
-libVersion               =1.11.13
+libVersion               =1.11.14
 libGriPCompatVersion     =1.11.13
 
 Compiler=$(iPhoneDevPath)/usr/bin/gcc-4.0
@@ -58,9 +58,9 @@ libGriP_Sources=Duplex/Client.o GPApplicationBridge.o GPExtensions.o GPModalTabl
 libGriP_Target=../deb/usr/lib/libGriP.dylib
 libGriP_Options=-dynamiclib -install_name /usr/lib/libGriP.dylib -compatibility_version $(libGriPCompatVersion) -current_version $(libVersion) -framework CoreFoundation -framework Foundation -framework UIKit -framework CoreGraphics
 
-XGriP_Sources=GriPServer.o Duplex/Server.o ../../src/PrefsLinkHooker.o ../../src/UIKit3/UIUtilities.o GPMessageQueue.o GPModalTableViewController.o GPModalTableViewSupport.o GPModalTableViewServer.o 
+XGriP_Sources=GriPServer.o Duplex/Server.o GPMessageQueue.o GPModalTableViewController.o GPModalTableViewSupport.o GPModalTableViewServer.o 
 XGriP_Target=$(MobileSubstratePath)/%GriP.dylib
-XGriP_Options=-lobjc -lGriP -lsubstrate -dynamiclib -framework Foundation -framework CoreFoundation -framework Preferences -framework UIKit -framework CoreGraphics -framework AddressBook -framework AddressBookUI -init _GPStartGriPServer
+XGriP_Options=-lobjc -lGriP -lsubstrate -dynamiclib -framework Foundation -framework CoreFoundation -framework UIKit -framework CoreGraphics -framework AddressBook -framework AddressBookUI -init _GPStartGriPServer
 
 DefaultTheme_Sources=GPDefaultTheme.o $(SharedSrcPath)/GraphicsUtilities.o
 DefaultTheme_Target=$(ThemesPath)/Default.griptheme/Default
