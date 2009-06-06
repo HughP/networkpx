@@ -183,11 +183,10 @@ If GriP is a requirement for your app, you can directly link to `libGriP.dylib`,
 GriP implements all the _documented_ API of Growl on http://growl.info/documentation/developer/implementing-growl.php?lang=cocoa. 
 
 There are a few changes to GriP compared with the Growl API in the `notifyWithTitle:...` method:
- * The `description` cannot be attributed string (RTF strings) because the iPhoneOS does not support it. However, you can pass an HTML string and have it shown as rendered HTML. Because of this, if you have any `<`, `>` or `&` in the description that are not intended for HTML use, you must replace them as `&lt;`, `&gt;` and `&amp;`. You may use the `-[NSString stringByEscapingXMLEntities]` method provided by the category that comes along with the GriP client.
  * Besides being the `NSData` of the whole image, `iconData` accepts:
    * `UIImage`
-   * bundle identifier (`NSString`). The icon for that app will be used. In addition, the following strings are also supported:
-     {{{ "(WiFi)", "(music)", "(VPN)", "(video)", "(wallpaper)", "(camera)", "(airplane)", "(display)", "(sound)" }}}
+   * display identifier (`NSString`). The icon for that app will be used. In addition, the following strings are also supported:
+     {{{ "(WiFi)", "(VPN)", "(wallpaper)", "(airplane)", "(display)", "(sound)" }}}
    * a single character (`NSString`) in the range of U+E000 to U+E5FF. The character will be drawn directly as an icon. Emoji icons are in this character range.
  * `clickContext` accepts an `NSURL` alongside with property list objects. When an `NSURL` is given, the message will launch the URL when the user tap on it. This works even without a delegate, and across process termination. (The `growlNotificationWasClicked:` and `growlNotificationTimedOut:` methods will still be invoked if a delegate is present.)
 
@@ -259,7 +258,6 @@ You *should not rely on the `growlNotificationTimedOut:` delegate method* to do 
 == Known issues of the embedded server ==
 
 To play nice with the SDK restriction, there are a few features not found on the embedded server:
- * HTML description cannot be used since `-[UITextView setContentToHTMLString:]` is a private API.
  * You cannot use other applications' icons with a bundle identifier. This is because your application is sandboxed.
 
 You may tweak `GPPreferences.plist` to suit your need.
@@ -481,3 +479,183 @@ Here, the `-[GPRawThemeHelper registerMessage:]` extracts the necessary data fro
 When the user actually clicked a button, we check if that's Cancel or OK, and send the appropriate data to the GriP server. The complexity is encapsulated in the `-touchedMessage:` and `-ignoredMessage:` calls. You just need to call them with the UID you received earlier, which is stored in the alert's tag before.
 
 The deployment procedure is same as UIView theme. 
+
+== Theming (Modal tables) ==
+
+Theming modal tables is much easier than GriP themes because you need to deal with much less options. The theme resources should be placed inside a folder in `/Library/GriP/Themes/`, with this structure:
+{{{
+ExampleTheme.gpmtvtheme/
+  Info.plist
+  Background.png  (optional)
+  Selection.png   (optional)
+}}}
+
+Background.png is the background image of the whole modal table window. Selection.png is the image which should be used when the user selects a table cell.
+
+GriP identifies the following keys in Info.plist:
+
+  _struct_ `<GriP Modal Table Theme>` ::
+<table border="1" bordercolor="#AAAAAA" cellpadding="5">
+<tr>
+	<th>key</th>
+	<th colspan="2">type</th>
+	<th>meaning</th>
+	<th>default</th>
+	<th>depends</th>
+</tr>
+<tr>
+	<td>!BackgroundLeftCapWidth</td>
+	<td colspan="2">integer</td>
+	<td>Left cap width of the background image.</td>
+	<td>0</td>
+	<td>--</td>
+</tr>
+<tr>
+	<td>!BackgroundTopCapHeight</td>
+	<td colspan="2">integer</td>
+	<td>Top cap height of the background image.</td>
+	<td>0</td>
+	<td>--</td>
+</tr>
+<tr>
+	<td>Paddings</td>
+	<td>dictionary</td><td>`<Paddings>`</td>
+	<td>Spacing around the table.</td>
+	<td>{top=0; left=0; bottom=0; right=0;}</td>
+	<td>--</td>
+</tr>
+<tr>
+	<td>!ToolbarsTotallyTransparent</td>
+	<td colspan="2">boolean</td>
+	<td>Set whether the navigation bar and toolbar will be totally transparent.</td>
+	<td>✗</td>
+	<td>--</td>
+</tr>
+<tr>
+	<td>!ToolbarsBarStyle</td>
+	<td colspan="2">integer</td>
+	<td>If the toolbars are not totally transparent, which color should they be. 0 = Blue, 1 = Black.</td>
+	<td>0</td>
+	<td>--</td>
+</tr>
+<tr>
+	<td>!ToolbarsTintColor</td>
+	<td>array</td><td>`<Color>`</td>
+	<td>Tint color of the toolbars.</td>
+	<td>nil</td>
+	<td>--</td>
+</tr>
+<tr>
+	<td>!TableSeparatorColor</td>
+	<td>array</td><td>`<Color>`</td>
+	<td>Table separator color. Default is gray.</td>
+	<td>nil</td>
+	<td>--</td>
+</tr>
+<tr>
+	<td>!TableBackgroundColor</td>
+	<td>array</td><td>`<Color>`</td>
+	<td>Table background color. Default is white.</td>
+	<td>nil</td>
+	<td>--</td>
+</tr>
+<tr>
+	<td>!TableTextColor</td>
+	<td>array</td><td>`<Color>`</td>
+	<td>Table text color. Default is black.</td>
+	<td>nil</td>
+	<td>--</td>
+</tr>
+<tr>
+	<td>!TableDescriptionColor</td>
+	<td>array</td><td>`<Color>`</td>
+	<td>Table description color. Default is dark gray.</td>
+	<td>nil</td>
+	<td>--</td>
+</tr>
+<tr>
+	<td>!SelectionStyle</td>
+	<td colspan="2">integer</td>
+	<td>Color of selected cell. 1 = Blue, 2 = Gray</td>
+	<td>1</td>
+	<td>--</td>
+</tr>
+<tr>
+	<td>!SelectionLeftCapWidth</td>
+	<td colspan="2">integer</td>
+	<td>Left cap width of selected background image, if any.</td>
+	<td>0</td>
+	<td>--</td>
+</tr>
+<tr>
+	<td>!SelectionTopCapHeight</td>
+	<td colspan="2">integer</td>
+	<td>Top cap height of selected background image, if any.</td>
+	<td>0</td>
+	<td>--</td>
+</tr>
+</table>
+
+  _struct_ `<Paddings>` ::
+<table border="1" bordercolor="#AAAAAA" cellpadding="5">
+<tr>
+	<th>key</th>
+	<th colspan="2">type</th>
+	<th>meaning</th>
+	<th>default</th>
+	<th>depends</th>
+</tr>
+<tr>
+	<td>top</td>
+	<td colspan="2">integer</td>
+	<td>Top spacing.</td>
+	<td>0</td>
+	<td>--</td>
+</tr>
+<tr>
+	<td>left</td>
+	<td colspan="2">integer</td>
+	<td>Left spacing.</td>
+	<td>0</td>
+	<td>--</td>
+</tr>
+<tr>
+	<td>bottom</td>
+	<td colspan="2">integer</td>
+	<td>Bottom spacing.</td>
+	<td>0</td>
+	<td>--</td>
+</tr>
+<tr>
+	<td>right</td>
+	<td colspan="2">integer</td>
+	<td>Right spacing.</td>
+	<td>0</td>
+	<td>--</td>
+</tr>
+</table>
+
+  _union_ `<Color>` ::
+
+<table border="1" bordercolor="#AAAAAA" cellpadding="5">
+<tr>
+	<th colspan="2">type</th>
+	<th>meaning</th>
+</tr>
+<tr>
+	<td>array</td><td>...of reals and count = 1</td>
+	<td>Solid gray scale color (e.g. (1) = white).</td>
+</tr>
+<tr>
+	<td>array</td><td>...of reals and count = 2</td>
+	<td>Gray scale color with alpha channel (e.g. (1, 0.5) = translucent white).</td>
+</tr>
+<tr>
+	<td>array</td><td>...of reals and count = 3</td>
+	<td>Solid RGB color (e.g. (1, 0.5, 0) = orange).</td>
+</tr>
+<tr>
+	<td>array</td><td>...of reals and count = 4</td>
+	<td>RGB color with alpha channel (e.g. (0, 1, 0, 0.5) = translucent green).</td>
+</tr>
+</table>
