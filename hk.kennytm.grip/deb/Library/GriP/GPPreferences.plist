@@ -18,7 +18,7 @@ Location = 1;
 // Which theme to use.
 // Ignored in embedded server.
 ActiveTheme = "Default.griptheme";
-ActiveTableTheme = "Translucent Black.gpmtvtheme";
+ActiveTableTheme = "Default.gpmtvtheme";
 
 // Suspend GriP in these apps.
 GameModeApps = ();

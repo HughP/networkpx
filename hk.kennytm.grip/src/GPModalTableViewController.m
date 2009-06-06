@@ -87,7 +87,7 @@ static UIViewController* deepestController = nil;
 		toolbarButtons = [[NSMutableDictionary alloc] init];
 		
 		NSDictionary* prefs = GPCopyPreferences();
-#define TableThemesPath @"/Users/kennytm/XCodeProjects/iKeyEx/svn/trunk/hk.kennytm.grip/deb/Library/GriP/TableThemes/"
+#define TableThemesPath @"/Library/GriP/TableThemes/"
 		themeBundle = [[NSBundle alloc] initWithPath:[TableThemesPath stringByAppendingPathComponent:[prefs objectForKey:@"ActiveTableTheme"]]];
 		themeInfoDict = [[themeBundle infoDictionary] retain];
 		[prefs release];
