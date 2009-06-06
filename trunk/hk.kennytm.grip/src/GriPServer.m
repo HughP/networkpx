@@ -215,13 +215,11 @@ ignored_message:
 }
 
 #if GRIP_JAILBROKEN
+static IMP original_launchSucceeded = NULL, original_exitedCommon = NULL;
+
 __attribute__((visibility("hidden")))
 @interface SBApplication : NSObject
 -(NSString*)displayIdentifier;
--(void)launchSucceeded;
--(void)exitedCommon;
--(void)hk_kennytm_grip_launchSucceeded;
--(void)hk_kennytm_grip_exitedCommon;
 @end
 
 static void GPUpdateGamingForDisplayID(NSString* displayID);
@@ -229,11 +227,11 @@ static void GPUpdateGamingForDisplayID(NSString* displayID);
 // I don't know how these will interact with Backgrounder. Hopefully not badly.
 static void GP_SBApplication_launchSucceeded(SBApplication* self, SEL _cmd) {
 	GPUpdateGamingForDisplayID([self displayIdentifier]);
-	[self hk_kennytm_grip_launchSucceeded];
+	original_launchSucceeded(self, _cmd);
 }
 static void GP_SBApplication_exitedCommon(SBApplication* self, SEL _cmd) {
 	GPUpdateGamingForDisplayID(nil);
-	[self hk_kennytm_grip_exitedCommon];
+	original_exitedCommon(self, _cmd);
 }
 
 static void GPUpdateGamingForDisplayID(NSString* displayID) {
@@ -269,11 +267,6 @@ static void terminate () {
 	
 	 
 void GPStartGriPServer () {
-#if GRIP_JAILBROKEN
-	CFStringRef bundleID = CFBundleGetIdentifier(CFBundleGetMainBundle());
-	if (kCFCompareEqualTo != CFStringCompare(bundleID, CFSTR("com.apple.Preferences"), 0)) {
-#endif
-	
 		if (GPStartServer() != 0) {
 			CFShow(CFSTR("Cannot start GriP server -- probably another instance of GriP is already running."));
 			return;
@@ -300,16 +293,10 @@ void GPStartGriPServer () {
 		
 #if GRIP_JAILBROKEN
 		Class SBApplication_class = objc_getClass("SBApplication");
-		MSHookMessage(SBApplication_class, @selector(launchSucceeded), (IMP)&GP_SBApplication_launchSucceeded, "hk_kennytm_grip_");
-		MSHookMessage(SBApplication_class, @selector(exitedCommon), (IMP)&GP_SBApplication_exitedCommon, "hk_kennytm_grip_");
+		original_launchSucceeded = MSHookMessage(SBApplication_class, @selector(launchSucceeded), (IMP)&GP_SBApplication_launchSucceeded, NULL);
+		original_exitedCommon = MSHookMessage(SBApplication_class, @selector(exitedCommon), (IMP)&GP_SBApplication_exitedCommon, NULL);
 #endif
 		GPStartModalTableViewServer();
 		
 		[pool drain];
-		
-#if GRIP_JAILBROKEN
-	} else {
-		PrefsListController_hook();
-	}
-#endif
 }

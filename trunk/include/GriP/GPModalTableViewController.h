@@ -43,6 +43,9 @@
 	NSMutableDictionary* toolbarButtons;
 	UIToolbar* toolbar;
 	UINavigationController* navCtrler;
+	
+	NSBundle* themeBundle;
+	NSDictionary* themeInfoDict;
 }
 @property(retain) NSNumber* uid;
 @property(retain) NSString* clientPortID;
@@ -57,6 +60,10 @@
 -(void)animateOut;
 @property(retain,readonly) GPModalTableViewController* topViewController;
 -(void)sendDismissMessage;
+
+-(UIImage*)imageWithName:(NSString*)name;
+-(id)objectForKey:(NSString*)key;
+-(UIColor*)colorForKey:(NSString*)key;
 @end
 
 

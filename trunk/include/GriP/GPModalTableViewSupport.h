@@ -37,7 +37,7 @@
 #import <UIKit/UITableView.h>
 #import <UIKit/UITextInputTraits.h>
 
-@class NSString, NSArray, NSDictionary, NSMutableDictionary, GPModalTableViewController;
+@class NSString, NSArray, NSDictionary, NSMutableDictionary, GPModalTableViewNavigationController;
 
 __attribute__((visibility("hidden")))
 @interface GPModalTableViewObject : NSObject {
@@ -90,6 +90,6 @@ __attribute__((visibility("hidden")))
 @interface GPModalTableViewContentView : UIView {
 	GPModalTableViewObject* object;
 }
--(void)setObject:(GPModalTableViewObject*)newObject withController:(GPModalTableViewController*)controller;
+-(void)setObject:(GPModalTableViewObject*)newObject withRootController:(GPModalTableViewNavigationController*)controller;
 -(void)dealloc;
 @end

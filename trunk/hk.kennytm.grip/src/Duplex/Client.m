@@ -209,7 +209,7 @@ static CFDataRef GPClientCallback (CFMessagePortRef clientPort_, SInt32 type, CF
 -(void)addObserver:(id)observer selector:(SEL)selector forMessages:(NSIndexSet*)messageSet {
 	GPObserver obs = {observer, selector};
 	NSValue* observerObject = [NSValue valueWithBytes:&obs objCType:@encode(GPObserver)];
-	NSMutableIndexSet* observerIndexSet = CFDictionaryGetValue(observers, observerObject);
+	NSMutableIndexSet* observerIndexSet = (NSMutableIndexSet*)CFDictionaryGetValue(observers, observerObject);
 	if (observerIndexSet == nil) {
 		observerIndexSet = [messageSet mutableCopy];
 		CFDictionaryAddValue(observers, observerObject, observerIndexSet);

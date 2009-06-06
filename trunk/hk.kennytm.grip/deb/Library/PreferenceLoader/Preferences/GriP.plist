@@ -1,0 +1,7 @@
+entry = {
+	bundle = GriP;
+	cell = PSLinkCell;
+	icon = icon.png;
+	isController = 1;
+	label = GriP;
+};
