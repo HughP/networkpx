@@ -1,0 +1,10 @@
+TableBackgroundColor = (1);
+BackgroundLeftCapWidth = 15;
+BackgroundTopCapHeight = 15;
+Paddings = { top=5; left=5; bottom=5; right=5; };
+ToolbarsTotallyTransparent = 1;
+ToolbarsBarStyle = 1;
+TableBackgroundColor = (0, 0);
+TableTextColor = (1);
+TableDescriptionColor = (0.7);
+TableSeparatorColor = (0.3);

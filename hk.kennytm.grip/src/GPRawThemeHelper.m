@@ -52,7 +52,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		return -1;
 	
 	int myUID = OSAtomicIncrement32(&uid);
-	CFDictionarySetValue(registeredMessages, (const void*)myUID, [NSPropertyListSerialization dataFromPropertyList:[message objectsForKeys:[NSArray arrayWithObjects:GRIP_PID, GRIP_CONTEXT, GRIP_ISURL, nil]
+	CFDictionarySetValue(registeredMessages, (const void*)myUID, [NSPropertyListSerialization dataFromPropertyList:[message objectsForKeys:[NSArray arrayWithObjects:GRIP_PID, GRIP_CONTEXT, GRIP_ISURL, GRIP_MSGUID, nil]
 																															notFoundMarker:@""]
 																											format:NSPropertyListBinaryFormat_v1_0
 																								  errorDescription:NULL]);

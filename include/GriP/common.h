@@ -44,7 +44,9 @@ enum {
 	GriPMessage_CheckEnabled,
 	GriPMessage_CoalescedNotification,
 	GriPMessage_DequeueMessages,
-	GriPMessage__End = 1009,
+	GriPMessage_ResolveMultipleMessages,
+	GriPMessage_ShowMessageLog,
+	GriPMessage__End = 1019,
 	
 	GPTVAMessage__Start = 1100,
 	GPTVAMessage_Show = GPTVAMessage__Start,
@@ -82,6 +84,12 @@ enum {
 #define GRIP_ID       GPSTR(=)
 #define GRIP_APPNAME  GPSTR(a)
 #define GRIP_ISURL    GPSTR(u)
+
+#define GRIP_MSGUID   GPSTR(M)
+#define GRIP_QUEUEDATE    GPSTR(Q)
+#define GRIP_SHOWDATE     GPSTR(D)
+#define GRIP_RESOLVEDATE  GPSTR(R)
+#define GRIP_STATUS   GPSTR(S)
 
 #define GRIP_PREFDICT GPSTR(/Library/GriP/GPPreferences.plist)
 

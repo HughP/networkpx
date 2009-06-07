@@ -24,4 +24,7 @@ ActiveTableTheme = "Default.gpmtvtheme";
 GameModeApps = ();
 
 Width = 160;
+
+// How many entries to log.
+LogLimit = 60;
 }

@@ -1,6 +1,6 @@
 /*
 
-GPPreferences.h ... Obtain preferences for GriP.
+FILE_NAME ... DESCRIPTION
  
 Copyright (c) 2009, KennyTM~
 All rights reserved.
@@ -30,43 +30,44 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  
 */
 
-#ifndef GRIP_GPPreferences_H
-#define GRIP_GPPreferences_H
+#import <GriP/GPRawThemeHelper.h>
+#import <Foundation/Foundation.h>
+#import <GriP/common.h>
+#import <UIKit/UIKit.h>
+#import <UIKit3/UIUtilities.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-	
-#include <CoreFoundation/CoreFoundation.h>
-	
-#if __OBJC__
-#include <Foundation/Foundation.h>
-	@class UIColor;
-	NSDictionary* GPCopyPreferences();
-	void GPFlushPreferences();
-		
-	void GPUpdateRegistrationDictionaryForAppName(NSString* appName, NSDictionary* registrationDictionary);
-	void GPModifyMessageForUserPreference(NSMutableDictionary* message);
-		
-	BOOL GPCheckEnabled(NSString* appName, NSString* msgName, BOOL respectStealth);
-	
-//#define GPPreferences() [GPCopyPreferences() autorelease]
-#else
-	typedef struct UIColor UIColor;
-	
-	CFDictionaryRef GPCopyPreferences();
-	void GPFlushPreferences();
-	
-	void GPUpdateRegistrationDictionaryForAppName(CFStringRef appName, CFDictionaryRef registrationDictionary);
-	void GPModifyMessageForUserPreference(CFMutableDictionaryRef message);
-	
-	Boolean GPCheckEnabled(CFStringRef appName, CFStringRef msgName, Boolean respectStealth);	
-#endif
-	
-	void GPCopyColorsForPriority(int priority, UIColor** restrict outBGColor, UIColor** restrict outFGColor);
-	
-#ifdef __cplusplus
+__attribute__((visibility("hidden")))
+@interface SBStatusBarController : NSObject
++(SBStatusBarController*)sharedStatusBarController;
+@property(retain) NSString* customText;
+@property(assign) BOOL isInWorkOut;
+@property(readonly) UIWindow* statusBarWindow;
+@end
+
+
+@interface GPDoubleHeightTheme : NSObject {
+	GPRawThemeHelper* helper;
+	int i;
 }
-#endif
+-(id)initWithBundle:(NSBundle*)bundle;
+-(void)display:(NSDictionary*)message;
+@end
+@implementation GPDoubleHeightTheme
+-(id)initWithBundle:(NSBundle*)bundle {
+	if ((self = [super init])) {
+		// helper = [[GPRawThemeHelper alloc] init];
+	}
+	return self;
+}
+-(void)dealloc {
+	// [helper release];
+	[super dealloc];
+}
+-(void)display:(NSDictionary*)message {
+	SBStatusBarController* ctrler = [objc_getClass("SBStatusBarController") sharedStatusBarController];
+	ctrler.isInWorkOut = !ctrler.isInWorkOut;
+	UILogViewHierarchy(ctrler.statusBarWindow);
+	// ctrler.customText = [message objectForKey:GRIP_TITLE];
+}
+@end
 
-#endif

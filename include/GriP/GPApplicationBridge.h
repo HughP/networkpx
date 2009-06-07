@@ -60,4 +60,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // Check if GriP is enabled for this application.
 @property(readonly,assign,nonatomic) BOOL enabled;
 -(BOOL)enabledForName:(NSString*)notifName;
+
+// show message log.
+-(void)showMessageLog;
 @end

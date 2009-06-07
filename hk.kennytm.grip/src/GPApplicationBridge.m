@@ -268,4 +268,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	else
 		return NO;
 }
+
+-(void)showMessageLog { [duplex sendMessage:GriPMessage_ShowMessageLog data:nil]; }
 @end

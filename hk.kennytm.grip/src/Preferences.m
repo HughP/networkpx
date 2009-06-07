@@ -394,14 +394,8 @@ __attribute__((visibility("hidden")))
 	NSString* path = [mySpec propertyForKey:@"fn"];
 	BOOL success = [[NSFileManager defaultManager] removeItemAtPath:path error:&err];
 	if (!success) {
-		NSBundle* myBundle = self.bundle;
-		[bridge notifyWithTitle:[NSString stringWithFormat:LS(@"Cannot remove settings for %@"), mySpec.name]
-					description:[NSString stringWithFormat:LS(@"Error: %@<br/><br/>Please delete <code>%@</code> manually."), err, path]
-			   notificationName:@"Cannot remove settings"
-					   iconData:@"com.apple.Preferences"
-					   priority:0
-					   isSticky:NO
-				   clickContext:nil];
+		NSLog(@"Cannot remove settings for %@", mySpec.name);
+		NSLog(@"Error: %@. Please delete %@ manually.", err, path);
 		[err release];
 	} else {
 		PSListController* ctrler = [self parentController];
@@ -442,6 +436,14 @@ __attribute__((visibility("hidden")))
 	}
 	return _specifiers;
 }
+@end
+
+//------------------------------------------------------------------------------
+#pragma mark -
+
+@interface GPMessageLogPrefsController : PSListController {}
+@end
+@implementation GPMessageLogPrefsController
 @end
 
 //------------------------------------------------------------------------------
@@ -528,23 +530,28 @@ __attribute__((visibility("hidden")))
 -(void)preview {
 	NSBundle* myBundle = self.bundle;
 	[bridge notifyWithTitle:LS(@"GriP Message Preview")
-				description:[NSString stringWithFormat:LS(@"This is a preview of a <strong>%@</strong> GriP message."), [[myBundle localizedStringForKey:@"Normal" value:nil table:@"GriP"] lowercaseString]]
+				description:[NSString stringWithFormat:LS(@"This is a preview of a %@ GriP message."), [[myBundle localizedStringForKey:@"Normal" value:nil table:@"GriP"] lowercaseString]]
 		   notificationName:@"Preview"
 				   iconData:@"com.apple.Preferences"
 				   priority:0
 				   isSticky:NO
 			   clickContext:@"r"];
 }
+-(void)viewLog { [bridge showMessageLog]; }
+
+-(void)deleteAllLogs {
+	[[NSDictionary dictionary] writeToFile:@"/Library/GriP/GPMessageLog.plist" atomically:NO];
+}
 
 //------------------------------------------------------------------------------
 #pragma mark -
 
 -(NSDictionary*)registrationDictionaryForGrowl {
-	NSArray* allNotifs = [NSArray arrayWithObjects:@"Preview", @"Message touched", @"Message ignored", @"Cannot remove settings", nil];
+	NSArray* allNotifs = [NSArray arrayWithObjects:@"Preview", @"Message touched", @"Message ignored", nil];
 	return [NSDictionary dictionaryWithObjectsAndKeys:
 			allNotifs, GROWL_NOTIFICATIONS_ALL,
 			allNotifs, GROWL_NOTIFICATIONS_DEFAULT,
-			[NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:@"Preview a GriP message.", @"Touched the preview message.", @"Ignored or closed the preview message.", @"Per-app settings cannot be removed.", nil]
+			[NSDictionary dictionaryWithObjects:[NSArray arrayWithObjects:@"Preview a GriP message.", @"Touched the preview message.", @"Ignored or closed the preview message.", nil]
 										forKeys:allNotifs], GROWL_NOTIFICATIONS_DESCRIPTIONS,
 			nil];
 }
