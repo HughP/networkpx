@@ -38,11 +38,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #import <GriP/common.h>
 #import <GriP/GrowlApplicationBridge.h>
 #import <GriP/GPTheme.h>
-#import <PrefHooker/PrefsLinkHooker.h>
+#import <GriP/GPApplicationBridge.h>
 #import <UIKit/UIApplication.h>
 #import <GriP/GPSingleton.h>
 #import <GriP/GPMessageQueue.h>
 #import <GriP/GPModalTableViewServer.h>
+#import <GriP/GPMessageLog.h>
+#import <GriP/GPMessageLogUI.h>
 
 #if GRIP_JAILBROKEN
 #import <substrate.h>
@@ -57,6 +59,7 @@ __attribute__((visibility("hidden")))
 
 static NSObject<GPTheme>* activeTheme = nil;
 static const int MemoryAlertObserver = 12345678, DisplayOnOffObserver = 87654321;
+static GPApplicationBridge* loopbackBridge = nil;
 
 static CFDataRef GriPCallback (CFMessagePortRef serverPort, SInt32 type, CFDataRef data, void* info) {
 	NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
@@ -109,8 +112,13 @@ dequeue_messages:
 #else
 				GPSingletonConstructor(activeTheme, __NEWOBJ__ = [[GPDefaultTheme alloc] initWithBundle:[NSBundle mainBundle]], [__NEWOBJ__ release]);
 #endif
-				for (NSDictionary* messageDict in dequeuedMessages)
+				CFMutableArrayRef dequeuedMessageUIDs = CFArrayCreateMutable(NULL, 0, NULL);
+				for (NSDictionary* messageDict in dequeuedMessages) {
+					CFArrayAppendValue(dequeuedMessageUIDs, [messageDict objectForKey:GRIP_MSGUID]);
 					[activeTheme display:messageDict];
+				}
+				GPMessageLogShowMessages(dequeuedMessageUIDs);
+				CFRelease(dequeuedMessageUIDs);
 			}
 			[dequeuedMessages release];
 			break;
@@ -118,24 +126,31 @@ dequeue_messages:
 					
 		case GriPMessage_EnqueueMessage: {
 			NSMutableDictionary* messageDict = [NSPropertyListSerialization propertyListFromData:(NSData*)data mutabilityOption:NSPropertyListMutableContainers format:NULL errorDescription:NULL];
+			GPMessageLogAddMessage((CFMutableDictionaryRef)messageDict);
 			if ([messageDict objectForKey:GRIP_CONTEXT] != nil)
-				array = [messageDict objectsForKeys:[NSArray arrayWithObjects:GRIP_PID, GRIP_CONTEXT, GRIP_ISURL, nil] notFoundMarker:@""];
+				array = [messageDict objectsForKeys:[NSArray arrayWithObjects:GRIP_PID, GRIP_CONTEXT, GRIP_ISURL, GRIP_MSGUID, nil] notFoundMarker:@""];
 			else
 				array = nil;
 			
 			GPModifyMessageForUserPreference(messageDict);
 			if ([messageDict count] != 0) {
 				NSArray* dismissedMessages = (NSArray*)GPEnqueueMessage((CFDictionaryRef)messageDict);
+				CFMutableArrayRef dismissedMessageUIDs[2] = {CFArrayCreateMutable(NULL, 0, NULL), CFArrayCreateMutable(NULL, 0, NULL)};				
 				for (NSDictionary* message in dismissedMessages) {
 					if ([message objectForKey:GRIP_CONTEXT] != nil) {
 						int priorityIndex = [[message objectForKey:GRIP_PRIORITY] integerValue]+2;
 						CFNotificationSuspensionBehavior suspensionBehavior = GPCurrentSuspensionBehaviorForPriorityIndex(priorityIndex);
-						NSArray* arr = [message objectsForKeys:[NSArray arrayWithObjects:GRIP_PID, GRIP_CONTEXT, GRIP_ISURL, nil] notFoundMarker:@""];
+						NSArray* arr = [message objectsForKeys:[NSArray arrayWithObjects:GRIP_PID, GRIP_CONTEXT, GRIP_ISURL, (NSNull*)kCFNull, nil] notFoundMarker:@""];
 						NSData* arrData = [NSPropertyListSerialization dataFromPropertyList:arr format:NSPropertyListBinaryFormat_v1_0 errorDescription:NULL];
 						GriPCallback(NULL, suspensionBehavior == CFNotificationSuspensionBehaviorCoalesce ? GriPMessage_CoalescedNotification : GriPMessage_IgnoredNotification,
 									 (CFDataRef)arrData, NULL);
+						CFArrayAppendValue(dismissedMessageUIDs[suspensionBehavior == CFNotificationSuspensionBehaviorCoalesce ? 1 : 0], [message objectForKey:GRIP_MSGUID]);
 					}
 				}
+				GPMessageLogResolveMessages(dismissedMessageUIDs[0], GriPMessage_IgnoredNotification);
+				GPMessageLogResolveMessages(dismissedMessageUIDs[1], GriPMessage_CoalescedNotification);
+				CFRelease(dismissedMessageUIDs[0]);
+				CFRelease(dismissedMessageUIDs[1]);
 				[dismissedMessages release];
 				goto dequeue_messages;
 			}
@@ -148,16 +163,29 @@ dequeue_messages:
 			goto ignored_message;
 		}
 			
+		case GriPMessage_ResolveMultipleMessages:
+			array = [NSPropertyListSerialization propertyListFromData:(NSData*)data mutabilityOption:NSPropertyListImmutable format:NULL errorDescription:NULL];
+			if ([array isKindOfClass:[NSArray class]] && [array count] >= 3) {
+				SInt32 notifType = [[array objectAtIndex:0] integerValue];
+				for (NSData* dataToSend in [array objectAtIndex:2])
+					GriPCallback(NULL, notifType, (CFDataRef)dataToSend, NULL);
+				GPMessageLogResolveMessages((CFArrayRef)[array objectAtIndex:1], notifType);
+			}
+			break;
+			
 		case GriPMessage_ClickedNotification:
 		case GriPMessage_IgnoredNotification:
 		case GriPMessage_CoalescedNotification:
 			array = [NSPropertyListSerialization propertyListFromData:(NSData*)data mutabilityOption:NSPropertyListImmutable format:NULL errorDescription:NULL];
-			if ([array isKindOfClass:[NSArray class]] && [array count] >= 3)
+			if ([array isKindOfClass:[NSArray class]] && [array count] >= 4)
 ignored_message:
 			{
 				NSString* pid = [array objectAtIndex:0];
 				NSData* context = [NSPropertyListSerialization dataFromPropertyList:[array objectAtIndex:1] format:NSPropertyListBinaryFormat_v1_0 errorDescription:NULL];
 				BOOL isURL = [[array objectAtIndex:2] boolValue];
+				NSString* lastObject = [array lastObject];
+				if ([lastObject length] > 0)
+					GPMessageLogResolveMessages((CFArrayRef)[NSArray arrayWithObject:lastObject], type);
 				
 				if (isURL) {
 					if (type != GriPMessage_ClickedNotification)
@@ -205,6 +233,10 @@ ignored_message:
 			retData = CFDataCreate(NULL, (const UInt8*)&retval, sizeof(BOOL));
 			break;
 		}
+			
+		case GriPMessage_ShowMessageLog:
+			GPMessageLogShow(loopbackBridge, @"Show Message Log");
+			break;
 			
 		default:
 			break;
@@ -255,6 +287,7 @@ static void GPDisplayOnOff (CFNotificationCenterRef center, void* observer, CFSt
 }
 
 static void terminate () {
+	[loopbackBridge release];
 	CFNotificationCenterRemoveObserver(CFNotificationCenterGetLocalCenter(), &MemoryAlertObserver,
 									   (CFStringRef)UIApplicationDidReceiveMemoryWarningNotification, NULL);
 	CFNotificationCenterRemoveEveryObserver(CFNotificationCenterGetDarwinNotifyCenter(), &DisplayOnOffObserver);
@@ -271,6 +304,8 @@ void GPStartGriPServer () {
 			CFShow(CFSTR("Cannot start GriP server -- probably another instance of GriP is already running."));
 			return;
 		}
+	
+	GPMessageLogStartNewSession();
 		
 		GPSetAlternateHandler(&GriPCallback, GriPMessage__Start, GriPMessage__End);
 		if (objc_getClass("GPModalTableViewNavigationController") != Nil) {
@@ -297,6 +332,14 @@ void GPStartGriPServer () {
 		original_exitedCommon = MSHookMessage(SBApplication_class, @selector(exitedCommon), (IMP)&GP_SBApplication_exitedCommon, NULL);
 #endif
 		GPStartModalTableViewServer();
-		
+	
+	NSArray* loopbackMessages = [NSArray arrayWithObject:@"Show Message Log"];
+	loopbackBridge = [[GPApplicationBridge alloc] init];
+	[loopbackBridge registerWithDictionary:[NSDictionary dictionaryWithObjectsAndKeys:
+											@"GriP SpringBoard Hook", GROWL_APP_NAME,
+											loopbackMessages, GROWL_NOTIFICATIONS_ALL,
+											loopbackMessages, GROWL_NOTIFICATIONS_DEFAULT,
+											nil]];
+	
 		[pool drain];
 }

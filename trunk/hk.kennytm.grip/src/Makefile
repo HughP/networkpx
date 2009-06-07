@@ -58,7 +58,7 @@ libGriP_Sources=Duplex/Client.o GPApplicationBridge.o GPExtensions.o GPModalTabl
 libGriP_Target=../deb/usr/lib/libGriP.dylib
 libGriP_Options=-dynamiclib -install_name /usr/lib/libGriP.dylib -compatibility_version $(libGriPCompatVersion) -current_version $(libVersion) -framework CoreFoundation -framework Foundation -framework UIKit -framework CoreGraphics
 
-XGriP_Sources=GriPServer.o Duplex/Server.o GPMessageQueue.o GPModalTableViewController.o GPModalTableViewSupport.o GPModalTableViewServer.o 
+XGriP_Sources=GriPServer.o Duplex/Server.o GPMessageQueue.o GPModalTableViewController.o GPModalTableViewSupport.o GPModalTableViewServer.o GPMessageLog.o GPMessageLogUI.o
 XGriP_Target=$(MobileSubstratePath)/%GriP.dylib
 XGriP_Options=-lobjc -lGriP -lsubstrate -dynamiclib -framework Foundation -framework CoreFoundation -framework UIKit -framework CoreGraphics -framework AddressBook -framework AddressBookUI -init _GPStartGriPServer
 

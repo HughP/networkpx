@@ -5,6 +5,14 @@ items = (
 	{ cell = PSButtonCell;
 		label = Preview;
 		action = preview; },
+
+	{ cell = PSGroupCell; },
+	{ cell = PSLinkListCell;
+		detail = PSListItemsController;
+		id = MessageLog;
+		label = "GriP Message Log";
+		detail = GPMessageLogPrefsController; },
+
 	{ cell = PSGroupCell; },
 	{ cell = PSLinkListCell;
 		detail = PSListItemsController;

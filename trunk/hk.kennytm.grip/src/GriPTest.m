@@ -35,6 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #import <Foundation/Foundation.h>
 #import <GriP/GriP.h>
 #import <GriP/GPModalTableViewClient.h>
+#import <GriP/GPMessageLogUI.h>
 
 #if !TARGET_IPHONE_SIMULATOR
 #define GPGriPTest main
@@ -126,6 +127,8 @@ int GPGriPTest(int argc, char* argv[]) {
 			   "		-s	               Set message as sticky.\n"
 			   "		-e  <id>           Identifier (for coalescing).\n"
 			   "		-a	<filename>     Display a GPTableViewAlert using filename as the dictionary.\n"
+			   "		-q                 Quiet.\n"
+			   "		-m                 Display the message log (implies -q)\n"
 		);
 	} else {
 		// get options.
@@ -139,12 +142,13 @@ int GPGriPTest(int argc, char* argv[]) {
 		int priority = 0;
 		NSString* identifier = nil;
 		NSDictionary* gptvaDict = nil;
+		BOOL quiet = NO, displayMessageLog = NO;
 		
 		GPModalTableViewClient* mtvClient = nil;
 		
 		int c;
 		optind = 1;
-		while ((c = getopt(argc, argv, "t:d:i:u:p:se:a:")) != -1) {
+		while ((c = getopt(argc, argv, "t:d:i:u:p:se:a:qm")) != -1) {
 			switch (c) {
 				case 't':
 					title = [NSString stringWithUTF8String:optarg];
@@ -180,6 +184,14 @@ int GPGriPTest(int argc, char* argv[]) {
 				case 'a':
 					gptvaDict = [NSDictionary dictionaryWithContentsOfFile:[NSString stringWithUTF8String:optarg]];
 					break;
+					
+				case 'q':
+					quiet = YES;
+					break;
+					
+				case 'm':
+					displayMessageLog = YES;
+					break;
 			}
 		}
 		
@@ -199,19 +211,23 @@ int GPGriPTest(int argc, char* argv[]) {
 			goto cleanup;
 		}
 		
-		if (gptvaDict == nil)
+		if (displayMessageLog) {
+			[bridge showMessageLog];
+		} else if (gptvaDict == nil) {
 			[bridge notifyWithTitle:title description:desc notificationName:@"Command line message" iconData:icon priority:priority isSticky:sticky clickContext:url identifier:identifier];
-		else {
+		} else {
 			delegate.dictionary = gptvaDict;
 			mtvClient = [[GPModalTableViewClient alloc] initWithDictionary:gptvaDict applicationBridge:bridge name:@"Command line message"];
 			mtvClient.delegate = delegate;
 		}
 		
+		if (!quiet && !displayMessageLog) {
 #if GRIP_JAILBROKEN
-		while (!delegate.completed) {
-			CFRunLoopRunInMode(kCFRunLoopDefaultMode, 1, YES);
-		}
+			while (!delegate.completed) {
+				CFRunLoopRunInMode(kCFRunLoopDefaultMode, 1, YES);
+			}
 #endif
+		}
 		 
 cleanup:
 		[mtvClient release];

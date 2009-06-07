@@ -1,0 +1,28 @@
+{
+title = "Game mode";
+items = (
+	{ cell = PSGroupCell; },
+	{ cell = PSButtonCell;
+		label = View;
+		action = viewLog; },
+
+	{ cell = PSGroupCell;
+		label = Capacity; },
+	{ cell = PSSliderCell;
+		min = 10;
+		max = 100;
+		showValue = 1; 
+		id = LogLimit;
+		get = "get:";
+		set = "set:with:"; },
+
+	{ cell = PSGroupCell; },
+	{ cell = PSButtonCell;
+		label = "Delete all logs";
+		action = deleteAllLogs;
+		confirmation = {
+			okTitle = "Delete all logs";
+			cancelTitle = Cancel;
+		}; },
+);
+}

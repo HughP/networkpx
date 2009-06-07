@@ -147,13 +147,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 }
 @dynamic currentIdentifier;
 -(NSString*)currentIdentifier {
-	if (uid != -1)
-		return [[[NSString alloc] initWithData:[duplex sendMessage:GPTVAMessage_GetCurrentIdentifier
+	if (uid != -1) {
+		return [NSString stringWithUTF8String:[[duplex sendMessage:GPTVAMessage_GetCurrentIdentifier
 															  data:[NSData dataWithBytes:&uid length:sizeof(int)]
-													 expectsReturn:YES] 
-									  encoding:NSUTF8StringEncoding] autorelease];
-		
-	else
+													 expectsReturn:YES] bytes]];
+	} else
 		return nil;
 }
 

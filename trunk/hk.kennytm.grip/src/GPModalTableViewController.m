@@ -248,6 +248,8 @@ static UIViewController* deepestController = nil;
 				hasFlexibleSpace = YES;
 				[toolbarItems removeObjectAtIndex:0];
 			}
+			if (systemToolbarIndex == UIBarButtonSystemItemFixedSpace)
+				item.width = 16;
 		} else {
 			if ([@"ActivityIndicator" isEqualToString:buttonObject]) {
 				UIActivityIndicatorView* activityIndicatorView = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleWhite];
@@ -628,7 +630,9 @@ static UIViewController* deepestController = nil;
 	return ActualObject(indexPath)->noselect ? nil : indexPath;
 }
 -(void)tableView:(UITableView*)tableView didSelectRowAtIndexPath:(NSIndexPath*)indexPath {
-	ForwardMessage(GPTVAMessage_Selected, ActualObject(indexPath)->identifier);
+	GPModalTableViewObject* obj = ActualObject(indexPath);
+//	if (!obj->noselect)
+		ForwardMessage(GPTVAMessage_Selected, obj->identifier);
 }
 
 -(UITableViewCellEditingStyle)tableView:(UITableView*)tableView editingStyleForRowAtIndexPath:(NSIndexPath*)indexPath {
