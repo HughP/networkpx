@@ -257,9 +257,9 @@ __attribute__((visibility("hidden")))
 static void GPUpdateGamingForDisplayID(NSString* displayID);
 
 // I don't know how these will interact with Backgrounder. Hopefully not badly.
-static void GP_SBApplication_launchSucceeded(SBApplication* self, SEL _cmd) {
+static void GP_SBApplication_launchSucceeded(SBApplication* self, SEL _cmd, BOOL unknown) {
 	GPUpdateGamingForDisplayID([self displayIdentifier]);
-	original_launchSucceeded(self, _cmd);
+	original_launchSucceeded(self, _cmd, unknown);
 }
 static void GP_SBApplication_exitedCommon(SBApplication* self, SEL _cmd) {
 	GPUpdateGamingForDisplayID(nil);
@@ -328,7 +328,8 @@ void GPStartGriPServer () {
 		
 #if GRIP_JAILBROKEN
 		Class SBApplication_class = objc_getClass("SBApplication");
-		original_launchSucceeded = MSHookMessage(SBApplication_class, @selector(launchSucceeded), (IMP)&GP_SBApplication_launchSucceeded, NULL);
+	SEL whichLaunchSucceeded = [SBApplication_class respondsToSelector:@selector(launchSucceeded:)] ? @selector(launchSucceeded:) : @selector(launchSucceeded);
+	original_launchSucceeded = MSHookMessage(SBApplication_class, whichLaunchSucceeded, (IMP)&GP_SBApplication_launchSucceeded, NULL);
 		original_exitedCommon = MSHookMessage(SBApplication_class, @selector(exitedCommon), (IMP)&GP_SBApplication_exitedCommon, NULL);
 #endif
 		GPStartModalTableViewServer();

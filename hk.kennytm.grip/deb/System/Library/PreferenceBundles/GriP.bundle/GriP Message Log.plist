@@ -1,5 +1,5 @@
 {
-title = "Game mode";
+title = "GriP Message Log";
 items = (
 	{ cell = PSGroupCell; },
 	{ cell = PSButtonCell;

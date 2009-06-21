@@ -275,7 +275,7 @@ static void YGMConstructDescription(void* index, Message* message, CFMutableStri
 	NSString* accountString;
 	if ([dirtyAccounts count] == 1) {
 		if ([[MailAccount activeAccounts] count] > 1)
-			accountString = [dirtyAccounts anyObject];
+			accountString = [NSString stringWithFormat:@" (%@)", [dirtyAccounts anyObject]];
 		else
 			accountString = @"";
 	} else
