@@ -52,6 +52,7 @@ __attribute__((visibility("hidden")))
 __attribute__((visibility("hidden")))
 @interface MailAccount : NSObject { NSString* simtest_address; }
 @property(readonly) NSArray* emailAddresses;
++(NSArray*)activeAccounts;
 @end
 
 __attribute__((visibility("hidden")))
@@ -89,6 +90,10 @@ __attribute__((visibility("hidden")))
 -(void)launchApplicationWithIdentifier:(NSString*)iden suspended:(BOOL)suspended;
 @end
 
+
+static GPModalTableViewClient* sharedClient = nil;
+
+
 #if TARGET_IPHONE_SIMULATOR
 @implementation ActivityMonitor
 +(ActivityMonitor*)currentMonitor { return [[[self alloc] init] autorelease]; }
@@ -100,6 +105,7 @@ static NSString* const randomAddresses[4] = {@"test@example.com", @"another_test
 -(id)initWithAddress:(NSString*)addr { if ((self = [super init])) simtest_address = [addr retain]; return self; }
 -(void)dealloc { [simtest_address release]; [super dealloc]; }
 -(NSArray*)emailAddresses { return [NSArray arrayWithObject:simtest_address]; }
++(NSArray*)activeAccounts { return [NSArray arrayWithObjects:[NSNull null], [NSNull null], nil]; }
 @end
 @implementation MessageStore
 -(void)deleteMessages:(NSArray*)messages moveToTrash:(BOOL)moveToTrash {}
@@ -199,9 +205,9 @@ __attribute__((visibility("hidden")))
 		NSURL* myDictURL = [NSURL fileURLWithPath:@"/Library/MobileSubstrate/DynamicLibraries/YouveGotMail.plist" isDirectory:NO];
 		NSDictionary* localizationStrings = GPPropertyListCopyLocalizableStringsDictionary(myDictURL);
 		
-		oneNewMail = [([localizationStrings objectForKey:@"1 new mail (%@)"] ?: @"1 new mail (%@)") retain];
-		manyNewMails = [([localizationStrings objectForKey:@"%d new mails (%@)"] ?: @"%d new mails (%@)") retain];
-		multipleAccounts = [([localizationStrings objectForKey:@"multiple accounts"] ?: @"multiple accounts") retain];
+		oneNewMail = [([localizationStrings objectForKey:@"1 new mail"] ?: @"1 new mail") retain];
+		manyNewMails = [([localizationStrings objectForKey:@"%d new mails"] ?: @"%d new mails") retain];
+		multipleAccounts = [[NSString stringWithFormat:@" (%@)", ([localizationStrings objectForKey:@"multiple accounts"] ?: @"multiple accounts")] retain];
 		
 		[localizationStrings release];
 		
@@ -232,6 +238,16 @@ __attribute__((visibility("hidden")))
 	pthread_mutex_destroy(&messageLock);
 	[super dealloc];
 }
+
+static void YGMConstructDescription(void* index, Message* message, CFMutableStringRef descr) {
+	NSString* addrcmt = [message senderAddressComment];
+	NSString* title = [message subject];
+	CFStringAppend(descr, (CFStringRef)addrcmt);
+	CFStringAppend(descr, CFSTR(":\n"));
+	CFStringAppend(descr, (CFStringRef)title);
+	CFStringAppend(descr, CFSTR("\n\n"));
+}
+
 -(void)messagesAdded:(NSNotification*)notif {
 	ActivityMonitor* mon = [ActivityMonitor currentMonitor];
 	
@@ -242,6 +258,7 @@ __attribute__((visibility("hidden")))
 	
 	NSDictionary* userInfo = [notif userInfo];
 	NSArray* theMessages = [userInfo objectForKey:@"messages"];
+	CFMutableStringRef descr = CFStringCreateMutable(NULL, 0);
 	
 	pthread_mutex_lock(&messageLock);
 	for (Message* message in theMessages) {
@@ -255,24 +272,33 @@ __attribute__((visibility("hidden")))
 
 	// count number of new mails coming in.
 	int msgCount = CFDictionaryGetCount(messages);
-	NSString* accountString = multipleAccounts;
-	if ([dirtyAccounts count] == 1)
-		accountString = [dirtyAccounts anyObject];
+	NSString* accountString;
+	if ([dirtyAccounts count] == 1) {
+		if ([[MailAccount activeAccounts] count] > 1)
+			accountString = [dirtyAccounts anyObject];
+		else
+			accountString = @"";
+	} else
+		accountString = multipleAccounts;
+	
+	CFDictionaryApplyFunction(messages, (CFDictionaryApplierFunction)&YGMConstructDescription, descr);
 	
 	NSString* title;
 	if (msgCount == 1)
-		title = [NSString stringWithFormat:oneNewMail, accountString];
+		title = [[NSString stringWithFormat:oneNewMail] stringByAppendingString:accountString];
 	else
-		title = [NSString stringWithFormat:manyNewMails, msgCount, accountString];
+		title = [[NSString stringWithFormat:manyNewMails, msgCount] stringByAppendingString:accountString];
 	
 	[bridge notifyWithTitle:title
-				description:nil
+				description:(NSString*)descr
 		   notificationName:@"You've Got Mail"
 				   iconData:@"com.apple.mobilemail"
 				   priority:0
-				   isSticky:NO
+				   isSticky:YES
 			   clickContext:@""
 				 identifier:@""];
+	
+	CFRelease(descr);
 }
 
 -(NSString*)applicationNameForGrowl { return @"You've Got Mail"; }
@@ -334,10 +360,14 @@ static void constructEntriesArray(NSString* account, NSArray* entriesInAccount, 
 -(void)growlNotificationWasClicked:(NSObject*)context {
 	pthread_mutex_lock(&messageLock);
 		
-	GPModalTableViewClient* client = [[GPModalTableViewClient alloc] initWithDictionary:[self constructHomeDictionary:messages]
-																	  applicationBridge:bridge name:@"You've Got Mail"];
-	client.delegate = self;
-	client.context = (id)messages;
+	if (sharedClient == nil)
+		sharedClient = [[GPModalTableViewClient alloc] initWithDictionary:[self constructHomeDictionary:messages] 
+														applicationBridge:bridge name:@"You've Got Mail"];
+	else
+		[sharedClient reloadDictionary:[self constructHomeDictionary:messages] forIdentifier:@"You've Got Mail"];
+		
+	sharedClient.delegate = self;
+	sharedClient.context = (id)messages;
 	CFRelease(messages);
 	messages = CFDictionaryCreateMutable(NULL, 0, NULL, &kCFTypeDictionaryValueCallBacks);
 	[dirtyAccounts removeAllObjects];
@@ -378,6 +408,7 @@ static void constructEntriesArray(NSString* account, NSArray* entriesInAccount, 
 }
 
 -(void)modalTableViewDismissed:(GPModalTableViewClient*)client {
+	sharedClient = nil;
 	[client release];
 }
 

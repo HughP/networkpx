@@ -50,6 +50,10 @@
 -(void)setEditingAccessoryView:(UIView*)view;
 -(void)setEditingAccessoryType:(UITableViewCellAccessoryType)type;
 @end
+@interface UIViewController(KirkwoordSupport)
+-(void)_legacyPresentModalViewController:(UIViewController*)anotherController withTransition:(int)trans;
+@end
+
 
 
 __attribute__((visibility("hidden")))
@@ -64,6 +68,10 @@ __attribute__((visibility("hidden")))
 @implementation TotallyTransparentToolbar
 -(void)drawRect:(CGRect)rect {}
 @end
+__attribute__((visibility("hidden")))
+@interface UILayoutContainerView : UIView
+@end
+
 
 
 
@@ -87,9 +95,10 @@ static UIViewController* deepestController = nil;
 		toolbarButtons = [[NSMutableDictionary alloc] init];
 		
 		NSDictionary* prefs = GPCopyPreferences();
-#define TableThemesPath @"/Library/GriP/Themes/"
+//#define TableThemesPath @"/Library/GriP/Themes/"
+#define TableThemesPath @"/Users/kennytm/XCodeProjects/iKeyEx/svn/trunk/hk.kennytm.grip/deb/Library/GriP/Themes/"
 		themeBundle = [[NSBundle alloc] initWithPath:[TableThemesPath stringByAppendingPathComponent:[prefs objectForKey:@"ActiveTableTheme"]]];
-		themeInfoDict = [[NSDictionary alloc] initWithContentsOfFile:[themeBundle pathForResource:@"Theme" ofType:@"plist"]];
+		themeInfoDict = themeBundle ? [[NSDictionary alloc] initWithContentsOfFile:[themeBundle pathForResource:@"Theme" ofType:@"plist"]] : nil;
 		[prefs release];
 		
 		BOOL isWindowNil = window == nil;
@@ -125,7 +134,6 @@ static UIViewController* deepestController = nil;
 				winrect.size.height -= (top + bottom);
 			}
 			masterControllerView.frame = winrect;
-			
 			[window addSubview:masterControllerView];
 			[window makeKeyAndVisible];
 			
@@ -149,7 +157,11 @@ static UIViewController* deepestController = nil;
 		[closeButtonItem release];
 		[controller release];
 		
-		[deepestController presentModalViewController:self animated:!isWindowNil];
+		// FIXME: Will break in iPhoneOS 4.0 :p
+		if ([deepestController respondsToSelector:@selector(_legacyPresentModalViewController:withTransition:)])
+			[deepestController _legacyPresentModalViewController:self withTransition:(isWindowNil ? 0 : 8)];
+		else
+			[deepestController presentModalViewController:self animated:!isWindowNil];
 	}
 	return self;
 }
@@ -641,6 +653,7 @@ static UIViewController* deepestController = nil;
 -(void)tableView:(UITableView*)tableView accessoryButtonTappedForRowWithIndexPath:(NSIndexPath*)indexPath {
 	ForwardMessage(GPTVAMessage_AccessoryTouched, ActualObject(indexPath)->identifier);
 }
+-(BOOL)tableView:(UITableView*)tableView shouldIndentWhileEditingRowAtIndexPath:(NSIndexPath*)indexPath { return NO; }
 
 #pragma mark -
 #pragma mark UITextFieldDelegate & UITextViewDelegate
