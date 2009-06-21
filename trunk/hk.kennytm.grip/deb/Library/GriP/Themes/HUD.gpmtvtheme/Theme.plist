@@ -1,0 +1,18 @@
+/*
+
+The HUD theme is originally made by Pelaez for SBSettings. (c) Pelaez 2008. http://blog.epelaez.net/.
+
+This GriP Table View Theme is modified by KennyTM~. 
+
+*/
+
+BackgroundLeftCapWidth = 16;
+BackgroundTopCapHeight = 21;
+Paddings = { top=0; left=8; bottom=10; right=8; };
+ToolbarsTotallyTransparent = 1;
+ToolbarsBarStyle = 1;
+SelectionStyle = 2;
+TableBackgroundColor = (0.3, 0.5);
+TableTextColor = (1);
+TableDescriptionColor = (0.666666);
+TableSeparatorColor = (0.333333);
