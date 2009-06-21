@@ -70,6 +70,8 @@ static void replaced_clickedMenuButton (id self, SEL _cmd) {
 		struct RCMBContext context = {nil, currentAlertUID, UINT_MAX};
 		CFDictionaryApplyFunction(identifiedAlerts, (CFDictionaryApplierFunction)&GPModalTableViewSearchForMostRecentIdentifiedAlert, &context);
 		[context.controller sendDismissMessage];
+		
+		[self clearMenuButtonTimer];
 	}
 }
 static void replaced_restartDimTimer (id self, SEL _cmd, float duration) {
@@ -82,7 +84,7 @@ static void GPModalTableViewHookSpringBoard () {
 	//  - The lock screen will appear indefinitely until all Modal Table View are dismissed.
 #if !TARGET_IPHONE_SIMULATOR
 	if (CFDictionaryGetCount(identifiedAlerts) == 0) {
-		original_clickedMenuButton = method_setImplementation(class_getInstanceMethod(objc_getClass("SBUIController"), @selector(clickedMenuButton)), (IMP)&replaced_clickedMenuButton);
+		original_clickedMenuButton = method_setImplementation(class_getInstanceMethod(objc_getClass("SpringBoard"), @selector(_handleMenuButtonEvent)), (IMP)&replaced_clickedMenuButton);
 		original_restartDimTimer = method_setImplementation(class_getInstanceMethod(objc_getClass("SBAwayController"), @selector(restartDimTimer:)), (IMP)&replaced_restartDimTimer);
 	}
 #endif
@@ -91,7 +93,7 @@ static void GPModalTableViewHookSpringBoard () {
 static void GPModalTableViewUnhookSpringBoard() {
 #if !TARGET_IPHONE_SIMULATOR
 	if (CFDictionaryGetCount(identifiedAlerts) == 0) {
-		method_setImplementation(class_getInstanceMethod(objc_getClass("SBUIController"), @selector(clickedMenuButton)), original_clickedMenuButton);
+		method_setImplementation(class_getInstanceMethod(objc_getClass("SpringBoard"), @selector(_handleMenuButtonEvent)), original_clickedMenuButton);
 		Class _SBAwayController = objc_getClass("SBAwayController");
 		method_setImplementation(class_getInstanceMethod(_SBAwayController, @selector(restartDimTimer:)), original_restartDimTimer);
 		original_restartDimTimer(objc_msgSend(_SBAwayController, @selector(sharedAwayController)), @selector(restartDimTimer:), 0x41000000);
