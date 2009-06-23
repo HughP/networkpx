@@ -377,6 +377,7 @@ __attribute__((visibility("hidden")))
 }
 -(void)suspend {
 	[dict writeToFile:[self.specifier propertyForKey:@"fn"] atomically:NO];
+	[GPDuplexClient sendMessage:GriPMessage_FlushPreferences data:nil];
 	[super suspend];
 }
 -(NSObject*)getTicket:(PSSpecifier*)spec {
