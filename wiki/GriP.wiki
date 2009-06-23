@@ -189,6 +189,7 @@ There are a few changes to GriP compared with the Growl API in the `notifyWithTi
      {{{ "(WiFi)", "(VPN)", "(wallpaper)", "(airplane)", "(display)", "(sound)" }}}
    * a single character (`NSString`) in the range of U+E000 to U+E5FF. The character will be drawn directly as an icon. Emoji icons are in this character range.
  * `clickContext` accepts an `NSURL` alongside with property list objects. When an `NSURL` is given, the message will launch the URL when the user tap on it. This works even without a delegate, and across process termination. (The `growlNotificationWasClicked:` and `growlNotificationTimedOut:` methods will still be invoked if a delegate is present.)
+ * If `clickContext` is `kCFBooleanFalse` (i.e. `[NSNumber numberWithBool:NO]`), the context will be treated as `nil`.
 
 If you are writing a Mobile Substrate extension, we strongly recommend you *not* to use the `GrowlApplicationBridge` class methods, as this may cause the structures of the same object be shared between extensions undesirably. Instead, you should explicitly create an instance of `GPApplicationBridge` and work on it. If you have already used `GrowlApplicationBridge` and want to turn back, you can create a global variable named `GrowlApplicationBridge` initialized as `[[GPApplicationBridge alloc] init]` and call `[GrowlApplicationBridge release]` at termination.
 
