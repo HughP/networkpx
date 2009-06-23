@@ -180,12 +180,17 @@ dequeue_messages:
 			if ([array isKindOfClass:[NSArray class]] && [array count] >= 4)
 ignored_message:
 			{
+				NSObject* contextObject = [array objectAtIndex:1];
+				
 				NSString* pid = [array objectAtIndex:0];
-				NSData* context = [NSPropertyListSerialization dataFromPropertyList:[array objectAtIndex:1] format:NSPropertyListBinaryFormat_v1_0 errorDescription:NULL];
+				NSData* context = [NSPropertyListSerialization dataFromPropertyList:contextObject format:NSPropertyListBinaryFormat_v1_0 errorDescription:NULL];
 				BOOL isURL = [[array objectAtIndex:2] boolValue];
 				NSString* lastObject = [array lastObject];
 				if ([lastObject length] > 0)
 					GPMessageLogResolveMessages((CFArrayRef)[NSArray arrayWithObject:lastObject], type);
+				
+				if (contextObject == nil)
+					break;
 				
 				if (isURL) {
 					if (type != GriPMessage_ClickedNotification)
@@ -328,7 +333,7 @@ void GPStartGriPServer () {
 		
 #if GRIP_JAILBROKEN
 		Class SBApplication_class = objc_getClass("SBApplication");
-	SEL whichLaunchSucceeded = [SBApplication_class respondsToSelector:@selector(launchSucceeded:)] ? @selector(launchSucceeded:) : @selector(launchSucceeded);
+	SEL whichLaunchSucceeded = [SBApplication_class instancesRespondToSelector:@selector(launchSucceeded:)] ? @selector(launchSucceeded:) : @selector(launchSucceeded);
 	original_launchSucceeded = MSHookMessage(SBApplication_class, whichLaunchSucceeded, (IMP)&GP_SBApplication_launchSucceeded, NULL);
 		original_exitedCommon = MSHookMessage(SBApplication_class, @selector(exitedCommon), (IMP)&GP_SBApplication_exitedCommon, NULL);
 #endif

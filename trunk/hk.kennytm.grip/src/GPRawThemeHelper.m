@@ -47,10 +47,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	[super dealloc];
 }
 -(int)registerMessage:(NSDictionary*)message {
-	NSObject* context = [message objectForKey:GRIP_CONTEXT];
-	if (context == nil)
-		return -1;
-	
 	int myUID = OSAtomicIncrement32(&uid);
 	CFDictionarySetValue(registeredMessages, (const void*)myUID, [NSPropertyListSerialization dataFromPropertyList:[message objectsForKeys:[NSArray arrayWithObjects:GRIP_PID, GRIP_CONTEXT, GRIP_ISURL, GRIP_MSGUID, nil]
 																															notFoundMarker:@""]

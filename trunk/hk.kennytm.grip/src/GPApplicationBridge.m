@@ -100,8 +100,16 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 -(void)launchURL:(NSData*)urlData {
 	NSString* urlString = [NSPropertyListSerialization propertyListFromData:urlData mutabilityOption:NSPropertyListImmutable format:NULL errorDescription:NULL];
-	if ([urlString isKindOfClass:[NSString class]])
-		[([UIApplication sharedApplication] ?: [[[UIApplication alloc] init] autorelease]) openURL:[NSURL URLWithString:urlString]];
+	if ([urlString isKindOfClass:[NSString class]]) {
+		UIApplication* app = ([UIApplication sharedApplication] ?: [[[UIApplication alloc] init] autorelease]);
+		NSURL* url = [NSURL URLWithString:urlString];
+		if ([app respondsToSelector:@selector(applicationOpenURL:asPanel:publicURLsOnly:)])
+			[app applicationOpenURL:url asPanel:NO publicURLsOnly:NO];
+		else if ([app respondsToSelector:@selector(applicationOpenURL:publicURLsOnly:)])
+			[app applicationOpenURL:url publicURLsOnly:NO];
+		else
+			[app openURL:url];
+	}
 	[self messageClickedOrIgnored:urlData type:GriPMessage_ClickedNotification];
 }
 

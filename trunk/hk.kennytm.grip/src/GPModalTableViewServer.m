@@ -69,8 +69,7 @@ static void replaced_clickedMenuButton (id self, SEL _cmd) {
 	{
 		struct RCMBContext context = {nil, currentAlertUID, UINT_MAX};
 		CFDictionaryApplyFunction(identifiedAlerts, (CFDictionaryApplierFunction)&GPModalTableViewSearchForMostRecentIdentifiedAlert, &context);
-		[context.controller sendDismissMessage];
-		
+		[context.controller sendDismissMessage];		
 		[self clearMenuButtonTimer];
 	}
 }
@@ -81,11 +80,13 @@ static void replaced_restartDimTimer (id self, SEL _cmd, float duration) {
 static void GPModalTableViewHookSpringBoard () {
 	// Hook some SpringBoard commands so that:
 	//  - Pressing the Home button will dismiss the active Modal Table View instead of closing the active app
-	//  - The lock screen will appear indefinitely until all Modal Table View are dismissed.
+	//  - The lock screen will appear indefinitely until all Modal Table View are dismissed. <-- still buggy :(
 #if !TARGET_IPHONE_SIMULATOR
 	if (CFDictionaryGetCount(identifiedAlerts) == 0) {
 		original_clickedMenuButton = method_setImplementation(class_getInstanceMethod(objc_getClass("SpringBoard"), @selector(_handleMenuButtonEvent)), (IMP)&replaced_clickedMenuButton);
-		original_restartDimTimer = method_setImplementation(class_getInstanceMethod(objc_getClass("SBAwayController"), @selector(restartDimTimer:)), (IMP)&replaced_restartDimTimer);
+		Class _SBAwayController = objc_getClass("SBAwayController");
+		original_restartDimTimer = method_setImplementation(class_getInstanceMethod(_SBAwayController, @selector(restartDimTimer:)), (IMP)&replaced_restartDimTimer);
+		original_restartDimTimer(objc_msgSend(_SBAwayController, @selector(sharedAwayController)), @selector(restartDimTimer:), 0x7f7fffff);
 	}
 #endif
 }

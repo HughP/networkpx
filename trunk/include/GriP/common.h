@@ -35,35 +35,35 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 enum {
 	GriPMessage__Start = 1000,
-	GriPMessage_ClickedNotification = GriPMessage__Start,
-	GriPMessage_IgnoredNotification,
-	GriPMessage_EnqueueMessage,
-	GriPMessage_FlushPreferences,
-	GriPMessage_UpdateTicket,
-	GriPMessage_LaunchURL,
-	GriPMessage_CheckEnabled,
-	GriPMessage_CoalescedNotification,
-	GriPMessage_DequeueMessages,
-	GriPMessage_ResolveMultipleMessages,
-	GriPMessage_ShowMessageLog,
+	GriPMessage_ClickedNotification = GriPMessage__Start,	// 1000
+	GriPMessage_IgnoredNotification,	// 1001
+	GriPMessage_EnqueueMessage,			// 1002
+	GriPMessage_FlushPreferences,		// 1003
+	GriPMessage_UpdateTicket,			// 1004
+	GriPMessage_LaunchURL,				// 1005
+	GriPMessage_CheckEnabled,			// 1006
+	GriPMessage_CoalescedNotification,	// 1007
+	GriPMessage_DequeueMessages,		// 1008
+	GriPMessage_ResolveMultipleMessages,// 1009
+	GriPMessage_ShowMessageLog,			// 1010
 	GriPMessage__End = 1019,
 	
 	GPTVAMessage__Start = 1100,
-	GPTVAMessage_Show = GPTVAMessage__Start,
-	GPTVAMessage_Push,
-	GPTVAMessage_ButtonClicked,
-	GPTVAMessage_MovedItem,
-	GPTVAMessage_Deleted,
-	GPTVAMessage_Selected,
-	GPTVAMessage_Dismiss,
-	GPTVAMessage_AccessoryTouched,
-	GPTVAMessage_DescriptionChanged,
-	GPTVAMessage_CheckVisible,
-	GPTVAMessage_UpdateEntry,
-	GPTVAMessage_UpdateButtons,
-	GPTVAMessage_Reload,
-	GPTVAMessage_Pop,
-	GPTVAMessage_GetCurrentIdentifier,
+	GPTVAMessage_Show = GPTVAMessage__Start,	// 1100
+	GPTVAMessage_Push,					// 1101
+	GPTVAMessage_ButtonClicked,			// 1102
+	GPTVAMessage_MovedItem,				// 1103
+	GPTVAMessage_Deleted,				// 1104
+	GPTVAMessage_Selected,				// 1105
+	GPTVAMessage_Dismiss,				// 1106
+	GPTVAMessage_AccessoryTouched,		// 1107
+	GPTVAMessage_DescriptionChanged,	// 1108
+	GPTVAMessage_CheckVisible,			// 1109
+	GPTVAMessage_UpdateEntry,			// 1110
+	GPTVAMessage_UpdateButtons,			// 1111
+	GPTVAMessage_Reload,				// 1112
+	GPTVAMessage_Pop,					// 1113
+	GPTVAMessage_GetCurrentIdentifier,	// 1114
 	GPTVAMessage__End = 1119,
 }; 
 
@@ -94,15 +94,15 @@ enum {
 #define GRIP_PREFDICT GPSTR(/Library/GriP/GPPreferences.plist)
 
 enum {
-	GPPrioritySettings_Red,
-	GPPrioritySettings_Green,
-	GPPrioritySettings_Blue,
-	GPPrioritySettings_Alpha,
-	GPPrioritySettings_Enabled,
-	GPPrioritySettings_Sticky,
-	GPPrioritySettings_Timer,
-	GPPrioritySettings_Gaming,
-	GPPrioritySettings_Locked,
+	GPPrioritySettings_Red,			// 0
+	GPPrioritySettings_Green,		// 1
+	GPPrioritySettings_Blue,		// 2
+	GPPrioritySettings_Alpha,		// 3
+	GPPrioritySettings_Enabled,		// 4
+	GPPrioritySettings_Sticky,		// 5
+	GPPrioritySettings_Timer,		// 6
+	GPPrioritySettings_Gaming,		// 7
+	GPPrioritySettings_Locked,		// 8
 };
 
 #endif
