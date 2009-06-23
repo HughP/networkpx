@@ -38,7 +38,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #import <pthread.h>
 #import <GraphicsUtilities.h>
 #import <GriP/GPSingleton.h>
-#import <pthread.h>
 #import <GriP/GPMessageWindow.h>
 
 static NSDictionary* preferences = nil;
@@ -133,8 +132,15 @@ void GPUpdateRegistrationDictionaryForAppName(NSString* appName, NSDictionary* r
 			[currentNotifs setObject:[NSDictionary dictionaryWithObjects:thisValues forKeys:thisKeys count:size] forKey:name];
 		}
 	}
-	if (hasModification)
+	if (hasModification) {
 		[ticket writeToFile:appPath atomically:YES];
+		[[NSFileManager defaultManager] changeFileAttributes:[NSDictionary dictionaryWithObjectsAndKeys:
+															  @"mobile", NSFileGroupOwnerAccountName,
+															  @"mobile", NSFileOwnerAccountName,
+															  [NSNumber numberWithUnsignedLong:0666], NSFilePosixPermissions,
+															  nil]
+													  atPath:appPath];
+	}
 	
 	pthread_mutex_unlock(&appUpdateLock);
 }

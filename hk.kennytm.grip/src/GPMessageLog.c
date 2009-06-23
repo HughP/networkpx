@@ -42,6 +42,21 @@ static uint64_t sessionID;
 static int32_t messageUID;
 static pthread_mutex_t logLock = PTHREAD_MUTEX_INITIALIZER;
 
+
+static inline CFURLRef GPCopyMessageLogURL () {
+#if GRIP_JAILBROKEN
+	return CFURLCreateWithFileSystemPath(NULL, CFSTR("/Library/GriP/GPMessageLog.plist"), kCFURLPOSIXPathStyle, false);
+#else
+	return CFBundleCopyResourceURL(CFBundleGetMainBundle(), CFSTR("GPMessageLog"), CFSTR("plist"), NULL);
+#endif	
+}
+
+#if GRIP_JAILBROKEN
+#define GPMessageLog_plist 
+#else
+#define GPMessageLog_plist CFSTR("/Users/kennytm/Downloads/GPMessageLog.plist")
+#endif
+
 void GPMessageLogStartNewSession() { sessionID = ((union{CFAbsoluteTime t;uint64_t i;})CFAbsoluteTimeGetCurrent()).i; messageUID = 0; }
 
 
@@ -134,7 +149,6 @@ static void GPSaveMessageLog(CFURLRef url, CFDictionaryRef logDict) {
 
 
 void GPMessageLogAddMessage(CFMutableDictionaryRef message) {
-#if GRIP_JAILBROKEN
 	CFDateRef now = CFDateCreate(NULL, CFAbsoluteTimeGetCurrent());
 	Boolean doLog = false;
 	
@@ -147,7 +161,7 @@ void GPMessageLogAddMessage(CFMutableDictionaryRef message) {
 	CFDictionarySetValue(messageCopy, GRIP_QUEUEDATE, now);
 	CFRelease(now);
 	
-	CFURLRef logFileURL = CFURLCreateWithFileSystemPath(NULL, CFSTR("/Library/GriP/GPMessageLog.plist"), kCFURLPOSIXPathStyle, false);
+	CFURLRef logFileURL = GPCopyMessageLogURL();
 	CFMutableDictionaryRef logDict = GPOpenMessageLog(logFileURL);
 	if (logDict != NULL) {
 		CFDictionarySetValue(logDict, completeMessageUID, messageCopy);
@@ -163,9 +177,6 @@ void GPMessageLogAddMessage(CFMutableDictionaryRef message) {
 	}
 	
 	CFRelease(completeMessageUID);
-#else
-	CFDictionarySetValue(message, GRIP_MSGUID, CFSTR(""));
-#endif
 }
 
 
@@ -187,12 +198,11 @@ static void GPMessageLogResolveMessageCallback(CFStringRef completeMessageUID, s
 }
 
 void GPMessageLogShowMessages(CFArrayRef completeMessageUIDs) {
-#if GRIP_JAILBROKEN
 	if (CFArrayGetCount(completeMessageUIDs) == 0)
 		return;
 	CFDateRef now = CFDateCreate(NULL, CFAbsoluteTimeGetCurrent());
 	Boolean doLog = false;
-	CFURLRef logFileURL = CFURLCreateWithFileSystemPath(NULL, CFSTR("/Library/GriP/GPMessageLog.plist"), kCFURLPOSIXPathStyle, false);
+	CFURLRef logFileURL = GPCopyMessageLogURL();
 	CFMutableDictionaryRef logDict = GPOpenMessageLog(logFileURL);
 	if (logDict != NULL) {
 		struct ResolveContext context = {logDict, CFSTR("Showing"), GRIP_SHOWDATE, now};
@@ -204,15 +214,13 @@ void GPMessageLogShowMessages(CFArrayRef completeMessageUIDs) {
 	CFRelease(now);
 	if (doLog)
 		GPMessageLogRefresh(completeMessageUIDs);
-#endif
 }
 void GPMessageLogResolveMessages(CFArrayRef completeMessageUIDs, SInt32 resolution) {
-#if GRIP_JAILBROKEN
 	if (CFArrayGetCount(completeMessageUIDs) == 0)
 		return;
 	CFDateRef now = CFDateCreate(NULL, CFAbsoluteTimeGetCurrent());
 	Boolean doLog = false;
-	CFURLRef logFileURL = CFURLCreateWithFileSystemPath(NULL, CFSTR("/Library/GriP/GPMessageLog.plist"), kCFURLPOSIXPathStyle, false);
+	CFURLRef logFileURL = GPCopyMessageLogURL();
 	CFMutableDictionaryRef logDict = GPOpenMessageLog(logFileURL);
 	if (logDict != NULL) {
 		struct ResolveContext context = {logDict, (resolution == GriPMessage_ClickedNotification ? CFSTR("Touched") :
@@ -226,5 +234,4 @@ void GPMessageLogResolveMessages(CFArrayRef completeMessageUIDs, SInt32 resoluti
 	CFRelease(now);
 	if (doLog)
 		GPMessageLogRefresh(completeMessageUIDs);
-#endif
 }

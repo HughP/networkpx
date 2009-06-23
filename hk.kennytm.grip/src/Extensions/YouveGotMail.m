@@ -143,7 +143,7 @@ static NSString* const randomAddresses[4] = {@"test@example.com", @"another_test
 @end
 
 void TestYGM () {
-	NSMutableArray* allMessages = [NSMutableArray arrayWithCapacity:16];
+	NSMutableArray* allMessages = [NSMutableArray arrayWithCapacity:8];
 	for (int i = 0; i < 8; ++ i)
 		[allMessages addObject:[[[Message alloc] initWithRandomNumber:rand()%4] autorelease]];
 	[[NSNotificationCenter defaultCenter] postNotificationName:@"MessageStoreMessagesAdded" object:nil userInfo:[NSDictionary dictionaryWithObject:allMessages forKey:@"messages"]];
