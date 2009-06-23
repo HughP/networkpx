@@ -43,6 +43,7 @@ __attribute__((visibility("hidden")))
 
 static GPApplicationBridge* bridge = nil;
 static NSString* push, *notifies, *vinn, *view;
+static IMP SBRemoteNotificationAlert_activateApplication = NULL;
 
 
 __attribute__((visibility("hidden")))
@@ -81,6 +82,56 @@ __attribute__((visibility("hidden")))
 @end
 
 
+__attribute__((visibility("hidden")))
+@interface GriPPushNotificationDelegate : NSObject<GrowlApplicationBridgeDelegate> {
+	NSMutableDictionary* apps;
+}
+-(id)init;
+-(void)dealloc;
+-(NSDictionary*)registrationDictionaryForGrowl;
+-(void)growlNotificationTimedOut:(NSObject*)context;
+-(void)growlNotificationWasClicked:(NSObject*)context;
+-(NSNumber*)addApp:(SBApplication*)app;
+@end
+@implementation GriPPushNotificationDelegate
+-(NSDictionary*)registrationDictionaryForGrowl {
+	NSArray* supportedMessages = [NSArray arrayWithObject:@"Push Notification Alert"];
+	return [NSDictionary dictionaryWithObjectsAndKeys:
+			@"GriP Push Notification", GROWL_APP_NAME,
+			supportedMessages, GROWL_NOTIFICATIONS_ALL,
+			supportedMessages, GROWL_NOTIFICATIONS_DEFAULT, nil];
+}
+-(NSNumber*)addApp:(SBApplication*)app {
+	NSNumber* iden = [NSNumber numberWithInt:(int)app];
+	[apps setObject:app forKey:iden];
+	return iden;
+}
+-(id)init {
+	if ((self = [super init]))
+		apps = [[NSMutableDictionary alloc] init];
+	return self;
+}
+-(void)dealloc {
+	[apps release];
+	[super dealloc];
+}
+-(void)growlNotificationTimedOut:(NSObject*)context {
+	[apps removeObjectForKey:context];
+}
+-(void)growlNotificationWasClicked:(NSObject*)context {
+	struct {
+		void* isa, *_alertSheet;
+		BOOL _disallowUnlockAction, _orderOverSBAlert, _preventLockOver;
+		SBApplication* _app;
+		void* _body, *_actionLabel;
+		BOOL _showActionButton, _launched;
+	} FakeAlert2;
+	FakeAlert2._app = [apps objectForKey:context];
+	SBRemoteNotificationAlert_activateApplication((id)&FakeAlert2, @selector(activateApplication));
+	[apps removeObjectForKey:context];
+}
+@end
+
 
 
 static IMP old_SBRemoteNotificationAlert_initWithApplication_body_showActionButton_actionLabel = NULL;
@@ -97,14 +148,14 @@ static id replaced_SBRemoteNotificationAlert_initWithApplication_body_showAction
 			title2 = [NSString stringWithFormat:vinn, (actionLabel ?: view), appName];
 		else
 			title2 = [NSString stringWithFormat:notifies, appName];
-		
+				
 		[bridge notifyWithTitle:[push stringByAppendingString:title2]
 					description:body
 			   notificationName:@"Push Notification Alert"
 					   iconData:[app displayIdentifier]
 					   priority:0
 					   isSticky:NO
-				   clickContext:[NSNumber numberWithInt:(int)app]];
+				   clickContext:[(GriPPushNotificationDelegate*)bridge.growlDelegate addApp:app]];
 		
 		[self release];
 		return [[FakeAlert alloc] init];
@@ -114,31 +165,6 @@ static id replaced_SBRemoteNotificationAlert_initWithApplication_body_showAction
 	
 }
 
-
-__attribute__((visibility("hidden")))
-@interface GriPPushNotificationDelegate : NSObject<GrowlApplicationBridgeDelegate> {}
--(NSDictionary*)registrationDictionaryForGrowl;
--(void)growlNotificationTimedOut:(NSObject*)context;
--(void)growlNotificationWasClicked:(NSObject*)context;
-@end
-@implementation GriPPushNotificationDelegate
--(NSDictionary*)registrationDictionaryForGrowl {
-	NSArray* supportedMessages = [NSArray arrayWithObject:@"Push Notification Alert"];
-	return [NSDictionary dictionaryWithObjectsAndKeys:
-			@"GriP Push Notification", GROWL_APP_NAME,
-			supportedMessages, GROWL_NOTIFICATIONS_ALL,
-			supportedMessages, GROWL_NOTIFICATIONS_DEFAULT, nil];
-}
--(void)growlNotificationTimedOut:(NSObject*)context {
-	SBApplication* app = (SBApplication*)[(NSNumber*)context intValue];
-	[app release];
-}
--(void)growlNotificationWasClicked:(NSObject*)context {
-	SBApplication* app = (SBApplication*)[(NSNumber*)context intValue];
-	[app setActivationSetting:8 flag:YES]; // 8 = remoteNotification.
-	[app release];
-}
-@end
 
 
 static void terminator() {
@@ -166,9 +192,13 @@ static void second_initializer() {
 	vinn = [([localizationStrings objectForKey:@"%@ in %@"] ?: @"%@ in %@") retain];
 	view = [[[NSBundle mainBundle] localizedStringForKey:@"VIEW" value:@"View" table:@"SpringBoard"] retain];
 	
+	id cls = objc_getClass("SBRemoteNotificationAlert");
+	
 	old_SBRemoteNotificationAlert_initWithApplication_body_showActionButton_actionLabel 
-	= MSHookMessage(objc_getClass("SBRemoteNotificationAlert"), @selector(initWithApplication:body:showActionButton:actionLabel:),
+	= MSHookMessage(cls, @selector(initWithApplication:body:showActionButton:actionLabel:),
 					(IMP)&replaced_SBRemoteNotificationAlert_initWithApplication_body_showActionButton_actionLabel, NULL);
+	
+	SBRemoteNotificationAlert_activateApplication = [cls instanceMethodForSelector:@selector(activateApplication)];
 	
 	[pool drain];
 }
