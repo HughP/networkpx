@@ -248,7 +248,7 @@ next:
 		for (NSDictionary* dict in [client.context objectEnumerator]) {
 			if ([dict objectForKey:GRIP_RESOLVEDATE] == nil) {
 				[unresolvedMessages addObject:[dict objectForKey:GRIP_MSGUID]];
-				[unresolvedMessageData addObject:[NSPropertyListSerialization dataFromPropertyList:[dict objectsForKeys:[NSArray arrayWithObjects:GRIP_PID, GRIP_CONTEXT, GRIP_ISURL, (NSNull*)kCFNull, nil] notFoundMarker:@""]
+				[unresolvedMessageData addObject:[NSPropertyListSerialization dataFromPropertyList:[dict objectsForKeys:[NSArray arrayWithObjects:GRIP_PID, GRIP_CONTEXT, GRIP_ISURL, (NSNull*)kCFNull, nil] notFoundMarker:(NSNumber*)kCFBooleanFalse]
 																							format:NSPropertyListBinaryFormat_v1_0
 																				  errorDescription:NULL]];
 			}
@@ -267,7 +267,7 @@ next:
 	} else {
 		[client.duplex sendMessage:message data:[NSPropertyListSerialization dataFromPropertyList:[[client.context objectForKey:client.currentIdentifier]
 																								   objectsForKeys:[NSArray arrayWithObjects:GRIP_PID, GRIP_CONTEXT, GRIP_ISURL, GRIP_MSGUID, nil]
-																								   notFoundMarker:@""]
+																								   notFoundMarker:(NSNumber*)kCFBooleanFalse]
 																						   format:NSPropertyListBinaryFormat_v1_0
 																				 errorDescription:NULL]];
 	}

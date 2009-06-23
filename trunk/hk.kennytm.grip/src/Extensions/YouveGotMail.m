@@ -105,7 +105,7 @@ static NSString* const randomAddresses[4] = {@"test@example.com", @"another_test
 -(id)initWithAddress:(NSString*)addr { if ((self = [super init])) simtest_address = [addr retain]; return self; }
 -(void)dealloc { [simtest_address release]; [super dealloc]; }
 -(NSArray*)emailAddresses { return [NSArray arrayWithObject:simtest_address]; }
-+(NSArray*)activeAccounts { return [NSArray arrayWithObjects:[NSNull null], [NSNull null], nil]; }
++(NSArray*)activeAccounts { return [NSArray arrayWithObjects:(NSNull*)kCFNull, (NSNull*)kCFNull, nil]; }
 @end
 @implementation MessageStore
 -(void)deleteMessages:(NSArray*)messages moveToTrash:(BOOL)moveToTrash {}

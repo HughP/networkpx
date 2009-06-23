@@ -49,7 +49,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 -(int)registerMessage:(NSDictionary*)message {
 	int myUID = OSAtomicIncrement32(&uid);
 	CFDictionarySetValue(registeredMessages, (const void*)myUID, [NSPropertyListSerialization dataFromPropertyList:[message objectsForKeys:[NSArray arrayWithObjects:GRIP_PID, GRIP_CONTEXT, GRIP_ISURL, GRIP_MSGUID, nil]
-																															notFoundMarker:@""]
+																															notFoundMarker:(NSNumber*)kCFBooleanFalse]
 																											format:NSPropertyListBinaryFormat_v1_0
 																								  errorDescription:NULL]);
 	return myUID;
