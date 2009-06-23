@@ -51,7 +51,7 @@ SDKOptionsSim=-arch i686 \
 
 DontThumbSources=GPDefaultTheme.m | GPMessageWindow.m | GPPreferences.m | GPModalTableViewController.m | GPModalTableViewSupport.m | $(SharedSrcPath)/GraphicsUtitlities.m
 
-AllTargets=libGriP DefaultTheme XGriP GriPTest Preferences MemWatcher YouveGotMail DefaultThemePrefs
+AllTargets=libGriP DefaultTheme XGriP GriPTest Preferences MemWatcher YouveGotMail DefaultThemePrefs GriPPushNotification
 AllSDKTarget=libGriP libGriPServer libGPDefaultTheme
 
 libGriP_Sources=Duplex/Client.o GPApplicationBridge.o GPExtensions.o GPModalTableViewClient.o GPMessageWindow.o GPPreferences.o GPGetSmallAppIcon.o GPUIViewTheme.o GPRawThemeHelper.o
@@ -89,6 +89,10 @@ MemWatcher_Options=-lGriP -lobjc -framework Foundation -framework CoreFoundation
 YouveGotMail_Sources=Extensions/YouveGotMail.o
 YouveGotMail_Target=$(MobileSubstratePath)/YouveGotMail.dylib
 YouveGotMail_Options=-lGriP -framework Foundation -framework Message -framework UIKit -dynamiclib -init _initialize
+
+GriPPushNotification_Sources=Extensions/GriPPushNotification.o
+GriPPushNotification_Target=$(MobileSubstratePath)/GriPPushNotification.dylib
+GriPPushNotification_Options=-lGriP -framework Foundation -lsubstrate -dynamiclib -init _first_initializer
 
 SDK_libGriP_Sources=Duplex/Client.sdk.o GPApplicationBridge.sdk.o
 SDK_libGriP_Target=../sdk/libGriP.a
