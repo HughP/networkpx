@@ -127,25 +127,20 @@ dequeue_messages:
 		case GriPMessage_EnqueueMessage: {
 			NSMutableDictionary* messageDict = [NSPropertyListSerialization propertyListFromData:(NSData*)data mutabilityOption:NSPropertyListMutableContainers format:NULL errorDescription:NULL];
 			GPMessageLogAddMessage((CFMutableDictionaryRef)messageDict);
-			if ([messageDict objectForKey:GRIP_CONTEXT] != nil)
-				array = [messageDict objectsForKeys:[NSArray arrayWithObjects:GRIP_PID, GRIP_CONTEXT, GRIP_ISURL, GRIP_MSGUID, nil] notFoundMarker:@""];
-			else
-				array = nil;
+			array = [messageDict objectsForKeys:[NSArray arrayWithObjects:GRIP_PID, GRIP_CONTEXT, GRIP_ISURL, GRIP_MSGUID, nil] notFoundMarker:(NSNumber*)kCFBooleanFalse];
 			
 			GPModifyMessageForUserPreference(messageDict);
 			if ([messageDict count] != 0) {
 				NSArray* dismissedMessages = (NSArray*)GPEnqueueMessage((CFDictionaryRef)messageDict);
 				CFMutableArrayRef dismissedMessageUIDs[2] = {CFArrayCreateMutable(NULL, 0, NULL), CFArrayCreateMutable(NULL, 0, NULL)};				
 				for (NSDictionary* message in dismissedMessages) {
-					if ([message objectForKey:GRIP_CONTEXT] != nil) {
-						int priorityIndex = [[message objectForKey:GRIP_PRIORITY] integerValue]+2;
-						CFNotificationSuspensionBehavior suspensionBehavior = GPCurrentSuspensionBehaviorForPriorityIndex(priorityIndex);
-						NSArray* arr = [message objectsForKeys:[NSArray arrayWithObjects:GRIP_PID, GRIP_CONTEXT, GRIP_ISURL, (NSNull*)kCFNull, nil] notFoundMarker:@""];
-						NSData* arrData = [NSPropertyListSerialization dataFromPropertyList:arr format:NSPropertyListBinaryFormat_v1_0 errorDescription:NULL];
-						GriPCallback(NULL, suspensionBehavior == CFNotificationSuspensionBehaviorCoalesce ? GriPMessage_CoalescedNotification : GriPMessage_IgnoredNotification,
-									 (CFDataRef)arrData, NULL);
-						CFArrayAppendValue(dismissedMessageUIDs[suspensionBehavior == CFNotificationSuspensionBehaviorCoalesce ? 1 : 0], [message objectForKey:GRIP_MSGUID]);
-					}
+					int priorityIndex = [[message objectForKey:GRIP_PRIORITY] integerValue]+2;
+					CFNotificationSuspensionBehavior suspensionBehavior = GPCurrentSuspensionBehaviorForPriorityIndex(priorityIndex);
+					NSArray* arr = [message objectsForKeys:[NSArray arrayWithObjects:GRIP_PID, GRIP_CONTEXT, GRIP_ISURL, (NSNull*)kCFNull, nil] notFoundMarker:(NSNumber*)kCFBooleanFalse];
+					NSData* arrData = [NSPropertyListSerialization dataFromPropertyList:arr format:NSPropertyListBinaryFormat_v1_0 errorDescription:NULL];
+					GriPCallback(NULL, suspensionBehavior == CFNotificationSuspensionBehaviorCoalesce ? GriPMessage_CoalescedNotification : GriPMessage_IgnoredNotification,
+								 (CFDataRef)arrData, NULL);
+					CFArrayAppendValue(dismissedMessageUIDs[suspensionBehavior == CFNotificationSuspensionBehaviorCoalesce ? 1 : 0], [message objectForKey:GRIP_MSGUID]);
 				}
 				GPMessageLogResolveMessages(dismissedMessageUIDs[0], GriPMessage_IgnoredNotification);
 				GPMessageLogResolveMessages(dismissedMessageUIDs[1], GriPMessage_CoalescedNotification);
@@ -186,10 +181,10 @@ ignored_message:
 				NSData* context = [NSPropertyListSerialization dataFromPropertyList:contextObject format:NSPropertyListBinaryFormat_v1_0 errorDescription:NULL];
 				BOOL isURL = [[array objectAtIndex:2] boolValue];
 				NSString* lastObject = [array lastObject];
-				if ([lastObject length] > 0)
+				if ((CFBooleanRef)lastObject != kCFBooleanFalse)
 					GPMessageLogResolveMessages((CFArrayRef)[NSArray arrayWithObject:lastObject], type);
 				
-				if (contextObject == nil)
+				if (contextObject == (NSNull*)kCFBooleanFalse)
 					break;
 				
 				if (isURL) {
