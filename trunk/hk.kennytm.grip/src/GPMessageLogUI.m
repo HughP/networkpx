@@ -78,12 +78,35 @@ static NSInteger compareByDate (id a, id b, void* context) {
 #endif
 #define BUTTONIZE(str) [NSDictionary dictionaryWithObjectsAndKeys:(str), @"id", [localizationBundle localizedStringForKey:(str) value:nil table:@"GriP"], @"label", nil]
 
+static NSString* simplifyDate(NSDate* date, NSDate* today, NSDateFormatter* shortFormatter, NSDateFormatter* longFormatter) {
+	NSTimeInterval interval = [date timeIntervalSinceDate:today];
+	if (interval >= 0 && interval < 86400)
+		return [shortFormatter stringFromDate:date];
+	else
+		return [longFormatter stringFromDate:date];
+}
+
 static NSDictionary* constructHomeDictionary (NSDictionary* logDict) {
 	NSBundle* localizationBundle = GETLOCALIZATIONBUNDLE;
 	
 	NSArray* logEntries = [[logDict allValues] sortedArrayUsingFunction:&compareByDate context:NULL];
 	NSMutableArray* entries = [NSMutableArray array];
 	NSString* statusString = [localizationBundle localizedStringForKey:@"Status" value:nil table:@"GriP"];
+	
+	NSCalendar* curCal = [NSCalendar currentCalendar];
+	NSDateComponents* todayComponents = [curCal components:(NSYearCalendarUnit|NSMonthCalendarUnit|NSDayCalendarUnit) fromDate:[NSDate date]];
+	[todayComponents setHour:0];
+	[todayComponents setMinute:0];
+	[todayComponents setSecond:0];
+	NSDate* today = [curCal dateFromComponents:todayComponents];
+	NSDateFormatter* shortFormatter = [[NSDateFormatter alloc] init];
+	NSDateFormatter* longFormatter = [[NSDateFormatter alloc] init];
+	[shortFormatter setDateStyle:NSDateFormatterNoStyle];
+	[shortFormatter setTimeStyle:NSDateFormatterMediumStyle];
+	[longFormatter setDateStyle:NSDateFormatterMediumStyle];
+	[longFormatter setTimeStyle:NSDateFormatterMediumStyle];
+	
+	NSString* at = [localizationBundle localizedStringForKey:@"at" value:nil table:@"GriP"];
 	
 	BOOL hasResolvedHeader = NO;
 	for (NSDictionary* logEntry in logEntries) {
@@ -99,9 +122,11 @@ static NSDictionary* constructHomeDictionary (NSDictionary* logDict) {
 		NSMutableDictionary* entry = [[NSMutableDictionary alloc] initWithObjectsAndKeys:
 									  [logEntry objectForKey:GRIP_MSGUID], @"id",
 									  @"DisclosureIndicator", @"accessory",
-									  [NSString stringWithFormat:@"%@: %@ %@", statusString,
+									  [NSString stringWithFormat:@"%@: %@%@", statusString,
 									   [localizationBundle localizedStringForKey:[logEntry objectForKey:GRIP_STATUS] value:nil table:@"GriP"],
-									   (resolveDate ?: @"")], @"subtitle",
+									   (resolveDate ? [NSString stringWithFormat:
+													   @", %@ %@", at,
+													   simplifyDate(resolveDate, today, shortFormatter, longFormatter)]: @"")], @"subtitle",
 									  nil];
 		id temp = [logEntry objectForKey:GRIP_TITLE];
 		if (temp != nil)
@@ -118,6 +143,9 @@ static NSDictionary* constructHomeDictionary (NSDictionary* logDict) {
 		[entries addObject:entry];
 		[entry release];
 	}
+	
+	[shortFormatter release];
+	[longFormatter release];
 	
 	return [NSDictionary dictionaryWithObjectsAndKeys:
 			entries, @"entries",
