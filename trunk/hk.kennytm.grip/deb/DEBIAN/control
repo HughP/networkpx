@@ -8,6 +8,6 @@ Maintainer: KennyTM~ <kennytm+GriP@gmail.com>
 Author: KennyTM~ <kennytm+GriP@gmail.com>
 Section: System
 Depends: mobilesubstrate (>=0.9-0), preferenceloader (>=1.1)
-Installed-Size: 656
+Installed-Size: 676
 Support: http://code.google.com/p/networkpx/wiki/FAQ
 dev: kennytm
