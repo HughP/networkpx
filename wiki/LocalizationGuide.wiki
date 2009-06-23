@@ -20,26 +20,27 @@ If you want to fill in the blanks or provide a completely new language, you can 
 
 The _lproj_'s are located in `/svn/trunk/hk.kennytm.iKeyEx/deb/System/Library/PreferenceBundles/iKeyEx.bundle/`.
 
-|| *Key*                           || *ar* || *de* || *el* || *fi* || *it* || *ja* || *nl* || *ru* || *tr* ||
-|| Keyboards for Current Language  || ✓    || ✓    ||      || ✓    || ✓    || ✓   || ✓    || ✓    || ✓   ||
-|| iKeyEx Keyboards                || ✓    || ✓    ||      || ✓    || ✓    || ✓   || ✓    || ✓    || ✓   ||
-|| Other Built-in Keyboards        || ✓    || ✓    ||      || ✓    || ✓    || ✓   || ✓    || ✓    || ✓   ||
-|| Clear layout cache              || ✓    || ✓    ||      || ✓    || ✓    || ✓   || ✓    || ✓    ||     ||
-|| Clear lookup cache (!WordTrie)  || ✓    || ✓    ||      || ✓    || ✓    || ✓   || ✓    || ✓    ||     ||
-|| Clear image cache               || ✓    || ✓    ||      || ✓    || ✓    || ✓   || ✓    || ✓    ||     ||
-<wiki:comment>
-|| `CLEAR_IMAGE_CACHE_DESCRIPTION` ||      || ✓    ||      || ✓    || ✓    ||     || ✓    || ✓    ||      ||
-</wiki:comment>
-|| Troubleshooting                 || ✓    || ✓    ||      || ✓    || ✓    || ✓   || ✓    || ✓    ||      ||
-|| Fix permissions                 || ✓    || ✓    ||      || ✓    || ✓    || ✓   || ✓    || ✓    ||      ||
-|| Uninstall iKeyEx                || ✓    ||      ||      ||       || ✓    || ✓   ||      || ✓    ||      ||
-|| `SYSTEM_IS_FINE`                ||      ||      ||      ||       ||      ||      ||      ||      ||      ||
-|| Send                            ||      ||      ||      ||       ||      ||      ||      ||      ||      ||
-|| Send all crash reports          ||      ||      ||      ||       ||      ||      ||      ||      ||      ||
-|| Crash Report (iKeyEx)           ||      ||      ||      ||       ||      ||      ||      ||      ||      ||
-|| Additional Detail:\n\n          ||      ||      ||      ||       ||      ||      ||      ||      ||      ||
-|| Report issues                   ||      ||      ||      ||       ||      ||      ||      ||      ||      ||
-|| Email diagnosis info            ||      ||      ||      ||       ||      ||      ||      ||      ||      ||
+|| *Key* || *ar* || *de* || *en* || *es* || *fi* || *it* || *ja* || *nl* || *ru* || *tr* || *zh_CN* || *zh_TW* ||
+|| Additional Detail:\n\n || || || ✓ || ✓ || || ✓ || || || || || ✓ || ✓ ||
+|| Clear image cache || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || || ✓ || ✓ ||
+|| Clear layout cache || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || || ✓ || ✓ ||
+|| Clear lookup cache (WordTrie) || || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || || ✓ || ✓ ||
+|| Clear lookup cache || ✓ || || || || || || || || || || || ||
+|| CLEAR_IMAGE_CACHE_DESCRIPTION || || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ ||
+|| Crash Report (iKeyEx) || || || ✓ || ✓ || || ✓ || || || || || ✓ || ✓ ||
+|| Email diagnosis info || || || ✓ || ✓ || || ✓ || || || || || ✓ || ✓ ||
+|| Fix permissions || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || || ✓ || ✓ ||
+|| Found No Crash Reports || || || ✓ || ✓ || || ✓ || || || || || ✓ || ✓ ||
+|| iKeyEx Keyboards || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ ||
+|| International Keyboards || || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ ||
+|| Keyboards for Current Language || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ ||
+|| Other Built-in Keyboards || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ ||
+|| Report issues || || || ✓ || ✓ || || ✓ || || || || || ✓ || ✓ ||
+|| Send || || || ✓ || ✓ || || ✓ || || || || || ✓ || ✓ ||
+|| Send all crash reports || || || ✓ || ✓ || || ✓ || || || || || ✓ || ✓ ||
+|| SYSTEM_IS_FINE || || || ✓ || ✓ || || ✓ || || || || || ✓ || ✓ ||
+|| Troubleshooting || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || || ✓ || ✓ ||
+|| Uninstall iKeyEx || ✓ || || ✓ || ✓ || ✓ || ✓ || ✓ || || ✓ || || ✓ || ✓ ||
 
 <wiki:comment>
 Note: the complete message of `CLEAR_IMAGE_CACHE_DESCRIPTION` is _"iKeyEx caches some generated images for performance. However, if you change theme you must clear the cache to sync with it."_
@@ -93,81 +94,111 @@ Note: `No sel.` here is the short form of `Disable selection` owe to space limit
 
 The _lproj_'s are located in `/svn/trunk/hk.kennytm.5RowQWERTY/deb/Library/iKeyEx/Keyboards/5RowQWERTY.keyboard/Preferences.bundle/`.
 
-|| *Key*              || *ar* || *it* ||
-|| Layout             || ✓    || ✓   ||
-|| Special characters || ✓    || ✓   ||
-|| Reset              || ✓    || ✓   ||
-|| Empty slot         ||      || ✓   ||
-|| Palette            ||      || ✓   ||
-|| Top Row            || ✓    || ✓   ||
-|| Numbers            || ✓    || ✓   ||
-|| Off                || ✓    || ✓   ||
-|| Alt Keyboard       || ✓    || ✓   ||
-|| NumPad             || ✓    || ✓   ||
-|| Control Keys       || ✓    || ✓   ||
+|| *Key* || *ar* || *en* || *es* || *it* || *zh_CN* || *zh_TW* ||
+|| Numbers || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ ||
+|| Top Row || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ ||
+|| Palette || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ ||
+|| Special characters || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ ||
+|| Empty slot || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ ||
+|| Control Keys || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ ||
+|| Reset || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ ||
+|| Layout || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ ||
+|| NumPad || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ ||
+|| Off || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ ||
+|| Alt Keyboard || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ ||
+
 
 = GriP =
 
 GriP has 3 components that need to localized: GriP, !MemoryWatcher and You've Got Mail.
 
 For GriP, the _lproj_'s are in `/svn/trunk/hk.kennytm.grip/deb/System/Library/PreferenceBundles/GriP.bundle/`. *Don't fiddle with Duration.png* unless you know what to do. Tell me the translation of "Duration" instead.
-|| *Key*                 || *it* || *nl* ||
-|| Preview               || ✓    || ✓   ||
-|| Location              || ✓    || ✓   || 
-|| \UE237 Top left       || ✓    || ✓   ||
-|| \UE236 Top right      || ✓    || ✓   ||
-|| \UE239 Bottom left    || ✓    || ✓   ||
-|| \UE238 Bottom right   || ✓    || ✓   ||
-|| Sticky                || ✓    || ✓   ||
-|| App decides           || ✓    || ✓   ||
-|| Always                || ✓    || ✓   ||
-|| Never                 || ✓    || ✓   ||
-|| Background color      || ✓    || ✓   ||
-|| Per-App Settings      || ✓    || ✓   ||
-|| Per-Priority Settings || ✓    || ✓   ||
-|| Theme                 || ✓    || ✓   ||
-|| Stealth               || ✓    || ✓   ||
-|| Customize             || ?    || ?    ||
-|| Cancel                || ✓    || ✓   ||
-|| Reset                 || ✓    || ✓   ||
-|| Enabled               || ✓    || ✓   ||
-|| Priority              || ✓    || ✓   ||
-|| Default               || ✓    || ✓   ||
-|| Emergency             || ✓    || ✓   ||
-|| High                  || ✓    || ✓   ||
-|| High priority         || ?    || ?    ||
-|| Normal                || ✓    || ✓   ||
-|| Moderate              || ✓    || ✓   ||
-|| Very low              || ✓    || ✓   ||
-|| Very low priority     || ?    || ?    ||
-|| Messages              || ✓    || ✓   ||
-|| Remove Settings       || ✓    || ✓   ||
-|| Suspension behavior   ||      ||      ||
-|| Game mode             ||      ||      ||
-|| Screen off            ||      ||      ||
-|| Drop                  ||      ||      ||
-|| Keep last only        ||      ||      ||
-|| Queue                 ||      ||      ||
-|| Deliver immediately   ||      ||      ||
-|| Lower-priority GriP messages won't be delivered in Game mode. ||   ||   ||
-|| GriP Message Preview                                          || ✓ || ✓ ||
-|| `This is a preview of a <strong>%@</strong> GriP message.`    || ? || ? ||
-|| Message touched                                               || ✓ || ✓ ||
-|| You have touched the GriP preview message.                    || ✓ || ✓ ||
-|| Message ignored                                               || ✓ || ✓ ||
-|| You have closed or ignored the GriP preview message.          || ✓ || ✓ ||
-|| Cannot remove settings for %@                                 || ✓ || ✓ ||
-|| `Error: %@<br/><br/>Please delete <code>%@</code> manually.`  || ✓ || ✓ ||
+|| *Key* || *en* || *es* || *it* || *nl* || *pl* || *zh_CN* || *zh_TW* ||
+|| Always || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ ||
+|| App decides || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ ||
+|| App name || ✓ || ✓ || || || || ✓ || ✓ ||
+|| at || ✓ || ✓ || || || || ✓ || ✓ ||
+|| Background color || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ ||
+|| Cancel || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ ||
+|| Capacity || ✓ || ✓ || || || || ✓ || ✓ ||
+|| Client port name || ✓ || ✓ || || || || ✓ || ✓ ||
+|| Coalesce || ✓ || ✓ || || || || ✓ || ✓ ||
+|| Coalesce all || ✓ || ✓ || || || || ✓ || ✓ ||
+|| Coalesced || ✓ || ✓ || || || || ✓ || ✓ ||
+|| Coalescent ID || ✓ || ✓ || || || || ✓ || ✓ ||
+|| Customize || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ ||
+|| Default || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ ||
+|| Delete all logs || ✓ || ✓ || || || || ✓ || ✓ ||
+|| Deliver immediately || ✓ || ✓ || || || ✓ || ✓ || ✓ ||
+|| Detail || ✓ || ✓ || || || || ✓ || ✓ ||
+|| Drop || ✓ || ✓ || || || ✓ || ✓ || ✓ ||
+|| Emergency || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ ||
+|| Enabled || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ ||
+|| Game mode || ✓ || ✓ || || || ✓ || ✓ || ✓ ||
+|| GriP Message Log || ✓ || ✓ || || || || ✓ || ✓ ||
+|| GriP Message Preview || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ ||
+|| High || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ ||
+|| High priority || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ ||
+|| Icon || ✓ || ✓ || || || || ✓ || ✓ ||
+|| Ignore || ✓ || ✓ || || || || ✓ || ✓ ||
+|| Ignore all || ✓ || ✓ || || || || ✓ || ✓ ||
+|| Ignored || ✓ || ✓ || || || || ✓ || ✓ ||
+|| Keep last only || ✓ || ✓ || || || ✓ || ✓ || ✓ ||
+|| Location || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ ||
+|| Lower-priority GriP messages won't be delivered in Game mode. || ✓ || ✓ || || || ✓ || ✓ || ✓ ||
+|| Message ID || ✓ || ✓ || || || || ✓ || ✓ ||
+|| Message ignored || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ ||
+|| Message name || ✓ || ✓ || || || || ✓ || ✓ ||
+|| Message touched || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ ||
+|| Messages || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ ||
+|| Moderate || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ ||
+|| Never || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ ||
+|| Normal || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ ||
+|| Per-App Settings || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ ||
+|| Per-Priority Settings || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ ||
+|| Preview || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ ||
+|| Priority || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ ||
+|| Queue || ✓ || ✓ || || || ✓ || ✓ || ✓ ||
+|| Queue date || ✓ || ✓ || || || || ✓ || ✓ ||
+|| Queuing || ✓ || ✓ || || || || ✓ || ✓ ||
+|| Remove Settings || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ ||
+|| Reset || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ ||
+|| Resolve date || ✓ || ✓ || || || || ✓ || ✓ ||
+|| Resolved messages || ✓ || ✓ || || || || ✓ || ✓ ||
+|| Screen off || ✓ || ✓ || || || ✓ || ✓ || ✓ ||
+|| Showing || ✓ || ✓ || || || || ✓ || ✓ ||
+|| Shown date || ✓ || ✓ || || || || ✓ || ✓ ||
+|| Status || ✓ || ✓ || || || || ✓ || ✓ ||
+|| Stealth || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ ||
+|| Sticky || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ ||
+|| Suspension behavior || ✓ || ✓ || || || ✓ || ✓ || ✓ ||
+|| Theme (Modal table) || ✓ || ✓ || || || || ✓ || ✓ ||
+|| Theme || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ ||
+|| This is a preview of a %@ GriP message. || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ ||
+|| Title || ✓ || ✓ || || || || ✓ || ✓ ||
+|| Touch || ✓ || ✓ || || || || ✓ || ✓ ||
+|| Touch all || ✓ || ✓ || || || || ✓ || ✓ ||
+|| Touched || ✓ || ✓ || || || || ✓ || ✓ ||
+|| Very low || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ ||
+|| Very low priority || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ ||
+|| View || ✓ || ✓ || || || || ✓ || ✓ ||
+|| You have closed or ignored the GriP preview message. || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ ||
+|| You have touched the GriP preview message. || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ ||
+||  Top right || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ ||
+||  Top left || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ ||
+||  Bottom right || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ ||
+||  Bottom left || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ || ✓ ||
 
 For !MemoryWatcher, the localizations are located directly inside `/svn/trunk/hk.kennytm.grip/Lbrary/MobileSubstrate/DynamicLibraries/MemoryWatcher.plist`. This is unlike the other projects that _lproj_'s are used. The file is saved as a binary plist, so you may need to convert it into XML, or edit it by Property List Editor.
 
-|| *Key*           || *it* || *nl* ||
-|| Memory Warning  || ✓    || ✓   ||
-|| Memory Urgent   || ✓    || ✓   ||
-|| Memory Critical ||  ✓   || ✓   ||
+|| *Key*           || *it* || *nl* || *pl* ||
+|| Memory Warning  || ✓    || ✓   ||  ✓   ||
+|| Memory Urgent   || ✓    || ✓   ||  ✓   ||
+|| Memory Critical ||  ✓   || ✓   ||  ✓   ||
 
 For You've Got Mail, the localizations are located directly inside `/svn/trunk/hk.kennytm.grip/Lbrary/MobileSubstrate/DynamicLibraries/YouveGotMail.plist`.
 
-|| *Key*              || *it* || *nl* ||
-|| 1 new mail to %@   ||  ?   ||  ?   ||
-|| %d new mails to %@ ||  ?   ||  ?   ||
+|| *Key*        || *it* || *nl* || *pl* ||
+|| 1 new mail   ||  ?   ||  ?   ||  ✓   ||
+|| %d new mails ||  ?   ||  ?   ||  ✓   ||
+|| multiple accounts || ||      ||      ||
