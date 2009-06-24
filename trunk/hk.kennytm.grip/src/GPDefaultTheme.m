@@ -260,7 +260,9 @@ __attribute__((visibility("hidden")))
 	int priorityIndex = [[message objectForKey:GRIP_PRIORITY] integerValue]+2;
 	
 	if (asNew) {
-		[view addSubview:[[[GPDTWrapperView alloc] init] autorelease]];
+		GPDTWrapperView* newSubview = [[GPDTWrapperView alloc] init];
+		[view addSubview:newSubview];
+		[newSubview release];
 	}
 	
 	GPDTWrapperView* v = [view.subviews objectAtIndex:0];

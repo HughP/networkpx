@@ -22,6 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <mach-o/fat.h>
 #include "MachO_File.h"
 
 using namespace std;
@@ -56,8 +57,17 @@ static const char* print_string_representation_format_strings_prefix[] = {"", "C
 static const char* print_string_representation_format_strings_suffix[] = {"", "\")", "\"", ")", "", ")", ""};
 
 
-MachO_File::MachO_File(const char* path) throw(bad_alloc,TRException) : DataFile(path), m_symbols_length(0), m_indirect_symbols_length(0), m_cstring_vmaddr(0), ma_strings(NULL), ma_symbols(NULL), ma_indirect_symbols(NULL), ma_cstrings(NULL) {
+MachO_File::MachO_File(const char* path) throw(bad_alloc,TRException) : DataFile(path), m_symbols_length(0), m_indirect_symbols_length(0), m_cstring_vmaddr(0), ma_strings(NULL), ma_symbols(NULL), ma_indirect_symbols(NULL), ma_cstrings(NULL), m_origin(0) {
 	const mach_header* mp_header = this->read_data<mach_header>();
+	
+	if (OSSwapBigToHostInt32(mp_header->magic) == FAT_MAGIC) {
+		::std::fprintf(stderr, "Warning: Universal (fat) binary detected. thumb-ddis will always disassemble with the first architecture, no matter it's actually ARM or not. To be sure, unbundle the object with 'lipo -extract armv6'.\n");
+		this->retreat(sizeof(mach_header) - sizeof(fat_header));
+		const fat_arch* arch = this->read_data<fat_arch>();
+		m_origin = OSSwapBigToHostInt32(arch->offset);
+		this->seek(m_origin);
+		mp_header = this->read_data<mach_header>();
+	}
 	
 	if (mp_header->magic != MH_MAGIC) {
 		m_is_valid = false;
@@ -92,11 +102,11 @@ MachO_File::MachO_File(const char* path) throw(bad_alloc,TRException) : DataFile
 				
 				const symtab_command* p_cur_symtab = reinterpret_cast<const symtab_command*>(p_cur_cmd);
 				
-				this->seek(p_cur_symtab->symoff);
+				this->seek(m_origin + p_cur_symtab->symoff);
 				ma_symbols = this->peek_data<struct nlist>();
 				m_symbols_length = p_cur_symtab->nsyms;
 				
-				this->seek(p_cur_symtab->stroff);
+				this->seek(m_origin + p_cur_symtab->stroff);
 				ma_strings = this->peek_data<char>();
 				
 				this->seek(old_location);
@@ -108,11 +118,11 @@ MachO_File::MachO_File(const char* path) throw(bad_alloc,TRException) : DataFile
 				
 				const dysymtab_command* p_cur_dysymtab = reinterpret_cast<const dysymtab_command*>(p_cur_cmd);
 				
-				this->seek(p_cur_dysymtab->indirectsymoff);
+				this->seek(m_origin + p_cur_dysymtab->indirectsymoff);
 				ma_indirect_symbols = this->peek_data<unsigned>();
 				m_indirect_symbols_length = p_cur_dysymtab->nindirectsyms;
 				
-				this->seek(p_cur_dysymtab->extreloff);
+				this->seek(m_origin + p_cur_dysymtab->extreloff);
 				ma_relocations = this->peek_data<relocation_info>();
 				m_relocations_length = p_cur_dysymtab->nextrel;
 				
@@ -151,7 +161,7 @@ MachO_File::MachO_File(const char* path) throw(bad_alloc,TRException) : DataFile
 			}
 				
 			case S_CSTRING_LITERALS:
-				this->seek(s->offset);
+				this->seek(m_origin + s->offset);
 				ma_cstrings = this->peek_data<char>();
 				m_cstring_vmaddr = s->addr;
 				m_cstring_table_size = s->size;
@@ -159,7 +169,7 @@ MachO_File::MachO_File(const char* path) throw(bad_alloc,TRException) : DataFile
 				
 			default:
 				if (!strncmp(s->sectname, "__cfstring", 16)) {
-					this->seek(s->offset + 8);
+					this->seek(m_origin + s->offset + 8);
 					for (unsigned i = 0; i < s->size; i += 16) {
 						unsigned vm_address = this->read_integer();
 						this->advance(12);
@@ -168,7 +178,7 @@ MachO_File::MachO_File(const char* path) throw(bad_alloc,TRException) : DataFile
 					}
 				} else if (!strncmp(s->sectname, "__class_list", 16) || !strncmp(s->sectname, "__objc_classlist", 16)) {
 					int sid_data = 1, sid_text = 0;
-					this->seek(s->offset);
+					this->seek(m_origin + s->offset);
 					for (unsigned i = 0; i < s->size; i += 4) {
 						unsigned vm_address = this->read_integer();
 						off_t old_location = this->tell();
@@ -199,7 +209,7 @@ MachO_File::MachO_File(const char* path) throw(bad_alloc,TRException) : DataFile
 						this->seek(old_location);
 					}
 				} else if (!strncmp(s->sectname, "__objc_selrefs", 16)) {
-					this->seek(s->offset);
+					this->seek(m_origin + s->offset);
 					
 					for (unsigned i = 0; i < s->size; i += 4) {
 						unsigned vm_address = this->read_integer();
@@ -239,6 +249,8 @@ return cit->second; \
 	TrySearchIn(ma_objc_classes, MOST_ObjCClass);
 	TrySearchIn(ma_objc_selectors, MOST_ObjCSelector);
 	
+#undef TrySearchIn
+	
 	if (m_cstring_vmaddr <= vm_address && m_cstring_vmaddr+m_cstring_table_size >= vm_address) {
 		if (p_strtype != NULL)
 			*p_strtype = MOST_CString;
@@ -262,7 +274,7 @@ unsigned MachO_File::to_file_offset (unsigned vm_address, int* p_guess_segment) 
 	if (p_guess_segment != NULL) {
 		seg = ma_segments[*p_guess_segment];
 		if (seg->vmaddr <= vm_address && seg->vmaddr + seg->vmsize > vm_address)
-			return vm_address - seg->vmaddr + seg->fileoff;
+			return m_origin + vm_address - seg->vmaddr + seg->fileoff;
 	}
 	
 	unsigned i = 0;
@@ -271,7 +283,7 @@ unsigned MachO_File::to_file_offset (unsigned vm_address, int* p_guess_segment) 
 		if (seg->vmaddr <= vm_address && seg->vmaddr + seg->vmsize > vm_address) {
 			if (p_guess_segment != NULL)
 				*p_guess_segment = i;
-			return vm_address - seg->vmaddr + seg->fileoff;
+			return m_origin + vm_address - seg->vmaddr + seg->fileoff;
 		}
 		++ i;
 	}
@@ -281,6 +293,8 @@ unsigned MachO_File::to_file_offset (unsigned vm_address, int* p_guess_segment) 
 unsigned MachO_File::to_vm_address (unsigned file_offset, int* p_guess_segment) const throw() {
 	if (!m_is_valid)
 		return file_offset;
+	
+	file_offset -= m_origin;
 	
 	const segment_command* seg;
 	if (p_guess_segment != NULL) {
