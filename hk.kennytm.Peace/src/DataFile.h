@@ -51,6 +51,7 @@ public:
 	inline void seek(off_t new_location) throw() { m_location = new_location; }
 	inline off_t tell() const throw() { return m_location; }
 	inline void advance(off_t delta) throw() { m_location += delta; }
+	inline void retreat(off_t neg_delta) throw() { m_location -= neg_delta; }
 	inline void rewind() throw() { m_location = 0; }
 	
 	unsigned read_integer() throw();

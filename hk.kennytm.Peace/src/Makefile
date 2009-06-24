@@ -1,7 +1,7 @@
 CC=gcc
 CPP=g++
 DMD=dmd
-CFLAGS=-O3 -I../include
+CFLAGS=-O2 -g -I../include
 DFLAGS=-inline -release -O
 
 %.o: %.c

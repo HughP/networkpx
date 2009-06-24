@@ -72,6 +72,8 @@ private:
 	
 	bool m_is_valid;
 	
+	off_t m_origin;
+	
 public:
 	enum StringType {
 		MOST_Symbol,
