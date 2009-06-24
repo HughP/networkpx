@@ -19,14 +19,177 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
 
+#include "MachO_File.h"
+#include <cstring>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <mach-o/fat.h>
-#include "MachO_File.h"
+#include <libkern/OSByteOrder.h>
+#include <algorithm>
 
 using namespace std;
-using namespace __gnu_cxx;
+
+MachO_File_Simple::MachO_File_Simple(const char* path) throw(std::bad_alloc,TRException) : DataFile(path), m_origin(0) {
+	
+	const mach_header* mp_header = this->read_data<mach_header>();
+	
+	if (OSSwapBigToHostInt32(mp_header->magic) == FAT_MAGIC) {
+		::std::fprintf(stderr, "Warning: Universal (fat) binary detected. For now, MachO_File will always pick the first architecture, no matter it's actually the right architecture or not. To be sure, unbundle the object with 'lipo -extract <arch>'.\n");
+		this->retreat(sizeof(mach_header) - sizeof(fat_header));
+		const fat_arch* arch = this->read_data<fat_arch>();
+		m_origin = OSSwapBigToHostInt32(arch->offset);
+		this->seek(m_origin);
+		mp_header = this->read_data<mach_header>();
+	}
+	
+	if (mp_header->magic != MH_MAGIC) {
+		m_is_valid = false;
+		return;
+	} else
+		m_is_valid = true;
+	
+	// analyze the load commands.
+	ma_load_commands.reserve(mp_header->ncmds);
+	
+	for (unsigned i = 0; i < mp_header->ncmds; ++ i) {
+		const load_command* p_cur_cmd = this->peek_data<load_command>();
+		ma_load_commands.push_back(p_cur_cmd);
+		
+		if (p_cur_cmd->cmd == LC_SEGMENT) {
+			off_t old_location = this->tell();
+			this->advance(sizeof(segment_command));
+			
+			const segment_command* p_cur_seg = reinterpret_cast<const segment_command*>(p_cur_cmd);
+			ma_segments.push_back(p_cur_seg);
+			
+			for (unsigned j = 0; j < p_cur_seg->nsects; ++ j)
+				ma_sections.push_back(this->read_data<section>());
+			
+			this->seek(old_location);
+		}
+		
+		this->advance(p_cur_cmd->cmdsize);
+	}
+}
+
+off_t MachO_File_Simple::to_file_offset (unsigned vm_address, int* p_guess_segment) const throw() {
+	if (!m_is_valid)
+		return vm_address;
+	
+	const segment_command* seg;
+	if (p_guess_segment != NULL) {
+		seg = ma_segments[*p_guess_segment];
+		if (seg->vmaddr <= vm_address && seg->vmaddr + seg->vmsize > vm_address)
+			return m_origin + vm_address - seg->vmaddr + seg->fileoff;
+	}
+	
+	unsigned i = 0;
+	for (vector<const segment_command*>::const_iterator cit = ma_segments.begin(); cit != ma_segments.end(); ++ cit) {
+		seg = *cit;
+		if (seg->vmaddr <= vm_address && seg->vmaddr + seg->vmsize > vm_address) {
+			if (p_guess_segment != NULL)
+				*p_guess_segment = i;
+			return m_origin + vm_address - seg->vmaddr + seg->fileoff;
+		}
+		++ i;
+	}
+	return 0;
+}
+
+unsigned MachO_File_Simple::to_vm_address (off_t file_offset, int* p_guess_segment) const throw() {
+	if (!m_is_valid)
+		return static_cast<unsigned>(file_offset);
+	
+	file_offset -= m_origin;
+	
+	const segment_command* seg;
+	if (p_guess_segment != NULL) {
+		seg = ma_segments[*p_guess_segment];
+		if (seg->fileoff <= file_offset && seg->fileoff + seg->filesize > file_offset)
+			return static_cast<unsigned>(file_offset + seg->vmaddr - seg->fileoff);
+	}
+	
+	unsigned i = 0;
+	for (vector<const segment_command*>::const_iterator cit = ma_segments.begin(); cit != ma_segments.end(); ++ cit) {
+		seg = *cit;
+		if (seg->fileoff <= file_offset && seg->fileoff + seg->filesize > file_offset) {
+			if (p_guess_segment != NULL)
+				*p_guess_segment = i;
+			return static_cast<unsigned>(file_offset + seg->vmaddr - seg->fileoff);
+		}
+		++ i;
+	}
+	return 0;
+}
+
+// try to dereference this vm_address.
+unsigned MachO_File_Simple::dereference(unsigned vm_address) const throw() {
+	static int last_deref_section = 0;
+	const unsigned* ptr = this->peek_data_at_vm_address<unsigned>(vm_address, &last_deref_section);
+	if (ptr == NULL)
+		return 0;
+	else
+		return *ptr;
+}
+
+int MachO_File_Simple::segment_index_having_name(const char* name) const {
+	int i = 0;
+	if (m_is_valid) {
+		for (vector<const segment_command*>::const_iterator cit = ma_segments.begin(); cit != ma_segments.end(); ++ cit) {
+			if (!strncmp((*cit)->segname, name, 16))
+				return i;
+			++ i;
+		}
+	}
+	return -1;
+}
+const section* MachO_File_Simple::section_having_name (const char* segment_name, const char* section_name) const {
+	if (m_is_valid) {
+		for (vector<const section*>::const_iterator cit = ma_sections.begin(); cit != ma_sections.end(); ++ cit) {
+			if (!strncmp((*cit)->segname, segment_name, 16) && !strncmp((*cit)->sectname, section_name, 16))
+				return *cit;
+		}
+	}
+	return NULL;
+}
+vector<string> MachO_File_Simple::linked_libraries(const std::string& sysroot) const {
+	vector<string> retval;
+	if (m_is_valid) {
+		for (vector<const load_command*>::const_iterator cit = ma_load_commands.begin(); cit != ma_load_commands.end(); ++ cit) {
+			if ((*cit)->cmd == LC_LOAD_DYLIB) {
+				const dylib_command* p_dylib_cmd = reinterpret_cast<const dylib_command*>(*cit);
+				const char* lib_path = reinterpret_cast<const char*>(p_dylib_cmd) + p_dylib_cmd->dylib.name.offset;
+				if (lib_path[0] == '@')
+					retval.push_back(string(strchr(lib_path, '/')+1));
+				else 
+					retval.push_back(sysroot + string(lib_path));
+				
+			}
+		}
+	}
+	return retval;
+}
+tr1::unordered_set<string> MachO_File_Simple::linked_libraries_recursive(const std::string& sysroot) const {
+	vector<string> first_level = linked_libraries(sysroot);
+	tr1::unordered_set<string> retval (first_level.begin(), first_level.end());
+
+	while (first_level.size() > 0) {
+		vector<string> second_level = MachO_File_Simple(first_level.back().c_str()).linked_libraries(sysroot);
+		
+		for (vector<string>::const_iterator cit = second_level.begin(); cit != second_level.end(); ++ cit) {
+			tr1::unordered_set<string>::const_iterator rv_cit = retval.find(*cit);
+			if (rv_cit == retval.end()) {
+				first_level.push_back(*cit);
+				retval.insert(*cit);
+			}
+		}
+	}
+	
+	return retval;
+}
+
+//------------------------------------------------------------------------------
 
 static void fprint_with_escape (FILE* stream, const char* s) {
 	while (true) {
@@ -52,55 +215,16 @@ static void fprint_with_escape (FILE* stream, const char* s) {
 	}
 }
 
-static bool nlist_compare(const struct nlist* a, const struct nlist* b) { return a->n_value < b->n_value; }
+// static bool nlist_compare(const struct nlist* a, const struct nlist* b) { return a->n_value < b->n_value; }
 static const char* print_string_representation_format_strings_prefix[] = {"", "CFSTR(\"", "\"", "@selector(", "(Class)", "@protocol(", "/*ivar*/"};
 static const char* print_string_representation_format_strings_suffix[] = {"", "\")", "\"", ")", "", ")", ""};
 
 
-MachO_File::MachO_File(const char* path) throw(bad_alloc,TRException) : DataFile(path), m_symbols_length(0), m_indirect_symbols_length(0), m_cstring_vmaddr(0), ma_strings(NULL), ma_symbols(NULL), ma_indirect_symbols(NULL), ma_cstrings(NULL), m_origin(0) {
-	const mach_header* mp_header = this->read_data<mach_header>();
-	
-	if (OSSwapBigToHostInt32(mp_header->magic) == FAT_MAGIC) {
-		::std::fprintf(stderr, "Warning: Universal (fat) binary detected. thumb-ddis will always disassemble with the first architecture, no matter it's actually ARM or not. To be sure, unbundle the object with 'lipo -extract armv6'.\n");
-		this->retreat(sizeof(mach_header) - sizeof(fat_header));
-		const fat_arch* arch = this->read_data<fat_arch>();
-		m_origin = OSSwapBigToHostInt32(arch->offset);
-		this->seek(m_origin);
-		mp_header = this->read_data<mach_header>();
-	}
-	
-	if (mp_header->magic != MH_MAGIC) {
-		m_is_valid = false;
-		return;
-	} else
-		m_is_valid = true;
-	
-	// analyze the load commands.
-	ma_load_commands.reserve(mp_header->ncmds);
-	
-	for (unsigned i = 0; i < mp_header->ncmds; ++ i) {
-		const load_command* p_cur_cmd = this->read_data<load_command>();
-		ma_load_commands.push_back(p_cur_cmd);
-		
-		switch (p_cur_cmd->cmd) {
-			case LC_SEGMENT: {
-				off_t old_location = this->tell();
-				this->advance(sizeof(segment_command)-sizeof(load_command));
-				
-				const segment_command* p_cur_seg = reinterpret_cast<const segment_command*>(p_cur_cmd);
-				ma_segments.push_back(p_cur_seg);
-				
-				for (unsigned j = 0; j < p_cur_seg->nsects; ++ j)
-					ma_sections.push_back(this->read_data<section>());
-				
-				this->seek(old_location);
-				break;
-			}
-				
+MachO_File::MachO_File(const char* path) throw(bad_alloc,TRException) : MachO_File_Simple(path), ma_symbols(NULL), m_symbols_length(0), ma_indirect_symbols(NULL), m_indirect_symbols_length(0), ma_strings(NULL), ma_cstrings(NULL), m_cstring_vmaddr(0) {
+	for (vector<const load_command*>::const_iterator cit = ma_load_commands.begin(); cit != ma_load_commands.end(); ++ cit) {
+		switch ((*cit)->cmd) {				
 			case LC_SYMTAB: {
-				off_t old_location = this->tell();
-				
-				const symtab_command* p_cur_symtab = reinterpret_cast<const symtab_command*>(p_cur_cmd);
+				const symtab_command* p_cur_symtab = reinterpret_cast<const symtab_command*>(*cit);
 				
 				this->seek(m_origin + p_cur_symtab->symoff);
 				ma_symbols = this->peek_data<struct nlist>();
@@ -108,15 +232,12 @@ MachO_File::MachO_File(const char* path) throw(bad_alloc,TRException) : DataFile
 				
 				this->seek(m_origin + p_cur_symtab->stroff);
 				ma_strings = this->peek_data<char>();
-				
-				this->seek(old_location);
+
 				break;
 			}
 				
 			case LC_DYSYMTAB: {
-				off_t old_location = this->tell();
-				
-				const dysymtab_command* p_cur_dysymtab = reinterpret_cast<const dysymtab_command*>(p_cur_cmd);
+				const dysymtab_command* p_cur_dysymtab = reinterpret_cast<const dysymtab_command*>(*cit);
 				
 				this->seek(m_origin + p_cur_dysymtab->indirectsymoff);
 				ma_indirect_symbols = this->peek_data<unsigned>();
@@ -125,15 +246,15 @@ MachO_File::MachO_File(const char* path) throw(bad_alloc,TRException) : DataFile
 				this->seek(m_origin + p_cur_dysymtab->extreloff);
 				ma_relocations = this->peek_data<relocation_info>();
 				m_relocations_length = p_cur_dysymtab->nextrel;
-				
-				this->seek(old_location);
+
 				break;
 			}
+				
+			default:
+				break;
 		}
-		
-		this->advance(p_cur_cmd->cmdsize - sizeof(load_command));
 	}
-	
+		
 	for (unsigned i = 0; i < m_symbols_length; ++ i) {
 		ma_symbol_references[ma_symbols[i].n_value & ~1] = ma_strings + ma_symbols[i].n_un.n_strx;
 		if (ma_symbols[i].n_type & N_EXT)
@@ -217,8 +338,6 @@ MachO_File::MachO_File(const char* path) throw(bad_alloc,TRException) : DataFile
 					}
 				}
 				
-				
-				
 				break;
 		}
 	}
@@ -229,13 +348,13 @@ const char* MachO_File::string_representation (unsigned vm_address, MachO_File::
 	if (!m_is_valid) {
 		if (p_strtype != NULL)
 			*p_strtype = MOST_CString;
-		return this->peek_ASCII_Cstring_at(vm_address);
+		return this->peek_data_at<char>(vm_address);
 	}
 	
 	if (vm_address == 0)
 		return NULL;
 	
-	hash_map<unsigned,const char*>::const_iterator cit;
+	tr1::unordered_map<unsigned,const char*>::const_iterator cit;
 	
 #define TrySearchIn(table, stringType) \
 cit = (table).find(vm_address); \
@@ -266,90 +385,9 @@ void MachO_File::print_string_representation(FILE* stream, const char* str, Mach
 	fputs(print_string_representation_format_strings_suffix[strtype], stream);		
 }
 
-unsigned MachO_File::to_file_offset (unsigned vm_address, int* p_guess_segment) const throw() {
-	if (!m_is_valid)
-		return vm_address;
-	
-	const segment_command* seg;
-	if (p_guess_segment != NULL) {
-		seg = ma_segments[*p_guess_segment];
-		if (seg->vmaddr <= vm_address && seg->vmaddr + seg->vmsize > vm_address)
-			return m_origin + vm_address - seg->vmaddr + seg->fileoff;
-	}
-	
-	unsigned i = 0;
-	for (vector<const segment_command*>::const_iterator cit = ma_segments.begin(); cit != ma_segments.end(); ++ cit) {
-		seg = *cit;
-		if (seg->vmaddr <= vm_address && seg->vmaddr + seg->vmsize > vm_address) {
-			if (p_guess_segment != NULL)
-				*p_guess_segment = i;
-			return m_origin + vm_address - seg->vmaddr + seg->fileoff;
-		}
-		++ i;
-	}
-	return 0;
-}
-
-unsigned MachO_File::to_vm_address (unsigned file_offset, int* p_guess_segment) const throw() {
-	if (!m_is_valid)
-		return file_offset;
-	
-	file_offset -= m_origin;
-	
-	const segment_command* seg;
-	if (p_guess_segment != NULL) {
-		seg = ma_segments[*p_guess_segment];
-		if (seg->fileoff <= file_offset && seg->fileoff + seg->filesize > file_offset)
-			return file_offset + seg->vmaddr - seg->fileoff;
-	}
-	
-	unsigned i = 0;
-	for (vector<const segment_command*>::const_iterator cit = ma_segments.begin(); cit != ma_segments.end(); ++ cit) {
-		seg = *cit;
-		if (seg->fileoff <= file_offset && seg->fileoff + seg->filesize > file_offset) {
-			if (p_guess_segment != NULL)
-				*p_guess_segment = i;
-			return file_offset + seg->vmaddr - seg->fileoff;
-		}
-		++ i;
-	}
-	return 0;
-}
-
-// try to dereference this vm_address.
-unsigned MachO_File::dereference(unsigned vm_address) const throw() {
-	static int last_deref_section = 0;
-	const unsigned* ptr = this->peek_data_at_vm_address<unsigned>(vm_address, &last_deref_section);
-	if (ptr == NULL)
-		return 0;
-	else
-		return *ptr;
-}
-
-int MachO_File::segment_index_having_name(const char* name) const {
-	int i = 0;
-	if (m_is_valid) {
-		for (vector<const segment_command*>::const_iterator cit = ma_segments.begin(); cit != ma_segments.end(); ++ cit) {
-			if (!strncmp((*cit)->segname, name, 16))
-				return i;
-			++ i;
-		}
-	}
-	return -1;
-}
-const section* MachO_File::section_having_name (const char* segment_name, const char* section_name) const {
-	if (m_is_valid) {
-		for (vector<const section*>::const_iterator cit = ma_sections.begin(); cit != ma_sections.end(); ++ cit) {
-			if (!strncmp((*cit)->segname, segment_name, 16) && !strncmp((*cit)->sectname, section_name, 16))
-				return *cit;
-		}
-	}
-	return NULL;
-}
-
 const MachO_File::ObjCMethod* MachO_File::objc_method_at_vm_address(unsigned vm_address) const throw() {
 	if (m_is_valid) {
-		hash_map<unsigned,MachO_File::ObjCMethod>::const_iterator cit = ma_objc_methods.find(vm_address);
+		tr1::unordered_map<unsigned,MachO_File::ObjCMethod>::const_iterator cit = ma_objc_methods.find(vm_address);
 		if (cit == ma_objc_methods.end())
 			return NULL;
 		else

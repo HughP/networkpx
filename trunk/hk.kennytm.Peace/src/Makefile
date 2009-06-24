@@ -1,7 +1,7 @@
-CC=gcc
-CPP=g++
+CC=gcc-4.4
+CPP=g++-4.4
 DMD=dmd
-CFLAGS=-O2 -g -I../include
+CFLAGS=-O2 -g -I../include -Wall -W -Wshadow -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -fno-common -Wconversion -Werror
 DFLAGS=-inline -release -O
 
 %.o: %.c

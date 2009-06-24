@@ -25,6 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <sys/stat.h>
 #include <unistd.h>
 #include <cstring>
+#include <string>
 #include "DataFile.h"
 
 using namespace std;
@@ -52,7 +53,7 @@ DataFile::DataFile(const char* path) throw(bad_alloc,TRException) : m_fd(open(pa
 	fstat(m_fd, &file_stat);
 	m_filesize = file_stat.st_size;
 	
-	m_data = (char*)mmap(NULL, m_filesize, PROT_READ, MAP_SHARED, m_fd, 0);
+	m_data = (char*)mmap(NULL, static_cast<size_t>(m_filesize), PROT_READ, MAP_SHARED, m_fd, 0);
 	if (m_data == MAP_FAILED) {
 		close(m_fd);
 		throw TRException("DataFile::DataFile(const char*):\n\tFail to map \"%s\" into memory.", path);
@@ -129,6 +130,6 @@ const char* DataFile::read_raw_data(size_t data_size) throw() {
 }
 	
 DataFile::~DataFile() throw() {
-	munmap(m_data, m_filesize);
+	munmap(m_data, static_cast<size_t>(m_filesize));
 	close(m_fd);
 }
