@@ -27,12 +27,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <mach-o/reloc.h>
 #include <cstdio>
 #include <vector>
-#include <ext/hash_map>
-#include <ext/hash_set>
+#include <tr1/unordered_map>
+#include <tr1/unordered_set>
 #include <new>
+#include <algorithm>
+#include <string>
 #include "DataFile.h"
 
-class MachO_File : public DataFile {
+class MachO_File_Simple : public DataFile {
 public:
 	struct ObjCMethod{
 		const char* class_name;
@@ -40,11 +42,50 @@ public:
 		const char* types;
 	};
 	
-private:
+protected:
 	std::vector<const load_command*> ma_load_commands;
 	std::vector<const segment_command*> ma_segments;
 	std::vector<const section*> ma_sections;
 	
+	bool m_is_valid;
+	off_t m_origin;
+	
+public:
+	inline bool valid() const throw() { return m_is_valid; }
+	MachO_File_Simple(const char* path) throw(std::bad_alloc,TRException);
+	
+	off_t to_file_offset (unsigned vm_address, int* p_guess_segment = NULL) const throw();
+	unsigned to_vm_address (off_t file_offset, int* p_guess_segment = NULL) const throw();
+	
+	
+	// try to dereference this vm_address.
+	unsigned dereference(unsigned vm_address) const throw();
+	int segment_index_having_name(const char* name) const;
+	const section* section_having_name (const char* segment_name, const char* section_name) const;
+	
+	template<typename T>
+	inline const T* peek_data_at_vm_address(unsigned vm_address, int* p_guess_segment = NULL) const throw() {
+		off_t file_offset = this->to_file_offset(vm_address, p_guess_segment);
+		return file_offset != 0 ? this->peek_data_at<T>(file_offset) : NULL;
+	}
+	
+	inline void seek_vm_address(unsigned vm_address, int* p_guess_segment = NULL) throw() {
+		this->seek(this->to_file_offset(vm_address, p_guess_segment));
+	}
+	
+	inline void for_each_section (void(*p_func)(const section*)) const {
+		if (m_is_valid)
+			std::for_each(ma_sections.begin(), ma_sections.end(), p_func);
+	}
+		
+	std::vector<std::string> linked_libraries(const std::string& sysroot) const;
+	std::tr1::unordered_set<std::string> linked_libraries_recursive(const std::string& sysroot) const;
+};
+
+//------------------------------------------------------------------------------
+
+class MachO_File : public MachO_File_Simple {
+private:
 	const struct nlist* ma_symbols;
 	std::size_t m_symbols_length;
 	
@@ -61,18 +102,15 @@ private:
 	unsigned m_relocations_length;
 	
 	// VMAddress :-> string
-	__gnu_cxx::hash_map<unsigned,const char*> ma_symbol_references;
-	__gnu_cxx::hash_map<unsigned,const char*> ma_cfstrings;
-	__gnu_cxx::hash_map<unsigned,const char*> ma_objc_classes;
-	__gnu_cxx::hash_map<unsigned,const char*> ma_objc_selectors;
+	std::tr1::unordered_map<unsigned,const char*> ma_symbol_references;
+	std::tr1::unordered_map<unsigned,const char*> ma_cfstrings;
 	
-	__gnu_cxx::hash_map<unsigned,ObjCMethod> ma_objc_methods;
+	std::tr1::unordered_map<unsigned,const char*> ma_objc_classes;
+	std::tr1::unordered_map<unsigned,const char*> ma_objc_selectors;
 	
-	__gnu_cxx::hash_set<unsigned> ma_is_extern_symbol;
+	std::tr1::unordered_map<unsigned,ObjCMethod> ma_objc_methods;
 	
-	bool m_is_valid;
-	
-	off_t m_origin;
+	std::tr1::unordered_set<unsigned> ma_is_extern_symbol;
 	
 public:
 	enum StringType {
@@ -85,37 +123,12 @@ public:
 		MOST_ObjCIvar
 	};
 	
-	inline bool valid() const throw() { return m_is_valid; }
-	
 	MachO_File(const char* path) throw(std::bad_alloc,TRException);
 	
 	// try to obtain a string related to this vm_address.
 	const char* string_representation (unsigned vm_address, StringType* p_strtype = NULL) const throw();
 	
 	static void print_string_representation(std::FILE* stream, const char* str, StringType strtype = MOST_Symbol) throw();
-	
-	unsigned to_file_offset (unsigned vm_address, int* p_guess_segment = NULL) const throw();
-	unsigned to_vm_address (unsigned file_offset, int* p_guess_segment = NULL) const throw();
-	
-	// try to dereference this vm_address.
-	unsigned dereference(unsigned vm_address) const throw();
-	int segment_index_having_name(const char* name) const;
-	const section* section_having_name (const char* segment_name, const char* section_name) const;
-	
-	template<typename T>
-	inline const T* peek_data_at_vm_address(unsigned vm_address, int* p_guess_segment = NULL) const throw() {
-		unsigned file_offset = this->to_file_offset(vm_address, p_guess_segment);
-		return file_offset != 0 ? this->peek_data_at<T>(file_offset) : NULL;
-	}
-	
-	inline void seek_vm_address(unsigned vm_address, int* p_guess_segment = NULL) throw() {
-		this->seek(this->to_file_offset(vm_address, p_guess_segment));
-	}
-	
-	inline void for_each_section (void(*p_func)(const section*)) const {
-		if (m_is_valid)
-			for_each(ma_sections.begin(), ma_sections.end(), p_func);
-	}
 	
 	inline bool is_extern_symbol(unsigned vm_address) const throw() {
 		return ma_is_extern_symbol.find(vm_address) != ma_is_extern_symbol.end();

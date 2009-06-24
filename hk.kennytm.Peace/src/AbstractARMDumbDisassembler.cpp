@@ -47,8 +47,8 @@ void AbstractARMDumbDisassembler::load_reference (unsigned R, unsigned Rd, unsig
 }
 	
 void AbstractARMDumbDisassembler::stmdb (unsigned Rd, unsigned reglist) throw() {
-	int start_index = r[Rd]/4 - __builtin_popcount(reglist);
-	int index = start_index;
+	unsigned start_index = r[Rd]/4 - __builtin_popcount(reglist);
+	unsigned index = start_index;
 	
 	for (int i = 0; i < 16; ++ i) {
 		if (reglist & (1<<i)) {
@@ -61,7 +61,7 @@ void AbstractARMDumbDisassembler::stmdb (unsigned Rd, unsigned reglist) throw() 
 	r[Rd] = start_index*4;
 }
 void AbstractARMDumbDisassembler::stmia (unsigned Rd, unsigned reglist) throw() {
-	int index = r[Rd]/4;
+	unsigned index = r[Rd]/4;
 	
 	for (int i = 0; i < 16; ++ i) {
 		if (reglist & (1<<i)) {
@@ -74,7 +74,7 @@ void AbstractARMDumbDisassembler::stmia (unsigned Rd, unsigned reglist) throw() 
 	r[Rd] = index*4;
 }
 void AbstractARMDumbDisassembler::ldmia (unsigned Rd, unsigned reglist) throw() {
-	int index = r[Rd]/4;
+	unsigned index = r[Rd]/4;
 	
 	// don't write back the pc register.
 	for (int i = 0; i < 15; ++ i) {
