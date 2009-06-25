@@ -1,7 +1,7 @@
 iPhoneDevPath=/Developer/Platforms/iPhoneOS.platform/Developer
-iPhoneSDKPath=$(iPhoneDevPath)/SDKs/iPhoneOS2.2.1.sdk
+iPhoneSDKPath=$(iPhoneDevPath)/SDKs/iPhoneOS3.0.sdk
 iPhoneSimDevPath=/Developer/Platforms/iPhoneSimulator.platform/Developer
-iPhoneSimSDKPath=$(iPhoneSimDevPath)/SDKs/iPhoneSimulator2.2.1.sdk
+iPhoneSimSDKPath=$(iPhoneSimDevPath)/SDKs/iPhoneSimulator3.0.sdk
 MobileSubstratePath=../deb/Library/MobileSubstrate/DynamicLibraries
 ThemesPath=../deb/Library/GriP/Themes
 SharedSrcPath=../../src
@@ -12,7 +12,7 @@ GriPIncPath=../../include/GriP
 libVersion               =1.11.14
 libGriPCompatVersion     =1.11.13
 
-Compiler=$(iPhoneDevPath)/usr/bin/gcc-4.0
+Compiler=$(iPhoneDevPath)/usr/bin/gcc-4.2
 CodeSign=ldid -S
 
 Options=-arch armv6 \

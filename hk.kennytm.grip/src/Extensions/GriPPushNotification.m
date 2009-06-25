@@ -43,12 +43,27 @@ __attribute__((visibility("hidden")))
 
 static GPApplicationBridge* bridge = nil;
 static NSString* push, *notifies, *vinn, *view;
-static IMP SBRemoteNotificationAlert_activateApplication = NULL;
+static IMP SBRemoteNotificationAlert_activateApplication = NULL, SBAlertItem_dismiss = NULL;
 
 
 __attribute__((visibility("hidden")))
 @interface FakeAlert : NSObject {}@end
 @implementation FakeAlert
+static FakeAlert* _sharedAlert = nil;
++(FakeAlert*)sharedAlert {
+	@synchronized(self) {
+		if (_sharedAlert == nil)
+			_sharedAlert = [[self alloc] init];
+	}
+	return _sharedAlert;
+}
++(void)releaseSharedAlert {
+	@synchronized(self) {
+		SBAlertItem_dismiss(_sharedAlert, @selector(dismiss));
+		[_sharedAlert release];
+		_sharedAlert = nil;
+	}
+}
 - (Class)alertSheetClass { return Nil; }
 - (id)alertSheet { return nil; }
 - (BOOL)allowMenuButtonDismissal { return NO; }
@@ -116,6 +131,7 @@ __attribute__((visibility("hidden")))
 	[super dealloc];
 }
 -(void)growlNotificationTimedOut:(NSObject*)context {
+	[FakeAlert releaseSharedAlert];
 	[apps removeObjectForKey:context];
 }
 -(void)growlNotificationWasClicked:(NSObject*)context {
@@ -158,7 +174,7 @@ static id replaced_SBRemoteNotificationAlert_initWithApplication_body_showAction
 				   clickContext:[(GriPPushNotificationDelegate*)bridge.growlDelegate addApp:app]];
 		
 		[self release];
-		return [[FakeAlert alloc] init];
+		return [FakeAlert sharedAlert];
 		
 	} else
 		return old_SBRemoteNotificationAlert_initWithApplication_body_showActionButton_actionLabel(self, _cmd, app, body, showActionButton, actionLabel);
@@ -199,6 +215,7 @@ static void second_initializer() {
 					(IMP)&replaced_SBRemoteNotificationAlert_initWithApplication_body_showActionButton_actionLabel, NULL);
 	
 	SBRemoteNotificationAlert_activateApplication = [cls instanceMethodForSelector:@selector(activateApplication)];
+	SBAlertItem_dismiss = [objc_getClass("SBAlertItem") instanceMethodForSelector:@selector(dismiss)];
 	
 	[pool drain];
 }
