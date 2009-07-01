@@ -34,8 +34,8 @@ TRException::TRException(const char* format, ...) {
 	va_list arguments;
 	va_start(arguments, format);
 	int string_length = vsnprintf(NULL, 0, format, arguments);
-	m_error = new char[string_length];
-	vsnprintf(m_error, 0, format, arguments);
+	m_error = new char[string_length+1];
+	vsnprintf(m_error, string_length, format, arguments);
 	va_end(arguments);
 }
 
