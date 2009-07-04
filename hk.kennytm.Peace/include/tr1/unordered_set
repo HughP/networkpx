@@ -1,0 +1,7 @@
+#ifndef UNORDERED_SET_H
+#define UNORDERED_SET_H
+#include <boost/unordered_set.hpp>
+namespace std {
+namespace tr1 = ::boost;
+}
+#endif

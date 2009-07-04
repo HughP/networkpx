@@ -29,7 +29,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 using namespace std;
 
-static const char* map[] = {
+static const char* map314[] = {
 	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,	// 0 - F
 	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
 
@@ -56,8 +56,11 @@ static const char* map[] = {
 	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL
 };
 
+/*
 namespace std { 
 	namespace tr1 { 
+ */
+namespace boost {
 		template<>
 		struct hash< ::ObjCTypeRecord::TypePointerPair> : public unary_function< ::ObjCTypeRecord::TypePointerPair, size_t> {
 			size_t operator() (const ::ObjCTypeRecord::TypePointerPair& x) const throw() {
@@ -66,7 +69,7 @@ namespace std {
 				return retval;
 			}
 		};
-	}
+//	}
 }
 
 
@@ -587,7 +590,7 @@ string ObjCTypeRecord::Type::format (const ObjCTypeRecord& record, const string&
 			// fall-through
 			
 		default: {
-			const char* map_type = map[static_cast<unsigned char>(type)];
+			const char* map_type = map314[static_cast<unsigned char>(type)];
 			if (map_type != NULL) {
 				retval += map_type;
 				if (subtypes.size() == 1) {
