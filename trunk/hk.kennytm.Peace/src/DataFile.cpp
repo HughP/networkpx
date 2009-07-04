@@ -101,7 +101,7 @@ const char* DataFile::peek_ASCII_Cstring_at(off_t offset, size_t* p_string_lengt
 	const char* retval = m_data + offset;
 	const char* x = retval;
 	
-	size_t string_length = 0;
+	off_t string_length = 0;
 	while (*x == '\t' || *x == '\n' || (*x >= ' ' && *x <= '~')) {
 		++x;
 		++string_length;
@@ -114,7 +114,7 @@ const char* DataFile::peek_ASCII_Cstring_at(off_t offset, size_t* p_string_lengt
 	
 	if (*x == '\0') {
 		if (p_string_length != NULL)
-			*p_string_length = string_length;
+			*p_string_length = static_cast<size_t>(string_length);
 		return retval;
 	} else {
 		if (p_string_length != NULL)

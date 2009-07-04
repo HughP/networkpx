@@ -1,7 +1,7 @@
 CC=gcc-4.4
 CPP=g++-4.4
 DMD=dmd
-CFLAGS=-O2 -msse2 -I../include -I../src -Wall -W -Wshadow -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -fno-common -Wconversion -Werror
+CFLAGS=-O2 -msse2 -I../include -I../src -Wall -W -Wshadow -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -fno-common -Wconversion -Werror -Wno-unknown-pragmas
 DFLAGS=-inline -release -O
 
 %.o: %.c
