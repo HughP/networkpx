@@ -108,14 +108,14 @@ unsigned MachO_File_Simple::to_vm_address (off_t file_offset, int* p_guess_segme
 	const segment_command* seg;
 	if (p_guess_segment != NULL) {
 		seg = ma_segments[*p_guess_segment];
-		if (seg->fileoff <= file_offset && seg->fileoff + seg->filesize > file_offset)
+		if (seg->fileoff <= static_cast<size_t>(file_offset) && seg->fileoff + seg->filesize > static_cast<size_t>(file_offset))
 			return static_cast<unsigned>(file_offset + seg->vmaddr - seg->fileoff);
 	}
 	
 	unsigned i = 0;
 	for (vector<const segment_command*>::const_iterator cit = ma_segments.begin(); cit != ma_segments.end(); ++ cit) {
 		seg = *cit;
-		if (seg->fileoff <= file_offset && seg->fileoff + seg->filesize > file_offset) {
+		if (seg->fileoff <= static_cast<size_t>(file_offset) && seg->fileoff + seg->filesize > static_cast<size_t>(file_offset)) {
 			if (p_guess_segment != NULL)
 				*p_guess_segment = i;
 			return static_cast<unsigned>(file_offset + seg->vmaddr - seg->fileoff);

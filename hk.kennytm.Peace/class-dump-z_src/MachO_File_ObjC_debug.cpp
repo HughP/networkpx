@@ -25,7 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 using namespace std;
 
 void MachO_File_ObjC::print_all_types() const throw() {
-	printf("// Parsed %lu types.\n\n", m_record.types_count());
+	printf("// Parsed %lu types.\n\n", static_cast<unsigned long>(m_record.types_count()));
 	
 	for (unsigned i = 0; i < m_record.types_count(); ++ i) {
 		printf("%s;\n", m_record.format(i, "", 0, true).c_str());
