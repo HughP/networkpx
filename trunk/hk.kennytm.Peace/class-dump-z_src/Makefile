@@ -1,7 +1,7 @@
 CC=gcc-4.4
 CPP=g++-4.4
 DMD=dmd
-CFLAGS=-O0 -g -lpcre -I../include -I../src -L/opt/local/lib -Wall -W -Wshadow -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -fno-common -Wconversion -Werror
+CFLAGS=-O2 -msse2 -I../include -I../src -Wall -W -Wshadow -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -fno-common -Wconversion -Werror
 DFLAGS=-inline -release -O
 
 %.o: %.c
@@ -13,10 +13,10 @@ DFLAGS=-inline -release -O
 %.o: %.d
 	$(DMD) -c $(DFLAGS) -of$@ $^
 
-../class-dump-z: class-dump-z.o ../src/DataFile.o ../src/MachO_File.o MachO_File_ObjC.o MachO_File_ObjC_private.o pseudo_base64.o lazy_reachability_matrix.o
-	$(CPP) $(CFLAGS) -o $@ $^
+../class-dump-z: class-dump-z.o ../src/DataFile.o ../src/MachO_File.o MachO_File_ObjC.o MachO_File_ObjC_retrieval.o MachO_File_ObjC_format.o balanced_substr.o crc32.o pseudo_base64.o objc_type.o string_util.o MachO_File_ObjC_debug.o
+	$(CPP) -Wl,/opt/local/lib/libpcre.a $(CFLAGS) -o $@ $^
 
-objc_type_test:	objc_type_test.cpp objc_type.cpp crc32.c pseudo_base64.cpp
+objc_type_test:	objc_type_test.o objc_type.o crc32.o pseudo_base64.o string_util.o balanced_substr.o
 	$(CPP) $(CFLAGS) -o $@ $^
 
 all:	../class-dump-z

@@ -19,35 +19,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
 
-#include "objc_type.h"
-#include <iostream>
+#ifndef BALANCED_SUBSTRING_H
+#define BALANCED_SUBSTRING_H
 
-using namespace std;
-
-int main () {
-	ObjCTypeRecord record;
-	unsigned last_index = 3;
-	while (!cin.fail()) {
-		printf("%d> ", last_index);
-		string str;
-		getline(cin, str);
-		if (!cin.fail()) {
-			last_index = record.parse(str, true);
-		}
-	}
+extern "C" {
 	
-	printf("\nParsed into %lu types.\n\n", record.types_count());
+	/* Skip a substring with balanced brackets and quotation marks.
+	 
+	 e.g. abc  --> returns bc
+	 e.g. {xx}d --> returns d
+	 e.g. [df)c --> undefined, may crash
+	 e.g. "sdfc)df"abc -> returns abc
+	 
+	 */
+	const char* skip_balanced_substring(const char* input);
 	
-	for (unsigned i = 0; i < record.types_count(); ++ i) {
-		printf("%s;\n", record.format(i, "", 0, true).c_str());
-	}
-	printf("\n");
-	
-	for (unsigned i = 0; i < record.types_count(); ++ i) {
-		char argname[32];
-		snprintf(argname, 32, "_arg%u", i);
-		printf("%s;\n", record.format(i, argname, 0, false).c_str());
-	}
-	
-	return 0;
 }
+
+#endif

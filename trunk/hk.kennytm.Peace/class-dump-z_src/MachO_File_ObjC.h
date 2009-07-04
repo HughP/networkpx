@@ -28,114 +28,143 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <string>
 #include <tr1/unordered_map>
 #include <tr1/unordered_set>
-#include "lazy_reachability_matrix.h"
+#include "objc_type.h"
+#include "string_util.h"
+#include <cstdlib>
+#include <pcre.h>
 
 class MachO_File_ObjC : public MachO_File {
 private:
-	struct StructDefinition {
-		bool is_union;
-		unsigned see_also;
+	struct Property {
 		std::string name;
-		std::string typestring;
-		std::vector<std::string> members;
-		std::vector<std::string> member_typestrings;
-		unsigned use_count;	// only count direct use count. If struct A is used by struct B only, even if B is part of function argument, the use count of A is still 1.
-		std::string prettified_name;
-		bool direct_reference;
+		std::string synthesized_to;
+		std::string getter;
+		std::string setter;
+		unsigned getter_vm_address;
+		unsigned setter_vm_address;
+		
+		// these are from the attributes
+		ObjCTypeRecord::TypeIndex type;		// T
+		bool has_getter;	// G
+		bool has_setter;	// S
+		bool copy;			// C
+		bool retain;		// &
+		bool readonly;		// R
+		bool nonatomic;		// N
+		enum {
+			IM_None,
+			IM_Synthesized,	// V
+			IM_Dynamic,		// D
+			IM_Converted
+		} impl_method;
+		enum {
+			GC_None,
+			GC_Strong,		// P
+			GC_Weak			// W
+		} gc_strength;
+		
+		Property() : getter_vm_address(0), setter_vm_address(0), has_getter(false), has_setter(false), copy(false), retain(false), readonly(false), nonatomic(false), impl_method(IM_None), gc_strength(GC_None) {}
+		
+		std::string format(const ObjCTypeRecord& record, const MachO_File_ObjC& self, bool print_method_addresses, bool print_comments) const throw();
 	};
 	
-	struct ClassDefinition {
-		bool isProtocol;
-		bool isCategory;
+	struct Ivar {
+		ObjCTypeRecord::TypeIndex type;
+		const char* name;
+		unsigned offset;
+	};
+	
+	struct Method {
+		unsigned vm_address;
+		enum {
+			PS_None,
+			PS_DeclaredGetter,
+			PS_DeclaredSetter,
+			PS_ConvertedGetter,
+			PS_ConvertedSetter
+		} propertize_status;
+		const char* raw_name;
+		
+		// -(double)sumOfArray:(const double*)array count:(unsigned)count will be split into this form:
+		// types = double, id, SEL, const double*, unsigned.
+		// components = "", "", "", sumOfArray, count
+		// -(id)copy will be split into this form:
+		// types = id, id, SEL
+		// components = "", "", ""
+		bool is_class_method;
+		bool optional;
+		
+		std::vector<ObjCTypeRecord::TypeIndex> types;
+		std::vector<std::string> components;
+		std::vector<std::string> argname;
+		
+		Method() : vm_address(0), propertize_status(PS_None), components(3) {}
+		
+		std::string format(const ObjCTypeRecord& record, const MachO_File_ObjC& self, bool print_method_addresses, bool print_comments) const throw();
+	};
+	
+	struct ClassType {
+		enum {
+			CT_Protocol,
+			CT_Class,
+			CT_Category
+		} type;
 		
 		unsigned vm_address;
+		
+		ObjCTypeRecord::TypeIndex type_index;
 		
 		const char* name;
 		uint32_t attributes;
 		const char* superclass_name;		// category name if isCategory.
 		
-		ClassDefinition* categorized_class;	// NULL if the categoized class is external.
-		
-		std::vector<std::string> ivar_declarations;
-		std::vector<unsigned> ivar_offsets;
-
-		std::vector<std::string> property_prefixes;
-		std::vector<const char*> property_names;
-		std::vector<unsigned> property_getter_address;
-		std::vector<unsigned> property_setter_address;
-		
-		unsigned converted_property_start;
-
-		std::vector<std::string> method_declarations;
-		std::vector<unsigned> method_vm_addresses;
-		
-		unsigned optional_class_method_start, instance_method_start, optional_instance_method_start;
-		
-		std::vector<unsigned> related_categories;
+		std::vector<Ivar> ivars;
+		std::vector<Property> properties;
+		std::vector<Method> methods;
+				
 		std::vector<unsigned> adopted_protocols;
+		
+		std::string format(const ObjCTypeRecord& record, const MachO_File_ObjC& self, bool print_method_addresses, bool print_comments, bool print_ivar_offsets, bool sort_methods_alphabetically, bool show_only_exported_classes) const throw();
 	};
 	
-	enum {
-		LT_None,
-		LT_Weak,
-		LT_Strong
-	};
+	friend class Method_AlphabeticSorter;
+	friend class Property_AlphabeticSorter;
+	friend class ClassType;
 	
-	void increase_use_count(unsigned& use_count, unsigned by = 1) throw();
-	void decrease_use_count(unsigned& use_count) throw();
+//-------------------------------------------------------------------------------------------------------------------------------------------
 	
-	std::vector<std::vector<std::pair<unsigned,unsigned> > > ma_adjlist;
-	std::vector<std::pair<unsigned,unsigned> > ma_k_in;	// weak, strong.
-	LazyReachabilityMatrix ma_reachability_matrix;
+	int m_guess_data_segment, m_guess_text_segment;
 	
-	std::vector<std::string> ma_external_classes;
-	std::tr1::unordered_set<std::string> ma_recognized_classes;
+	unsigned m_class_count, m_protocol_count, m_category_count;
+	std::vector<ClassType> ma_classes;	// classes, categories & protocols.
+	std::tr1::unordered_map<unsigned, unsigned> ma_classes_vm_address_index;	// vm_addr -> index in ma_classes
+	std::tr1::unordered_map<ObjCTypeRecord::TypeIndex, std::string> ma_include_paths;
 	
-	bool m_has_anonymous_contentless_struct, m_has_anonymous_contentless_union;
+	ObjCTypeRecord m_record;
 	
-	std::vector<ClassDefinition> ma_classes;	// classes, categories & protocols.
+	void adopt_protocols(ClassType& cls, const protocol_list_t* protocols) throw();
+	void add_properties(ClassType& cls, const objc_property_list* prop_list) throw();
+	void add_methods(ClassType& cls, const method_list_t* method_list_ptr, bool class_method, bool optional) throw();
 	
-	std::tr1::unordered_map<std::string, unsigned> ma_struct_indices;	// typestring -> index
-	std::vector<StructDefinition> ma_struct_definitions;
+	const char* get_superclass_name(unsigned superclass_addr, unsigned pointer_to_superclass_addr, ObjCTypeRecord::TypeIndex& superclass_index) throw();
 	
-	std::string decode_type(const char* typestr, unsigned& chars_to_read, const char* argname = NULL, bool is_compound_type = false, unsigned intended_use_count = ~0u, bool dont_change_anything = false) throw();
-	unsigned identify_structs(const char* typestr, const char** typestr_store = NULL, unsigned intended_use_count = ~0u, bool dont_change_anything = false) throw();
-	std::string analyze_method(const char* method_name, const char* method_type, const char* plus_or_minus) throw();
-	void obtain_properties(const objc_property* cur_property, int& guess_text_segment, std::vector<const char*>& property_names, std::vector<std::string>& property_prefixes, std::vector<std::string>& property_getters, std::vector<std::string>& property_setters) throw();
-	void propertize(ClassDefinition& clsDef, const std::vector<const char*>& method_names, std::vector<const char*>& method_types) throw();
-	const char* get_superclass_name(unsigned superclass_vmaddr, unsigned pointer_to_superclass_vmaddr, const std::tr1::unordered_map<unsigned,unsigned>& all_class_def_indices, ClassDefinition** superclass_clsDef = NULL) throw();
+	void retrieve_protocol_info() throw();
+	void retrieve_class_info() throw();
+	void retrieve_category_info() throw();
 	
-	bool member_typestrings_equal(const std::vector<std::string>& a, const std::vector<std::string>& b) const throw();
+	void tag_propertized_methods(ClassType& cls) throw();
 	
-	std::vector<std::string> ma_string_store;
+	void propertize(ClassType& cls) throw();
 	
-	std::string get_struct_definition(const StructDefinition& curDef, bool need_typedef = true, bool prettify = false) throw();
-	bool replace_prettified_struct_names(std::string& str, unsigned tab_length, const std::string& caller_name) throw();
-	unsigned get_struct_link_type(const std::string& decl, unsigned minimum_link_type, unsigned struct_id_to_match) const throw();
+//-------------------------------------------------------------------------------------------------------------------------------------------
 	
-	std::string typestring_id_name_to_objc_name (const std::string& str) throw();
+	pcre* m_class_filter, *m_method_filter;
+	pcre_extra* m_class_filter_extra, *m_method_filter_extra;
+	std::vector<std::string> m_kill_prefix;
 	
-	class InheritSorter {
-		const MachO_File_ObjC& mf;
-	public:
-		InheritSorter(const MachO_File_ObjC& mf_) : mf(mf_) {}
-		bool operator() (unsigned i, unsigned j) const throw();
-	};
-	class NormalSorter {
-		const MachO_File_ObjC& mf;
-	public:
-		NormalSorter(const MachO_File_ObjC& mf_) : mf(mf_) {}
-		bool operator() (unsigned i, unsigned j) const throw();
-	};
-	class AlphabeticSorter {
-		const MachO_File_ObjC& mf;
-	public:
-		AlphabeticSorter(const MachO_File_ObjC& mf_) : mf(mf_) {}
-		bool operator() (unsigned i, unsigned j) const throw();
-	};
-	
-	friend class InheritSorter;
-	friend class NormalSorter;
+	bool name_killable(const char* name, size_t length, bool check_kill_prefix) const throw();
+		
+	friend bool mfoc_AlphabeticSorter(const ClassType* a, const ClassType* b) throw();
 	
 public:
 	enum SortBy {
@@ -145,21 +174,38 @@ public:
 	};
 	
 	MachO_File_ObjC(const char* path) throw(std::bad_alloc, TRException);
+	~MachO_File_ObjC() throw() {
+		std::free(m_class_filter);
+		std::free(m_method_filter);
+		std::free(m_class_filter_extra);
+		std::free(m_method_filter_extra);
+	}
 	
-	unsigned classes_count() const throw() { return ma_classes.size(); }
-	unsigned structs_count() const throw() { return ma_struct_definitions.size(); }
+	unsigned total_class_type_count() const throw() { return ma_classes.size(); }
+	unsigned class_count() const throw() { return m_class_count; }
+	unsigned categories_count() const throw() { return m_category_count; }
+	unsigned protocols_count() const throw() { return m_protocol_count; }
 	
-	const char* name_of_class(unsigned index) const throw() { return ma_classes[index].name; }
-	const std::string& name_of_struct(unsigned index) const throw() { return ma_struct_definitions[index].prettified_name; }
+	void print_class_type(SortBy sort_by, bool print_method_addresses, bool print_comments, bool print_ivar_offsets, bool sort_methods_alphabetically, bool show_only_exported_classes) const throw();
 	
-	void print_class(unsigned index, bool print_ivar_offsets, bool print_method_addresses, bool print_comments) const throw();
-	void print_struct(unsigned index) throw();
-	void print_anonymous_contentless_records() const throw();
+	void set_pointers_right_aligned(bool right_aligned = true) throw() { m_record.pointers_right_aligned = right_aligned; }
+	void set_class_filter(const char* regexp);
+	void set_method_filter(const char* regexp);
+	void set_kill_prefix(const std::vector<std::string>& kill_prefix) { m_kill_prefix = kill_prefix; }
 	
-	std::vector<unsigned> get_class_sort_order_by(SortBy by) const throw();
+	void propertize() throw() {
+		for (std::vector<ClassType>::iterator it = ma_classes.begin(); it != ma_classes.end(); ++ it)
+			propertize(*it);
+	}
 	
-	void print_reachability_matrix() throw();
-	void print_struct_indices() const throw();
+	void print_struct_declaration(SortBy sort_by) const throw();
+	
+	void write_header_files(const char* filename, bool print_method_addresses, bool print_comments, bool print_ivar_offsets, bool sort_methods_alphabetically, bool show_only_exported_classes) const throw();
+	
+//-------------------------------------------------------------------------------------------------------------------------------------------
+	
+	void print_all_types() const throw();
+	void print_network() const throw() { m_record.print_network(); }
 };
 
 #endif

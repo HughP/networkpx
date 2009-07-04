@@ -80,6 +80,8 @@ public:
 		
 	std::vector<std::string> linked_libraries(const std::string& sysroot) const;
 	std::tr1::unordered_set<std::string> linked_libraries_recursive(const std::string& sysroot) const;
+	
+	const char* self_path() const throw();
 };
 
 //------------------------------------------------------------------------------
@@ -110,7 +112,8 @@ private:
 	
 	std::tr1::unordered_map<unsigned,ObjCMethod> ma_objc_methods;
 	
-	std::tr1::unordered_set<unsigned> ma_is_extern_symbol;
+	std::tr1::unordered_set<unsigned> ma_is_external_symbol;
+	std::tr1::unordered_map<unsigned,unsigned> ma_library_ordinals;
 	
 public:
 	enum StringType {
@@ -131,10 +134,12 @@ public:
 	static void print_string_representation(std::FILE* stream, const char* str, StringType strtype = MOST_Symbol) throw();
 	
 	inline bool is_extern_symbol(unsigned vm_address) const throw() {
-		return ma_is_extern_symbol.find(vm_address) != ma_is_extern_symbol.end();
+		return ma_is_external_symbol.find(vm_address) != ma_is_external_symbol.end();
 	}
 	
 	const ObjCMethod* objc_method_at_vm_address(unsigned vm_address) const throw();
+	
+	const char* library_of_relocated_symbol(unsigned vm_address) const throw();
 };
 
 #endif

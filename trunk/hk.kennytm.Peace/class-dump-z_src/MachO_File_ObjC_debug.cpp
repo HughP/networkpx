@@ -19,35 +19,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
 
-#include "objc_type.h"
-#include <iostream>
+#include "MachO_File_ObjC.h"
+#include <cstdio>
 
 using namespace std;
 
-int main () {
-	ObjCTypeRecord record;
-	unsigned last_index = 3;
-	while (!cin.fail()) {
-		printf("%d> ", last_index);
-		string str;
-		getline(cin, str);
-		if (!cin.fail()) {
-			last_index = record.parse(str, true);
-		}
-	}
+void MachO_File_ObjC::print_all_types() const throw() {
+	printf("// Parsed %lu types.\n\n", m_record.types_count());
 	
-	printf("\nParsed into %lu types.\n\n", record.types_count());
-	
-	for (unsigned i = 0; i < record.types_count(); ++ i) {
-		printf("%s;\n", record.format(i, "", 0, true).c_str());
+	for (unsigned i = 0; i < m_record.types_count(); ++ i) {
+		printf("%s;\n", m_record.format(i, "", 0, true).c_str());
 	}
 	printf("\n");
-	
-	for (unsigned i = 0; i < record.types_count(); ++ i) {
-		char argname[32];
-		snprintf(argname, 32, "_arg%u", i);
-		printf("%s;\n", record.format(i, argname, 0, false).c_str());
-	}
-	
-	return 0;
 }

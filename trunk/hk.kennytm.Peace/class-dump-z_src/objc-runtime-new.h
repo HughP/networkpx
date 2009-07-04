@@ -21,6 +21,9 @@
  * @APPLE_LICENSE_HEADER_END@
  */
 
+#ifndef OBJC_RUNTIME_NEW_H
+#define OBJC_RUNTIME_NEW_H
+
 // ---8<---
 #include <objc/objc.h>
 #include <stdint.h>
@@ -175,3 +178,5 @@ struct objc_super2 {
     id receiver;
     Class current_class;
 };
+
+#endif

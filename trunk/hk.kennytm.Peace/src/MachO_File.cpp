@@ -76,6 +76,8 @@ MachO_File_Simple::MachO_File_Simple(const char* path) throw(std::bad_alloc,TREx
 off_t MachO_File_Simple::to_file_offset (unsigned vm_address, int* p_guess_segment) const throw() {
 	if (!m_is_valid)
 		return vm_address;
+	if (vm_address == 0)
+		return 0;
 	
 	const segment_command* seg;
 	if (p_guess_segment != NULL) {
@@ -189,6 +191,18 @@ tr1::unordered_set<string> MachO_File_Simple::linked_libraries_recursive(const s
 	return retval;
 }
 
+const char* MachO_File_Simple::self_path() const throw() {
+	if (m_is_valid) {
+		for (vector<const load_command*>::const_iterator cit = ma_load_commands.begin(); cit != ma_load_commands.end(); ++ cit) {
+			if ((*cit)->cmd == LC_ID_DYLIB) {
+				const dylib_command* p_dylib_cmd = reinterpret_cast<const dylib_command*>(*cit);
+				return reinterpret_cast<const char*>(p_dylib_cmd) + p_dylib_cmd->dylib.name.offset;
+			}
+		}
+	}
+	return NULL;
+}
+
 //------------------------------------------------------------------------------
 
 static void fprint_with_escape (FILE* stream, const char* s) {
@@ -257,12 +271,16 @@ MachO_File::MachO_File(const char* path) throw(bad_alloc,TRException) : MachO_Fi
 		
 	for (unsigned i = 0; i < m_symbols_length; ++ i) {
 		ma_symbol_references[ma_symbols[i].n_value & ~1] = ma_strings + ma_symbols[i].n_un.n_strx;
-		if (ma_symbols[i].n_type & N_EXT)
-			ma_is_extern_symbol.insert(ma_symbols[i].n_value & ~1);
+		if (ma_symbols[i].n_type & N_EXT) {
+			ma_is_external_symbol.insert(ma_symbols[i].n_value & ~1);
+			ma_library_ordinals.insert(pair<unsigned,unsigned>(ma_symbols[i].n_value & ~1, GET_LIBRARY_ORDINAL(ma_symbols[i].n_desc)));
+		}
 	}
 	
-	for (unsigned i = 0; i < m_relocations_length; ++ i)
+	for (unsigned i = 0; i < m_relocations_length; ++ i) {
 		ma_symbol_references[ma_relocations[i].r_address & ~1] = ma_strings + ma_symbols[ma_relocations[i].r_symbolnum].n_un.n_strx;
+		ma_library_ordinals.insert(pair<unsigned,unsigned>(ma_relocations[i].r_address & ~1, GET_LIBRARY_ORDINAL(ma_symbols[ma_relocations[i].r_symbolnum].n_desc)));
+	}
 	
 	// analyze the sections (to short-cut the indirect symbols)
 	for (vector<const section*>::const_iterator cit = ma_sections.begin(); cit != ma_sections.end(); ++ cit) {
@@ -357,11 +375,11 @@ const char* MachO_File::string_representation (unsigned vm_address, MachO_File::
 	tr1::unordered_map<unsigned,const char*>::const_iterator cit;
 	
 #define TrySearchIn(table, stringType) \
-cit = (table).find(vm_address); \
-if (cit != (table).end()) { \
-if (p_strtype != NULL) *p_strtype = (stringType); \
-return cit->second; \
-}
+	cit = (table).find(vm_address); \
+	if (cit != (table).end()) { \
+		if (p_strtype != NULL) *p_strtype = (stringType); \
+		return cit->second; \
+	}
 	
 	TrySearchIn(ma_cfstrings, MOST_CFString);
 	TrySearchIn(ma_symbol_references, MOST_Symbol);
@@ -394,4 +412,25 @@ const MachO_File::ObjCMethod* MachO_File::objc_method_at_vm_address(unsigned vm_
 			return &(cit->second);
 	} else
 		return NULL;
+}
+
+const char* MachO_File::library_of_relocated_symbol(unsigned vm_address) const throw() {
+	tr1::unordered_map<unsigned,unsigned>::const_iterator lit = ma_library_ordinals.find(vm_address & ~1);
+	if (lit == ma_library_ordinals.end())
+		return NULL;
+
+	unsigned cur_ordinal = lit->second;
+	if (cur_ordinal == 0)
+		return NULL;
+	
+	for (vector<const load_command*>::const_iterator cit = ma_load_commands.begin(); cit != ma_load_commands.end(); ++ cit)
+		if ((*cit)->cmd == LC_LOAD_DYLIB) {
+			-- cur_ordinal;
+			if (cur_ordinal == 0) {
+				const dylib_command* p_dylib_cmd = reinterpret_cast<const dylib_command*>(*cit);
+				return reinterpret_cast<const char*>(p_dylib_cmd) + p_dylib_cmd->dylib.name.offset;
+			}
+		}
+	
+	return NULL;
 }
