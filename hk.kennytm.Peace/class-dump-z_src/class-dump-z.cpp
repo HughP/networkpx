@@ -22,9 +22,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "MachO_File_ObjC.h"
 #include <getopt.h>
 #include <cstdio>
-//#include <tr1/regex>	// tr1/regex is not supported by GCC even in 4.4 :( Use PCRE instead.
-#include <pcre.h>
 #include <cstring>
+#include <unistd.h>
+#include <sys/stat.h>
 
 using namespace std;
 
@@ -33,15 +33,25 @@ void print_usage () {
 			"Usage: class-dump-z [<options>] <filename>\n"
 			"\n"
 			"where options are:\n"
-			"	-a         Print ivar offsets\n"
-			"	-A         Print implementation VM addresses.\n"
-			"	-p         Show methods which are actually properties.\n"
-			"	-C <regex> Only display types with (original) name matching the RegExp (in PCRE syntax).\n"
-			"	-I         Sort types by inheritance / adoption order.\n" 
-			"	-S         Sort types in alphabetical order.\n" 
-			"	-D <char>  Print internal diagnosis data, with\n"
-			"	              u = reachability matrix & usage graph\n"
-			"	              s = struct indices\n"
+			"\n  Analysis:\n"
+			"    -p         Convert undeclared getters and setters into properties (propertize).\n"
+			"\n  Formatting:\n"
+			"    -a         Print ivar offsets\n"
+			"    -A         Print implementation VM addresses.\n"
+			"    -k         Show additional comments.\n"
+			"    -R         Show pointer declarations as int *a instead of int* a.\n"
+			"\n  Filtering:\n"
+			"    -C <regex> Only display types with (original) name matching the RegExp (in PCRE syntax).\n"
+			"    -f <regex> Only display methods with (original) name matching the RegExp.\n"
+			"    -g         Display exported classes only.\n"
+			"    -X <list>  Ignore all types (except categories) with a prefix in the comma-separated list.\n"
+			"\n  Sorting:\n"
+			"    -S         Sort types in alphabetical order.\n" 
+			"    -s         Sort methods in alphabetical order.\n"
+			"\n  Output:\n"
+			"    -H         Separate into header files\n"
+			"    -o <dir>   Put header files into this directory instead of current directory."
+			"\n"
 			);
 }
 
@@ -50,12 +60,18 @@ int main (int argc, char* argv[]) {
 		print_usage();
 	} else {
 		int c;
-		bool print_ivar_offsets = false, print_method_addresses = false, print_comments = false;
-		bool print_reachability_matrix = false, print_struct_indices = false;
+		bool print_ivar_offsets = false, print_method_addresses = false, print_comments = false, sort_methods_alphabetically = false;
+		bool pointers_right_align = false, show_only_exported_classes = false, propertize = false, generate_headers = false;
+		MachO_File_ObjC::SortBy sort_by = MachO_File_ObjC::SB_None;
+		char diagnosis_option = '\0';
 		const char* sysroot = "";
-		const char* regexp_string = NULL;
-		MachO_File_ObjC::SortBy sortBy = MachO_File_ObjC::SB_None;
-		while ((c = getopt(argc, argv, "aApC:ISD:")) != -1) {
+		const char* type_regexp = NULL;
+		const char* method_regexp = NULL;
+		const char* output_directory = NULL;
+		vector<string> kill_prefix;
+		
+		// const char* regexp_string = NULL;
+		while ((c = getopt(argc, argv, "aAkC:ISsD:Rf:gpHo:X:")) != -1) {
 			switch (c) {
 				case 'a':
 					print_ivar_offsets = true;
@@ -63,28 +79,59 @@ int main (int argc, char* argv[]) {
 				case 'A':
 					print_method_addresses = true;
 					break;
-				case 'p':
+				case 'k':
 					print_comments = true;
 					break;
-				case 'C':
-					regexp_string = optarg;
-					break;
-				case 'I':
-					sortBy = MachO_File_ObjC::SB_Inherit;
-					break;
-				case 'S':
-					sortBy = MachO_File_ObjC::SB_Alphabetic;
+				case 's':
+					sort_methods_alphabetically = true;
 					break;
 				case 'D':
-					switch (*optarg) {
-						case 'r':
-							print_reachability_matrix = true;
+					// diagnosis options, not to be used publicly.
+					diagnosis_option = *optarg;
+					break;
+				case 'C':
+					type_regexp = optarg;
+					break;
+				case 'f':
+					method_regexp = optarg;
+					break;
+				case 'R':
+					pointers_right_align = true;
+					break;
+				case 'g':
+					show_only_exported_classes = true;
+					break;
+				case 'p':
+					propertize = true;
+					break;
+				case 'S':
+					sort_by = MachO_File_ObjC::SB_Alphabetic;
+					break;
+				case 'I':
+					fprintf(stderr, "Warning: Sort by inheritance is not implemented yet.\n");
+					break;
+				case 'o':
+					output_directory = optarg; 
+					break;
+				case 'H':
+					generate_headers = true;
+					break;
+				case 'X': {
+					const char* comma = optarg;
+					const char* last_comma;
+					while (true) {
+						last_comma = comma;
+						comma = strchr(comma, ',');
+						if (comma == NULL) {
+							kill_prefix.push_back(last_comma);
 							break;
-						case 's':
-							print_struct_indices = true;
-							break;
+						} else {
+							kill_prefix.push_back(string(last_comma, comma));
+						}
+						++ comma;
 					}
 					break;
+				}
 				default:
 					break;
 			}
@@ -97,61 +144,59 @@ int main (int argc, char* argv[]) {
 		
 		const char* filename = argv[optind];
 		
-		pcre* regExp = NULL;
-		pcre_extra* regExpExtra = NULL;
-		
 		try {
 			MachO_File_ObjC mf = MachO_File_ObjC(filename);
-			
-			if (print_reachability_matrix) {
-				printf("/* Reachability matrix:\n\n");
-				mf.print_reachability_matrix();
-				printf("\n*/\n\n");
-			}
-			
-			if (print_struct_indices) {
-				printf("/* Struct indices:\n\n");
-				mf.print_struct_indices();
-				printf("\n*/\n\n");
-			}
-			
-			if (regexp_string != NULL) {
-				const char* errStr = NULL;
-				int erroffset;
-				regExp = pcre_compile(regexp_string, 0, &errStr, &erroffset, NULL);
-				if (regExp != NULL)
-					regExpExtra = pcre_study(regExp, 0, &errStr);
-				if (errStr != NULL)
-					fprintf(stderr, "Warning: Encountered error while parsing RegExp pattern '%s' at offset %d: %s.\n", regexp_string, erroffset, errStr);
-			}
-			
-			
-			unsigned structs_count = mf.structs_count();
-			for (unsigned i = 0; i < structs_count; ++ i) {
-				if (regexp_string != NULL) {
-					const std::string& name = mf.name_of_struct(i);
-					if (0 != pcre_exec(regExp, regExpExtra, name.c_str(), name.size(), 0, 0, NULL, 0))
-						continue;
+		
+			if (diagnosis_option != '\0') {
+				switch (diagnosis_option) {
+						// print all types.
+					case 't':
+						mf.print_all_types();
+						break;
+						
+						// print network.
+					case 'n':
+						mf.print_network();
+						break;
+						
+					default:
+						printf("// Unrecognized diagnosis option: -D %c\n", diagnosis_option);
+						break;
 				}
-				mf.print_struct(i);
-			}
+			} else {
+				
+				mf.set_pointers_right_aligned(pointers_right_align);
+				if (type_regexp != NULL)
+					mf.set_class_filter(type_regexp);
+				if (method_regexp != NULL)
+					mf.set_method_filter(method_regexp);
+				if (!kill_prefix.empty())
+					mf.set_kill_prefix(kill_prefix);
 			
-			vector<unsigned> sortmap = mf.get_class_sort_order_by(sortBy);
-			
-			for (vector<unsigned>::const_iterator cit = sortmap.begin(); cit != sortmap.end(); ++ cit) {
-				if (regexp_string != NULL) {
-					const char* name = mf.name_of_class(*cit);
-					if (0 != pcre_exec(regExp, regExpExtra, name, strlen(name), 0, 0, NULL, 0))
-						continue;
+				if (propertize)
+					mf.propertize();
+								
+				if (generate_headers) {
+					if (output_directory != NULL) {
+						if (chdir(output_directory) == -1) {
+							if (mkdir(output_directory, 0755) == -1) {
+								perror("Cannot create directory for header generation. ");
+								return 1;
+							} else
+								chdir(output_directory);
+						}
+					}
+					
+					mf.write_header_files(filename, print_method_addresses, print_comments, print_ivar_offsets, sort_methods_alphabetically, show_only_exported_classes);
+				} else {
+					mf.print_struct_declaration(sort_by);
+					mf.print_class_type(sort_by, print_method_addresses, print_comments, print_ivar_offsets, sort_methods_alphabetically, show_only_exported_classes);
 				}
-				mf.print_class(*cit, print_ivar_offsets, print_method_addresses, print_comments);
+				
 			}
 			
 		} catch (const TRException& e) {
 			printf("/*\n\nAn exception was thrown while analyzing '%s' (with sysroot '%s'):\n\n%s\n\n*/\n", filename, sysroot, e.what());
 		}
-		
-		free(regExp);
-		free(regExpExtra);
 	}
 }

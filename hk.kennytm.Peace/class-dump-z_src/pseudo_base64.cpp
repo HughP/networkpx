@@ -40,7 +40,7 @@ union CodeBlock {
 
 void pseudo_base64_encode (const unsigned char* input, size_t length, char* output_buffer) throw() {
 	unsigned i = 0;
-	for (; i < length; i += 3) {
+	for (; i+3 <= length; i += 3) {
 		CodeBlock blk;
 		blk.as_chars.a = *input++;
 		blk.as_chars.b = *input++;
