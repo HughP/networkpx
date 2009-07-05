@@ -1,6 +1,6 @@
 /*
 
-FILE_NAME ... DESCRIPTION
+balanced_substr.h ... Skip balanced substring.
 
 Copyright (C) 2009  KennyTM~
 

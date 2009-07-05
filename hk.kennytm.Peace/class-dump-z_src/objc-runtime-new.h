@@ -25,7 +25,14 @@
 #define OBJC_RUNTIME_NEW_H
 
 // ---8<---
-#include <objc/objc.h>
+typedef struct objc_class *Class;
+typedef struct objc_object {
+    Class isa;
+} *id;
+typedef struct objc_selector 	*SEL;    
+typedef id 			(*IMP)(id, SEL, ...); 
+typedef signed char		BOOL; 
+
 #include <stdint.h>
 typedef struct objc_cache *Cache;
 

@@ -1,6 +1,6 @@
 /*
 
-FILE_NAME ... DESCRIPTION
+MachO_File_ObjC_retrieval ... Retrieve ObjC data from Mach-O file.
 
 Copyright (C) 2009  KennyTM~
 
