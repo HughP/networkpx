@@ -36,7 +36,7 @@ static const char* map314[] = {
 	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,	// 10 - 1F
 	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
 
-	NULL, "/*gc-invisible*/", NULL, "Class", NULL, "/*atom*/ char*", NULL, NULL,	// [space] ! " # $ % & '        ( ) * + , - . /
+	NULL, "/*gc-invisible*/", NULL, "Class", NULL, "NXAtom", NULL, NULL,	// [space] ! " # $ % & '        ( ) * + , - . /
 	NULL, NULL, "char*", NULL, NULL, NULL, NULL, NULL,
 
 // let's hope gcc won't use the numbers :(
@@ -250,6 +250,8 @@ void ObjCTypeRecord::add_link_with_strength(TypeIndex from, TypeIndex to, EdgeSt
 	if (strength < target_strength) {
 		if (strength == 0)
 			++ ma_k_in[to];
+		if (target_strength == ES_Strong)
+			++ ma_strong_k_in[to];
 		
 		strength = target_strength;
 		if (target_strength >= ES_StrongIndirect)

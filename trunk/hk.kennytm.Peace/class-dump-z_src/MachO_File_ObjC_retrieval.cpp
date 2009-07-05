@@ -242,10 +242,9 @@ static inline string make_include_path (const char* lib_path) {
 			size_t framework_position = inc_path.find(".framework/", next_last_slash);
 			if (framework_position != string::npos) {
 				string actual_inc_path = inc_path.substr(next_last_slash+1, framework_position-next_last_slash-1);
-				actual_inc_path += inc_path.substr(last_slash_position);
-				actual_inc_path += ".h";
-				if (actual_inc_path == "CoreFoundation/CoreFoundation.h")
-					actual_inc_path = "Foundation/Foundation.h";
+				actual_inc_path.push_back('/');
+				if (actual_inc_path == "CoreFoundation/")
+					actual_inc_path = "Foundation/";
 				return actual_inc_path;
 			}
 		}

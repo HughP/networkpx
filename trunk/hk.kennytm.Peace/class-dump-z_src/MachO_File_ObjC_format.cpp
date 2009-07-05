@@ -419,7 +419,7 @@ namespace {
 
 void MachO_File_ObjC::write_header_files(const char* filename, bool print_method_addresses, bool print_comments, bool print_ivar_offsets, bool sort_methods_alphabetically, bool show_only_exported_classes) const throw() {
 	vector<ObjCTypeRecord::TypeIndex> public_struct_types = m_record.all_public_struct_types();
-	tr1::unordered_map<const char*, Header> headers;
+	tr1::unordered_map<string, Header> headers;
 	
 	// Filter out those structs not matching the regexp or having specified prefix.
 	bool need_killer_check = m_class_filter != NULL || !m_kill_prefix.empty();
@@ -436,12 +436,13 @@ void MachO_File_ObjC::write_header_files(const char* filename, bool print_method
 	for (vector<ClassType>::const_iterator cit = ma_classes.begin(); cit != ma_classes.end(); ++ cit) {
 		Header h;
 		h.declaration = cit->format(m_record, *this, print_method_addresses, print_comments, print_ivar_offsets, sort_methods_alphabetically, show_only_exported_classes);
-		if (!h.declaration.empty()) {
+		// we still need to pay lip service to create an empty file for the filtered types if someone else it going to include us.
+		if (!h.declaration.empty() || m_record.link_count(cit->type_index, true) > 0) {
 			const tr1::unordered_map<ObjCTypeRecord::TypeIndex, ObjCTypeRecord::EdgeStrength>* dep = m_record.dependencies(cit->type_index);
 			if (dep != NULL)
 				h.dependencies = *dep;
-			const char* file_name = cit->type == ClassType::CT_Category ? cit->superclass_name : cit->name;
-			pair<tr1::unordered_map<const char*, Header>::iterator, bool> res = headers.insert(pair<const char*, Header>(file_name, h));
+			string file_name = cit->type == ClassType::CT_Category ? cit->superclass_name : cit->name;
+			pair<tr1::unordered_map<string, Header>::iterator, bool> res = headers.insert(pair<string, Header>(file_name, h));
 			if (!res.second) {
 				res.first->second.declaration += h.declaration;
 				combine_dependencies(res.first->second.dependencies, h.dependencies);
@@ -461,8 +462,8 @@ void MachO_File_ObjC::write_header_files(const char* filename, bool print_method
 	FILE* f_aggr = fopen((aggr_filename + ".h").c_str(), "wt");
 	print_banner(f_aggr);
 	fprintf(f_aggr, "#import \"%s-Structs.h\"\n", aggr_filename.c_str());
-	for (tr1::unordered_map<const char*, Header>::const_iterator hit = headers.begin(); hit != headers.end(); ++ hit) {
-		fprintf(f_aggr, "#import \"%s.h\"\n", hit->first);
+	for (tr1::unordered_map<string, Header>::const_iterator hit = headers.begin(); hit != headers.end(); ++ hit) {
+		fprintf(f_aggr, "#import \"%s.h\"\n", hit->first.c_str());
 	}
 	fclose(f_aggr);
 	
@@ -476,7 +477,7 @@ void MachO_File_ObjC::write_header_files(const char* filename, bool print_method
 	vector<ObjCTypeRecord::TypeIndex> weak_dependencies;
 	tr1::unordered_set<string> already_included;
 
-	for (tr1::unordered_map<const char*, Header>::const_iterator hit = headers.begin(); hit != headers.end(); ++ hit) {
+	for (tr1::unordered_map<string, Header>::const_iterator hit = headers.begin(); hit != headers.end(); ++ hit) {
 		string cur_filename = hit->first;
 		cur_filename += ".h";
 		FILE* f = fopen(cur_filename.c_str(), "wt");
@@ -496,7 +497,11 @@ void MachO_File_ObjC::write_header_files(const char* filename, bool print_method
 				if (m_record.is_external_type(dit->first)) {
 					tr1::unordered_map<ObjCTypeRecord::TypeIndex, string>::const_iterator lib_it = ma_include_paths.find(dit->first);
 					if (lib_it != ma_include_paths.end()) {
-						const string& lib_inc_path = lib_it->second;
+						string lib_inc_path = lib_it->second;
+						if (lib_inc_path[lib_inc_path.size()-1] == '/') {
+							lib_inc_path += m_record.name_of_type(dit->first);
+							lib_inc_path += ".h";
+						}
 						if (already_included.find(lib_inc_path) == already_included.end()) {
 							fprintf(f, "#import <%s>\n", lib_inc_path.c_str());
 							already_included.insert(lib_inc_path);

@@ -81,7 +81,7 @@ private:
 	std::vector<Type> ma_type_store;
 	
 	std::tr1::unordered_map<TypeIndex, std::tr1::unordered_map<TypeIndex, EdgeStrength> > ma_adjlist;
-	std::tr1::unordered_map<TypeIndex, unsigned> ma_k_in;
+	std::tr1::unordered_map<TypeIndex, unsigned> ma_k_in, ma_strong_k_in;
 	
 	TypeIndex m_void_type_index;
 	TypeIndex m_id_type_index;
@@ -165,7 +165,13 @@ public:
 		}
 	}
 	
-	unsigned link_count(TypeIndex type_index) const throw() { return ma_k_in.find(type_index)->second; }
+	unsigned link_count(TypeIndex type_index, bool strong_only = false) const throw() { 
+		std::tr1::unordered_map<TypeIndex, unsigned>::const_iterator cit = (strong_only ? ma_strong_k_in : ma_k_in).find(type_index);
+		if (cit == (strong_only ? ma_strong_k_in : ma_k_in).end())
+			return 0;
+		else
+			return cit->second;
+	}
 };
 
 #endif
