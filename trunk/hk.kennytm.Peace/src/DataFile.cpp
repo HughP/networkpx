@@ -61,9 +61,13 @@ DataFile::DataFile(const char* path) throw(bad_alloc,TRException) : m_fd(open(pa
 }
 		
 unsigned DataFile::read_integer() throw() {
-	unsigned retval = *reinterpret_cast<const unsigned*>(m_data+m_location);
+	union {
+		char as_char_array[sizeof(unsigned)];
+		unsigned as_integer;
+	} res;
+	memcpy(&res, m_data + m_location, sizeof(unsigned));
 	m_location += sizeof(unsigned);
-	return retval;
+	return res.as_integer;
 }
 
 const char* DataFile::read_string(size_t* p_string_length) throw() {
