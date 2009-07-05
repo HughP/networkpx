@@ -178,3 +178,6 @@ class-dump-z does not support the 1.0 ABI (the `__OBJC` segment). For them you m
 
 == Universal binaries ==
 Support for universal binaries is minimal — class-dump-z will only check the first architecture in the binary. To analyze the rest you must separate the file with [http://developer.apple.com/documentation/Darwin/Reference/ManPages/man1/lipo.1.html lipo].
+
+== Sort by inheritance (-I flag), Recursive dumping (-r) ==
+These are not easy to implement and I find them not so useful so I left them out.
