@@ -1,6 +1,6 @@
 /*
 
-FILE_NAME ... DESCRIPTION
+MachO_File_ObjC_debug.cpp ... Just for debugging.
 
 Copyright (C) 2009  KennyTM~
 

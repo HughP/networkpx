@@ -1,6 +1,6 @@
 /*
 
-FILE_NAME ... DESCRIPTION
+objc_type_test.cpp ... Test if objc_type.cpp works correctly.
 
 Copyright (C) 2009  KennyTM~
 
