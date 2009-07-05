@@ -1,0 +1,167 @@
+#summary class-dump-z — Extracting class interface for Objective-C version 2 ABI.
+#labels Phase-Support
+
+<wiki:toc />
+
+== Why a yet another class-dump? ==
+
+[http://www.codethecode.com/projects/class-dump/ class-dump] is a command-line tool to extract Objective-C class interfaces, written by Steve Nygard 17 years ago. The development however paused in 2007 at version 3.1.2, without support for the newest ABI.
+
+This caused the birth of [http://iphone.freecoder.org/classdump_en.html class-dump-x] by Holly Lee in 2008. But being a straight modified version of class-dump, it inherited some of the problems, e.g. the ivar offsets are calculated wrongly, properties are not supported, etc.
+
+I, using class-dump-x a lot for reverse engineering, finds that the ivar offset problem is hard to get over with. Having no answers a few months after a bug report, I decided to just fix the problem myself — hence class-dump-z is started.
+
+(While I was creating class-dump-z, the original class-dump development suddenly reactivated at July 1st. The newest version 3.2 does support 2.0 ABI now, but the ivar offset info is even worse than class-dump-x.)
+
+= Features =
+
+== 10x the speed ==
+
+|| *Time to dump...* || class-dump-x 3.1.2 || class-dump 3.2 || class-dump-z 0.1-11o ||
+|| *UIKit 2.0* || 2.2s || 2.0s || *0.16s* ||
+|| *UIKit 3.0* || 3.1s || 2.8s || *0.21s* ||
+
+ * <font size="1">`time class-dump-? -a -A UIKit > /dev/null`</font>
+
+class-dump-z is written from scratch using C++ avoiding using dynamic calls, unlike class-dump and class-dump-x which are written in Objective-C. Removing these unnecessary calls makes class-dump-z more than 10 times faster than the precedences.
+
+== Correct ivar offsets ==
+
+<table border="1" cellspacing="2">
+<tr><td>`UIRemoveControlMultiSelectButton ` 3.0</td><td>`UIMoreListController` 3.0</td></tr>
+<tr><td colspan="2">*class-dump-x 3.1.2*</td></tr><tr><td>
+{{{
+unsigned int _isHighlighted:1; // 68 = 0x44
+unsigned int _isSelected:1;    // 69 = 0x45
+}}}
+</td><td>
+{{{
+UITableView *_table;                         // 92 = 0x5c
+BOOL _allowsCustomizing;                     // 96 = 0x60
+NSArray *_moreViewControllers;               // 97 = 0x61
+UIMoreListCellLayoutManager *_layoutManager; // 101 = 0x65
+}}}
+</td></tr>
+<tr><td colspan="2">*class-dump 3.2*</td></tr><tr><td>
+{{{
+unsigned int _isHighlighted:1; // 949272880 = 0x3894c130
+unsigned int _isSelected:1;    // 949272884 = 0x3894c134
+}}}
+</td><td>
+{{{
+UITableView *_table;                         // 949253868 = 0x389476ec
+BOOL _allowsCustomizing;                     // 949253872 = 0x389476f0
+NSArray *_moreViewControllers;               // 949253876 = 0x389476f4
+UIMoreListCellLayoutManager *_layoutManager; // 949253880 = 0x389476f8
+}}}
+</td></tr>
+<tr><td colspan="2">*class-dump-z 0.1-11o*</td></tr><tr><td>
+{{{
+unsigned _isHighlighted : 1; // 68 = 0x44
+unsigned _isSelected : 1;    // 68 = 0x44
+}}}
+</td><td>
+{{{
+UITableView* _table;                         // 92 = 0x5c
+BOOL _allowsCustomizing;                     // 96 = 0x60
+NSArray* _moreViewControllers;               // 100 = 0x64
+UIMoreListCellLayoutManager* _layoutManager; // 104 = 0x68
+}}}
+</td></tr>
+</table>
+
+ * <font size="1">`class-dump-? -a -C UIMoreListController UIKit`</font>
+
+Generating ivar offsets by accumulation is a tricky business, due to alignments and bitfield packing. It is so tricky that the compiler will generate this info into the file. class-dump-z will read from that part of memory and give the most correct result.
+
+== Struct name prettifying ==
+
+|| || `UIScrollView` 3.0 ||
+|| class-dump-x 3.1.2 || `-(id)hitTest:(struct CGPoint)fp8 forEvent:(struct __GSEvent *)fp16;` ||
+|| class-dump 3.2 || `-(id)hitTest:(struct CGPoint)arg1 forEvent:(struct __GSEvent *)arg2;` ||
+|| class-dump-z 0.1-11o || `-(id)hitTest:(CGPoint)test forEvent:(GSEventRef)event;` ||
+
+ * <font size="1">`class-dump-? -C UIScrollView -f hitTest UIKit`</font>
+
+class-dump-z will `typedef` structs and unions to the most presentable name with heuristics. 
+
+== Stable name generation for anonymous structs ==
+
+|| || `UIThreePartImageView` 2.0 || `UIThreePartImageView` 3.0 ||
+|| class-dump-x 3.1.2 || `-(void)setSlices:(CDAnonymousStruct8)fp8;` || `-(void)setSlices:(CDAnonymousStruct10)fp8;` ||
+|| class-dump 3.2 || `-(void)setSlices:(CDAnonymousStruct15)arg1;` || `-(void)setSlices:(CDAnonymousStruct17)arg1;` ||
+|| class-dump-z 0.1-11o || `-(void)setSlices:(XXStruct_UUz0SD)slices;` || `-(void)setSlices:(XXStruct_UUz0SD)slices;` ||
+
+ * <font size="1">`class-dump-? -C UIThreePartImageView UIKit`</font>
+
+Ever tried to diff a library between two versions? You'll be frustrated by so many differences that are caused by a change of indices in anonymous structs. No more problem in class-dump-z — as long as the struct is having the same members, the generated name will be fixed.
+
+  _The name is computed by the CRC-32 checksum of the Objective-C type encoding of the struct._
+
+== Properties ==
+
+|| || `UIScrollView` 3.0 ||
+|| class-dump-x 3.1.2 || N/A ||
+|| class-dump 3.2 || `@property struct CGPoint contentOffset;`<br />`// Preceeding property had unknown attributes: N`<br />`// Original attribute string: T{CGPoint="x"f"y"f},N`<br />...<br />`-(void)setContentOffset:(struct CGPoint)arg1;`<br />`-(struct CGPoint)contentOffset;` ||
+|| class-dump-z 0.1-11o || `@property(assign, nonatomic) CGPoint contentOffset;` ||
+
+ * <font size="1">`class-dump-? -C UIScrollView UIKit`</font>
+
+class-dump-z supports declared properties. Not only that, it supports _every property attributes_, including the undocumented ones. Moreover, it will hide the extra copy of getters/setters if a property is present.
+
+== Propertization ==
+
+Some libraries are written before the dot syntax was introduced or by some dot-syntax-haters, so you'll see a long list of getters/setters like
+{{{
+-(void)setTitle:(id)title;
+-(id)title;
+-(void)setSubtitle:(id)subtitle;
+-(id)subtitle;
+...
+}}}
+I found it pretty annoying. In class-dump-z you can supply the `-p` switch to automatically convert them into
+{{{
+@property(retain) id title;
+@property(retain) id subtitle;
+...
+}}}
+
+== Readable argument names ==
+|| || `UIImage(UIImageDeprecated)` 3.0 ||
+|| class-dump-x 3.1.2 || `-(void)draw9PartImageWithSliceRects:(CDAnonymousStruct13)fp8 inRect:(struct CGRect)fp152;` ||
+|| class-dump 3.2 || `-(void)draw9PartImageWithSliceRects:(CDAnonymousStruct14)arg1 inRect:(struct CGRect)arg2;` ||
+|| class-dump-z 0.1-11o || `-(void)draw9PartImageWithSliceRects:(XXStruct_4cr1oD)sliceRects inRect:(CGRect)rect;` ||
+
+ * <font size="1">`class-dump-? -C UIImageDeprecated UIKit`</font>
+
+No more meaningless fpXX. class-dump-z will give a suitable name to each argument using Apple's coding style guide.
+
+== Optional methods in protocols ==
+class-dump-z supports optional methods in protocols. The newest class-dump supports optional methods too.
+
+== Correct header generation ==
+
+|| || `WebThreadSafeUndoManager` 3.0 ||
+|| class-dump-x 3.1.2 || `#import "NSUndoManager.h"` ||
+|| class-dump 3.2 || `#import "NSUndoManager.h"` ||
+|| class-dump-z 0.1-11o || `#import <Foundation/NSUndoManager.h>` ||
+
+The headers generated by `-H` are not immediately usable because the imports usually points to non-existing .h files. There is [http://iphonesdkdev.blogspot.com/2009/05/how-to-classdump-springboard-header.html even a page] dedicated to fixing this problem. 
+
+class-dump-z now will see which library the external class comes from, and tries to make up a better .h file location to import.
+
+  _Even with this change, headers generated by class-dump-z is generally not immediately usable either. This is usually because of name clash with Foundation and !CoreFoundation objects. Most of the cases supplying the `-X NS,CF` flag to filter them out is enough to fix it._
+
+== Miscellaneous features ==
+ * *Class attributes*, e.g. `__attribute__((visibility("hidden")))`.
+ * *Supports obscure type encodings*, e.g. the C99 `_Complex` types, Objective-C class ivars with ≥2 protocols, GC-invisible pointers, etc.
+ * *Put that star on the left or right*, I like `int* x` more, some people like `int *x` more. With the `-R` switch one can switch between the two styles easily.
+ 
+= What's missing =
+There are some features I don't find them immediately useful, so they are not supported yet.
+
+== Objective-C 1.0 ABI ==
+class-dump-z does not support the 1.0 ABI (the `__OBJC` segment). For them you must use class-dump instead.
+
+== Universal binaries ==
+Support for universal binaries is minimal — class-dump-z will only check the first architecture in the binary. To analyze the rest you must separate the file with [http://developer.apple.com/documentation/Darwin/Reference/ManPages/man1/lipo.1.html lipo].
