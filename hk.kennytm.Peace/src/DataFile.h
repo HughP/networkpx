@@ -69,8 +69,12 @@ public:
 	const T* read_data() throw() {
 		m_location += sizeof(T);
 		if (m_location <= m_filesize) {
-			const T* retval = reinterpret_cast<const T*>(m_data+m_location-sizeof(T));
-			return retval;
+			union {
+				const T* as_T_pointer;
+				const char* as_char_pointer;
+			} res;
+			res.as_char_pointer = m_data+m_location-sizeof(T);
+			return res.as_T_pointer;
 		} else {
 			return NULL;
 		}
@@ -82,13 +86,28 @@ public:
 	
 	template<typename T>
 	inline const T* peek_data(unsigned items_after = 0) throw() {
-		return (m_location+static_cast<off_t>(items_after*sizeof(T)) <= m_filesize) ? reinterpret_cast<const T*>(m_data+m_location)+items_after : NULL;
+		if (m_location+static_cast<off_t>(items_after*sizeof(T)) <= m_filesize) {
+			union {
+				const T* as_T_pointer;
+				const char* as_char_pointer;
+			} res;
+			res.as_char_pointer = m_data + m_location;
+			return res.as_T_pointer + items_after;
+		} else
+			return NULL;
 	}	
 	
 	template<typename T>
 	inline const T* peek_data_at(off_t offset) const throw() {
-		return (offset+static_cast<off_t>(sizeof(T)) <= m_filesize) ? reinterpret_cast<const T*>(m_data + offset) : NULL;
-		
+		if (offset+static_cast<off_t>(sizeof(T)) <= m_filesize) {
+			union {
+				const T* as_T_pointer;
+				const char* as_char_pointer;
+			} res;
+			res.as_char_pointer = m_data + offset;
+			return res.as_T_pointer;
+		} else
+			return NULL;
 	}
 	
 	~DataFile() throw();
