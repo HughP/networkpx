@@ -94,6 +94,10 @@ static FakeAlert* _sharedAlert = nil;
 - (void)willDeactivateForReason:(int)fp8 {}
 - (void)didDeactivateForReason:(int)fp8 {}
 - (id)awayItem { return self; }	// will this be buggy???
+- (id)autorelease { return self; }
+- (oneway void)release {}
+- (id)retain { return self; }
+- (NSUInteger)retainCount { return UINT_MAX; }
 @end
 
 
