@@ -12,7 +12,7 @@ GriPIncPath=../../include/GriP
 libVersion               =1.11.14
 libGriPCompatVersion     =1.11.13
 
-Compiler=$(iPhoneDevPath)/usr/bin/gcc-4.2
+Compiler=$(iPhoneDevPath)/usr/bin/gcc-4.0
 CodeSign=ldid -S
 
 Options=-arch armv6 \
@@ -20,7 +20,7 @@ Options=-arch armv6 \
 	-isysroot $(iPhoneSDKPath) \
 	-F$(iPhoneSDKPath)/System/Library/PrivateFrameworks \
 	-I$(iPhoneDevPath)/usr/include/gcc/darwin/default \
-	-I$(iPhoneSDKPath)/usr/lib/gcc/arm-apple-darwin9/4.2.1/include \
+	-I$(iPhoneSDKPath)/usr/lib/gcc/arm-apple-darwin9/4.0.1/include \
 	-I../../include \
 	-L/usr/local/lib \
 	-Wall \
@@ -34,7 +34,7 @@ SDKOptionsARM=-arch armv6 \
 	-std=gnu99 \
 	-isysroot $(iPhoneSDKPath) \
 	-I$(iPhoneDevPath)/usr/include/gcc/darwin/default \
-	-I$(iPhoneSDKPath)/usr/lib/gcc/arm-apple-darwin9/4.2.1/include \
+	-I$(iPhoneSDKPath)/usr/lib/gcc/arm-apple-darwin9/4.0.1/include \
 	-I../../include \
 	-O2 \
 	-mcpu=arm1176jzf-s \
@@ -44,7 +44,7 @@ SDKOptionsSim=-arch i686 \
 	-std=gnu99 \
 	-isysroot $(iPhoneSimSDKPath) \
 	-I$(iPhoneSimDevPath)/usr/include/gcc/darwin/default \
-	-I$(iPhoneSimSDKPath)/usr/lib/gcc/i686-apple-darwin9/4.2.1/include \
+	-I$(iPhoneSimSDKPath)/usr/lib/gcc/i686-apple-darwin9/4.0.1/include \
 	-I../../include \
 	-O2 \
 	-UGRIP_JAILBROKEN
@@ -138,7 +138,7 @@ endef
 define MakeTemplate
 $$($(1)_Target):	$$($(1)_Sources)
 	@$(Compiler) $(Options) $$($(1)_Options) -o $$@ $$^;
-	@strip -x $$@;
+#	@strip -x $$@;
 	$(CodeSign) $$@
 
 endef

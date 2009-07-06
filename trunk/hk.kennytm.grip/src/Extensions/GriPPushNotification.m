@@ -51,18 +51,18 @@ __attribute__((visibility("hidden")))
 @implementation FakeAlert
 static FakeAlert* _sharedAlert = nil;
 +(FakeAlert*)sharedAlert {
-	@synchronized(self) {
+//	@synchronized(self) {
 		if (_sharedAlert == nil)
 			_sharedAlert = [[self alloc] init];
-	}
+//	}
 	return _sharedAlert;
 }
 +(void)releaseSharedAlert {
-	@synchronized(self) {
+//	@synchronized(self) {
 		SBAlertItem_dismiss(_sharedAlert, @selector(dismiss));
-		[_sharedAlert release];
-		_sharedAlert = nil;
-	}
+//		[_sharedAlert release];
+//		_sharedAlert = nil;
+//	}
 }
 - (Class)alertSheetClass { return Nil; }
 - (id)alertSheet { return nil; }
