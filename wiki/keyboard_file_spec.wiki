@@ -1,0 +1,134 @@
+#summary Plist-like specification for 3.0 .keyboard files
+
+On iPhoneOS 3.0, every keyboard layout is switched to the UIKeyboardLayoutStar class. The new class allows easy creation of new keyboards using a set of UIKB structural classes. This page is a summary of how what these classes will store when archived.
+
+<wiki:toc/>
+
+= UIKBKeyboard =
+
+  _struct_ `<UIKBKeyboard>` ::
+|| *key* || *type* || *subtype* || *meaning* ||
+|| name || string || filename || Keyboard name, also its filename (without the .keyboard part) ||
+|| visualStyle || string || {`"iPhone-Standard"`, `"iPhone-Alert"`} || Keyboard style ||
+|| keyplanes || array || ... of `<UIKBKeyplane>`s || Keyplanes ||
+
+= UIKBKeyplane =
+
+A keyplane is a single slice of keyboard. Keyplanes can be switched between each other using the shift and more (123/ABC) keys.
+
+ _struct_ `<UIKBKeyplane>` ::
+|| *key* || *type* || *subtype* || *meaning* ||
+|| name || string || || Name of keyplane, e.g. Capital-Letters. Case-insensitive. ||
+|| keylayouts || array || ...of `<UIKBKeylayout>`s || Actual geometric layout. ||
+|| attributes || dictionary || `<UIKBAttributeList>` || Attributes. ||
+|| supported-types || array || ...of strings || Supported types. The strings must be `UIKeyboardType`_X_ where _X_ is one of <ul><li>Default</li><li>ASCIICapable</li><li>!NumbersAndPunctuation</li><li>URL</li><li>!NumberPad</li><li>!PhonePad</li><li>!NamePhonePad</li><li>!EmailAddress</li></ul> ||
+
+= UIKBKeylayout =
+
+ _struct_ `<UIKBKeylayout>` ::
+|| *key* || *type* || *subtype* || *meaning* ||
+|| name || string || || Name of the layout (e.g. Portrait-QWERTY-Capital-Letters-Keylayout) ||
+|| keyset || struct || `<UIKBKeyset>` || Key set. ||
+|| refs || array || ...of `<UIKBKeylistReference>`s || References. ||
+
+== UIKBKeyset ==
+A keyset contains rows of keylists, which are columns of keys.
+
+ _struct_ `<UIKBKeyset>` ::
+|| *key* || *type* || *subtype* || *meaning* ||
+|| name || string || || Name of the keyset (e.g. QWERTY-Capital-Letters-Keyset) ||
+|| keylists || array || ...of `<UIKBKeylist>`s || The rows of keys. ||
+
+== UIKBKeylist ==
+ _struct_ `<UIKBKeylist>` ::
+|| *key* || *type* || *subtype* || *meaning* ||
+|| name || string || || Name of the keylist (e.g. Row1) ||
+|| keys || array || ...of `<UIKBKey>`s || The keys in this row. ||
+
+== UIKBKey ==
+ _struct_ `<UIKBKey>` ::
+|| *key* || *type* || *subtype* || *meaning* ||
+|| name || string || || Name of the key (e.g. Latin-Capital-Letter-Q) ||
+|| representedString || string || || The string that will be typed out when tapping this key. ||
+|| displayString || string || || The string that is shown on the key. ||
+|| displayType || string || {...} || The style of the key, must be one of:<ul><li>Delete</li><li>!DynamicString</li><li>International</li><li>More</li><li>!NumberPad</li><li>Return</li><li>Shift</li><li>Space</li><li>String</li><li>!TopLevelDomain</li><li>!TopLevelDomainVariant</li></ul> ||
+|| interactionType || string || {...} || How the system will respond to a tap. Must be one of:<ul><li>Delete</li><li>International</li><li>None</li><li>Return</li><li>Shift</li><li>Space</li><li>String</li><li>String-Direct</li><li>String-Popup</li></ul> ||
+|| variantType || string || {...} || Variants to show for this key. Must of one of: <ul><li>accents</li><li>currency</li><li>URL</li><li>email</li><li>immediate-accents</li></ul> ||
+|| attributes || dictionary || `<UIKBAttributeList>` || Other attributes. ||
+
+== UIKBKeylistReference ==
+Keylist references are like patches to the keyset. They provide additional detail e.g. the dimensions of the keys. 
+
+ _struct_ `<UIKBKeylistReference>` ::
+|| *key* || *type* || *subtype* || *meaning* ||
+|| name || string || || Name of the reference (e.g. "Keyset.Row1.Geometry", "Keyset.Row1.Keys[-1].Attributes", etc.) ||
+|| value || any || || The value for the keylist to use. ||
+|| flags || integer || || ? ||
+|| nameElements || array || ...of strings || The name, tokenized by dots. ||
+|| startKeyIndex || integer || || If there is a `[a:b]` in the name, the value of a. ||
+|| endKeyIndex || integer || || If there is a `[a:b]` in the name, the value of b.  ||
+
+The referenced type can be one of:
+ * UIKBAttributeList
+ * UIKBGeometry
+ * Array of `<UIKBGeometry>`s.
+
+= UIKBGeometry =
+ _struct_ `<UIKBGeometry>` ::
+|| *key* || *type* || *subtype* || *meaning* ||
+|| name || string || || Name of the geometry (e.g. iPhone-Portrait-Alphabetic-Row3-Geometry) ||
+|| x-amount || real || || x-location. ||
+|| x-unit || integer || || Unit of x-location. 1 = px, 2 = %. ||
+|| y-amount || real || || y-location. ||
+|| y-unit || integer || || Unit of y-location. 1 = px, 2 = %. ||
+|| w-amount || real || || Width. ||
+|| w-unit || integer || || Unit of width. 1 = px, 2 = %. ||
+|| h-amount || real || || Height. ||
+|| h-unit || integer || || Unit of height. 1 = px, 2 = %. ||
+|| paddingTop-amount || real || || Top padding. ||
+|| paddingTop-unit || integer || || Unit of top padding. 1 = px, 2 = %. ||
+|| paddingLeft-amount || real || || Left padding. ||
+|| paddingLeft-unit || integer || || Unit of left padding. 1 = px, 2 = %. ||
+|| paddingBottom-amount || real || || Bottom padding. ||
+|| paddingBottom-unit || integer || || Unit of bottom padding. 1 = px, 2 = %. ||
+|| paddingRight-amount || real || || Right padding. ||
+|| paddingRight-unit || integer || || Unit of right padding. 1 = px, 2 = %. ||
+|| explicit || boolean || || ? ||
+
+
+= UIKBAttributeList =
+
+ _struct_ `<UIKBAttributeList>` ::
+|| *key* || *type* || *subtype* || *meaning* ||
+|| name || string || || Name of the attribute list. Usually empty. ||
+|| list || array || ...of `<UIKBAttribute>`s || The actual list of attributes. ||
+|| explicit || boolean || || ?? ||
+
+== UIKBAttribute ==
+
+  _struct_ `<UIKBAttribute>` ::
+|| *key* || *type* || *subtype* || *meaning* ||
+|| name || string || || Name of the attribute. ||
+|| value || any || || Value of the attribute. ||
+
+So defined attributes are:
+|| *name* || *value type* || *meaning* ||
+|| adaptive-keys || boolean || Use "adaptive keys" or not. Usually true for alphabet plane and false for numbers & symbols plane. ||
+|| autoshift || boolean || Enables auto-shift (e.g. enables shift after a full-stop). ||
+|| label || string? || Not used. ||
+|| looks-like-shift-alternate || boolean || Whether the shift key looks like an up arrow?? ||
+|| more-after || string ("yes" or "no") || ?? See` -[UIKeyboardLayoutStar upActionFlagsForKey:]`. ||
+|| more-alternate || string || The name of keyplane to switch to after tapping the More key. ||
+|| more-rendering || string ("numbers", "symbols", "letters" or "phonepad") || What strings should be shown on the More key. ||
+|| popup-bias || string ("left" or "right") || ?? ||
+|| shift || boolean || Whether this keyplane is a shifted one. ||
+|| shift-after || string ("yes" or "no") || ?? ||
+|| shift-alternate || string || The name of keyplane to switch to after tapping the Shift key. ||
+|| shift-is-plane-chooser || boolean || When true, the shift key will act as a caps-lock-like key. ||
+|| shift-rendering || string ("numbers", "symbols" or "letters") || What string should be shown on the Shift key. ||
+|| shouldskipcandidateselection || boolean || ? ||
+|| state || string ("enabled" or "disabled") || Whether a key is enabled or not. ||
+|| supported-types || array of strings? || Not used. || 
+|| variant-popup-bias || string ("left" or "right") || Whether the variants popup should expand to the left or right. ||
+|| variant-type || string || Not used? ||
+|| visible || boolean? || Not used. ||
