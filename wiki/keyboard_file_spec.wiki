@@ -9,7 +9,7 @@ On iPhoneOS 3.0, every keyboard layout is switched to the UIKeyboardLayoutStar c
   _struct_ `<UIKBKeyboard>` ::
 || *key* || *type* || *subtype* || *meaning* ||
 || name || string || filename || Keyboard name, also its filename (without the .keyboard part) ||
-|| visualStyle || string || {`"iPhone-Standard"`, `"iPhone-Alert"`} || Keyboard style ||
+|| visualStyle || string || {`"iPhone-Standard"`, `"iPhone-Alert"`} || Keyboard style (optional) ||
 || keyplanes || array || ... of `<UIKBKeyplane>`s || Keyplanes ||
 
 = UIKBKeyplane =
