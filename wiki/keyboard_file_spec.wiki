@@ -121,7 +121,7 @@ So defined attributes are:
 || more-alternate || string || The name of keyplane to switch to after tapping the More key. ||
 || more-rendering || string ("numbers", "symbols", "letters" or "phonepad") || What strings should be shown on the More key. ||
 || popup-bias || string ("left" or "right") || ?? ||
-|| shift || boolean || Whether this keyplane is a shifted one. ||
+|| shift || string ("yes" or "no") || Whether this keyplane is a shifted one. ||
 || shift-after || string ("yes" or "no") || ?? ||
 || shift-alternate || string || The name of keyplane to switch to after tapping the Shift key. ||
 || shift-is-plane-chooser || boolean || When true, the shift key will act as a caps-lock-like key. ||
