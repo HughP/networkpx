@@ -148,6 +148,7 @@ __attribute__((visibility("hidden")))
 	} FakeAlert2;
 	FakeAlert2._app = [apps objectForKey:context];
 	SBRemoteNotificationAlert_activateApplication((id)&FakeAlert2, @selector(activateApplication));
+	[FakeAlert releaseSharedAlert];
 	[apps removeObjectForKey:context];
 }
 @end
