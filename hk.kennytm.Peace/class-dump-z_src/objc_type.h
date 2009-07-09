@@ -66,6 +66,8 @@ private:
 		std::vector<unsigned> subtypes;
 		std::vector<std::string> field_names;
 		
+		std::vector<std::string> namespaces;	// C++ only. containts the namespace from outer to inner. (e.g. [std, tr1])
+		
 		//----
 		
 		Type(ObjCTypeRecord& record, const std::string& type_to_parse, bool is_struct_used_locally);
@@ -172,6 +174,8 @@ public:
 		else
 			return cit->second;
 	}
+	
+	void insert_cpp_method(const char* mangled_name) throw();
 };
 
 #endif
