@@ -441,6 +441,10 @@ static vector<string> parse_struct_members (const char* member_typestrings, bool
 			case 'V':
 			case '!':
 				++ member_typestrings;
+				if (*member_typestrings == '"' || *member_typestrings == '\0') {	// Avoid WebKit segfault.
+					typestrings_list.push_back(string(subtype_begin, member_typestrings) + "?");
+					subtype_begin = member_typestrings;
+				}
 				break;
 		}
 	}
@@ -488,7 +492,8 @@ ObjCTypeRecord::Type::Type(ObjCTypeRecord& record, const string& type_to_parse, 
 		case 'O':
 		case 'V':
 		case '!':	// GC Invisible. (! can also be "Vector type". But these are rare enough to be used in anywhere.)
-			subtypes.push_back( record.parse(type_to_parse.substr(1), false) );
+			// type_to_parse.size() > 1 added to fix WebKit segfault.
+			subtypes.push_back( record.parse(type_to_parse.size() > 1 ? type_to_parse.substr(1) : "?", false) );
 			break;
 
 		case '@':
