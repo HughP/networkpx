@@ -175,7 +175,12 @@ public:
 			return cit->second;
 	}
 	
-	void insert_cpp_method(const char* mangled_name) throw();
+	// Strongly-linked anonymous structs used only once will be embedded in its containing struct.
+	// But the weak link associated with it will not be transferred to the container.
+	// This function is to do such a transfer.
+	void create_short_circuit_weak_links() throw();
+	
+	// void insert_cpp_method(const char* mangled_name) throw();
 };
 
 #endif

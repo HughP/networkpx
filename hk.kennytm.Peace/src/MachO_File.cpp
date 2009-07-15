@@ -159,7 +159,7 @@ vector<string> MachO_File_Simple::linked_libraries(const std::string& sysroot) c
 	vector<string> retval;
 	if (m_is_valid) {
 		for (vector<const load_command*>::const_iterator cit = ma_load_commands.begin(); cit != ma_load_commands.end(); ++ cit) {
-			if ((*cit)->cmd == LC_LOAD_DYLIB) {
+			if ((*cit)->cmd == LC_LOAD_DYLIB || (*cit)->cmd == LC_LOAD_WEAK_DYLIB) {
 				const dylib_command* p_dylib_cmd = reinterpret_cast<const dylib_command*>(*cit);
 				const char* lib_path = reinterpret_cast<const char*>(p_dylib_cmd) + p_dylib_cmd->dylib.name.offset;
 				if (lib_path[0] == '@')
@@ -424,7 +424,7 @@ const char* MachO_File::library_of_relocated_symbol(unsigned vm_address) const t
 		return NULL;
 	
 	for (vector<const load_command*>::const_iterator cit = ma_load_commands.begin(); cit != ma_load_commands.end(); ++ cit)
-		if ((*cit)->cmd == LC_LOAD_DYLIB) {
+		if ((*cit)->cmd == LC_LOAD_DYLIB || (*cit)->cmd == LC_LOAD_WEAK_DYLIB) {
 			-- cur_ordinal;
 			if (cur_ordinal == 0) {
 				const dylib_command* p_dylib_cmd = reinterpret_cast<const dylib_command*>(*cit);
