@@ -22,12 +22,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef COMBINE_DEPENDENCIES_H
 #define COMBINE_DEPENDENCIES_H
 
-static void combine_dependencies( std::tr1::unordered_map<ObjCTypeRecord::TypeIndex, ObjCTypeRecord::EdgeStrength>& a, const std::tr1::unordered_map<ObjCTypeRecord::TypeIndex, ObjCTypeRecord::EdgeStrength>& b ) {
+static void combine_dependencies( std::tr1::unordered_map<ObjCTypeRecord::TypeIndex, ObjCTypeRecord::EdgeStrength>& a, const std::tr1::unordered_map<ObjCTypeRecord::TypeIndex, ObjCTypeRecord::EdgeStrength>& b, std::tr1::unordered_map<ObjCTypeRecord::TypeIndex, unsigned>* p_ma_k_in = NULL, std::tr1::unordered_map<ObjCTypeRecord::TypeIndex, unsigned>* p_ma_strong_k_in = NULL ) {
 	for (std::tr1::unordered_map<ObjCTypeRecord::TypeIndex, ObjCTypeRecord::EdgeStrength>::const_iterator bit = b.begin(); bit != b.end(); ++ bit) {
 		std::pair<std::tr1::unordered_map<ObjCTypeRecord::TypeIndex, ObjCTypeRecord::EdgeStrength>::iterator, bool> res = a.insert(*bit);
-		if (!res.second)
-			if (res.first->second < bit->second)
+		if (!res.second) {
+			if (res.first->second < bit->second) {
+				if (p_ma_strong_k_in != NULL && res.first->second < ObjCTypeRecord::ES_StrongIndirect)
+					++ (*p_ma_strong_k_in)[bit->first];
 				res.first->second = bit->second;
+			}
+		} else {
+			if (p_ma_k_in != NULL)
+				++ (*p_ma_k_in)[bit->first];
+			if (p_ma_strong_k_in != NULL && bit->second >= ObjCTypeRecord::ES_StrongIndirect)
+				++ (*p_ma_strong_k_in)[bit->first];
+		}
 	}
 }
 

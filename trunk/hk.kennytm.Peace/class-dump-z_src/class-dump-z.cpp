@@ -159,6 +159,11 @@ int main (int argc, char* argv[]) {
 						mf.print_network();
 						break;
 						
+						// print external symbols
+					case 'e':
+						mf.print_extern_symbols();
+						break;
+						
 					default:
 						printf("// Unrecognized diagnosis option: -D %c\n", diagnosis_option);
 						break;

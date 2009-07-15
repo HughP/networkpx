@@ -39,6 +39,8 @@ MachO_File_ObjC::MachO_File_ObjC(const char* path) throw(std::bad_alloc, TRExcep
 	
 	for (vector<ClassType>::iterator it = ma_classes.begin(); it != ma_classes.end(); ++ it)
 		tag_propertized_methods(*it);
+	
+	m_record.create_short_circuit_weak_links();
 }
 
 void MachO_File_ObjC::tag_propertized_methods(ClassType& cls) throw() {

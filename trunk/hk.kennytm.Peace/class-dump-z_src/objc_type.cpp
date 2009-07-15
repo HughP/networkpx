@@ -26,6 +26,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "crc32.h"
 #include "balanced_substr.h"
 #include "string_util.h"
+#include "combine_dependencies.h"
 
 using namespace std;
 
@@ -895,4 +896,40 @@ void ObjCTypeRecord::print_network() const throw() {
 		}
 	}
 	printf("}\n");
+}
+
+/*
+ Algorithm to create short circuit weak link.
+ 
+ (1) For all structs/classes T with refcount > 1,
+   (2) For all strongly linked, anonymous structs S with refcount == 1,
+     (3) Remove this link.
+     (4) Transfer all links S having to T.
+ */
+
+void ObjCTypeRecord::create_short_circuit_weak_links() throw() {
+	for (TypeIndex i = 0; i < ma_type_store.size(); ++ i) {
+		const Type& t = ma_type_store[i];
+		if (t.refcount > 1 && (t.type == '@' || t.type == '{' || t.type == '[')) {
+			tr1::unordered_map<TypeIndex, EdgeStrength>& adjs = ma_adjlist[i];
+			bool modified;
+			do {
+				vector<pair<TypeIndex, EdgeStrength> > unmodified_adjs (adjs.begin(), adjs.end());
+				modified = false;
+				
+				for (vector<pair<TypeIndex, EdgeStrength> >::const_iterator cit = unmodified_adjs.begin(); cit != unmodified_adjs.end(); ++ cit) {
+					if (cit->second >= ES_StrongIndirect) {
+						const Type& s = ma_type_store[cit->first];
+						if (s.refcount == 1 && s.name.empty()) {
+							combine_dependencies(adjs, ma_adjlist[cit->first], &ma_k_in, &ma_strong_k_in);
+							adjs.erase(cit->first);
+							-- ma_k_in[cit->first];
+							-- ma_strong_k_in[cit->first];
+							modified = true;
+						}
+					}
+				}
+			} while (modified);
+		}
+	}
 }
