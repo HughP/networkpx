@@ -16,6 +16,12 @@ extern "C" {
 	int  pcre_exec(const pcre *, const pcre_extra *, const char*,
 					   int, int, int, int *, int);
 	
+#ifndef VPCOMPAT
+	extern void (*pcre_free)(void *);
+#else
+	extern void pcre_free(void *);
+#endif
+	
 }
 
 #endif
