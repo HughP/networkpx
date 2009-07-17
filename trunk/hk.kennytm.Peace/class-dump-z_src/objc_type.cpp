@@ -442,7 +442,7 @@ static vector<string> parse_struct_members (const char* member_typestrings, bool
 			case 'V':
 			case '!':
 				++ member_typestrings;
-				if (*member_typestrings == '"' || *member_typestrings == '\0') {	// Avoid WebKit segfault.
+				if (*member_typestrings == '"' || *member_typestrings == '\0' || *member_typestrings == ')' || *member_typestrings == '}') {	// Avoid WebKit segfault.
 					typestrings_list.push_back(string(subtype_begin, member_typestrings) + "?");
 					subtype_begin = member_typestrings;
 				}
@@ -453,7 +453,7 @@ static vector<string> parse_struct_members (const char* member_typestrings, bool
 	// Merge @ and "xxx" into @"xxx" if possible.
 	vector<string> retval;
 	for (vector<string>::const_iterator cit = typestrings_list.begin(); cit != typestrings_list.end(); ++ cit) {
-		if (*cit == "@") {
+		if ((*cit)[cit->size()-1] == '@') {
 			if (cit+1 != typestrings_list.end() && (*(cit+1))[0] == '"') {
 				if (!has_field_names || cit+2 == typestrings_list.end() || (*(cit+2))[0] == '"') {
 					retval.push_back(*cit + *(cit+1));
@@ -558,6 +558,10 @@ ObjCTypeRecord::Type::Type(ObjCTypeRecord& record, const string& type_to_parse, 
 			if (*typestr == '=') {
 				bool has_field_names;
 				vector<string> raw_subtypes = parse_struct_members(typestr+1, has_field_names);
+#if OBJC_TYPE_DEBUG
+				for (vector<string>::const_iterator cit = raw_subtypes.begin(); cit != raw_subtypes.end(); ++ cit)
+					printf("%s\n", cit->c_str());
+#endif
 				for (vector<string>::const_iterator cit = raw_subtypes.begin(); cit != raw_subtypes.end(); ++ cit) {
 					if (has_field_names) {
 						field_names.push_back( cit->substr(1, cit->size()-2) );
