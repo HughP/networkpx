@@ -175,10 +175,10 @@ public:
 	
 	MachO_File_ObjC(const char* path) throw(std::bad_alloc, TRException);
 	~MachO_File_ObjC() throw() {
-		std::free(m_class_filter);
-		std::free(m_method_filter);
-		std::free(m_class_filter_extra);
-		std::free(m_method_filter_extra);
+		if (m_class_filter != NULL) pcre_free(m_class_filter);
+		if (m_method_filter != NULL) pcre_free(m_method_filter);
+		if (m_class_filter_extra != NULL) pcre_free(m_class_filter_extra);
+		if (m_method_filter_extra != NULL) pcre_free(m_method_filter_extra);
 	}
 	
 	unsigned total_class_type_count() const throw() { return ma_classes.size(); }

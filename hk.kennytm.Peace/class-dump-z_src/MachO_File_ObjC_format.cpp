@@ -39,8 +39,8 @@ static void print_banner (FILE* f) {
 }
 
 void MachO_File_ObjC::set_class_filter(const char* regexp) {
-	if (m_class_filter != NULL) free(m_class_filter);
-	if (m_class_filter_extra != NULL) free(m_class_filter_extra);
+	if (m_class_filter != NULL) pcre_free(m_class_filter);
+	if (m_class_filter_extra != NULL) pcre_free(m_class_filter_extra);
 	
 	const char* errStr = NULL;
 	int erroffset;
@@ -52,8 +52,8 @@ void MachO_File_ObjC::set_class_filter(const char* regexp) {
 }
 
 void MachO_File_ObjC::set_method_filter(const char* regexp) {
-	if (m_method_filter != NULL) free(m_method_filter);
-	if (m_method_filter_extra != NULL) free(m_method_filter_extra);
+	if (m_method_filter != NULL) pcre_free(m_method_filter);
+	if (m_method_filter_extra != NULL) pcre_free(m_method_filter_extra);
 	
 	const char* errStr = NULL;
 	int erroffset;
