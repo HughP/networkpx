@@ -49,6 +49,7 @@ protected:
 	
 	bool m_is_valid;
 	off_t m_origin;
+	off_t m_crypt_begin, m_crypt_end;
 	
 public:
 	inline bool valid() const throw() { return m_is_valid; }
@@ -56,7 +57,6 @@ public:
 	
 	off_t to_file_offset (unsigned vm_address, int* p_guess_segment = NULL) const throw();
 	unsigned to_vm_address (off_t file_offset, int* p_guess_segment = NULL) const throw();
-	
 	
 	// try to dereference this vm_address.
 	unsigned dereference(unsigned vm_address) const throw();
@@ -82,6 +82,10 @@ public:
 	std::tr1::unordered_set<std::string> linked_libraries_recursive(const std::string& sysroot) const;
 	
 	const char* self_path() const throw();
+	
+	inline bool encrypted() const throw() { return m_crypt_begin != m_crypt_end; }
+	inline bool file_offset_encrypted(off_t offset) const throw() { return offset >= m_crypt_begin && offset < m_crypt_end; }
+	inline bool vm_address_encrypted(unsigned vm_address, int* p_guess_segment = NULL) { return file_offset_encrypted(to_file_offset(vm_address, p_guess_segment)); } 
 };
 
 //------------------------------------------------------------------------------

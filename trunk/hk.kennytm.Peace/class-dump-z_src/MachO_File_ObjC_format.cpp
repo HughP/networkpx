@@ -196,9 +196,11 @@ string MachO_File_ObjC::Method::format(const ObjCTypeRecord& record, const MachO
 	res += record.format(types[0], "");
 	res.push_back(')');
 	
-	if (components.size() == 3)
+	if (components.size() == 3) {
 		res += raw_name;
-	else {
+		if (res[res.size()-1] == ']')
+			res.erase(res.size()-1);
+	} else {
 		for (unsigned i = 3; i < components.size(); ++ i) {
 			if (i != 3)
 				res.push_back(' ');

@@ -88,6 +88,7 @@ private:
 	TypeIndex m_void_type_index;
 	TypeIndex m_id_type_index;
 	TypeIndex m_sel_type_index;
+	TypeIndex m_unknown_type_index;
 	
 	friend class Type;
 	
@@ -120,11 +121,13 @@ public:
 		m_void_type_index = parse("v", false);
 		m_id_type_index = parse("@", false);
 		m_sel_type_index = parse(":", false);
+		m_unknown_type_index = parse("5", false);
 	}
 	
 	TypeIndex void_type() const throw() { return m_void_type_index; }
 	TypeIndex id_type() const throw() { return m_id_type_index; }
 	TypeIndex sel_type() const throw() { return m_sel_type_index; }
+	TypeIndex unknown_type() const throw() { return m_unknown_type_index; }
 	
 	bool is_id_type(TypeIndex idx) const throw() { return idx == m_id_type_index || ma_type_store[idx].type == '@'; }
 	bool is_void_type(TypeIndex idx) const throw() { return idx == m_void_type_index; }

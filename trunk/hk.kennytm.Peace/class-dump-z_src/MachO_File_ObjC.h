@@ -147,6 +147,7 @@ private:
 	void add_methods(ClassType& cls, const method_list_t* method_list_ptr, bool class_method, bool optional) throw();
 	
 	const char* get_superclass_name(unsigned superclass_addr, unsigned pointer_to_superclass_addr, ObjCTypeRecord::TypeIndex& superclass_index) throw();
+	const char* get_cstring(const void* vmaddr, int* guess_segment, unsigned symaddr, unsigned symoffset, const char* defsym) const throw();
 	
 	void retrieve_protocol_info() throw();
 	void retrieve_class_info() throw();
@@ -165,6 +166,10 @@ private:
 	bool name_killable(const char* name, size_t length, bool check_kill_prefix) const throw();
 		
 	friend bool mfoc_AlphabeticSorter(const ClassType* a, const ClassType* b) throw();
+	
+	std::vector<std::string> ma_string_store;	// store C-strings.
+	
+//-------------------------------------------------------------------------------------------------------------------------------------------
 	
 public:
 	enum SortBy {

@@ -28,6 +28,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 using namespace std;
 
+const char* MachO_File_ObjC::get_cstring(const void* vmaddr, int* guess_segment, unsigned symaddr, unsigned symoffset, const char* defsym) const throw() {
+	off_t offset = this->to_file_offset(reinterpret_cast<unsigned>(vmaddr), guess_segment);
+	if (this->file_offset_encrypted(offset)) {
+		if (symaddr == 0)
+			return defsym;
+		StringType st;
+		const char* retstr = this->string_representation(symaddr & ~1, &st);
+		if (retstr != NULL && st == MOST_Symbol)
+			return retstr + symoffset;
+		else
+			return defsym;
+	} else
+		return this->peek_data_at<char>(offset);
+}
+
 #define PEEK_VM_ADDR(data, type, seg) (this->peek_data_at_vm_address<type>(reinterpret_cast<unsigned>(data), &(m_guess_##seg##_segment)))
 
 void MachO_File_ObjC::adopt_protocols(ClassType& cls, const protocol_list_t* protocols) throw() {
@@ -48,82 +63,90 @@ void MachO_File_ObjC::add_properties(ClassType& cls, const objc_property_list* p
 	for (unsigned i = 0; i < prop_list->count; ++ i, ++ cur_property) {
 		Property& prop = cls.properties[start + prop_list->count - i - 1];	// Note that the initial declaration order is the reverse of layout order.
 		
-		prop.name = PEEK_VM_ADDR(cur_property->name, char, text);
-		
-		const char* property_type = PEEK_VM_ADDR(cur_property->attributes, char, text);
-		while (*property_type != '\0') {
-			switch (*property_type) {
-				case 'T': {
-					const char* type_start = ++property_type;
-					while (*property_type != ',' && *property_type != '\0')
-						property_type = skip_balanced_substring(property_type);
-					prop.type = m_record.parse(string(type_start, property_type), false);
-					m_record.add_strong_link(cls.type_index, prop.type);
-					break;
+		const char* property_name = this->get_cstring(cur_property->name, &m_guess_text_segment, 0, 0, NULL);
+		if (property_name != NULL)
+			prop.name = property_name;
+		else
+			prop.name = numeric_format("XXEncryptedProperty_%04x", reinterpret_cast<unsigned>(cur_property->name));
+				
+		const char* property_type = this->get_cstring(cur_property->attributes, &m_guess_text_segment, 0, 0, NULL);
+		if (property_type == NULL)
+			prop.type = m_record.unknown_type();
+		else {
+			while (*property_type != '\0') {
+				switch (*property_type) {
+					case 'T': {
+						const char* type_start = ++property_type;
+						while (*property_type != ',' && *property_type != '\0')
+							property_type = skip_balanced_substring(property_type);
+						prop.type = m_record.parse(string(type_start, property_type), false);
+						m_record.add_strong_link(cls.type_index, prop.type);
+						break;
+					}
+						
+					case 'G': {
+						prop.has_getter = true;
+						const char* getter_start = ++property_type;
+						property_type += strcspn(property_type, ",");
+						prop.getter = string(getter_start, property_type);
+						break;
+					}
+						
+					case 'S': {
+						prop.has_setter = true;
+						const char* setter_start = ++property_type;
+						property_type += strcspn(property_type, ",");
+						prop.setter = string(setter_start, property_type);
+						break;
+					}
+						
+					case 'C':
+						prop.copy = true;
+						++ property_type;
+						break;
+						
+					case '&':
+						prop.retain = true;
+						++ property_type;
+						break;
+						
+					case 'R':
+						prop.readonly = true;
+						++ property_type;
+						break;
+						
+					case 'N':
+						prop.nonatomic = true;
+						++ property_type;
+						break;
+						
+					case 'D':
+						prop.impl_method = Property::IM_Dynamic;
+						++ property_type;
+						break;
+						
+					case 'V': {
+						prop.impl_method = Property::IM_Synthesized;
+						const char* synth_start = ++property_type;
+						property_type += strcspn(property_type, ",");
+						prop.synthesized_to = string(synth_start, property_type);
+						break;
+					}
+						
+					case 'P':
+						prop.gc_strength = Property::GC_Strong;
+						++ property_type;
+						break;
+						
+					case 'W':
+						prop.gc_strength = Property::GC_Weak;
+						++ property_type;
+						break;
+						
+					default:
+						++ property_type;
+						break;
 				}
-					
-				case 'G': {
-					prop.has_getter = true;
-					const char* getter_start = ++property_type;
-					property_type += strcspn(property_type, ",");
-					prop.getter = string(getter_start, property_type);
-					break;
-				}
-					
-				case 'S': {
-					prop.has_setter = true;
-					const char* setter_start = ++property_type;
-					property_type += strcspn(property_type, ",");
-					prop.setter = string(setter_start, property_type);
-					break;
-				}
-					
-				case 'C':
-					prop.copy = true;
-					++ property_type;
-					break;
-					
-				case '&':
-					prop.retain = true;
-					++ property_type;
-					break;
-					
-				case 'R':
-					prop.readonly = true;
-					++ property_type;
-					break;
-					
-				case 'N':
-					prop.nonatomic = true;
-					++ property_type;
-					break;
-					
-				case 'D':
-					prop.impl_method = Property::IM_Dynamic;
-					++ property_type;
-					break;
-					
-				case 'V': {
-					prop.impl_method = Property::IM_Synthesized;
-					const char* synth_start = ++property_type;
-					property_type += strcspn(property_type, ",");
-					prop.synthesized_to = string(synth_start, property_type);
-					break;
-				}
-					
-				case 'P':
-					prop.gc_strength = Property::GC_Strong;
-					++ property_type;
-					break;
-					
-				case 'W':
-					prop.gc_strength = Property::GC_Weak;
-					++ property_type;
-					break;
-					
-				default:
-					++ property_type;
-					break;
 			}
 		}
 		
@@ -146,8 +169,13 @@ void MachO_File_ObjC::add_methods(ClassType& cls, const method_list_t* method_li
 		method.is_class_method = class_method;
 		method.optional = optional;
 		
-		method.raw_name = PEEK_VM_ADDR(cur_method->name, char, text);
 		method.vm_address = reinterpret_cast<unsigned>(cur_method->imp);
+		method.raw_name = this->get_cstring(cur_method->name, &m_guess_text_segment, method.vm_address, 0, NULL);
+		if (method.raw_name == NULL) {
+			ma_string_store.push_back(numeric_format("XXEncryptedMethod_%04x", method.vm_address ?: reinterpret_cast<unsigned>(cur_method->name)));
+			method.raw_name = ma_string_store.back().c_str();
+		} else if (method.raw_name[0] == '-' || method.raw_name[0] == '+')
+			method.raw_name = strchr(method.raw_name, ' ') + 1;
 		
 		// split raw_name into components separated by colons.
 		const char* first_colon = method.raw_name;
@@ -157,22 +185,28 @@ void MachO_File_ObjC::add_methods(ClassType& cls, const method_list_t* method_li
 			first_colon = strchr(first_colon, ':');
 			if (first_colon == NULL)
 				break;
-			method.components.push_back(string(prev_colon, first_colon));
+			if (*first_colon != ']')
+				method.components.push_back(string(prev_colon, first_colon));
+			else if (prev_colon != first_colon - 1)
+				method.components.push_back(string(prev_colon, first_colon-1));
 			++ first_colon;
 		}
 		
 		// split method types into type strings and build strong links.
-		const char* method_type = PEEK_VM_ADDR(cur_method->types, char, text);
-		while (*method_type != '\0') {
-			const char* type_begin = method_type;
-			while (!(*method_type >= '0' && *method_type <= '9'))
-				method_type = skip_balanced_substring(method_type);
-			ObjCTypeRecord::TypeIndex index = m_record.parse(string(type_begin, method_type), false);
-			method.types.push_back(index);
-			m_record.add_strong_link(cls.type_index, index);
-			while (*method_type >= '0' && *method_type <= '9')
-				++ method_type;
-		}
+		const char* method_type = this->get_cstring(cur_method->types, &m_guess_text_segment, 0, 0, NULL);
+		if (method_type != NULL) {
+			while (*method_type != '\0') {
+				const char* type_begin = method_type;
+				while (!(*method_type >= '0' && *method_type <= '9'))
+					method_type = skip_balanced_substring(method_type);
+				ObjCTypeRecord::TypeIndex index = m_record.parse(string(type_begin, method_type), false);
+				method.types.push_back(index);
+				m_record.add_strong_link(cls.type_index, index);
+				while (*method_type >= '0' && *method_type <= '9')
+					++ method_type;
+			}
+		} else
+			method.types = vector<ObjCTypeRecord::TypeIndex>(method.components.size(), m_record.unknown_type());
 		
 		// from each component, create an argument name.
 		method.argname.resize(method.components.size());
@@ -316,7 +350,13 @@ void MachO_File_ObjC::retrieve_protocol_info() throw() {
 		if (proto == NULL)
 			continue;
 		
-		cls.name = PEEK_VM_ADDR(proto->name, char, text);
+		cls.name = get_cstring(proto->name, &m_guess_text_segment, cls.vm_address, 0, NULL);
+		if (cls.name == NULL) {
+			// Protocol's original name is never store in the symbol section.
+			// So we need to synthesize a protocol name.
+			ma_string_store.push_back(numeric_format("XXEncryptedProtocol_%04x", cls.vm_address));
+			cls.name = ma_string_store.back().c_str();
+		}
 		
 		// Make sure the same protocol hasn't been declared.
 		for (unsigned j = proto_start_index; j < ma_classes.size(); ++ j) {
@@ -396,7 +436,11 @@ void MachO_File_ObjC::retrieve_class_info() throw() {
 		all_class_data_ptr.push_back(class_data_ptr);
 		
 		cls.attributes = class_data_ptr->flags;
-		cls.name = PEEK_VM_ADDR(class_data_ptr->name, char, text);
+		cls.name = this->get_cstring(class_data_ptr->name, &m_guess_text_segment, cls.vm_address, strlen("_OBJC_CLASS_$_"), NULL);
+		if (cls.name == NULL) {
+			ma_string_store.push_back(numeric_format("XXEncryptedClass_%04x", cls.vm_address));
+			cls.name = ma_string_store.back().c_str();
+		}
 		cls.type_index = m_record.add_internal_objc_class(cls.name);
 		
 		ma_classes_vm_address_index.insert( pair<unsigned,unsigned>(cls.vm_address, ma_classes.size()) );
@@ -433,13 +477,24 @@ void MachO_File_ObjC::retrieve_class_info() throw() {
 					continue;				
 			
 				Ivar ivar;
-				ivar.name = PEEK_VM_ADDR(cur_ivar->name, char, text);
-				const char* ivar_type = PEEK_VM_ADDR(cur_ivar->type, char, text);
-				ivar.type = m_record.parse(ivar_type, true);
+				
+				ivar.name = get_cstring(cur_ivar->name, &m_guess_text_segment, reinterpret_cast<unsigned>(cur_ivar->offset), 0, NULL);
 				ivar.offset = *PEEK_VM_ADDR(cur_ivar->offset, unsigned, text);
-				
-				m_record.add_strong_link(cls.type_index, ivar.type);
-				
+				if (ivar.name == NULL) {
+					ma_string_store.push_back(numeric_format("XXEncryptedIvar_%02x", ivar.offset));
+					ivar.name = ma_string_store.back().c_str();
+				} else {
+					const char* last_dot = strrchr(ivar.name, '.');
+					if (last_dot != NULL)
+						ivar.name = last_dot + 1;
+				}
+				const char* ivar_type = get_cstring(cur_ivar->type, &m_guess_text_segment, 0, 0, NULL);
+				if (ivar_type != NULL) {
+					ivar.type = m_record.parse(ivar_type, true);
+					m_record.add_strong_link(cls.type_index, ivar.type);
+				} else
+					ivar.type = m_record.unknown_type();
+								
 				cls.ivars.push_back(ivar);
 			}
 		}
@@ -478,7 +533,27 @@ void MachO_File_ObjC::retrieve_category_info() throw() {
 			
 			cls.type = ClassType::CT_Category;
 			cls.attributes = 0;
-			cls.name = PEEK_VM_ADDR(cat->name, char, text);
+			cls.name = this->get_cstring(cat->name, &m_guess_text_segment, 0, 0, NULL);
+			if (cls.name == NULL) {
+				// the class name is empty! check if we have symbols of this category's method.
+				// if yes, we can still extract the category name as the stuff between ( ... ).
+				for (unsigned i = 0; i < 2; ++ i) {
+					const method_list_t* method_ptr = PEEK_VM_ADDR((i != 0 ? cat->classMethods : cat->instanceMethods), method_list_t, data);
+					if (method_ptr != NULL) {
+						const char* rep = this->string_representation(reinterpret_cast<unsigned>(method_ptr->first.imp) & ~1);
+						if (rep != NULL) {
+							const char* first_open_parenthesis = strchr(rep, '(')+1;
+							const char* first_close_parenthesis = strchr(first_open_parenthesis, ')');
+							ma_string_store.push_back(string(first_open_parenthesis, first_close_parenthesis));
+							cls.name = ma_string_store.back().c_str();
+							goto found_name;
+						}
+					}
+				}
+				ma_string_store.push_back(numeric_format("XXEncryptedCategory_%04x", cls.vm_address));
+				cls.name = ma_string_store.back().c_str();
+			found_name:;
+			}
 			
 			unsigned superclass_index;
 			cls.superclass_name = get_superclass_name(reinterpret_cast<unsigned>(cat->cls), cls.vm_address + offsetof(category_t, cls), superclass_index);
