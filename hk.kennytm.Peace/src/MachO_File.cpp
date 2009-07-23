@@ -30,7 +30,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 using namespace std;
 
-MachO_File_Simple::MachO_File_Simple(const char* path) throw(std::bad_alloc,TRException) : DataFile(path), m_origin(0) {
+MachO_File_Simple::MachO_File_Simple(const char* path) throw(std::bad_alloc,TRException) : DataFile(path), m_origin(0), m_crypt_begin(0), m_crypt_end(0) {
 	
 	const mach_header* mp_header = this->read_data<mach_header>();
 	
@@ -67,6 +67,13 @@ MachO_File_Simple::MachO_File_Simple(const char* path) throw(std::bad_alloc,TREx
 				ma_sections.push_back(this->read_data<section>());
 			
 			this->seek(old_location);
+		} else if (p_cur_cmd->cmd == LC_ENCRYPTION_INFO) {
+			const encryption_info_command* p_cur_encr = reinterpret_cast<const encryption_info_command*>(p_cur_cmd);
+			if (p_cur_encr->cryptid != 0) {
+				::std::fprintf(stderr, "Warning: Part of this binary is encrypted. Usually, the result will be not meaningful. Try to provide an unencrypted version instead.\n");
+				m_crypt_begin = m_origin + static_cast<off_t>(p_cur_encr->cryptoff);
+				m_crypt_end = m_crypt_begin + p_cur_encr->cryptsize;
+			}
 		}
 		
 		this->advance(p_cur_cmd->cmdsize);
@@ -285,6 +292,9 @@ MachO_File::MachO_File(const char* path) throw(bad_alloc,TRException) : MachO_Fi
 	// analyze the sections (to short-cut the indirect symbols)
 	for (vector<const section*>::const_iterator cit = ma_sections.begin(); cit != ma_sections.end(); ++ cit) {
 		const section* s = *cit;
+		if (file_offset_encrypted(s->offset))
+			continue;
+		
 		unsigned sect_type = s->flags & SECTION_TYPE;
 		switch (sect_type) {
 			case S_NON_LAZY_SYMBOL_POINTERS:

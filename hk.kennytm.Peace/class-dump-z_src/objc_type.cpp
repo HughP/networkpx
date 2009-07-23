@@ -41,7 +41,7 @@ static const char* map314[] = {
 	NULL, NULL, "char*", NULL, NULL, NULL, NULL, NULL,
 
 // let's hope gcc won't use the numbers :(
-	NULL, NULL, NULL, NULL, NULL, NULL, "/*xxintrnl-category*/", "/*xxintrnl-protocol*/",	// 0 1 2 3 4 5 6 7         8 9 : ; < = > ?
+	NULL, NULL, NULL, NULL, "/*function*/", "?", "/*xxintrnl-category*/", "/*xxintrnl-protocol*/",	// 0 1 2 3 4 5 6 7         8 9 : ; < = > ?
 	NULL, NULL, "SEL", NULL, NULL, NULL, NULL, "/*function-pointer*/ void",
 
 	"id", NULL, "bool", "unsigned char", NULL, NULL, NULL, NULL,	// @ A B C D E F G        H I J K L M N O

@@ -27,7 +27,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 using namespace std;
 
 string numeric_format(const char* format, unsigned number) throw() {
-	// for symplicity, assume C99.
+	// for simplicity, assume C99.
 	size_t buffer_size = static_cast<size_t>(sizeof(unsigned) * 2.40823996531185) + strlen(format);	// 2.40823996531185 = log_10 (256).
 	char buffer[buffer_size];
 	snprintf(buffer, buffer_size, format, number);
