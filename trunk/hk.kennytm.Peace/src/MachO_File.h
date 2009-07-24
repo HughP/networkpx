@@ -28,6 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <cstdio>
 #include <vector>
 #include <tr1/unordered_map>
+#include <map>
 #include <tr1/unordered_set>
 #include <new>
 #include <algorithm>
@@ -108,13 +109,13 @@ private:
 	unsigned m_relocations_length;
 	
 	// VMAddress :-> string
-	std::tr1::unordered_map<unsigned,const char*> ma_symbol_references;
-	std::tr1::unordered_map<unsigned,const char*> ma_cfstrings;
+	std::map<unsigned,const char*> ma_symbol_references;
+	std::map<unsigned,const char*> ma_cfstrings;
 	
-	std::tr1::unordered_map<unsigned,const char*> ma_objc_classes;
-	std::tr1::unordered_map<unsigned,const char*> ma_objc_selectors;
+	std::map<unsigned,const char*> ma_objc_classes;
+	std::map<unsigned,const char*> ma_objc_selectors;
 	
-	std::tr1::unordered_map<unsigned,ObjCMethod> ma_objc_methods;
+	std::map<unsigned,ObjCMethod> ma_objc_methods;
 	
 	std::tr1::unordered_set<unsigned> ma_is_external_symbol;
 	std::tr1::unordered_map<unsigned,unsigned> ma_library_ordinals;
