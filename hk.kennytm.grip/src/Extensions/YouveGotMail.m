@@ -52,6 +52,7 @@ __attribute__((visibility("hidden")))
 __attribute__((visibility("hidden")))
 @interface MailAccount : NSObject { NSString* simtest_address; }
 @property(readonly) NSArray* emailAddresses;
+@property(readonly) NSString* fullUserName;
 +(NSArray*)activeAccounts;
 @end
 
@@ -105,6 +106,7 @@ static NSString* const randomAddresses[4] = {@"test@example.com", @"another_test
 -(id)initWithAddress:(NSString*)addr { if ((self = [super init])) simtest_address = [addr retain]; return self; }
 -(void)dealloc { [simtest_address release]; [super dealloc]; }
 -(NSArray*)emailAddresses { return [NSArray arrayWithObject:simtest_address]; }
+-(NSString*)fullUserName { return simtest_address; }
 +(NSArray*)activeAccounts { return [NSArray arrayWithObjects:(NSNull*)kCFNull, (NSNull*)kCFNull, nil]; }
 @end
 @implementation MessageStore
@@ -266,7 +268,7 @@ static void YGMConstructDescription(void* index, Message* message, CFMutableStri
 		if (message.messageFlags & 1)
 			continue;
 		CFDictionaryAddValue(messages, (const void*)(msgid++), message);
-		[dirtyAccounts addObject:[message.account.emailAddresses objectAtIndex:0]];
+		[dirtyAccounts addObject:message.account.fullUserName];
 	}
 	pthread_mutex_unlock(&messageLock);
 
@@ -310,7 +312,8 @@ static void YGMConstructDescription(void* index, Message* message, CFMutableStri
 //------------------------------------------------------------------------------
 
 static void prepareEntriesDictionary(unsigned _msgid, Message* msg, NSMutableDictionary* entriesPerAccount) {
-	NSString* account = [msg.account.emailAddresses objectAtIndex:0];
+	MailAccount* mailAccount = msg.account;
+	NSString* account = [NSString stringWithFormat:@"%@ (%@)", mailAccount.fullUserName, [mailAccount.emailAddresses objectAtIndex:0]];
 	NSMutableArray* msgs = [entriesPerAccount objectForKey:account];
 	
 	NSString* summary = msg.summary;
