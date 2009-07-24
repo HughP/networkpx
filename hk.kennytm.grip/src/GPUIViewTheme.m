@@ -78,7 +78,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	[window prepareForResizing];
 	
 	[self modifyView:newView asNew:asNew withMessage:message];
-	if ([message objectForKey:GRIP_DETAIL] != nil && [GPMessageWindow defaultExpanded])
+	if (asNew && [message objectForKey:GRIP_DETAIL] != nil && [GPMessageWindow defaultExpanded])
 		[[self class] updateViewForDisclosure:newView];
 	
 	if (window == nil) {
