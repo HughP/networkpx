@@ -27,19 +27,33 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <mach-o/fat.h>
 #include <libkern/OSByteOrder.h>
 #include <algorithm>
+#include "get_arch_from_flag.h"
 
 using namespace std;
 
-MachO_File_Simple::MachO_File_Simple(const char* path) throw(std::bad_alloc,TRException) : DataFile(path), m_origin(0), m_crypt_begin(0), m_crypt_end(0) {
+MachO_File_Simple::MachO_File_Simple(const char* path, const char* arch) throw(std::bad_alloc,TRException) : DataFile(path), m_origin(0), m_crypt_begin(0), m_crypt_end(0) {
 	
 	const mach_header* mp_header = this->read_data<mach_header>();
 	
 	if (OSSwapBigToHostInt32(mp_header->magic) == FAT_MAGIC) {
-		::std::fprintf(stderr, "Warning: Universal (fat) binary detected. For now, MachO_File will always pick the first architecture, no matter it's actually the right architecture or not. To be sure, unbundle the object with 'lipo -extract <arch>'.\n");
+		struct arch_flag target_arch;
+		if (get_arch_from_flag(arch, &target_arch) == 0) {
+			target_arch.cputype = CPU_TYPE_ANY;
+			target_arch.cpusubtype = 0;
+		}
 		this->retreat(sizeof(mach_header) - sizeof(fat_header));
-		const fat_arch* arch = this->read_data<fat_arch>();
-		m_origin = OSSwapBigToHostInt32(arch->offset);
-		this->seek(m_origin);
+		bool found_arch = false;
+		for (unsigned c = OSSwapBigToHostInt32(reinterpret_cast<const fat_header*>(mp_header)->nfat_arch); c != 0; --c) {
+			const fat_arch* arch = this->read_data<fat_arch>();
+			if (target_arch.cputype == CPU_TYPE_ANY || (OSSwapBigToHostInt32(arch->cputype) == target_arch.cputype && (target_arch.cpusubtype == 0 || OSSwapBigToHostInt32(arch->cpusubtype) == target_arch.cpusubtype))) {
+				m_origin = OSSwapBigToHostInt32(arch->offset);
+				this->seek(m_origin);
+				found_arch = true;
+				break;
+			}
+		}
+		if (!found_arch)
+			throw TRException("MachO_File_Simple::MachO_File_Simple(const char*, const char*):\n\tArchitecture \"%s\" not found in \"%s\".", arch, path);
 		mp_header = this->read_data<mach_header>();
 	}
 	
@@ -241,7 +255,7 @@ static const char* print_string_representation_format_strings_prefix[] = {"", "C
 static const char* print_string_representation_format_strings_suffix[] = {"", "\")", "\"", ")", "", ")", ""};
 
 
-MachO_File::MachO_File(const char* path) throw(bad_alloc,TRException) : MachO_File_Simple(path), ma_symbols(NULL), m_symbols_length(0), ma_indirect_symbols(NULL), m_indirect_symbols_length(0), ma_strings(NULL), ma_cstrings(NULL), m_cstring_vmaddr(0) {
+MachO_File::MachO_File(const char* path, const char* arch) throw(bad_alloc,TRException) : MachO_File_Simple(path, arch), ma_symbols(NULL), m_symbols_length(0), ma_indirect_symbols(NULL), m_indirect_symbols_length(0), ma_strings(NULL), ma_cstrings(NULL), m_cstring_vmaddr(0) {
 	for (vector<const load_command*>::const_iterator cit = ma_load_commands.begin(); cit != ma_load_commands.end(); ++ cit) {
 		switch ((*cit)->cmd) {				
 			case LC_SYMTAB: {
@@ -405,6 +419,49 @@ const char* MachO_File::string_representation (unsigned vm_address, MachO_File::
 	}
 	
 	return NULL;
+}
+
+const char* MachO_File::nearest_string_representation (unsigned vm_address, unsigned* offset, StringType* p_strtype) const throw() {
+	if (!m_is_valid) {
+		if (p_strtype != NULL)
+			*p_strtype = MOST_CString;
+		if (offset != NULL)
+			*offset = 0;
+		return this->peek_data_at<char>(vm_address);
+	}
+	
+	map<unsigned, const char*>::const_iterator cit, best_iter;
+	bool first = true;
+	
+#define TrySearchIn(table, stringType) \
+	cit = (table).lower_bound(vm_address); \
+		if (cit != (table).end()) { \
+			if (first || best_iter->first > cit->first) { \
+				first = false; \
+				best_iter = cit; \
+				if (p_strtype != NULL) *p_strtype = (stringType); \
+			} \
+		}
+	
+	TrySearchIn(ma_cfstrings, MOST_CFString);
+	TrySearchIn(ma_symbol_references, MOST_Symbol);
+	TrySearchIn(ma_objc_classes, MOST_ObjCClass);
+	TrySearchIn(ma_objc_selectors, MOST_ObjCSelector);
+	
+	if (first) {
+		if (m_cstring_vmaddr <= vm_address && m_cstring_vmaddr+m_cstring_table_size >= vm_address) {
+			if (p_strtype != NULL)
+				*p_strtype = MOST_CString;
+			if (offset != NULL)
+				*offset = 0;
+			return ma_cstrings + vm_address - m_cstring_vmaddr;
+		} else
+			return NULL;
+	} else {
+		if (offset != NULL)
+			*offset = best_iter->first - vm_address;
+		return best_iter->second;
+	}
 }
 	
 void MachO_File::print_string_representation(FILE* stream, const char* str, MachO_File::StringType strtype) throw() {
