@@ -1,0 +1,23 @@
+Filter={Bundles=(com.apple.springboard);};
+Localizations={
+	en = {
+		Push = "[Push] ";
+		"%@ notifies" = "%@ notifies";
+		"%@ in %@" = "%@ in %@";	// should be "verb in noun".
+	};
+	es = {
+		Push = "[Push] ";
+		"%@ notifies" = "%@ notifica";
+		"%@ in %@" = "%@ en %@";
+	};
+	zh_CN = {
+		Push = "[推送] ";
+		"%@ notifies" = "%@ 发出通知";
+		"%@ in %@" = "到 %2$@ %1$@";
+	};
+	zh_TW = {
+		Push = "[推播] ";
+		"%@ notifies" = "%@ 發出通知";
+		"%@ in %@" = "到 %2$@ %1$@";
+	};
+};
