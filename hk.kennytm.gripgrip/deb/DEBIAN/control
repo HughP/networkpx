@@ -1,0 +1,13 @@
+Package: hk.kennytm.gripgrip
+Name: GriP Really Impressive Pack
+Version: 0.1-11p
+Architecture: iphoneos-arm
+Description: This is a collection of extensions making use of GriP.
+Homepage: http://code.google.com/p/networkpx/wiki/GriPGRIP
+Maintainer: KennyTM~ <kennytm+GriP@gmail.com>
+Author: KennyTM~ <kennytm+GriP@gmail.com>
+Section: System
+Depends: hk.kennytm.grip (>=0.1-11p)
+Installed-Size: 0
+Support: http://code.google.com/p/networkpx/wiki/FAQ
+dev: kennytm

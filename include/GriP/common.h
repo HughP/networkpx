@@ -65,7 +65,7 @@ enum {
 	GPTVAMessage_Pop,					// 1113
 	GPTVAMessage_GetCurrentIdentifier,	// 1114
 	GPTVAMessage__End = 1119,
-}; 
+};
 
 #if __OBJC__
 #define GPSTR(s) @#s
