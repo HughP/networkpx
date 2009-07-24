@@ -382,7 +382,7 @@ const char* MachO_File::string_representation (unsigned vm_address, MachO_File::
 	if (vm_address == 0)
 		return NULL;
 	
-	tr1::unordered_map<unsigned,const char*>::const_iterator cit;
+	map<unsigned,const char*>::const_iterator cit;
 	
 #define TrySearchIn(table, stringType) \
 	cit = (table).find(vm_address); \
@@ -415,7 +415,7 @@ void MachO_File::print_string_representation(FILE* stream, const char* str, Mach
 
 const MachO_File::ObjCMethod* MachO_File::objc_method_at_vm_address(unsigned vm_address) const throw() {
 	if (m_is_valid) {
-		tr1::unordered_map<unsigned,MachO_File::ObjCMethod>::const_iterator cit = ma_objc_methods.find(vm_address);
+		map<unsigned,MachO_File::ObjCMethod>::const_iterator cit = ma_objc_methods.find(vm_address);
 		if (cit == ma_objc_methods.end())
 			return NULL;
 		else
