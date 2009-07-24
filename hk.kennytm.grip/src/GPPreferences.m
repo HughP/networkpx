@@ -53,6 +53,7 @@ NSDictionary* GPCopyPreferences() {
 	GPSingletonConstructor(preferences, {
 		__NEWOBJ__ = [[NSDictionary alloc] initWithContentsOfFile:FILEPATH];
 		[GPMessageWindow setMaxWidth:[[__NEWOBJ__ objectForKey:@"Width"] floatValue]];
+		[GPMessageWindow setDefaultExpanded:[[__NEWOBJ__ objectForKey:@"DefaultExpanded"] boolValue]];
 	}, [__NEWOBJ__ release]);
 	return [preferences retain];
 }

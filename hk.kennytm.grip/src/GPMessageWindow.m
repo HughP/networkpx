@@ -76,6 +76,7 @@ static NSComparisonResult compareHeight(GPMessageWindow* win1, GPMessageWindow* 
 
 static CGFloat _maxWidth = 160;
 static UIColor* _backgroundColor = nil;
+static BOOL _defaultExpanded = NO;
 
 @implementation GPMessageWindow
 @synthesize view;
@@ -162,6 +163,8 @@ static UIColor* _backgroundColor = nil;
 		_backgroundColor = [backgroundColor retain];
 	}
 }
++(BOOL)defaultExpanded { return _defaultExpanded; }
++(void)setDefaultExpanded:(BOOL)defExp { _defaultExpanded = defExp; }
 
 -(void)_layoutWithAnimation:(BOOL)animate {
 	// obtain the current screen size & subtract the status bar from the screen.
