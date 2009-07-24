@@ -54,7 +54,7 @@ protected:
 	
 public:
 	inline bool valid() const throw() { return m_is_valid; }
-	MachO_File_Simple(const char* path) throw(std::bad_alloc,TRException);
+	MachO_File_Simple(const char* path, const char* arch = "any") throw(std::bad_alloc,TRException);
 	
 	off_t to_file_offset (unsigned vm_address, int* p_guess_segment = NULL) const throw();
 	unsigned to_vm_address (off_t file_offset, int* p_guess_segment = NULL) const throw();
@@ -87,6 +87,8 @@ public:
 	inline bool encrypted() const throw() { return m_crypt_begin != m_crypt_end; }
 	inline bool file_offset_encrypted(off_t offset) const throw() { return offset >= m_crypt_begin && offset < m_crypt_end; }
 	inline bool vm_address_encrypted(unsigned vm_address, int* p_guess_segment = NULL) { return file_offset_encrypted(to_file_offset(vm_address, p_guess_segment)); } 
+	
+	inline unsigned text_segment_vm_adress() const { return m_is_valid ? ma_segments[segment_index_having_name("__TEXT")]->vmaddr : 0; }
 };
 
 //------------------------------------------------------------------------------
@@ -131,10 +133,11 @@ public:
 		MOST_ObjCIvar
 	};
 	
-	MachO_File(const char* path) throw(std::bad_alloc,TRException);
+	MachO_File(const char* path, const char* arch = "any") throw(std::bad_alloc,TRException);
 	
 	// try to obtain a string related to this vm_address.
 	const char* string_representation (unsigned vm_address, StringType* p_strtype = NULL) const throw();
+	const char* nearest_string_representation (unsigned vm_address, unsigned* offset, StringType* p_strtype = NULL) const throw();
 	
 	static void print_string_representation(std::FILE* stream, const char* str, StringType strtype = MOST_Symbol) throw();
 	
