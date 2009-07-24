@@ -38,28 +38,38 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 @interface GPDefaultThemePrefsListController : PSListController {
 	NSNumber* width;
+	NSNumber* defaultExpanded;
 }
 -(id)initForContentSize:(CGSize)size;
 -(void)dealloc;
 -(void)suspend;
 -(NSArray*)specifiers;
 @property(retain) NSNumber* width;
+@property(retain) NSNumber* defaultExpanded;
 @end
 @implementation GPDefaultThemePrefsListController
-@synthesize width;
+@synthesize width, defaultExpanded;
 -(id)initForContentSize:(CGSize)size {
 	if ((self = [super initForContentSize:size])) {
-		width = [[[NSDictionary dictionaryWithContentsOfFile:GRIP_PREFDICT] objectForKey:@"Width"] retain];
+		NSDictionary* prefDict = [NSDictionary dictionaryWithContentsOfFile:GRIP_PREFDICT];
+		width = [[prefDict objectForKey:@"Width"] retain];
+		if (width == nil)
+			width = [[NSNumber alloc] initWithFloat:160];
+		defaultExpanded = [[prefDict objectForKey:@"DefaultExpanded"] retain];
+		if (defaultExpanded == nil)
+			defaultExpanded = [[NSNumber alloc] initWithBool:NO];
 	}
 	return self;
 }
 -(void)dealloc {
 	[width release];
+	[defaultExpanded release];
 	[super dealloc];
 }
 -(void)suspend {
 	NSMutableDictionary* dict = [NSMutableDictionary dictionaryWithContentsOfFile:GRIP_PREFDICT];
 	[dict setObject:width forKey:@"Width"];
+	[dict setObject:defaultExpanded forKey:@"DefaultExpanded"];
 	[dict writeToFile:GRIP_PREFDICT atomically:NO];
 	[GPDuplexClient sendMessage:GriPMessage_FlushPreferences data:nil];
 	[super suspend];

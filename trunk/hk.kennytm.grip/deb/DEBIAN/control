@@ -2,12 +2,12 @@ Package: hk.kennytm.grip
 Name: GriP - Growl for iPhoneOS
 Version: 0.1-11p
 Architecture: iphoneos-arm
-Description: This also includes "MemoryWatcher" and "You've Got Mail" (new mail notifier). GriP lets iPhoneOS applications and extensions unintrusively tell you when things happen.
+Description: This also includes "GriP Push Notification" and "You've Got Mail" (new mail notifier). GriP lets iPhoneOS applications and extensions unintrusively tell you when things happen.
 Homepage: http://code.google.com/p/networkpx/wiki/GriP
 Maintainer: KennyTM~ <kennytm+GriP@gmail.com>
 Author: KennyTM~ <kennytm+GriP@gmail.com>
 Section: System
 Depends: mobilesubstrate (>=0.9-0), preferenceloader (>=1.1)
-Installed-Size: 692
+Installed-Size: 676
 Support: http://code.google.com/p/networkpx/wiki/FAQ
 dev: kennytm

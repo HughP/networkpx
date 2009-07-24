@@ -9,6 +9,12 @@ items = (
 		set = "setWidth:";
 		min = 80;
 		max = 320;
-		showValue = YES; }
+		showValue = YES; },
+	{ cell = PSGroupCell; },
+	{ cell = PSSwitchCell;
+		id = defaultExpanded;
+		label = "Default expanded";
+		get = defaultExpanded;
+		set = "setDefaultExpanded:"; },
 );
 }
