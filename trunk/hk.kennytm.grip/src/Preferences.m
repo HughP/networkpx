@@ -57,20 +57,19 @@ static const float perPriorityDefaultSettings[5][9] = {
 
 extern UIImage* PSSettingsIconImageForUserAppBundlePath(NSString* path);
 extern NSString* SBSCopyLocalizedApplicationNameForDisplayIdentifier(NSString* identifier);
-extern NSArray* SBSCopyApplicationDisplayIdentifiers(BOOL onlyActive, BOOL unknown);
 extern NSString* SBSCopyIconImagePathForDisplayIdentifier(NSString* identifier);
-extern void SBBundlePathForDisplayIdentifier(mach_port_t port, const char* identifier, char* result);
-extern mach_port_t SBSSpringBoardServerPort();
-
-static inline NSString* GPBundlePathForDisplayIdentifier(mach_port_t port, NSString* identifier) {
-	char resstr[1024];
-	SBBundlePathForDisplayIdentifier(port, [identifier UTF8String], resstr);
-	return [NSString stringWithUTF8String:resstr];
-}
 
 @interface UIImage ()
 -(UIImage*)_smallApplicationIconImagePrecomposed:(BOOL)precomposed;
 @end
+
+@interface UIProgressHUD : UIView
+-(void)setText:(NSString*)text;
+-(void)showInView:(UIView*)view;
+-(void)hide;
+-(void)done;
+@end
+
 
 static NSComparisonResult comparePSSpecs(PSSpecifier* p1, PSSpecifier* p2, void* context) { return [p1.name localizedCompare:p2.name]; }
 
@@ -79,6 +78,7 @@ static NSComparisonResult comparePSSpecs(PSSpecifier* p1, PSSpecifier* p2, void*
 
 @interface GPGameModeController : PSListController {
 	NSMutableSet* gameModeApps;
+	UIProgressHUD* enumeratingHUD;
 }
 -(id)initForContentSize:(CGSize)size;
 -(void)dealloc;
@@ -87,17 +87,24 @@ static NSComparisonResult comparePSSpecs(PSSpecifier* p1, PSSpecifier* p2, void*
 -(void)populateSystemApps;
 -(CFBooleanRef)getApp:(PSSpecifier*)spec;
 -(void)set:(CFBooleanRef)enable app:(PSSpecifier*)spec;
+-(void)showHUD;
+-(void)hideHUD;
+-(void)appendAppWithPath:(NSString*)path toArray:(NSMutableArray*)arr;
+-(void)appendAppWithPath:(NSString*)path identifier:(NSString*)identifier toArray:(NSMutableArray*)arr;
 @end
 @implementation GPGameModeController
 -(id)initForContentSize:(CGSize)size {
 	if ((self = [super initForContentSize:size])) {
 		NSArray* gameModeAppsArray = [[NSDictionary dictionaryWithContentsOfFile:GRIP_PREFDICT] objectForKey:@"GameModeApps"] ?: [NSArray array];
 		gameModeApps = [[NSMutableSet alloc] initWithArray:gameModeAppsArray];
+		enumeratingHUD = [[UIProgressHUD alloc] init];
+		[enumeratingHUD setText:[[NSBundle mainBundle] localizedStringForKey:@"LOADING_APPLICATIONS" value:@"Loading Applications\u2026" table:nil]];
 	}
 	return self;
 }
 -(void)dealloc {
 	[gameModeApps release];
+	[enumeratingHUD release];
 	[super dealloc];
 }
 -(void)suspend {
@@ -107,52 +114,98 @@ static NSComparisonResult comparePSSpecs(PSSpecifier* p1, PSSpecifier* p2, void*
 	[GPDuplexClient sendMessage:GriPMessage_FlushPreferences data:nil];
 	[super suspend];
 }
+-(void)appendAppWithPath:(NSString*)path identifier:(NSString*)identifier toArray:(NSMutableArray*)arr {
+	UIImage* image = PSSettingsIconImageForUserAppBundlePath(path) ?: GPGetSmallAppIcon(identifier);
+	if (image == nil) {
+		NSString* iconPath = SBSCopyIconImagePathForDisplayIdentifier(identifier);
+		image = [[UIImage imageWithContentsOfFile:iconPath] _smallApplicationIconImagePrecomposed:YES];
+		[iconPath release];
+	}
+	
+	NSString* localizedName = SBSCopyLocalizedApplicationNameForDisplayIdentifier(identifier);
+	
+	if (localizedName == nil && image == nil)
+		return;
+		
+	PSSpecifier* spec = [PSSpecifier preferenceSpecifierNamed:localizedName
+													   target:self
+														  set:@selector(set:app:)
+														  get:@selector(getApp:)
+													   detail:Nil
+														 cell:PSSwitchCell
+														 edit:Nil];
+	[localizedName release];
+	[spec setProperty:image forKey:@"iconImage"];
+	[spec setProperty:identifier forKey:@"id"];
+	[arr addObject:spec];
+}
+-(void)appendAppWithPath:(NSString*)path toArray:(NSMutableArray*)arr {
+	NSDictionary* infoPlist = [[NSDictionary alloc] initWithContentsOfFile:[path stringByAppendingPathComponent:@"Info.plist"]];
+	NSString* identifier = [infoPlist objectForKey:@"CFBundleIdentifier"];
+	
+	NSMutableSet* allRoleIDs = [[NSMutableSet alloc] init];
+	
+	NSArray* roles = [infoPlist objectForKey:@"UIRoleInfo"];
+	for (NSDictionary* role in roles) {
+		NSArray* roles2 = [role objectForKey:@"Roles"];
+		for (NSDictionary* role2 in roles2) {
+			NSString* roleName = [role2 objectForKey:@"Role"];
+			[allRoleIDs addObject:[NSString stringWithFormat:@"%@-%@", identifier, roleName]];
+		}
+	}
+	
+	if ([allRoleIDs count] != 0) {
+		for (NSString* roleID in allRoleIDs)
+			[self appendAppWithPath:path identifier:roleID toArray:arr];
+	} else
+		[self appendAppWithPath:path identifier:identifier toArray:arr];
+	
+	[allRoleIDs release];
+	[infoPlist release];
+}
 -(void)populateSystemApps {
 	NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
+	NSFileManager* fman = [NSFileManager defaultManager];
 	
-	NSMutableArray* systemSpecs = [NSMutableArray array];
-	mach_port_t port = SBSSpringBoardServerPort();
-	NSArray* sbApps = SBSCopyApplicationDisplayIdentifiers(NO, NO);
-	// TODO: switch back to enumeration to deal with categories & poof :<
+	NSMutableArray* userApps = [[NSMutableArray alloc] init];
+	NSMutableArray* systemApps = [[NSMutableArray alloc] init];
 	
-	for (NSString* identifier in sbApps) {
-		NSString* localizedName = SBSCopyLocalizedApplicationNameForDisplayIdentifier(identifier);
-		NSString* bundlePath = GPBundlePathForDisplayIdentifier(port, identifier);
-		UIImage* image = PSSettingsIconImageForUserAppBundlePath(bundlePath) ?: GPGetSmallAppIcon(identifier);
-		if (image == nil) {
-			NSString* iconPath = SBSCopyIconImagePathForDisplayIdentifier(identifier);
-			image = [[UIImage imageWithContentsOfFile:iconPath] _smallApplicationIconImagePrecomposed:YES];
-			[iconPath release];
-		}
-		PSSpecifier* spec = [PSSpecifier preferenceSpecifierNamed:localizedName
-														   target:self
-															  set:@selector(set:app:)
-															  get:@selector(getApp:)
-														   detail:Nil
-															 cell:PSSwitchCell
-															 edit:Nil];
-		[localizedName release];
-		[spec setProperty:image forKey:@"iconImage"];
-		[spec setProperty:identifier forKey:@"id"];
-		[systemSpecs addObject:spec];
+	// 1. Enumerate apps in ~/Applications
+	for (NSString* subpath in [fman contentsOfDirectoryAtPath:@"/var/mobile/Applications" error:NULL]) {
+		NSString* fullSubpath = [@"/var/mobile/Applications" stringByAppendingPathComponent:subpath];
+		for (NSString* appPath in [fman contentsOfDirectoryAtPath:fullSubpath error:NULL])
+			if ([appPath hasSuffix:@".app"]) {
+				[self appendAppWithPath:[fullSubpath stringByAppendingPathComponent:appPath] toArray:userApps];
+				break;
+			}
 	}
-	[sbApps release];
+	
+	// 2. Enumerate apps in /Applications
+	for (NSString* appPath in [fman contentsOfDirectoryAtPath:@"/Applications" error:NULL])
+		[self appendAppWithPath:[@"/Applications" stringByAppendingPathComponent:appPath] toArray:systemApps];
 	
 	// sort the array using the localized name.
-	[systemSpecs sortUsingFunction:&comparePSSpecs context:NULL];
+	[userApps sortUsingFunction:&comparePSSpecs context:NULL];
+	[systemApps sortUsingFunction:&comparePSSpecs context:NULL];
+	
+	[userApps addObject:[PSSpecifier emptyGroupSpecifier]];
+	[userApps addObjectsFromArray:systemApps];
+	[systemApps release];
 	
 	NSInvocation* invoc = [NSInvocation invocationWithMethodSignature:[self methodSignatureForSelector:@selector(insertContiguousSpecifiers:atIndex:animated:)]];
 	BOOL _yes = YES;
 	int index = 1;
 	[invoc setTarget:self];
 	[invoc setSelector:@selector(insertContiguousSpecifiers:atIndex:animated:)];
-	[invoc setArgument:&systemSpecs atIndex:2];
+	[invoc setArgument:&userApps atIndex:2];
 	[invoc setArgument:&index atIndex:3];
 	[invoc setArgument:&_yes atIndex:4];
 	[invoc retainArguments];
 	
 	[invoc performSelectorOnMainThread:@selector(invoke) withObject:nil waitUntilDone:NO];
-	[[UIApplication sharedApplication] performSelectorOnMainThread:@selector(setNetworkActivityIndicatorVisible:) withObject:NO waitUntilDone:NO];
+	[self performSelectorOnMainThread:@selector(hideHUD) withObject:nil waitUntilDone:NO];
+	
+	[userApps release];
 	
 	[pool drain];
 }
@@ -160,7 +213,7 @@ static NSComparisonResult comparePSSpecs(PSSpecifier* p1, PSSpecifier* p2, void*
 -(NSArray*)specifiers {
 	if (_specifiers == nil) {
 		_specifiers = [[self loadSpecifiersFromPlistName:@"Game mode" target:self] retain];
-		[UIApplication sharedApplication].networkActivityIndicatorVisible = YES;
+		[self showHUD];
 		[self performSelectorInBackground:@selector(populateSystemApps) withObject:nil];
 	}
 	return _specifiers;
@@ -172,6 +225,14 @@ static NSComparisonResult comparePSSpecs(PSSpecifier* p1, PSSpecifier* p2, void*
 		[gameModeApps addObject:iden];
 	else
 		[gameModeApps removeObject:iden];
+}
+
+-(void)showHUD {
+	[enumeratingHUD showInView:self.view];
+}
+-(void)hideHUD {
+	[enumeratingHUD done];
+	[enumeratingHUD performSelector:@selector(hide) withObject:nil afterDelay:1];
 }
 @end
 
