@@ -1,6 +1,6 @@
 /*
 
-GPMessageQueue.h ... GriP Message Queue
+GPMessageLogUI.h ... Display message log.
  
 Copyright (c) 2009, KennyTM~
 All rights reserved.
@@ -30,27 +30,25 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  
 */
 
-#ifndef GRIP_GPMESSAGEQUEUE_H
-#define GRIP_GPMESSAGEQUEUE_H
-#ifdef __cplusplus
+#ifndef GRIP_GPMESSAGELOGUI_H
+#define GRIP_GPMESSAGELOGUI_H
+#if __cplusplus
 extern "C" {
 #endif
 	
-#include <CoreFoundation/CoreFoundation.h>
+#include <CoreFoundation/CFArray.h>
 	
-	CFArrayRef GPEnqueueMessage(CFDictionaryRef message);
-	CFArrayRef GPCopyAndDequeueMessages(unsigned maxCount);
-	
-	void GPSetLocked(Boolean locked);
-	void GPSetGaming(Boolean gaming);
-	void GPRefreshSuspensionBehaviors();
-	
-	CFNotificationSuspensionBehavior GPCurrentSuspensionBehaviorForPriorityIndex(int i);
-	void GPCleanUpSuspensionQueues();
-	
-	Boolean GPGetLocked();
-	
-#ifdef __cplusplus
+#if __OBJC__
+@class GPApplicationBridge, NSString;
+#else
+typedef struct GPApplicationBridge GPApplicationBridge;
+typedef const struct __CFString* NSString;
+#endif
+
+void GPMessageLogShow(GPApplicationBridge* bridge, NSString* name);
+void GPMessageLogRefresh(CFArrayRef modifiedMessages);
+
+#if __cplusplus
 }
 #endif
 #endif
