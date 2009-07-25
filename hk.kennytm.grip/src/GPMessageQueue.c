@@ -35,25 +35,35 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <GriP/common.h>
 #include <GriP/GPSingleton.h>
 
-CFMutableArrayRef messageQueues[5] = {NULL, NULL, NULL, NULL, NULL};
-CFNotificationSuspensionBehavior gamingSuspensionBehaviors[5] = {
-	CFNotificationSuspensionBehaviorDrop, 
-	CFNotificationSuspensionBehaviorCoalesce,
-	CFNotificationSuspensionBehaviorHold,
-	CFNotificationSuspensionBehaviorDeliverImmediately,
-	CFNotificationSuspensionBehaviorDeliverImmediately
-};
-CFNotificationSuspensionBehavior lockedSuspensionBehaviors[5] = {
-	CFNotificationSuspensionBehaviorDrop, 
-	CFNotificationSuspensionBehaviorCoalesce,
-	CFNotificationSuspensionBehaviorHold,
-	CFNotificationSuspensionBehaviorHold,
-	CFNotificationSuspensionBehaviorHold
-};
-Boolean isGaming = false, isLocked = false;
+static CFMutableArrayRef messageQueues[5] = {NULL, NULL, NULL, NULL, NULL};
+static CFNotificationSuspensionBehavior gamingSuspensionBehaviors[5];
+static CFNotificationSuspensionBehavior lockedSuspensionBehaviors[5];
+static Boolean isGaming = false, isLocked = false;
 
 CFNotificationSuspensionBehavior GPCurrentSuspensionBehaviorForPriorityIndex(int i) {
 	return isLocked ? lockedSuspensionBehaviors[i] : isGaming ? gamingSuspensionBehaviors[i] : CFNotificationSuspensionBehaviorDeliverImmediately;
+}
+
+static CFNotificationSuspensionBehavior GPGetBehaviorFromObject(const void* x) {
+	if (CFGetTypeID(x) == CFStringGetTypeID())
+		return CFStringGetIntValue(x);
+	else if (CFGetTypeID(x) == CFNumberGetTypeID()) {
+		int retval;
+		CFNumberGetValue(x, kCFNumberIntType, &retval);
+		return retval;
+	} else
+		return CFNotificationSuspensionBehaviorHold;
+}
+
+void GPRefreshSuspensionBehaviors() {
+	CFDictionaryRef prefs = GPCopyPreferences();
+	CFArrayRef pps = CFDictionaryGetValue(prefs, CFSTR("PerPrioritySettings"));
+	for (unsigned i = 0; i < 5; ++ i) {
+		CFArrayRef ps = CFArrayGetValueAtIndex(pps, i);
+		gamingSuspensionBehaviors[i] = GPGetBehaviorFromObject(CFArrayGetValueAtIndex(ps, GPPrioritySettings_Gaming));
+		lockedSuspensionBehaviors[i] = GPGetBehaviorFromObject(CFArrayGetValueAtIndex(ps, GPPrioritySettings_Locked));
+	}
+	CFRelease(prefs);
 }
 
 extern void GPCleanUpSuspensionQueues() {
@@ -127,3 +137,4 @@ CFArrayRef GPCopyAndDequeueMessages(unsigned maxCount) {
 
 void GPSetLocked(Boolean locked) { isLocked = locked; }
 void GPSetGaming(Boolean gaming) { isGaming = gaming; }
+Boolean GPGetLocked() { return isLocked; }

@@ -48,11 +48,15 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #if GRIP_JAILBROKEN
 #import <substrate.h>
-__attribute__((visibility("hidden")))
 @interface SpringBoard : UIApplication
 -(void)applicationOpenURL:(NSURL*)url publicURLsOnly:(BOOL)publicsOnly;	// only in >=3.0
 -(void)applicationOpenURL:(NSURL*)url asPanel:(BOOL)asPanel publicURLsOnly:(BOOL)publicsOnly;	// only in <3.0
 @end
+@interface SBAwayController
++(SBAwayController*)sharedAwayController;
+-(void)attemptUnlock;
+@end
+
 #else
 #import <GriP/GPDefaultTheme.h>
 #endif
@@ -69,6 +73,7 @@ static CFDataRef GriPCallback (CFMessagePortRef serverPort, SInt32 type, CFDataR
 	switch (type) {
 		case GriPMessage_FlushPreferences:
 			GPFlushPreferences();
+			GPRefreshSuspensionBehaviors();
 			GPSingletonDestructor(activeTheme, {
 				// Currently there's so safe way to force a hard flush.
 				// the latest attempt results in this:
@@ -99,8 +104,12 @@ dequeue_messages:
 		{
 			NSArray* dequeuedMessages = (NSArray*)GPCopyAndDequeueMessages(0);
 			if ([dequeuedMessages count] != 0) {
-			
+				
 #if GRIP_JAILBROKEN
+				// Fix issue 223.
+				if (GPGetLocked())
+					[[objc_getClass("SBAwayController") sharedAwayController] attemptUnlock];
+				
 				GPSingletonConstructor(activeTheme, {
 					NSDictionary* prefs = GPCopyPreferences();
 					NSBundle* activeThemeBundle = [NSBundle bundleWithPath:[@"/Library/GriP/Themes/" stringByAppendingPathComponent:[prefs objectForKey:@"ActiveTheme"]]];
@@ -315,6 +324,8 @@ void GPStartGriPServer () {
 		
 		NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
 		[GPMessageWindow _initialize];
+	
+	GPRefreshSuspensionBehaviors();
 		
 		// Notify any waiting MS extensions that GriP is ready.
 		CFNotificationCenterRef localCenter = CFNotificationCenterGetLocalCenter();		
