@@ -111,12 +111,12 @@ The referenced type can be one of:
 || name || string || || Name of the attribute. ||
 || value || any || || Value of the attribute. ||
 
-So defined attributes are:
+The defined attributes are:
 || *name* || *value type* || *meaning* ||
 || adaptive-keys || boolean || Use "adaptive keys" or not. Usually true for alphabet plane and false for numbers & symbols plane. ||
 || autoshift || boolean || Enables auto-shift (e.g. enables shift after a full-stop). ||
 || label || string? || Not used. ||
-|| looks-like-shift-alternate || boolean || Whether the shift key looks like an up arrow?? ||
+|| looks-like-shift-alternate || boolean || This plane and the shift plane look like each other. ||
 || more-after || string ("yes" or "no") || ?? See` -[UIKeyboardLayoutStar upActionFlagsForKey:]`. ||
 || more-alternate || string || The name of keyplane to switch to after tapping the More key. ||
 || more-rendering || string ("numbers", "symbols", "letters" or "phonepad") || What strings should be shown on the More key. ||
@@ -132,3 +132,26 @@ So defined attributes are:
 || variant-popup-bias || string ("left" or "right") || Whether the variants popup should expand to the left or right. ||
 || variant-type || string || Not used? ||
 || visible || boolean? || Not used. ||
+
+These are attributes for various internal layouts:
+|| *name*<br>*keyplane* || Latin, (Default),<br>Capital-Letters || Latin, (Default),<br>Small-Letters || Latin, (Default),<br>Numbers-And-Punctuation || Latin, (Default),<br>Numbers-And-Punctuation-Alternate || Latin, (!PhonePad)<br>Default || Latin, (!PhonePad)<br>Alternate ||
+|| autoshift || ✓ || ✓ || ✗ || ✗ || ✗ || ✗ || 
+|| adaptive-keys || ✓ || ✓ || ✗ || ✗ || ✗ || ✗ || 
+|| looks-like-shift-alternate || ✓ || ✓ || ✗ || ✗ || ✗ || ✗ || 
+|| shift || yes || no || no || yes || no || yes ||
+|| shift-alternate || small-letters || capital-letters || numbers-and-punctuation-alternate || numbers-and-punctuation || alternate || default ||
+|| shift-is-plane-chooser || || || ✓ || ✓ || || ||
+|| shift-rendering || glyph || || symbols || numbers || letters || numbers ||
+|| shouldskipcandidateselection || || || || || ✓ || ✓ || 
+|| more-alternate || numbers-and-punctuation || numbers-and-punctuation || small-letters || small-letters || || ||
+|| more-rendering || numbers || numbers || letters || letters || || ||
+
+|| *name*<br>*keyplane* || Thai, (Default),<br>Shifted-Letters || Thai, (Default),<br>Letters || Hebrew, (Default)<br>Letters ||
+|| autoshift || ✗ || ✗ || ✗ ||
+|| adaptive-keys || ✓ || ✓ || ✓ ||
+|| looks-like-shift-alternate || ✗ || ✗ || ✓ ||
+|| shift || yes || no || no ||
+|| shift-alternate || letters || shifted-letters || ||
+|| shift-is-plane-chooser || ✓ || ✓ || ✗ ||
+|| more-alternate || numbers-and-punctuation || numbers-and-punctuation || numbers-and-punctuation ||
+|| more-rendering || numbers || numbers || numbers ||
