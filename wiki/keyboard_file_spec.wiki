@@ -53,7 +53,7 @@ A keyset contains rows of keylists, which are columns of keys.
 || displayString || string || || The string that is shown on the key. ||
 || displayType || string || {...} || The style of the key, must be one of:<ul><li>Delete</li><li>!DynamicString</li><li>International</li><li>More</li><li>!NumberPad</li><li>Return</li><li>Shift</li><li>Space</li><li>String</li><li>!TopLevelDomain</li><li>!TopLevelDomainVariant</li></ul> ||
 || interactionType || string || {...} || How the system will respond to a tap. Must be one of:<ul><li>Delete</li><li>International</li><li>None</li><li>Return</li><li>Shift</li><li>Space</li><li>String</li><li>String-Direct</li><li>String-Popup</li></ul> ||
-|| variantType || string || {...} || Variants to show for this key. Must of one of: <ul><li>accents</li><li>currency</li><li>URL</li><li>email</li><li>immediate-accents</li></ul> ||
+|| variantType || string || {...} || Variants to show for this key. Must of one of: <ul><li>accents (not used)</li><li>currency</li><li>URL</li><li>email</li><li>immediate-accents</li></ul> ||
 || attributes || dictionary || `<UIKBAttributeList>` || Other attributes. ||
 
 == UIKBKeylistReference ==
@@ -61,7 +61,7 @@ Keylist references are like patches to the keyset. They provide additional detai
 
  _struct_ `<UIKBKeylistReference>` ::
 || *key* || *type* || *subtype* || *meaning* ||
-|| name || string || || Name of the reference (e.g. "Keyset.Row1.Geometry", "Keyset.Row1.Keys[-1].Attributes", etc.) ||
+|| name || string || || Name of the reference (e.g. "`Keyset.Row1.Geometry`", "`Keyset.Row1.Keys[-1].Attributes`", etc.) ||
 || value || any || || The value for the keylist to use. ||
 || flags || integer || || ? ||
 || nameElements || array || ...of strings || The name, tokenized by dots. ||
@@ -112,26 +112,26 @@ The referenced type can be one of:
 || value || any || || Value of the attribute. ||
 
 The defined attributes are:
-|| *name* || *value type* || *meaning* ||
-|| adaptive-keys || boolean || Use "adaptive keys" or not. Usually true for alphabet plane and false for numbers & symbols plane. ||
-|| autoshift || boolean || Enables auto-shift (e.g. enables shift after a full-stop). ||
-|| label || string? || Not used. ||
-|| looks-like-shift-alternate || boolean || This plane and the shift plane look like each other. ||
-|| more-after || string ("yes" or "no") || ?? See` -[UIKeyboardLayoutStar upActionFlagsForKey:]`. ||
-|| more-alternate || string || The name of keyplane to switch to after tapping the More key. ||
-|| more-rendering || string ("numbers", "symbols", "letters" or "phonepad") || What strings should be shown on the More key. ||
-|| popup-bias || string ("left" or "right") || ?? ||
-|| shift || string ("yes" or "no") || Whether this keyplane is a shifted one. ||
-|| shift-after || string ("yes" or "no") || ?? ||
-|| shift-alternate || string || The name of keyplane to switch to after tapping the Shift key. ||
-|| shift-is-plane-chooser || boolean || When true, the shift key will act as a caps-lock-like key. ||
-|| shift-rendering || string ("numbers", "symbols" or "letters") || What string should be shown on the Shift key. ||
-|| shouldskipcandidateselection || boolean || ? ||
-|| state || string ("enabled" or "disabled") || Whether a key is enabled or not. ||
-|| supported-types || array of strings? || Not used. || 
-|| variant-popup-bias || string ("left" or "right") || Whether the variants popup should expand to the left or right. ||
-|| variant-type || string || Not used? ||
-|| visible || boolean? || Not used. ||
+|| *name* || *value type* || *for* || *meaning* ||
+|| adaptive-keys || boolean || Keyplane || Use "adaptive keys" or not. Usually true for alphabet plane and false for numbers & symbols plane. ||
+|| autoshift || boolean || Keyplane || Enables auto-shift (e.g. enables shift after a full-stop). ||
+|| label || || || ||
+|| looks-like-shift-alternate || boolean || Keyplane || This plane and the shift plane look like each other. ||
+|| more-after || boolean || Key || Immediately press the more key automatically after this key is pressed. Usually enabled on the apostrophe (') key. ||
+|| more-alternate || string (keyplane name) || Keyplane || The name of keyplane to switch to after tapping the More key. ||
+|| more-rendering || {"numbers", "symbols", "letters" or "phonepad"} || Keyplane || What strings should be shown on the More key. ||
+|| popup-bias || {"left", "right"} || Key || Whether the popup (the large letter) to point to the left or right (or center by default).  ||
+|| shift || boolean || Keyplane || Whether this keyplane is a shifted one. ||
+|| shift-after || boolean || Key || Immediately press the shift key automatically after this key is pressed. Used a lot on the Zhuyin keyboard. ||
+|| shift-alternate || string (keyplane name) || Keyplane || The name of keyplane to switch to after tapping the Shift key. ||
+|| shift-is-plane-chooser || boolean || Keyplane || When true, the shift key will act as a caps-lock-like key. ||
+|| shift-rendering || {"numbers", "symbols", "letters", "glyph"} || Keyplane || What string should be shown on the Shift key. ||
+|| shouldskipcandidateselection || boolean || Keyplane || ? ||
+|| state || {"enabled", "disabled"} || Key || Whether a key is enabled or not. Used in !PhonePad keyboard. ||
+|| supported-types || array of strings? || Keyplane || Not used. || 
+|| variant-popup-bias || {"left", "right"} || Key || Whether the variants popup should expand to the left or right. ||
+|| variant-type || string || || Not used? ||
+|| visible || boolean? || || Not used. ||
 
 These are attributes for various internal layouts:
 || *name*<br>*keyplane* || Latin, (Default),<br>Capital-Letters || Latin, (Default),<br>Small-Letters || Latin, (Default),<br>Numbers-And-Punctuation || Latin, (Default),<br>Numbers-And-Punctuation-Alternate || Latin, (!PhonePad)<br>Default || Latin, (!PhonePad)<br>Alternate ||
