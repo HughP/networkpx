@@ -119,18 +119,18 @@ The defined attributes are:
 || looks-like-shift-alternate || boolean || Keyplane || This plane and the shift plane look like each other. ||
 || more-after || boolean || Key || Immediately press the more key automatically after this key is pressed. Usually enabled on the apostrophe (') key. ||
 || more-alternate || string (keyplane name) || Keyplane || The name of keyplane to switch to after tapping the More key. ||
-|| more-rendering || {"numbers", "symbols", "letters" or "phonepad"} || Keyplane || What strings should be shown on the More key. ||
+|| more-rendering || string ({...}) || Keyplane || What strings should be shown on the More key.<ul><li>numbers = @123</li><li>symbols = .?123</li><li>letters = ABC</li><li>phonepad = 123</li></ul> ||
 || popup-bias || {"left", "right"} || Key || Whether the popup (the large letter) to point to the left or right (or center by default).  ||
 || shift || boolean || Keyplane || Whether this keyplane is a shifted one. ||
 || shift-after || boolean || Key || Immediately press the shift key automatically after this key is pressed. Used a lot on the Zhuyin keyboard. ||
 || shift-alternate || string (keyplane name) || Keyplane || The name of keyplane to switch to after tapping the Shift key. ||
 || shift-is-plane-chooser || boolean || Keyplane || When true, the shift key will act as a caps-lock-like key. ||
-|| shift-rendering || {"numbers", "symbols", "letters", "glyph"} || Keyplane || What string should be shown on the Shift key. ||
+|| shift-rendering || string ({...}) || Keyplane || What string should be shown on the Shift key.<br><ul><li>numbers = 123</li><li>symbols = #+=</li><li>letters = ⇧</li><li>glyph = ?????</li></ul> ||
 || shouldskipcandidateselection || boolean || Keyplane || ? ||
 || state || {"enabled", "disabled"} || Key || Whether a key is enabled or not. Used in !PhonePad keyboard. ||
 || supported-types || array of strings? || Keyplane || Not used. || 
 || variant-popup-bias || {"left", "right"} || Key || Whether the variants popup should expand to the left or right. ||
-|| variant-type || string || || Not used? ||
+|| variant-type || string || Key || Not used? ||
 || visible || boolean? || || Not used. ||
 
 These are attributes for various internal layouts:
