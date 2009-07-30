@@ -194,6 +194,7 @@ public:
 	void print_class_type(SortBy sort_by, bool print_method_addresses, bool print_comments, bool print_ivar_offsets, bool sort_methods_alphabetically, bool show_only_exported_classes) const throw();
 	
 	void set_pointers_right_aligned(bool right_aligned = true) throw() { m_record.pointers_right_aligned = right_aligned; }
+	void set_prettify_struct_names(bool prettify_struct_names = true) throw() { m_record.prettify_struct_names = prettify_struct_names; }
 	void set_class_filter(const char* regexp);
 	void set_method_filter(const char* regexp);
 	void set_kill_prefix(const std::vector<std::string>& kill_prefix) { m_kill_prefix = kill_prefix; }

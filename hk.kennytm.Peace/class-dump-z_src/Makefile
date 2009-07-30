@@ -28,10 +28,10 @@ CODESIGN=ldid -S
 
 all:	../output/mac_x86/class-dump-z ../output/iphone_armv6/class-dump-z
 
-../class-dump-z: class-dump-z.o ../src/DataFile.o ../src/MachO_File.o MachO_File_ObjC.o MachO_File_ObjC_retrieval.o MachO_File_ObjC_format.o balanced_substr.o crc32.o pseudo_base64.o objc_type.o string_util.o MachO_File_ObjC_debug.o
+../class-dump-z: class-dump-z.o ../src/DataFile.o ../src/MachO_File.o MachO_File_ObjC.o MachO_File_ObjC_retrieval.o MachO_File_ObjC_format.o balanced_substr.o crc32.o pseudo_base64.o objc_type.o ../src/string_util.o MachO_File_ObjC_debug.o ../src/get_arch_from_flag.o
 	$(CPP) $(CFLAGS) -o $@ $^ libpcre.a
 
-../output/iphone_armv6/class-dump-z: class-dump-z.armv6.o ../src/DataFile.armv6.o ../src/MachO_File.armv6.o MachO_File_ObjC.armv6.o MachO_File_ObjC_retrieval.armv6.o MachO_File_ObjC_format.armv6.o balanced_substr.armv6.o crc32.armv6.o pseudo_base64.armv6.o objc_type.armv6.o string_util.armv6.o MachO_File_ObjC_debug.armv6.o
+../output/iphone_armv6/class-dump-z: class-dump-z.armv6.o ../src/DataFile.armv6.o ../src/MachO_File.armv6.o MachO_File_ObjC.armv6.o MachO_File_ObjC_retrieval.armv6.o MachO_File_ObjC_format.armv6.o balanced_substr.armv6.o crc32.armv6.o pseudo_base64.armv6.o objc_type.armv6.o ../src/string_util.armv6.o MachO_File_ObjC_debug.armv6.o ../src/get_arch_from_flag.armv6.o
 	$(CPP_ARMV6) -lpcre $(CFLAGS_ARMV6) -o $@ $^
 	$(CODESIGN) $@
 

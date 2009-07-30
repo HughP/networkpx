@@ -23,6 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <cstdio>
 #include <cstring>
 #include <algorithm>
+#include <cctype>
 #include "crc32.h"
 #include "balanced_substr.h"
 #include "string_util.h"
@@ -71,6 +72,10 @@ namespace boost {
 			}
 		};
 //	}
+}
+
+static inline bool name_Refable(const string& pretty_name) throw() {
+	return pretty_name.substr(0, 2) != "NS" && isupper(pretty_name[0]) && isupper(pretty_name[1]) && isupper(pretty_name[2]);
 }
 
 
@@ -156,7 +161,7 @@ string ObjCTypeRecord::format_forward_declaration(const vector<TypeIndex>& type_
 					struct_refs += (type.type == '(') ? "union " : "struct ";
 					struct_refs += type.name;
 					struct_refs.push_back(' ');
-					struct_refs += type.pretty_name;
+					struct_refs += type.get_pretty_name(prettify_struct_names);
 				}
 				struct_refs += ";\n";
 				break;
@@ -625,13 +630,14 @@ string ObjCTypeRecord::Type::format (const ObjCTypeRecord& record, const string&
 			
 		case '^': {
 			const Type& subtype = record.ma_type_store[subtypes[0]];
+			
 			if (subtype.type == '[') {
 				string pseudo_argname = "(*";
 				pseudo_argname += argname;
 				pseudo_argname.push_back(')');
 				retval += subtype.format(record, pseudo_argname, 0, true, false, pointers_right_aligned);
 				return retval;
-			} else if (subtype.type == '{' && subtype.subtypes.empty() && !subtype.name.empty() && subtype.name.find('<') == string::npos && subtype.pretty_name.substr(0, 2) != "NS") {
+			} else if (record.prettify_struct_names && subtype.type == '{' && subtype.subtypes.empty() && !subtype.name.empty() && subtype.name.find('<') == string::npos && name_Refable(subtype.pretty_name)) {
 				retval += subtype.pretty_name;
 				retval += "Ref";
 			} else {
@@ -707,7 +713,7 @@ string ObjCTypeRecord::Type::format (const ObjCTypeRecord& record, const string&
 				retval += type == '(' ? "union {}" : "struct {}";
 				
 			} else if (!as_declaration && (!name.empty() || refcount > 1)) {
-				retval += pretty_name;
+				retval += get_pretty_name(record.prettify_struct_names);
 				
 			} else {
 				string tab_string = retval;
@@ -724,13 +730,13 @@ string ObjCTypeRecord::Type::format (const ObjCTypeRecord& record, const string&
 					retval.push_back(' ');
 					retval += name;
 					if (subtypes.empty() && name.find('<') == string::npos) {
-						if (type == '{' && pretty_name.substr(0, 2) != "NS") {
+						if (record.prettify_struct_names && type == '{' && name_Refable(pretty_name)) {
 							retval += pointers_right_aligned ? " *" : "* ";
-							retval += pretty_name;
+							retval += get_pretty_name(record.prettify_struct_names);
 							retval += "Ref";
 						} else {
 							retval.push_back(' ');
-							retval += pretty_name;
+							retval += get_pretty_name(record.prettify_struct_names);
 						}
 					}
 				}
@@ -752,7 +758,7 @@ string ObjCTypeRecord::Type::format (const ObjCTypeRecord& record, const string&
 					retval.push_back('}');
 					if (!dont_typedef && (name.find('<') == string::npos && (!name.empty() || refcount > 1))) {
 						retval.push_back(' ');
-						retval += pretty_name;
+						retval += get_pretty_name(record.prettify_struct_names);
 					}
 				}
 			}
@@ -1073,7 +1079,8 @@ void ObjCTypeRecord::print_arguments(TypeIndex ti, va_list& va, void(*inline_id_
 	
 template<typename T>
 inline static T READ(const char*& vacopy) {
-	T res = *reinterpret_cast<const T*> (vacopy);
+	T res;
+	memcpy(&res, vacopy, sizeof(T));
 	vacopy += sizeof(T);
 	return res;
 }
