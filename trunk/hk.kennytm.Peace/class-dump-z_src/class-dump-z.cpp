@@ -35,11 +35,14 @@ void print_usage () {
 			"where options are:\n"
 			"\n  Analysis:\n"
 			"    -p         Convert undeclared getters and setters into properties (propertize).\n"
+			"    -i         Hide inherited methods. \n"
+			"    -y <root>  Choose the sysroot. Default to /.\n"
 			"\n  Formatting:\n"
 			"    -a         Print ivar offsets\n"
 			"    -A         Print implementation VM addresses.\n"
 			"    -k         Show additional comments.\n"
 			"    -R         Show pointer declarations as int *a instead of int* a.\n"
+			"    -r         Keep the raw struct names (e.g. do no replace __CFArray* with CFArrayRef).\n"
 			"\n  Filtering:\n"
 			"    -C <regex> Only display types with (original) name matching the RegExp (in PCRE syntax).\n"
 			"    -f <regex> Only display methods with (original) name matching the RegExp.\n"
@@ -61,7 +64,7 @@ int main (int argc, char* argv[]) {
 	} else {
 		int c;
 		bool print_ivar_offsets = false, print_method_addresses = false, print_comments = false, sort_methods_alphabetically = false;
-		bool pointers_right_align = false, show_only_exported_classes = false, propertize = false, generate_headers = false;
+		bool pointers_right_align = false, show_only_exported_classes = false, propertize = false, generate_headers = false, prettify_struct_names = true;
 		MachO_File_ObjC::SortBy sort_by = MachO_File_ObjC::SB_None;
 		char diagnosis_option = '\0';
 		const char* sysroot = "";
@@ -71,51 +74,24 @@ int main (int argc, char* argv[]) {
 		vector<string> kill_prefix;
 		
 		// const char* regexp_string = NULL;
-		while ((c = getopt(argc, argv, "aAkC:ISsD:Rf:gpHo:X:")) != -1) {
+		while ((c = getopt(argc, argv, "aAkC:ISsD:Rf:gpHo:X:riy:")) != -1) {
 			switch (c) {
-				case 'a':
-					print_ivar_offsets = true;
-					break;
-				case 'A':
-					print_method_addresses = true;
-					break;
-				case 'k':
-					print_comments = true;
-					break;
-				case 's':
-					sort_methods_alphabetically = true;
-					break;
-				case 'D':
-					// diagnosis options, not to be used publicly.
-					diagnosis_option = *optarg;
-					break;
-				case 'C':
-					type_regexp = optarg;
-					break;
-				case 'f':
-					method_regexp = optarg;
-					break;
-				case 'R':
-					pointers_right_align = true;
-					break;
-				case 'g':
-					show_only_exported_classes = true;
-					break;
-				case 'p':
-					propertize = true;
-					break;
-				case 'S':
-					sort_by = MachO_File_ObjC::SB_Alphabetic;
-					break;
+				case 'a': print_ivar_offsets = true; break;
+				case 'A': print_method_addresses = true; break;
+				case 'k': print_comments = true; break;
+				case 's': sort_methods_alphabetically = true; break;
+				case 'D': diagnosis_option = *optarg; break;	// diagnosis options, not to be used publicly.
+				case 'C': type_regexp = optarg; break;
+				case 'f': method_regexp = optarg; break;
+				case 'R': pointers_right_align = true; break;
+				case 'g': show_only_exported_classes = true; break;
+				case 'p': propertize = true; break;
+				case 'S': sort_by = MachO_File_ObjC::SB_Alphabetic; break;
 				case 'I':
 					fprintf(stderr, "Warning: Sort by inheritance is not implemented yet.\n");
 					break;
-				case 'o':
-					output_directory = optarg; 
-					break;
-				case 'H':
-					generate_headers = true;
-					break;
+				case 'o': output_directory = optarg;  break;
+				case 'H': generate_headers = true; break;
 				case 'X': {
 					const char* comma = optarg;
 					const char* last_comma;
@@ -132,6 +108,7 @@ int main (int argc, char* argv[]) {
 					}
 					break;
 				}
+				case 'r': prettify_struct_names = false; break;
 				default:
 					break;
 			}
@@ -169,7 +146,7 @@ int main (int argc, char* argv[]) {
 						break;
 				}
 			} else {
-				
+				mf.set_prettify_struct_names(prettify_struct_names);
 				mf.set_pointers_right_aligned(pointers_right_align);
 				if (type_regexp != NULL)
 					mf.set_class_filter(type_regexp);

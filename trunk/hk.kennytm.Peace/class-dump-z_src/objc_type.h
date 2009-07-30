@@ -78,6 +78,8 @@ private:
 		bool is_compatible_with(const Type& another, const ObjCTypeRecord& record, std::tr1::unordered_set<TypePointerPair>& banned_pairs) const throw();
 		bool is_more_complete_than(const Type& another) const throw();
 		
+		const std::string& get_pretty_name(bool prettify) const throw() { return (prettify || name.empty()) ? pretty_name : name; }
+		
 		friend class ObjCTypeRecord;
 	};
 	
@@ -100,6 +102,7 @@ private:
 	
 public:
 	bool pointers_right_aligned;
+	bool prettify_struct_names;
 	
 	TypeIndex add_external_objc_class(const std::string& objc_class);
 	TypeIndex add_internal_objc_class(const std::string& objc_class);
@@ -119,7 +122,7 @@ public:
 	
 	size_t types_count() const throw() { return ma_type_store.size(); }
 	
-	ObjCTypeRecord() : pointers_right_aligned(false) {
+	ObjCTypeRecord() : pointers_right_aligned(false), prettify_struct_names(true) {
 		m_void_type_index = parse("v", false);
 		m_id_type_index = parse("@", false);
 		m_sel_type_index = parse(":", false);
