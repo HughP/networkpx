@@ -23,6 +23,7 @@ __attribute__((visibility("hidden")))
 -(void)doneSelecting:(id)res;
 -(void)setCommonItems:(UI3FPTableController*)tbl;
 @property(readonly) UITextField* sharedTextField;
+@property(readonly) NSString* autoext;
 @end
 
 @implementation UI3FPTableController
@@ -133,23 +134,33 @@ __attribute__((visibility("hidden")))
 			res = path;
 			break;
 			
-		case UI3FilePickerPurposeSave:
-			res = ((UI3FilePickerController*)self.navigationController).sharedTextField.text;
+		case UI3FilePickerPurposeSave: {
+			UI3FilePickerController* navCtrler = (UI3FilePickerController*)self.navigationController;
+			
+			res = navCtrler.sharedTextField.text;
 			if ([res length] == 0)
 				res = nil;
-			else if ([files containsObject:res]) {
-				UIAlertView* overrideAlert = [[UIAlertView alloc] initWithTitle:[NSString stringWithFormat:NSLocalizedString(@"Override “%@”?", nil), res]
-																		message:nil
-																	   delegate:self
-															  cancelButtonTitle:NSLocalizedString(@"Cancel", nil)
-															  otherButtonTitles:NSLocalizedString(@"Override", nil), nil];
-				[overrideAlert show];
-				[overrideAlert release];
-				res = nil;
+			else {
+				if ([res rangeOfString:@"."].location == NSNotFound) {
+					NSString* autoext = navCtrler.autoext;
+					if (autoext != nil)
+						res = [res stringByAppendingPathExtension:autoext];
+				}	
+				if ([files containsObject:res]) {
+					UIAlertView* overrideAlert = [[UIAlertView alloc] initWithTitle:[NSString stringWithFormat:NSLocalizedString(@"Replace “%@”?", nil), res]
+																			message:nil
+																		   delegate:self
+																  cancelButtonTitle:NSLocalizedString(@"Cancel", nil)
+																  otherButtonTitles:NSLocalizedString(@"Replace", nil), nil];
+					[overrideAlert show];
+					[overrideAlert release];
+					res = nil;
+				}
 			}
 			if (res != nil)
 				res = [path stringByAppendingPathComponent:res];
 			break;
+		}
 	}
 	if (res != nil)
 		[(UI3FilePickerController*)self.navigationController doneSelecting:res];
@@ -174,7 +185,7 @@ static CFComparisonResult CaseInsensitiveComparator(NSString* a, NSString* b, vo
 
 
 @implementation UI3FilePickerController
-@synthesize sharedTextField;
+@synthesize sharedTextField, autoext;
 -(void)setCommonItems:(UI3FPTableController*)tbl {
 	tbl.toolbarItems = sharedToolbarItems;
 	if (purpose != UI3FilePickerPurposeOpen) {
@@ -207,15 +218,20 @@ static CFComparisonResult CaseInsensitiveComparator(NSString* a, NSString* b, vo
 	[self cancel];
 }
 
--(id)initWithPath:(NSString*)rootPath purpose:(UI3FilePickerPurpose)purpose_ {
+-(id)initWithPath:(NSString*)rootPath purpose:(UI3FilePickerPurpose)purpose_ autoExtension:(NSString*)autoext_ {
 	if ((self = [super init])) {
 		self.toolbarHidden = NO;
 		purpose = purpose_;
+		autoext = [autoext_ retain];
 		
 		sharedTextField = [UITextField new];
 		sharedTextField.autocapitalizationType = UITextAutocapitalizationTypeNone;
 		sharedTextField.autocorrectionType = UITextAutocorrectionTypeNo;
-		sharedTextField.placeholder = NSLocalizedString(@"File name", nil);
+		NSString* filenameText = NSLocalizedString(@"File name", nil);
+		if (autoext_ != nil)
+			sharedTextField.placeholder = [NSString stringWithFormat:@"%@ (*.%@)", filenameText, autoext_];
+		else
+			sharedTextField.placeholder = filenameText;
 		sharedTextField.borderStyle = UITextBorderStyleRoundedRect;
 		sharedTextField.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
 		sharedTextField.returnKeyType = UIReturnKeyGo;
@@ -239,6 +255,7 @@ static CFComparisonResult CaseInsensitiveComparator(NSString* a, NSString* b, vo
 -(void)dealloc {
 	[sharedToolbarItems release];
 	[sharedTextField release];
+	[autoext release];
 	[super dealloc];
 }
 -(void)onFinishTellTarget:(id)target_ selector:(SEL)sel_ {

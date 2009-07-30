@@ -43,12 +43,13 @@ typedef enum UI3FilePickerPurpose {
 
 @interface UI3FilePickerController : UINavigationController<UITextFieldDelegate> {
 	NSString* currentPath;
+	NSString* autoext;
 	id target;
 	SEL sel;
 	UI3FilePickerPurpose purpose;
 	NSArray* sharedToolbarItems;
 	UITextField* sharedTextField;
 }
--(id)initWithPath:(NSString*)rootPath purpose:(UI3FilePickerPurpose)purpose_;
+-(id)initWithPath:(NSString*)rootPath purpose:(UI3FilePickerPurpose)purpose_ autoExtension:(NSString*)autoext_;
 -(void)onFinishTellTarget:(id)target_ selector:(SEL)sel_;
 @end
