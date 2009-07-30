@@ -11,13 +11,13 @@
 		1D60589F0D05DD5A006BFB54 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1D30AB110D05D00D00671497 /* Foundation.framework */; };
 		1DF5F4E00D08C38300B7A737 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1DF5F4DF0D08C38300B7A737 /* UIKit.framework */; };
 		288765FD0DF74451002DB57D /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 288765FC0DF74451002DB57D /* CoreGraphics.framework */; };
-		9C0E4275101D049300830A5E /* 2.png in Resources */ = {isa = PBXBuildFile; fileRef = 9C0E4273101D049300830A5E /* 2.png */; };
-		9C0E4276101D049300830A5E /* 1.png in Resources */ = {isa = PBXBuildFile; fileRef = 9C0E4274101D049300830A5E /* 1.png */; };
 		9C0E440B101D64F900830A5E /* StandardKeyboard.png in Resources */ = {isa = PBXBuildFile; fileRef = 9C0E4409101D64F900830A5E /* StandardKeyboard.png */; };
 		9C0E440C101D64F900830A5E /* AdvancedKeyboard.png in Resources */ = {isa = PBXBuildFile; fileRef = 9C0E440A101D64F900830A5E /* AdvancedKeyboard.png */; };
 		9C0E442D101D759200830A5E /* UIFilePickerController3.m in Sources */ = {isa = PBXBuildFile; fileRef = 9C0E442C101D759200830A5E /* UIFilePickerController3.m */; };
 		9C0E4494101DA5C000830A5E /* file.png in Resources */ = {isa = PBXBuildFile; fileRef = 9C0E4492101DA5C000830A5E /* file.png */; };
 		9C0E4495101DA5C000830A5E /* folder.png in Resources */ = {isa = PBXBuildFile; fileRef = 9C0E4493101DA5C000830A5E /* folder.png */; };
+		9C0E4609101EB84300830A5E /* new.png in Resources */ = {isa = PBXBuildFile; fileRef = 9C0E4607101EB84300830A5E /* new.png */; };
+		9C0E460A101EB84300830A5E /* open.png in Resources */ = {isa = PBXBuildFile; fileRef = 9C0E4608101EB84300830A5E /* open.png */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -27,15 +27,14 @@
 		288765FC0DF74451002DB57D /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
 		29B97316FDCFA39411CA2CEA /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		8D1107310486CEB800E47090 /* hk_kennytm_keyboardconstructor-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "hk_kennytm_keyboardconstructor-Info.plist"; plistStructureDefinitionIdentifier = "com.apple.xcode.plist.structure-definition.iphone.info-plist"; sourceTree = "<group>"; };
-		9C0E4134101CCEAE00830A5E /* untitled.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = untitled.m; sourceTree = "<group>"; };
-		9C0E4273101D049300830A5E /* 2.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = 2.png; sourceTree = "<group>"; };
-		9C0E4274101D049300830A5E /* 1.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = 1.png; sourceTree = "<group>"; };
 		9C0E4409101D64F900830A5E /* StandardKeyboard.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = StandardKeyboard.png; sourceTree = "<group>"; };
 		9C0E440A101D64F900830A5E /* AdvancedKeyboard.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = AdvancedKeyboard.png; sourceTree = "<group>"; };
 		9C0E442B101D759200830A5E /* UIFilePickerController3.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = UIFilePickerController3.h; sourceTree = "<group>"; };
 		9C0E442C101D759200830A5E /* UIFilePickerController3.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = UIFilePickerController3.m; sourceTree = "<group>"; };
 		9C0E4492101DA5C000830A5E /* file.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = file.png; sourceTree = "<group>"; };
 		9C0E4493101DA5C000830A5E /* folder.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = folder.png; sourceTree = "<group>"; };
+		9C0E4607101EB84300830A5E /* new.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = new.png; sourceTree = "<group>"; };
+		9C0E4608101EB84300830A5E /* open.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = open.png; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -82,7 +81,6 @@
 		29B97315FDCFA39411CA2CEA /* Other Sources */ = {
 			isa = PBXGroup;
 			children = (
-				9C0E4134101CCEAE00830A5E /* untitled.m */,
 				29B97316FDCFA39411CA2CEA /* main.m */,
 				9C0E442B101D759200830A5E /* UIFilePickerController3.h */,
 				9C0E442C101D759200830A5E /* UIFilePickerController3.m */,
@@ -93,12 +91,12 @@
 		29B97317FDCFA39411CA2CEA /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				9C0E4607101EB84300830A5E /* new.png */,
+				9C0E4608101EB84300830A5E /* open.png */,
 				9C0E4492101DA5C000830A5E /* file.png */,
 				9C0E4493101DA5C000830A5E /* folder.png */,
 				9C0E4409101D64F900830A5E /* StandardKeyboard.png */,
 				9C0E440A101D64F900830A5E /* AdvancedKeyboard.png */,
-				9C0E4273101D049300830A5E /* 2.png */,
-				9C0E4274101D049300830A5E /* 1.png */,
 				8D1107310486CEB800E47090 /* hk_kennytm_keyboardconstructor-Info.plist */,
 			);
 			name = Resources;
@@ -156,12 +154,12 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				9C0E4275101D049300830A5E /* 2.png in Resources */,
-				9C0E4276101D049300830A5E /* 1.png in Resources */,
 				9C0E440B101D64F900830A5E /* StandardKeyboard.png in Resources */,
 				9C0E440C101D64F900830A5E /* AdvancedKeyboard.png in Resources */,
 				9C0E4494101DA5C000830A5E /* file.png in Resources */,
 				9C0E4495101DA5C000830A5E /* folder.png in Resources */,
+				9C0E4609101EB84300830A5E /* new.png in Resources */,
+				9C0E460A101EB84300830A5E /* open.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

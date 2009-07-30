@@ -26,6 +26,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <string>
 #include <tr1/unordered_set>
 #include <tr1/unordered_map>
+#include <cstdarg>
+#include <cstdio>
 
 class ObjCTypeRecord {
 public:
@@ -144,6 +146,12 @@ public:
 	
 	void print_network() const throw();
 	
+	size_t align_of(TypeIndex ti) const throw();
+	size_t size_of(TypeIndex ti) const throw();
+	void print_arguments(TypeIndex ti, std::va_list& va, void(*inline_id_printer)(std::FILE* f, void* obj) = NULL, std::FILE* f = stdout) const throw();
+	void print_args(TypeIndex ti, const char*& vacopy, void(*inline_id_printer)(std::FILE* f, void* obj) = NULL, std::FILE* f = stdout) const throw();
+	
+public:
 	// ignores those structs with refcount = 1.
 	std::vector<TypeIndex> all_public_struct_types() const throw();
 	void sort_alphabetically(std::vector<TypeIndex>& type_indices) const throw();

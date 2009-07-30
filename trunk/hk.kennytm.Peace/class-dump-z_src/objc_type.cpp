@@ -937,3 +937,307 @@ void ObjCTypeRecord::create_short_circuit_weak_links() throw() {
 		}
 	}
 }
+
+size_t ObjCTypeRecord::size_of(TypeIndex ti) const throw() {
+	const Type& t = ma_type_store[ti];
+	
+	switch (t.type) {
+			// assume all pointer types have same size.
+		case '*':
+		case '^':
+		case ':':
+		case '#':
+		case '%':
+		case '@': return sizeof(void*);
+			
+		case 'N':
+		case 'O':
+		case 'R':
+		case 'V':
+		case 'r':
+		case 'n':
+		case 'o':
+		case '!': return size_of(t.subtypes[0]);
+		case '[': return atol(t.value.c_str()) * size_of(t.subtypes[0]);
+		case 'j': return 2 * size_of(t.subtypes[0]);
+			
+		case 'B': return sizeof(bool);
+		case 'C': return sizeof(unsigned char);
+		case 'I': return sizeof(unsigned int);
+		case 'L': return sizeof(unsigned long);
+		case 'Q': return sizeof(unsigned long long);
+		case 'S': return sizeof(unsigned short);
+			
+		case 'c': return sizeof(signed char);
+		case 'd': return sizeof(double);
+		case 'f': return sizeof(float);
+		case 'i': return sizeof(int);
+		case 'l': return sizeof(long);
+		case 'q': return sizeof(long long);
+		case 's': return sizeof(short);
+			
+		case 'b': return (atol(t.value.c_str())-1)/8+1;
+			
+		case '(': {
+			size_t max_size = 0;
+			for (vector<unsigned>::const_iterator cit = t.subtypes.begin(); cit != t.subtypes.end(); ++ cit) {
+				size_t cur_size = size_of(*cit);
+				if (cur_size > max_size)
+					max_size = cur_size;
+			}
+			return max_size;
+		}
+		case '{': {
+			size_t cur_bits = 0;
+			size_t max_align = 8;
+			for (vector<unsigned>::const_iterator cit = t.subtypes.begin(); cit != t.subtypes.end(); ++ cit) {
+				const Type& t2 = ma_type_store[*cit];
+				if (t2.type == 'b')
+					cur_bits += atol(t2.value.c_str());
+				else {
+					size_t align = align_of(*cit) * 8;
+					if (align > max_align)
+						max_align = align;
+					cur_bits = ((cur_bits-1) | (align-1)) + 1 + size_of(*cit)*8;
+				}
+			}
+			return ((cur_bits-1)/max_align+1)*max_align/8;
+		}
+		default: return 0;
+	}
+}
+
+size_t ObjCTypeRecord::align_of(TypeIndex ti) const throw() {
+	const Type& t = ma_type_store[ti];
+	
+	switch (t.type) {
+			// assume all pointer types have same size.
+		case '*':
+		case '^':
+		case ':':
+		case '#':
+		case '%':
+		case '@': return __alignof__(void*);
+			
+		case 'N':
+		case 'O':
+		case 'R':
+		case 'V':
+		case 'r':
+		case 'n':
+		case 'o':
+		case '!': 
+		case '[': 
+		case 'j': return align_of(t.subtypes[0]);
+			
+		case 'B': return __alignof__(bool);
+		case 'C': return __alignof__(unsigned char);
+		case 'I': return __alignof__(unsigned int);
+		case 'L': return __alignof__(unsigned long);
+		case 'Q': return __alignof__(unsigned long long);
+		case 'S': return __alignof__(unsigned short);
+			
+		case 'c': return __alignof__(signed char);
+		case 'd': return __alignof__(double);
+		case 'f': return __alignof__(float);
+		case 'i': return __alignof__(int);
+		case 'l': return __alignof__(long);
+		case 'q': return __alignof__(long long);
+		case 's': return __alignof__(short);
+		
+			// Fine unless we target mac68k.
+		case '(': 
+		case '{': {
+			size_t max_align = 1;
+			for (vector<unsigned>::const_iterator cit = t.subtypes.begin(); cit != t.subtypes.end(); ++ cit) {
+				size_t cur_align = align_of(*cit);
+				if (cur_align > max_align)
+					max_align = cur_align;
+			}
+			return max_align;
+		}
+
+		default: return 1;
+	}
+}
+
+void ObjCTypeRecord::print_arguments(TypeIndex ti, va_list& va, void(*inline_id_printer)(FILE* f, void* obj), FILE* f) const throw() {
+	unsigned stsize = (size_of(ti)-1)/sizeof(int)+1;
+	char* vacopy = reinterpret_cast<char*>(alloca(stsize*sizeof(int)));
+	for (unsigned i = 0; i < stsize; ++ i) {
+		int e = va_arg(va, int);
+		memcpy(vacopy+i*sizeof(int), &e, sizeof(int));
+	}
+	print_args(ti, const_cast<const char*&>(vacopy), inline_id_printer, f);
+}
+	
+template<typename T>
+inline static T READ(const char*& vacopy) {
+	T res = *reinterpret_cast<const T*> (vacopy);
+	vacopy += sizeof(T);
+	return res;
+}
+	
+void ObjCTypeRecord::print_args(TypeIndex ti, const char*& vacopy, void(*inline_id_printer)(FILE* f, void* obj), FILE* f) const throw() {
+	const Type& t = ma_type_store[ti];
+	bool first = true;
+	
+	switch (t.type) {
+		case '*':
+			fprintf(f, "\"%s\"", READ<char*>(vacopy));
+			break;
+		case '^':
+			fprintf(f, "%p", READ<void*>(vacopy));
+			break;
+		case ':':
+			fprintf(f, "@selector(%s)", READ<char*>(vacopy));
+			break;
+		case '%':
+			fprintf(f, "(NXAtom*)\"%s\"", READ<char*>(vacopy));
+			break;
+			
+		case '@':
+		case '#': {
+			void* v = READ<void*>(vacopy);
+			if (inline_id_printer == NULL)
+				fprintf(f, "%p", v);
+			else
+				inline_id_printer(f, v);
+			break;
+		}
+			
+		case 'N':
+		case 'O':
+		case 'R':
+		case 'V':
+		case 'r':
+		case 'n':
+		case 'o':
+		case '!':
+			print_args(t.subtypes[0], vacopy, inline_id_printer, f);
+			break;
+			
+		case '[': {
+			fprintf(f, "{");
+			unsigned count = atoi(t.value.c_str());
+			for (unsigned i = 0; i < count; ++ i) {
+				if (first) first = false;
+				else fprintf(f, ", ");
+				print_args(t.subtypes[0], vacopy, inline_id_printer, f);
+			}
+			fprintf(f, "}");
+			break;
+		}
+			
+		case 'j':
+			fprintf(f, "{");
+			print_args(t.subtypes[0], vacopy, inline_id_printer, f);
+			fprintf(f, ", ");
+			print_args(t.subtypes[0], vacopy, inline_id_printer, f);
+			fprintf(f, "}");
+			break;
+			
+		case 'B':
+			fprintf(f, READ<bool>(vacopy) ? "true" : "false");
+			break;
+			
+		case 'C':
+			fprintf(f, "0x%02xu", READ<char>(vacopy));
+			break;
+		case 'I':
+			fprintf(f, "%uu", READ<unsigned int>(vacopy));
+			break;
+		case 'L':
+			fprintf(f, "%luLu", READ<unsigned long>(vacopy));
+			break;
+		case 'Q':
+			fprintf(f, "%lluLLu", READ<unsigned long long>(vacopy));
+			break;
+		case 'S':
+			fprintf(f, "%uu", READ<unsigned short>(vacopy));
+			break;
+			
+		case 'c': {
+			char c = READ<char>(vacopy);
+			if (c == 0)
+				fprintf(f, "NO");
+			else if (c == 1)
+				fprintf(f, "YES");
+			else if (c >= 0x20 && c < 0x7F)
+				fprintf(f, "'%s%c'", (c == '\'' || c == '\\') ? "\\" : "", c);
+			else
+				fprintf(f, "0x%02x", c);
+			break;
+		}
+		case 'd':
+			fprintf(f, "%#.15lg", READ<double>(vacopy));
+			break;
+		case 'f':
+			fprintf(f, "%#gf", READ<float>(vacopy));
+			break;
+		case 'i':
+			fprintf(f, "%d", READ<int>(vacopy));
+			break;
+		case 'l':
+			fprintf(f, "%ldL", READ<long>(vacopy));
+			break;
+		case 'q':
+			fprintf(f, "%lldLL", READ<long long>(vacopy));
+			break;
+		case 's':
+			fprintf(f, "%d", READ<short>(vacopy));
+			break;
+			
+		case '(': {
+			// For unions, find the longest member and print using it.
+			size_t max_size = 0;
+			TypeIndex max_index = 0;
+			for (vector<unsigned>::const_iterator cit = t.subtypes.begin(); cit != t.subtypes.end(); ++ cit) {
+				size_t cur_size = size_of(*cit);
+				if (cur_size > max_size) {
+					max_size = cur_size;
+					max_index = *cit;
+				}
+			}
+			print_args(max_index, vacopy, inline_id_printer, f);
+			break;
+		}
+			
+		case '{': {
+			fprintf(f, "{");
+			unsigned bits_to_skip = 0;
+			for (vector<unsigned>::const_iterator cit = t.subtypes.begin(); cit != t.subtypes.end(); ++ cit) {
+				if (first) first = false;
+				else fprintf(f, ", ");
+				
+				const Type& t2 = ma_type_store[*cit];
+				if (t2.type == 'b')
+					bits_to_skip += atol(t2.value.c_str());
+				else {
+					size_t align = align_of(*cit);
+					size_t size = size_of(*cit);
+					if (bits_to_skip != 0) {
+						unsigned bytes_to_skip = (((bits_to_skip-1) | (align*8-1)) + 1)/8;
+						fprintf(f, "/*bitfield*/0x");
+						for (unsigned units = 0; units < bytes_to_skip; ++ units)
+							fprintf(f, "%02x", READ<char>(vacopy));
+						bits_to_skip = 0;
+					}
+					print_args(*cit, vacopy, inline_id_printer, f);
+					vacopy += (-size) % align;
+				}
+			}
+			if (bits_to_skip != 0) {
+				unsigned bytes_to_skip = (((bits_to_skip-1) | (8-1)) + 1)/8;
+				if (!first) fprintf(f, ", ");
+				fprintf(f, "/*bitfield*/0x");
+				for (unsigned units = 0; units < bytes_to_skip; ++ units)
+					fprintf(f, "%02x", READ<char>(vacopy));
+			}
+			fprintf(f, "}");
+			break;
+		}
+			
+		default: break;
+	}		
+}
