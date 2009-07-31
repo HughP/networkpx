@@ -28,6 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "balanced_substr.h"
 #include "string_util.h"
 #include "combine_dependencies.h"
+#include "hash_combine.h"
 
 using namespace std;
 
@@ -58,20 +59,25 @@ static const char* map314[] = {
 	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL
 };
 
-/*
+#ifdef _TR1_FUNCTIONAL
 namespace std { 
-	namespace tr1 { 
- */
-namespace boost {
+	namespace tr1
+#else
+namespace boost
+#endif
+	{
 		template<>
 		struct hash< ::ObjCTypeRecord::TypePointerPair> : public unary_function< ::ObjCTypeRecord::TypePointerPair, size_t> {
 			size_t operator() (const ::ObjCTypeRecord::TypePointerPair& x) const throw() {
-				size_t retval = reinterpret_cast<size_t>(x.a) + 0x9e3779b9;
-				retval ^= reinterpret_cast<size_t>(x.b) + 0x9e3779b9 + (retval << 6) + (retval >> 2);
+				size_t retval = 0;
+				hash_combine(retval, x.a);
+				hash_combine(retval, x.b);
 				return retval;
 			}
 		};
-//	}
+#ifdef _TR1_FUNCTIONAL
+	}
+#endif
 }
 
 static inline bool name_Refable(const string& pretty_name) throw() {
@@ -203,14 +209,17 @@ ObjCTypeRecord::TypeIndex ObjCTypeRecord::add_objc_category(const std::string& c
 }
 
 void ObjCTypeRecord::add_link_with_strength(TypeIndex from, TypeIndex to, EdgeStrength target_strength, bool convert_class_strength_to_weak) {
+recurse:
 	if (from == to)
 		return;
 	
 	Type& target_type = ma_type_store[to];
 	switch (target_type.type) {
 		case '^':	// for pointers, building any link to it is equivalent to building a weak link to its underlying type.
-			add_link_with_strength(from, target_type.subtypes[0], ES_Weak, true);
-			return;
+			to = target_type.subtypes[0];
+			target_strength = ES_Weak;
+			convert_class_strength_to_weak = true;
+			goto recurse;
 			
 		case '[':
 		case 'j':
@@ -222,8 +231,9 @@ void ObjCTypeRecord::add_link_with_strength(TypeIndex from, TypeIndex to, EdgeSt
 		case 'O':
 		case 'V':
 		case '!':	// for arrays and other type qualifiers, building any link to it is equivalent to building the same link to its underlying type.
-			add_link_with_strength(from, target_type.subtypes[0], target_strength, true);
-			return;
+			to = target_type.subtypes[0];
+			convert_class_strength_to_weak = true;
+			goto recurse;
 			
 		case '@':	// for objects, if it has adopted protocols specified, build weak links to them also. And redirect the link to its original type.
 			if (!target_type.subtypes.empty()) {
@@ -297,9 +307,6 @@ bool ObjCTypeRecord::Type::is_compatible_with(const Type& another, const ObjCTyp
 	if (this == &another)
 		return true;
 	
-	if (banned_pairs.find(TypePointerPair(this,&another)) != banned_pairs.end())
-		return false;
-	
 	// (1) they must have the same leading character.
 	if (type != another.type)
 		return false;
@@ -320,6 +327,9 @@ bool ObjCTypeRecord::Type::is_compatible_with(const Type& another, const ObjCTyp
 				return false;
 		}
 	}
+	
+	if (banned_pairs.find(TypePointerPair(this,&another)) != banned_pairs.end())
+		return false;
 	
 	// (5) the subtypes, if any, must be equal.
 	if (!subtypes.empty()) {
@@ -646,14 +656,15 @@ string ObjCTypeRecord::Type::format (const ObjCTypeRecord& record, const string&
 				retval += subtype.format(record, pseudo_argname, 0, true, false, pointers_right_aligned);	// if it's char* it will be encoded as ^* instead of ^^c, so it's OK to treat_char_as_bool.
 				// change all int ***c to int*** c.
 				if (!pointers_right_aligned) {
-					for (unsigned i = 0; i < retval.size()-1; ++ i) {
+					size_t string_length_1 = retval.size()-1;
+					for (unsigned i = 0; i < string_length_1; ++ i) {
 						if (retval[i] == ' ' && retval[i+1] == '*') {
 							retval[i] = '*';
 							retval[i+1] = ' ';
 						}
 					}
-					if (retval[retval.size()-1] == ' ')
-						retval.erase(retval.size()-1);
+					if (retval[string_length_1] == ' ')
+						retval.erase(string_length_1);
 				}
 				return retval;
 			}

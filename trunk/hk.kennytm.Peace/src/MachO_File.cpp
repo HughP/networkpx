@@ -45,7 +45,7 @@ MachO_File_Simple::MachO_File_Simple(const char* path, const char* arch) throw(s
 		bool found_arch = false;
 		for (unsigned c = OSSwapBigToHostInt32(reinterpret_cast<const fat_header*>(mp_header)->nfat_arch); c != 0; --c) {
 			const fat_arch* arch = this->read_data<fat_arch>();
-			if (target_arch.cputype == CPU_TYPE_ANY || (OSSwapBigToHostInt32(arch->cputype) == target_arch.cputype && (target_arch.cpusubtype == 0 || OSSwapBigToHostInt32(arch->cpusubtype) == target_arch.cpusubtype))) {
+			if (target_arch.cputype == CPU_TYPE_ANY || (static_cast<cpu_type_t>(OSSwapBigToHostInt32(arch->cputype)) == target_arch.cputype && (target_arch.cpusubtype == 0 || static_cast<cpu_subtype_t>(OSSwapBigToHostInt32(arch->cpusubtype)) == target_arch.cpusubtype))) {
 				m_origin = OSSwapBigToHostInt32(arch->offset);
 				this->seek(m_origin);
 				found_arch = true;
@@ -396,7 +396,7 @@ const char* MachO_File::string_representation (unsigned vm_address, MachO_File::
 	if (vm_address == 0)
 		return NULL;
 	
-	map<unsigned,const char*>::const_iterator cit;
+	tr1::unordered_map<unsigned,const char*>::const_iterator cit;
 	
 #define TrySearchIn(table, stringType) \
 	cit = (table).find(vm_address); \
@@ -430,12 +430,12 @@ const char* MachO_File::nearest_string_representation (unsigned vm_address, unsi
 		return this->peek_data_at<char>(vm_address);
 	}
 	
-	map<unsigned, const char*>::const_iterator cit, best_iter;
+	tr1::unordered_map<unsigned, const char*>::const_iterator cit, best_iter;
 	bool first = true;
 	
 #define TrySearchIn(table, stringType) \
-	cit = (table).lower_bound(vm_address); \
-		if (cit != (table).end()) { \
+	for (cit = (table).begin(); cit != (table).end(); ++ cit) \
+		if (cit->first > vm_address) { \
 			if (first || best_iter->first > cit->first) { \
 				first = false; \
 				best_iter = cit; \
@@ -443,10 +443,10 @@ const char* MachO_File::nearest_string_representation (unsigned vm_address, unsi
 			} \
 		}
 	
-	TrySearchIn(ma_cfstrings, MOST_CFString);
+	// TrySearchIn(ma_cfstrings, MOST_CFString);
 	TrySearchIn(ma_symbol_references, MOST_Symbol);
-	TrySearchIn(ma_objc_classes, MOST_ObjCClass);
-	TrySearchIn(ma_objc_selectors, MOST_ObjCSelector);
+	// TrySearchIn(ma_objc_classes, MOST_ObjCClass);
+	// TrySearchIn(ma_objc_selectors, MOST_ObjCSelector);
 	
 	if (first) {
 		if (m_cstring_vmaddr <= vm_address && m_cstring_vmaddr+m_cstring_table_size >= vm_address) {
@@ -472,7 +472,7 @@ void MachO_File::print_string_representation(FILE* stream, const char* str, Mach
 
 const MachO_File::ObjCMethod* MachO_File::objc_method_at_vm_address(unsigned vm_address) const throw() {
 	if (m_is_valid) {
-		map<unsigned,MachO_File::ObjCMethod>::const_iterator cit = ma_objc_methods.find(vm_address);
+		tr1::unordered_map<unsigned,MachO_File::ObjCMethod>::const_iterator cit = ma_objc_methods.find(vm_address);
 		if (cit == ma_objc_methods.end())
 			return NULL;
 		else

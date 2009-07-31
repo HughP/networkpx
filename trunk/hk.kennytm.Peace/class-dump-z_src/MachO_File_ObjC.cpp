@@ -32,6 +32,64 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 using namespace std;
 
+// Note: this is copied from C++'s hash<string>.
+// But as you can see, this function is O(length) instead of O(1)... (Although strcmp is also O(length).)
+static inline size_t string_hasher(const char* str) {
+	size_t res = 0;
+	while (*str != '\0') 
+		res = res*131 + *str++;
+	return res;
+}
+
+#ifdef _TR1_FUNCTIONAL
+namespace std { 
+	namespace tr1
+#else
+	namespace boost
+#endif
+	{
+		template<>
+		struct hash< ::MachO_File_ObjC::ReducedProperty> : public unary_function< ::MachO_File_ObjC::ReducedProperty, size_t> {
+			size_t operator() (const ::MachO_File_ObjC::ReducedProperty& p) const throw() {
+				size_t retval = 0;
+				hash_combine(retval, p.name);
+				hash_combine(retval, p.type);
+				hash_combine(retval, p.has_getter*32 + p.has_setter*16 + p.copy*8 + p.retain*4 + p.readonly*2 + p.nonatomic);
+				if (p.has_setter)
+					hash_combine(retval, p.getter);
+				if (p.has_getter)
+					hash_combine(retval, p.setter);
+				return retval;
+			}
+		};
+		
+		template<>
+		struct hash< ::MachO_File_ObjC::ReducedMethod> : public unary_function< ::MachO_File_ObjC::ReducedMethod, size_t> {
+			size_t operator() (const ::MachO_File_ObjC::ReducedMethod& m) const throw() {
+				size_t retval = 0;
+				hash_combine(retval, string_hasher(m.raw_name));
+				hash_combine(retval, m.is_class_method);
+				hash_combine(retval, m.types);
+				return retval;
+			}
+		};
+#ifdef _TR1_FUNCTIONAL
+	}
+#endif
+}
+
+struct MachO_File_ObjC::OverlapperType {
+	bool defined;
+	std::tr1::unordered_set<ReducedProperty> properties;
+	std::tr1::unordered_set<ReducedMethod> methods;
+	OverlapperType() : defined(false) {}
+	void union_with(const ClassType& cls) throw();
+	void union_with(const OverlapperType& ovlp) throw();
+	static void recursive_union_with_protocols(unsigned i, std::vector<OverlapperType>& overlappers, const std::vector<ClassType>& classes) throw();
+};
+
+#pragma mark -
+
 MachO_File_ObjC::MachO_File_ObjC(const char* path) throw(std::bad_alloc, TRException) : MachO_File(path), m_guess_data_segment(1), m_guess_text_segment(0), m_class_filter(NULL), m_method_filter(NULL), m_class_filter_extra(NULL), m_method_filter_extra(NULL) {
 	retrieve_protocol_info();
 	retrieve_class_info();
@@ -52,11 +110,11 @@ void MachO_File_ObjC::tag_propertized_methods(ClassType& cls) throw() {
 			// (3) does not return void
 			// (4) the raw name is equal to the required getter name.
 			// (The first 3 rules are just to filter out unqualified methods quicker) 
-			if (mit->propertize_status == Method::PS_None && !mit->is_class_method && mit->types.size() == 3 && !m_record.is_void_type(mit->types[0]) && pit->getter == mit->raw_name) {
+			if (mit->propertize_status == PS_None && !mit->is_class_method && mit->types.size() == 3 && !m_record.is_void_type(mit->types[0]) && pit->getter == mit->raw_name) {
 				pit->getter_vm_address = mit->vm_address;
 				if (mit->optional)
 					pit->optional = true;
-				mit->propertize_status = Method::PS_DeclaredGetter;
+				mit->propertize_status = PS_DeclaredGetter;
 				break;
 			}
 		}
@@ -67,11 +125,11 @@ void MachO_File_ObjC::tag_propertized_methods(ClassType& cls) throw() {
 				// (2) accept exactly one parameters (types.size() == 4)
 				// (3) returns void (not even oneway void)
 				// (4) the raw name is equal to the required setter name.
-				if (mit->propertize_status == Method::PS_None && !mit->is_class_method && mit->types.size() == 4 && m_record.is_void_type(mit->types[0]) && pit->setter == mit->raw_name) {
+				if (mit->propertize_status == PS_None && !mit->is_class_method && mit->types.size() == 4 && m_record.is_void_type(mit->types[0]) && pit->setter == mit->raw_name) {
 					pit->setter_vm_address = mit->vm_address;
 					if (mit->optional)
 						pit->optional = true;
-					mit->propertize_status = Method::PS_DeclaredSetter;
+					mit->propertize_status = PS_DeclaredSetter;
 					break;
 				}
 			}
@@ -84,7 +142,7 @@ void MachO_File_ObjC::propertize(ClassType& cls) throw() {
 	// 1.1. Prepare all setters.
 	vector<Method*> potential_setters;
 	for (vector<Method>::iterator mit = cls.methods.begin(); mit != cls.methods.end(); ++ mit) {
-		if (mit->propertize_status == Method::PS_None && !mit->optional && !mit->is_class_method && mit->types.size() == 4 && m_record.is_void_type(mit->types[0]))
+		if (mit->propertize_status == PS_None && !mit->is_class_method && mit->types.size() == 4 && m_record.is_void_type(mit->types[0]))
 			if (strncmp(mit->raw_name, "set", 3) == 0)
 				potential_setters.push_back(&*mit);
 	}
@@ -98,7 +156,7 @@ void MachO_File_ObjC::propertize(ClassType& cls) throw() {
 		const char* potential_name = (*sit)->raw_name + 3;
 		
 		for (vector<Method>::iterator mit = cls.methods.begin(); mit != cls.methods.end(); ++ mit) {
-			if (*sit != &*mit && mit->propertize_status == Method::PS_None && !mit->optional && !mit->is_class_method && mit->types.size() == 3 && mit->types[0] == (*sit)->types[3]) {
+			if (*sit != &*mit && mit->propertize_status == PS_None && (*sit)->optional == mit->optional && !mit->is_class_method && mit->types.size() == 3 && mit->types[0] == (*sit)->types[3]) {
 				
 				if (strncmp(potential_name+1, mit->raw_name+1, potential_name_length-1) == 0 && mit->raw_name[potential_name_length] == '\0') {
 					if (potential_name[0] == toupper(mit->raw_name[0])) {
@@ -124,6 +182,7 @@ phase_1_is_property:
 				prop.setter = (*sit)->raw_name;
 				prop.getter_vm_address = mit->vm_address;
 				prop.setter_vm_address = (*sit)->vm_address;
+				prop.optional = mit->optional;
 				prop.impl_method = Property::IM_Converted;
 				prop.type = mit->types[0];
 				prop.retain = m_record.is_id_type(prop.type);
@@ -133,8 +192,8 @@ phase_1_is_property:
 						prop.retain = false;
 				}
 				cls.properties.push_back(prop);
-				mit->propertize_status = Method::PS_ConvertedGetter;
-				(*sit)->propertize_status = Method::PS_ConvertedSetter;
+				mit->propertize_status = PS_ConvertedGetter;
+				(*sit)->propertize_status = PS_ConvertedSetter;
 				break;
 			}
 		}				
@@ -163,7 +222,7 @@ phase_1_is_property:
 		
 		// Now search for getters.
 		for (vector<Method>::iterator mit = cls.methods.begin(); mit != cls.methods.end(); ++ mit) {
-			if (mit->propertize_status == Method::PS_None && !mit->optional && !mit->is_class_method && mit->types.size() == 3 && m_record.are_types_compatible(mit->types[0], iit->type)) {
+			if (mit->propertize_status == PS_None && !mit->is_class_method && mit->types.size() == 3 && m_record.are_types_compatible(mit->types[0], iit->type)) {
 				if (mit->raw_name == property_name)
 					has_getter = false;
 				else if (mit->raw_name == alt_property_name)
@@ -173,6 +232,7 @@ phase_1_is_property:
 				Property prop;
 				prop.name = property_name;
 				prop.has_getter = has_getter;
+				prop.optional = mit->optional;
 				prop.readonly = true;
 				prop.getter = mit->raw_name;
 				prop.getter_vm_address = mit->vm_address;
@@ -180,7 +240,7 @@ phase_1_is_property:
 				prop.type = iit->type;
 				prop.retain = m_record.is_id_type(iit->type);
 				cls.properties.push_back(prop);
-				mit->propertize_status = Method::PS_ConvertedGetter;
+				mit->propertize_status = PS_ConvertedGetter;
 				break;
 			}
 		}
@@ -188,4 +248,55 @@ phase_1_is_property:
 phase_2_next_ivar:
 		;
 	}
+}
+
+#pragma mark -
+void MachO_File_ObjC::OverlapperType::union_with(const MachO_File_ObjC::ClassType& cls) throw() {
+	defined = true;
+	properties.insert(cls.properties.begin(), cls.properties.end());
+	methods.insert(cls.methods.begin(), cls.methods.end());
+}
+
+void MachO_File_ObjC::OverlapperType::union_with(const MachO_File_ObjC::OverlapperType& cls) throw() {
+	defined = true;
+	properties.insert(cls.properties.begin(), cls.properties.end());
+	methods.insert(cls.methods.begin(), cls.methods.end());
+}
+
+void MachO_File_ObjC::OverlapperType::recursive_union_with_protocols(unsigned i, std::vector<OverlapperType>& overlappers, const vector<MachO_File_ObjC::ClassType>& classes) throw() {
+	OverlapperType& ovlp = overlappers[i];
+	if (!ovlp.defined) {
+		const ClassType& cls = classes[i];
+		ovlp.union_with(cls);
+		for (vector<unsigned>::const_iterator cit = cls.adopted_protocols.begin(); cit != cls.adopted_protocols.end(); ++ cit) {
+			recursive_union_with_protocols(*cit, overlappers, classes);
+			ovlp.union_with(overlappers[*cit]);
+		}	
+	}
+}
+
+void MachO_File_ObjC::hide_overlapping_methods(ClassType& target, const OverlapperType& reference, MachO_File_ObjC::HiddenMethodType hiding_method) throw() {
+	for (vector<Property>::iterator it = target.properties.begin(); it != target.properties.end(); ++ it)
+		if (it->hidden == PS_None && reference.properties.find(*it) != reference.properties.end())
+			it->hidden = hiding_method;
+	for (vector<Method>::iterator it = target.methods.begin(); it != target.methods.end(); ++ it)
+		if (it->propertize_status == PS_None && reference.methods.find(*it) != reference.methods.end())
+			it->propertize_status = hiding_method;
+}
+
+void MachO_File_ObjC::hide_overlapping_methods(bool hide_super, bool hide_proto, const char* sysroot) throw() {
+	if (hide_proto) {
+		// Construct Overlappers for protocols.
+		vector<OverlapperType> protocol_overlappers (m_protocol_count);
+		for (unsigned i = 0; i < m_protocol_count; ++ i)
+			OverlapperType::recursive_union_with_protocols(i, protocol_overlappers, ma_classes);
+		
+		// Now actually hide the methods.
+		for (vector<ClassType>::iterator it = ma_classes.begin(); it != ma_classes.end(); ++ it)
+			for (vector<unsigned>::const_iterator pit = it->adopted_protocols.begin(); pit != it->adopted_protocols.end(); ++ pit)
+				hide_overlapping_methods(*it, protocol_overlappers[*pit], PS_AdoptingProtocol);
+	}
+	
+	(void)hide_super;
+	(void)sysroot;
 }

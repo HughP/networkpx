@@ -195,11 +195,13 @@ void MachO_File_ObjC::add_methods(ClassType& cls, const method_list_t* method_li
 		// split method types into type strings and build strong links.
 		const char* method_type = this->get_cstring(cur_method->types, &m_guess_text_segment, 0, 0, NULL);
 		if (method_type != NULL) {
+			string type_string;
 			while (*method_type != '\0') {
 				const char* type_begin = method_type;
 				while (!(*method_type >= '0' && *method_type <= '9'))
 					method_type = skip_balanced_substring(method_type);
-				ObjCTypeRecord::TypeIndex index = m_record.parse(string(type_begin, method_type), false);
+				type_string.assign(type_begin, method_type);
+				ObjCTypeRecord::TypeIndex index = m_record.parse(type_string, false);
 				method.types.push_back(index);
 				m_record.add_strong_link(cls.type_index, index);
 				while (*method_type >= '0' && *method_type <= '9')
@@ -303,8 +305,10 @@ const char* MachO_File_ObjC::get_superclass_name(unsigned superclass_addr, unsig
 		superclass_index = m_record.add_external_objc_class(ext_name);
 		
 		const char* lib_path = library_of_relocated_symbol(pointer_to_superclass_addr);
-		if (lib_path != NULL)
+		if (lib_path != NULL) {
 			ma_include_paths[superclass_index] = make_include_path(lib_path);
+			ma_lib_path[superclass_index] = lib_path;
+		}
 		return ext_name;
 	} else {
 		// superclass should be an internal class. search from vm addresses.
@@ -317,8 +321,10 @@ const char* MachO_File_ObjC::get_superclass_name(unsigned superclass_addr, unsig
 			superclass_index = m_record.add_external_objc_class(ext_name);
 			
 			const char* lib_path = library_of_relocated_symbol(superclass_addr);
-			if (lib_path != NULL)
+			if (lib_path != NULL) {
 				ma_include_paths[superclass_index] = make_include_path(lib_path);
+				ma_lib_path[superclass_index] = lib_path;
+			}
 			return ext_name;
 		} else {
 			superclass_index = ma_classes[cit->second].type_index;
@@ -328,6 +334,7 @@ const char* MachO_File_ObjC::get_superclass_name(unsigned superclass_addr, unsig
 }
 
 //-------------------------------------------------------------------------------------------------------------------------------------------
+#pragma mark -
 
 void MachO_File_ObjC::retrieve_protocol_info() throw() {
 	const section* proto_list_section = this->section_having_name("__DATA", "__objc_protolist");
@@ -444,6 +451,7 @@ void MachO_File_ObjC::retrieve_class_info() throw() {
 		cls.type_index = m_record.add_internal_objc_class(cls.name);
 		
 		ma_classes_vm_address_index.insert( pair<unsigned,unsigned>(cls.vm_address, ma_classes.size()) );
+		ma_classes_name_index.insert( pair<const char*,unsigned>(cls.name, ma_classes.size()) );
 		ma_classes.push_back(cls);
 	}
 	
@@ -555,7 +563,7 @@ void MachO_File_ObjC::retrieve_category_info() throw() {
 			found_name:;
 			}
 			
-			unsigned superclass_index;
+			ObjCTypeRecord::TypeIndex superclass_index;
 			cls.superclass_name = get_superclass_name(reinterpret_cast<unsigned>(cat->cls), cls.vm_address + offsetof(category_t, cls), superclass_index);
 			cls.type_index = m_record.add_objc_category(cls.name, cls.superclass_name);
 			m_record.add_strong_class_link(cls.type_index, superclass_index);
