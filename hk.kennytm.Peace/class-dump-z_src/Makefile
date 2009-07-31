@@ -1,4 +1,4 @@
-CFLAGS_COMMON=-g -O2 -I../include -I../src -I/opt/local/include -Wall -W -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -fno-common -Wconversion -Werror -Wno-unknown-pragmas
+CFLAGS_COMMON=-O2 -I../include -I../src -I/opt/local/include -Wall -W -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -fno-common -Wconversion -Werror -Wno-unknown-pragmas
 
 CC=gcc-4.2
 CPP=g++-4.2
@@ -26,7 +26,7 @@ CODESIGN=ldid -S
 %.o: %.d
 	$(DMD) -c $(DFLAGS) -of$@ $^
 
-all:	../output/mac_x86/class-dump-z # ../output/iphone_armv6/class-dump-z
+all:	../output/mac_x86/class-dump-z ../output/iphone_armv6/class-dump-z
 
 ../class-dump-z: class-dump-z.o ../src/DataFile.o ../src/MachO_File.o MachO_File_ObjC.o MachO_File_ObjC_retrieval.o MachO_File_ObjC_format.o balanced_substr.o crc32.o pseudo_base64.o objc_type.o ../src/string_util.o MachO_File_ObjC_debug.o ../src/get_arch_from_flag.o
 	$(CPP) $(CFLAGS) -o $@ $^ libpcre.a
