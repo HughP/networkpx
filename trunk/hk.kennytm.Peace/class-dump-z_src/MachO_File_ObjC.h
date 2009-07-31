@@ -45,6 +45,9 @@ private:
 		
 		// these are from the attributes
 		ObjCTypeRecord::TypeIndex type;		// T
+		
+		bool optional;
+		
 		bool has_getter;	// G
 		bool has_setter;	// S
 		bool copy;			// C
@@ -63,7 +66,7 @@ private:
 			GC_Weak			// W
 		} gc_strength;
 		
-		Property() : getter_vm_address(0), setter_vm_address(0), has_getter(false), has_setter(false), copy(false), retain(false), readonly(false), nonatomic(false), impl_method(IM_None), gc_strength(GC_None) {}
+		Property() : getter_vm_address(0), setter_vm_address(0), optional(false), has_getter(false), has_setter(false), copy(false), retain(false), readonly(false), nonatomic(false), impl_method(IM_None), gc_strength(GC_None) {}
 		
 		std::string format(const ObjCTypeRecord& record, const MachO_File_ObjC& self, bool print_method_addresses, bool print_comments) const throw();
 	};

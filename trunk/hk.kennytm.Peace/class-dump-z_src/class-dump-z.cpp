@@ -35,7 +35,8 @@ void print_usage () {
 			"where options are:\n"
 			"\n  Analysis:\n"
 			"    -p         Convert undeclared getters and setters into properties (propertize).\n"
-			"    -i         Hide inherited methods. \n"
+			"    -h proto   Hide methods which already appears in an adopted protocol.\n"
+			"    -h super   Hide inherited methods.\n"
 			"    -y <root>  Choose the sysroot. Default to /.\n"
 			"\n  Formatting:\n"
 			"    -a         Print ivar offsets\n"
@@ -65,16 +66,17 @@ int main (int argc, char* argv[]) {
 		int c;
 		bool print_ivar_offsets = false, print_method_addresses = false, print_comments = false, sort_methods_alphabetically = false;
 		bool pointers_right_align = false, show_only_exported_classes = false, propertize = false, generate_headers = false, prettify_struct_names = true;
+		bool hide_protocols = false, hide_super = false;
 		MachO_File_ObjC::SortBy sort_by = MachO_File_ObjC::SB_None;
 		char diagnosis_option = '\0';
-		const char* sysroot = "";
+		const char* sysroot = "/";
 		const char* type_regexp = NULL;
 		const char* method_regexp = NULL;
 		const char* output_directory = NULL;
 		vector<string> kill_prefix;
 		
 		// const char* regexp_string = NULL;
-		while ((c = getopt(argc, argv, "aAkC:ISsD:Rf:gpHo:X:riy:")) != -1) {
+		while ((c = getopt(argc, argv, "aAkC:ISsD:Rf:gpHo:X:rh:y:")) != -1) {
 			switch (c) {
 				case 'a': print_ivar_offsets = true; break;
 				case 'A': print_method_addresses = true; break;
@@ -109,6 +111,13 @@ int main (int argc, char* argv[]) {
 					break;
 				}
 				case 'r': prettify_struct_names = false; break;
+				case 'h':
+					if (strncmp(optarg, "proto", 5) == 0)
+						hide_protocols = true;
+					else if (strncmp(optarg, "super", 5) == 0)
+						hide_super = true;
+					break;
+				case 'y': sysroot = optarg; break;
 				default:
 					break;
 			}
@@ -126,20 +135,10 @@ int main (int argc, char* argv[]) {
 		
 			if (diagnosis_option != '\0') {
 				switch (diagnosis_option) {
-						// print all types.
-					case 't':
-						mf.print_all_types();
-						break;
-						
-						// print network.
-					case 'n':
-						mf.print_network();
-						break;
-						
-						// print external symbols
-					case 'e':
-						mf.print_extern_symbols();
-						break;
+					case 't': mf.print_all_types(); break;
+					case 'n': mf.print_network(); break;
+					case 'e': mf.print_extern_symbols(); break;
+//					case 'i': mf.print_protocol_adoption_network(); break;
 						
 					default:
 						printf("// Unrecognized diagnosis option: -D %c\n", diagnosis_option);
