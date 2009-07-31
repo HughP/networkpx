@@ -1,4 +1,4 @@
-CFLAGS_COMMON=-g -O0 -I../include -I../src -I/opt/local/include -Wall -W -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -fno-common -Wconversion -Werror -Wno-unknown-pragmas
+CFLAGS_COMMON=-g -O2 -I../include -I../src -I/opt/local/include -Wall -W -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -fno-common -Wconversion -Werror -Wno-unknown-pragmas
 
 CC=gcc-4.2
 CPP=g++-4.2

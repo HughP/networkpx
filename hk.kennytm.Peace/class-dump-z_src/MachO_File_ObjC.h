@@ -143,6 +143,7 @@ private:
 		unsigned vm_address;
 		
 		ObjCTypeRecord::TypeIndex type_index;
+		ObjCTypeRecord::TypeIndex superclass_index;
 		
 		const char* name;
 		uint32_t attributes;
@@ -170,27 +171,33 @@ private:
 	unsigned m_class_count, m_protocol_count, m_category_count;
 	std::vector<ClassType> ma_classes;	// classes, categories & protocols.
 	std::tr1::unordered_map<unsigned, unsigned> ma_classes_vm_address_index;	// vm_addr -> index in ma_classes
-	std::tr1::unordered_map<const char*, unsigned> ma_classes_name_index;	// class name -> index in ma_classes.
+	std::tr1::unordered_map<ObjCTypeRecord::TypeIndex, unsigned> ma_classes_typeindex_index;	// class name -> index in ma_classes.
 	std::tr1::unordered_map<ObjCTypeRecord::TypeIndex, std::string> ma_include_paths;
 	std::tr1::unordered_map<ObjCTypeRecord::TypeIndex, const char*> ma_lib_path;
+	
+	std::tr1::unordered_map<const char*, MachO_File_ObjC*> ma_loaded_libraries;
 	
 	ObjCTypeRecord m_record;
 	
 	void adopt_protocols(ClassType& cls, const protocol_list_t* protocols) throw();
 	void add_properties(ClassType& cls, const objc_property_list* prop_list) throw();
-	void add_methods(ClassType& cls, const method_list_t* method_list_ptr, bool class_method, bool optional) throw();
+	void add_methods(ClassType& cls, const method_list_t* method_list_ptr, bool class_method, bool optional, bool reduced_method = false) throw();
 	
 	const char* get_superclass_name(unsigned superclass_addr, unsigned pointer_to_superclass_addr, ObjCTypeRecord::TypeIndex& superclass_index) throw();
 	const char* get_cstring(const void* vmaddr, int* guess_segment, unsigned symaddr, unsigned symoffset, const char* defsym) const throw();
 	
 	void retrieve_protocol_info() throw();
 	void retrieve_class_info() throw();
+	void retrieve_reduced_class_info() throw();
 	void retrieve_category_info() throw();
 	
 	void tag_propertized_methods(ClassType& cls) throw();
 	
 	void propertize(ClassType& cls) throw();
 	void hide_overlapping_methods(ClassType& target, const OverlapperType& reference, HiddenMethodType hiding_method) throw();
+	
+	void recursive_union_with_protocols(unsigned i, std::vector<OverlapperType>& overlappers) const throw();
+	void recursive_union_with_superclasses(ObjCTypeRecord::TypeIndex ti, std::tr1::unordered_map<ObjCTypeRecord::TypeIndex, OverlapperType>& superclass_overlappers, const char* sysroot) throw();
 	
 //-------------------------------------------------------------------------------------------------------------------------------------------
 	
@@ -215,12 +222,14 @@ public:
 		SB_Alphabetic
 	};
 	
-	MachO_File_ObjC(const char* path) throw(std::bad_alloc, TRException);
+	MachO_File_ObjC(const char* path, bool perform_reduced_analysis = false) throw(std::bad_alloc, TRException);
 	~MachO_File_ObjC() throw() {
 		if (m_class_filter != NULL) pcre_free(m_class_filter);
 		if (m_method_filter != NULL) pcre_free(m_method_filter);
 		if (m_class_filter_extra != NULL) pcre_free(m_class_filter_extra);
 		if (m_method_filter_extra != NULL) pcre_free(m_method_filter_extra);
+		for (std::tr1::unordered_map<const char*, MachO_File_ObjC*>::iterator it = ma_loaded_libraries.begin(); it != ma_loaded_libraries.end(); ++ it)
+			delete it->second;
 	}
 	
 	unsigned total_class_type_count() const throw() { return ma_classes.size(); }

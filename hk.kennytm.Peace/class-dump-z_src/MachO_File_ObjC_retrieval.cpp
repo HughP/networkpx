@@ -159,7 +159,7 @@ void MachO_File_ObjC::add_properties(ClassType& cls, const objc_property_list* p
 	}
 }
 
-void MachO_File_ObjC::add_methods(ClassType& cls, const method_list_t* method_list_ptr, bool class_method, bool optional) throw() {
+void MachO_File_ObjC::add_methods(ClassType& cls, const method_list_t* method_list_ptr, bool class_method, bool optional, bool reduced_method) throw() {
 	unsigned start = cls.methods.size();
 	cls.methods.resize(start + method_list_ptr->count);
 	const method_t* cur_method = &method_list_ptr->first;
@@ -176,6 +176,7 @@ void MachO_File_ObjC::add_methods(ClassType& cls, const method_list_t* method_li
 			method.raw_name = ma_string_store.back().c_str();
 		} else if (method.raw_name[0] == '-' || method.raw_name[0] == '+')
 			method.raw_name = strchr(method.raw_name, ' ') + 1;
+		
 		
 		// split raw_name into components separated by colons.
 		const char* first_colon = method.raw_name;
@@ -210,56 +211,58 @@ void MachO_File_ObjC::add_methods(ClassType& cls, const method_list_t* method_li
 		} else
 			method.types = vector<ObjCTypeRecord::TypeIndex>(method.components.size(), m_record.unknown_type());
 		
-		// from each component, create an argument name.
-		method.argname.resize(method.components.size());
-		string potential_argname;
-		for (unsigned j = 3; j < method.components.size(); ++ j) {
-			if (method.components[j].empty())
-				// Component is empty. Just call it some generic "arg123". 
-				potential_argname = numeric_format("arg%u", j-2);
-			else {
-				const char* component_c_string = method.components[j].c_str();
-				
-				// (1) applicationWillTerminate: -> application, etc.
-				unsigned modal_verb_length;
-				const char* modal_verb_position = find_first_common_modal_word(component_c_string, &modal_verb_length);
-				if (modal_verb_position != NULL) {
-					if (strncmp(component_c_string, "set", 3) == 0)	// setShouldHandleCookies: -> handleCookies, setAnimationDidStopSelector: -> stopSelector.
-						potential_argname = string(modal_verb_position + modal_verb_length);
-					else
-						potential_argname = string(component_c_string, modal_verb_position);
-				}
-				
-				// (2) actionSheet:didDismissWithButtonIndex: -> buttonIndex, etc.
+		if (!reduced_method) {
+			// from each component, create an argument name.
+			method.argname.resize(method.components.size());
+			string potential_argname;
+			for (unsigned j = 3; j < method.components.size(); ++ j) {
+				if (method.components[j].empty())
+					// Component is empty. Just call it some generic "arg123". 
+					potential_argname = numeric_format("arg%u", j-2);
 				else {
-					const char* preposition_position = find_word_after_last_common_preposition(component_c_string);
-					if (preposition_position != NULL && *preposition_position != '\0')
-						potential_argname = string(preposition_position);
-				
-				// (3) in general, just use the last word.
-					else
-						potential_argname = last_word_before(component_c_string, component_c_string + method.components[j].size());
-				}
-			}
-			
-			lowercase_first_word(potential_argname);
-			articlize_keyword(potential_argname);
-			
-			// search if the argname has been used already. If yes, add a number after it.
-			
-			bool has_collision;
-			do {
-				has_collision = false;
-				for (unsigned k = 3; k < j; ++ k) {
-					if (method.argname[k] == potential_argname) {
-						has_collision = true;
-						potential_argname += numeric_format("%u", j-2);
-						break;
+					const char* component_c_string = method.components[j].c_str();
+					
+					// (1) applicationWillTerminate: -> application, etc.
+					unsigned modal_verb_length;
+					const char* modal_verb_position = find_first_common_modal_word(component_c_string, &modal_verb_length);
+					if (modal_verb_position != NULL) {
+						if (strncmp(component_c_string, "set", 3) == 0)	// setShouldHandleCookies: -> handleCookies, setAnimationDidStopSelector: -> stopSelector.
+							potential_argname = string(modal_verb_position + modal_verb_length);
+						else
+							potential_argname = string(component_c_string, modal_verb_position);
+					}
+					
+					// (2) actionSheet:didDismissWithButtonIndex: -> buttonIndex, etc.
+					else {
+						const char* preposition_position = find_word_after_last_common_preposition(component_c_string);
+						if (preposition_position != NULL && *preposition_position != '\0')
+							potential_argname = string(preposition_position);
+					
+					// (3) in general, just use the last word.
+						else
+							potential_argname = last_word_before(component_c_string, component_c_string + method.components[j].size());
 					}
 				}
-			} while (has_collision);
-			
-			method.argname[j] = potential_argname;
+				
+				lowercase_first_word(potential_argname);
+				articlize_keyword(potential_argname);
+				
+				// search if the argname has been used already. If yes, add a number after it.
+				
+				bool has_collision;
+				do {
+					has_collision = false;
+					for (unsigned k = 3; k < j; ++ k) {
+						if (method.argname[k] == potential_argname) {
+							has_collision = true;
+							potential_argname += numeric_format("%u", j-2);
+							break;
+						}
+					}
+				} while (has_collision);
+				
+				method.argname[j] = potential_argname;
+			}
 		}
 	}
 }
@@ -450,8 +453,8 @@ void MachO_File_ObjC::retrieve_class_info() throw() {
 		}
 		cls.type_index = m_record.add_internal_objc_class(cls.name);
 		
+		ma_classes_typeindex_index.insert( pair<ObjCTypeRecord::TypeIndex,unsigned>(cls.type_index, ma_classes.size()) );
 		ma_classes_vm_address_index.insert( pair<unsigned,unsigned>(cls.vm_address, ma_classes.size()) );
-		ma_classes_name_index.insert( pair<const char*,unsigned>(cls.name, ma_classes.size()) );
 		ma_classes.push_back(cls);
 	}
 	
@@ -468,6 +471,7 @@ void MachO_File_ObjC::retrieve_class_info() throw() {
 		else {
 			ObjCTypeRecord::TypeIndex superclass_index;
 			cls.superclass_name = get_superclass_name(reinterpret_cast<unsigned>(class_ptr->superclass), cls.vm_address + offsetof(class_t, superclass), superclass_index);
+			cls.superclass_index = superclass_index;
 			m_record.add_strong_class_link(cls.type_index, superclass_index);
 		}
 		
@@ -523,6 +527,81 @@ void MachO_File_ObjC::retrieve_class_info() throw() {
 	}
 }
 
+void MachO_File_ObjC::retrieve_reduced_class_info() throw() {
+	const section* class_list_section = this->section_having_name("__DATA", "__objc_classlist");
+	if (class_list_section == NULL)		
+		return;
+	
+	m_class_count = class_list_section->size / sizeof(const class_t*);
+	this->seek(class_list_section->offset + m_origin);
+	
+	vector<const class_t*> all_class_ptr;
+	vector<const class_ro_t*> all_class_data_ptr;
+	
+#pragma mark Phase 1: Class pointers, data and other necessary preprocessing.
+	unsigned class_start_index = ma_classes.size();
+	for (unsigned i = 0; i < m_class_count; ++ i) {
+		ClassType cls;
+		
+		cls.type = ClassType::CT_Class;
+		
+		const class_t* class_ptr = this->peek_data_at_vm_address<class_t>(cls.vm_address, &m_guess_data_segment);
+		if (class_ptr == NULL)
+			continue;
+		
+		const class_ro_t* class_data_ptr = PEEK_VM_ADDR(class_ptr->data, class_ro_t, data);
+		if (class_data_ptr == NULL)
+			continue;
+		
+		all_class_ptr.push_back(class_ptr);
+		all_class_data_ptr.push_back(class_data_ptr);
+		
+		cls.attributes = class_data_ptr->flags;
+		cls.name = this->get_cstring(class_data_ptr->name, &m_guess_text_segment, cls.vm_address, strlen("_OBJC_CLASS_$_"), NULL);
+		if (cls.name == NULL) {
+			ma_string_store.push_back(numeric_format("XXEncryptedClass_%04x", cls.vm_address));
+			cls.name = ma_string_store.back().c_str();
+		}
+		cls.type_index = m_record.add_internal_objc_class(cls.name);
+		
+		ma_classes_typeindex_index.insert( pair<ObjCTypeRecord::TypeIndex,unsigned>(cls.type_index, ma_classes.size()) );
+		ma_classes_vm_address_index.insert( pair<unsigned,unsigned>(cls.vm_address, ma_classes.size()) );
+		ma_classes.push_back(cls);
+	}
+	
+	m_class_count = ma_classes.size() - class_start_index;
+	
+	for (unsigned i = 0; i < m_class_count; ++ i) {
+#pragma mark Phase 2: Superclass.
+		ClassType& cls = ma_classes[i + class_start_index];
+		const class_t* class_ptr = all_class_ptr[i];
+		const class_ro_t* class_data_ptr = all_class_data_ptr[i];
+		
+		if (cls.attributes & RO_ROOT)
+			cls.superclass_name = NULL;
+		else {
+			ObjCTypeRecord::TypeIndex superclass_index;
+			cls.superclass_name = get_superclass_name(reinterpret_cast<unsigned>(class_ptr->superclass), cls.vm_address + offsetof(class_t, superclass), superclass_index);
+			cls.superclass_index = superclass_index;
+			m_record.add_strong_class_link(cls.type_index, superclass_index);
+		}
+		
+#pragma mark Phase 5: Declared properties
+		if (class_data_ptr->baseProperties != NULL)
+			add_properties(cls, PEEK_VM_ADDR(class_data_ptr->baseProperties, objc_property_list, data));
+		
+#pragma mark Phase 6: Class methods
+		const class_t* metaclass_ptr = PEEK_VM_ADDR(class_ptr->isa, class_t, data);
+		const class_ro_t* metaclass_data_ptr = PEEK_VM_ADDR(metaclass_ptr->data, class_ro_t, data);
+		if (metaclass_data_ptr->baseMethods != NULL)
+			add_methods(cls, PEEK_VM_ADDR(metaclass_data_ptr->baseMethods, method_list_t, data), true, false, true);
+		
+#pragma mark Phase 7: Instance methods
+		if (class_data_ptr->baseMethods != NULL)
+			add_methods(cls, PEEK_VM_ADDR(class_data_ptr->baseMethods, method_list_t, data), false, false, true);
+	}
+}
+
 void MachO_File_ObjC::retrieve_category_info() throw() {
 	const section* cat_list_section = this->section_having_name("__DATA", "__objc_catlist");
 	if (cat_list_section != NULL) {
@@ -566,6 +645,7 @@ void MachO_File_ObjC::retrieve_category_info() throw() {
 			ObjCTypeRecord::TypeIndex superclass_index;
 			cls.superclass_name = get_superclass_name(reinterpret_cast<unsigned>(cat->cls), cls.vm_address + offsetof(category_t, cls), superclass_index);
 			cls.type_index = m_record.add_objc_category(cls.name, cls.superclass_name);
+			cls.superclass_index = superclass_index;
 			m_record.add_strong_class_link(cls.type_index, superclass_index);
 			
 #pragma mark Phase 2: Protocol adoption
