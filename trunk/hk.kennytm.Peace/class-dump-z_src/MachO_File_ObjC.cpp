@@ -90,15 +90,20 @@ struct MachO_File_ObjC::OverlapperType {
 
 #pragma mark -
 
-MachO_File_ObjC::MachO_File_ObjC(const char* path) throw(std::bad_alloc, TRException) : MachO_File(path), m_guess_data_segment(1), m_guess_text_segment(0), m_class_filter(NULL), m_method_filter(NULL), m_class_filter_extra(NULL), m_method_filter_extra(NULL) {
-	retrieve_protocol_info();
-	retrieve_class_info();
-	retrieve_category_info();
+MachO_File_ObjC::MachO_File_ObjC(const char* path, bool perform_reduced_analysis) throw(std::bad_alloc, TRException) : MachO_File(path), m_guess_data_segment(1), m_guess_text_segment(0), m_class_filter(NULL), m_method_filter(NULL), m_class_filter_extra(NULL), m_method_filter_extra(NULL) {
+	if (perform_reduced_analysis) {
+		retrieve_reduced_class_info();
+	} else {
+		retrieve_protocol_info();
+		retrieve_class_info();
+		retrieve_category_info();
+	}
 	
 	for (vector<ClassType>::iterator it = ma_classes.begin(); it != ma_classes.end(); ++ it)
 		tag_propertized_methods(*it);
 	
-	m_record.create_short_circuit_weak_links();
+	if (!perform_reduced_analysis)
+		m_record.create_short_circuit_weak_links();
 }
 
 void MachO_File_ObjC::tag_propertized_methods(ClassType& cls) throw() {
@@ -263,15 +268,64 @@ void MachO_File_ObjC::OverlapperType::union_with(const MachO_File_ObjC::Overlapp
 	methods.insert(cls.methods.begin(), cls.methods.end());
 }
 
-void MachO_File_ObjC::OverlapperType::recursive_union_with_protocols(unsigned i, std::vector<OverlapperType>& overlappers, const vector<MachO_File_ObjC::ClassType>& classes) throw() {
+void MachO_File_ObjC::recursive_union_with_protocols(unsigned i, std::vector<OverlapperType>& overlappers) const throw() {
 	OverlapperType& ovlp = overlappers[i];
 	if (!ovlp.defined) {
-		const ClassType& cls = classes[i];
+		const ClassType& cls = ma_classes[i];
 		ovlp.union_with(cls);
 		for (vector<unsigned>::const_iterator cit = cls.adopted_protocols.begin(); cit != cls.adopted_protocols.end(); ++ cit) {
-			recursive_union_with_protocols(*cit, overlappers, classes);
+			recursive_union_with_protocols(*cit, overlappers);
 			ovlp.union_with(overlappers[*cit]);
 		}	
+	}
+}
+void MachO_File_ObjC::recursive_union_with_superclasses(ObjCTypeRecord::TypeIndex ti, tr1::unordered_map<ObjCTypeRecord::TypeIndex, OverlapperType>& superclass_overlappers, const char* sysroot) throw() {
+	OverlapperType& ovlp = superclass_overlappers[ti];
+	if (!ovlp.defined) {
+		tr1::unordered_map<ObjCTypeRecord::TypeIndex, unsigned>::const_iterator cit = ma_classes_typeindex_index.find(ti);
+		// Super class is internal. 
+		if (cit != ma_classes_typeindex_index.end()) {
+			const ClassType& cls = ma_classes[cit->second];
+			ovlp.union_with(cls);
+			if (!(cls.attributes & RO_ROOT)) {
+				recursive_union_with_superclasses(cls.superclass_index, superclass_overlappers, sysroot);
+				ovlp.union_with(superclass_overlappers[cls.superclass_index]);
+			}
+		// Super class is probably external.
+		} else {
+			tr1::unordered_map<ObjCTypeRecord::TypeIndex, const char*>::const_iterator lit = ma_lib_path.find(ti);
+			if (lit != ma_lib_path.end()) {
+				const char* libpath = lit->second;
+				tr1::unordered_map<const char*, MachO_File_ObjC*>::iterator loaded_lib = ma_loaded_libraries.find(libpath);
+				if (loaded_lib == ma_loaded_libraries.end()) {
+					size_t sysroot_len = strlen(sysroot);
+					bool sysroot_ends_with_slash = sysroot[sysroot_len-1] == '/';				
+					char the_path[sysroot_len + strlen(libpath) + 1];
+					memcpy(the_path, sysroot, sysroot_len);
+					strcpy(the_path+sysroot_len, libpath+(libpath[0]=='/'&&sysroot_ends_with_slash));
+					MachO_File_ObjC* mf = NULL;
+					try {
+						mf = new MachO_File_ObjC(the_path);
+					} catch (...) {
+						mf = NULL;
+					}
+					loaded_lib = ma_loaded_libraries.insert( pair<const char*, MachO_File_ObjC*>(libpath, mf) ).first;
+				}
+				
+				MachO_File_ObjC* mf = loaded_lib->second;
+				if (mf != NULL) {
+					tr1::unordered_map<ObjCTypeRecord::TypeIndex, OverlapperType> remote_superclass_overlappers;
+					const std::string& superclass_name = m_record.name_of_type(ti);
+					ObjCTypeRecord::TypeIndex remote_index = mf->m_record.parse("@\"" + superclass_name + "\"", false);
+					mf->recursive_union_with_superclasses(remote_index, remote_superclass_overlappers, sysroot);
+					for (tr1::unordered_map<ObjCTypeRecord::TypeIndex, OverlapperType>::const_iterator tit = remote_superclass_overlappers.begin(); tit != remote_superclass_overlappers.end(); ++ tit) {
+						const std::string& name = mf->m_record.name_of_type(tit->first);
+						ObjCTypeRecord::TypeIndex local_index = m_record.parse("@\"" + name + "\"", false);
+						superclass_overlappers[local_index].union_with(tit->second);
+					}
+				}
+			}
+		}
 	}
 }
 
@@ -289,7 +343,7 @@ void MachO_File_ObjC::hide_overlapping_methods(bool hide_super, bool hide_proto,
 		// Construct Overlappers for protocols.
 		vector<OverlapperType> protocol_overlappers (m_protocol_count);
 		for (unsigned i = 0; i < m_protocol_count; ++ i)
-			OverlapperType::recursive_union_with_protocols(i, protocol_overlappers, ma_classes);
+			recursive_union_with_protocols(i, protocol_overlappers);
 		
 		// Now actually hide the methods.
 		for (vector<ClassType>::iterator it = ma_classes.begin(); it != ma_classes.end(); ++ it)
@@ -297,6 +351,14 @@ void MachO_File_ObjC::hide_overlapping_methods(bool hide_super, bool hide_proto,
 				hide_overlapping_methods(*it, protocol_overlappers[*pit], PS_AdoptingProtocol);
 	}
 	
-	(void)hide_super;
-	(void)sysroot;
+	if (hide_super) {
+		tr1::unordered_map<ObjCTypeRecord::TypeIndex, OverlapperType> superclass_overlappers;
+		for (unsigned i = m_protocol_count; i < ma_classes.size(); ++ i)
+			recursive_union_with_superclasses(ma_classes[i].superclass_index, superclass_overlappers, sysroot);
+		
+		for (unsigned i = m_protocol_count; i < ma_classes.size(); ++ i) {
+			ClassType& cls = ma_classes[i];
+			hide_overlapping_methods(cls, superclass_overlappers[cls.superclass_index], PS_Inherited);
+		}
+	}
 }
