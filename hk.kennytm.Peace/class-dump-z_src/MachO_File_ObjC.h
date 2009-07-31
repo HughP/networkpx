@@ -35,18 +35,25 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 class MachO_File_ObjC : public MachO_File {
 private:
-	struct Property {
+	enum HiddenMethodType {
+		PS_None,
+		PS_DeclaredGetter,
+		PS_DeclaredSetter,
+		PS_ConvertedGetter,
+		PS_ConvertedSetter,
+		PS_AdoptingProtocol,
+		PS_Inherited,
+	};
+	
+public:
+	// These 2 are public *only* because I knew no way to refer to these structs in std::tr1::hash<T>.
+	struct ReducedProperty {
 		std::string name;
-		std::string synthesized_to;
 		std::string getter;
 		std::string setter;
-		unsigned getter_vm_address;
-		unsigned setter_vm_address;
 		
 		// these are from the attributes
 		ObjCTypeRecord::TypeIndex type;		// T
-		
-		bool optional;
 		
 		bool has_getter;	// G
 		bool has_setter;	// S
@@ -54,6 +61,35 @@ private:
 		bool retain;		// &
 		bool readonly;		// R
 		bool nonatomic;		// N
+		
+		ReducedProperty() : has_getter(false), has_setter(false), copy(false), retain(false), readonly(false), nonatomic(false) {}
+		bool operator==(const ReducedProperty& other) const throw() {
+			return name==other.name &&
+				has_getter==other.has_getter && (!has_getter || getter==other.getter) &&
+				has_setter==other.has_setter && (!has_setter || setter==other.setter) &&
+				copy==other.copy && retain==other.retain && readonly==other.readonly && nonatomic==other.nonatomic;
+		}
+	};
+	
+	struct ReducedMethod {
+		const char* raw_name;
+		bool is_class_method;
+		std::vector<ObjCTypeRecord::TypeIndex> types;
+		
+		bool operator==(const ReducedMethod& other) const throw() {
+			return is_class_method==other.is_class_method && types==other.types && strcmp(raw_name, other.raw_name)==0;
+		}
+	};
+	
+private:
+	struct Property : public ReducedProperty {
+		std::string synthesized_to;
+		unsigned getter_vm_address;
+		unsigned setter_vm_address;
+		
+		HiddenMethodType hidden;
+		bool optional;
+		
 		enum {
 			IM_None,
 			IM_Synthesized,	// V
@@ -66,7 +102,7 @@ private:
 			GC_Weak			// W
 		} gc_strength;
 		
-		Property() : getter_vm_address(0), setter_vm_address(0), optional(false), has_getter(false), has_setter(false), copy(false), retain(false), readonly(false), nonatomic(false), impl_method(IM_None), gc_strength(GC_None) {}
+		Property() : ReducedProperty(), getter_vm_address(0), setter_vm_address(0), hidden(PS_None), optional(false), impl_method(IM_None), gc_strength(GC_None) {}
 		
 		std::string format(const ObjCTypeRecord& record, const MachO_File_ObjC& self, bool print_method_addresses, bool print_comments) const throw();
 	};
@@ -77,16 +113,9 @@ private:
 		unsigned offset;
 	};
 	
-	struct Method {
+	struct Method : public ReducedMethod {
 		unsigned vm_address;
-		enum {
-			PS_None,
-			PS_DeclaredGetter,
-			PS_DeclaredSetter,
-			PS_ConvertedGetter,
-			PS_ConvertedSetter
-		} propertize_status;
-		const char* raw_name;
+		HiddenMethodType propertize_status;
 		
 		// -(double)sumOfArray:(const double*)array count:(unsigned)count will be split into this form:
 		// types = double, id, SEL, const double*, unsigned.
@@ -94,10 +123,8 @@ private:
 		// -(id)copy will be split into this form:
 		// types = id, id, SEL
 		// components = "", "", ""
-		bool is_class_method;
 		bool optional;
 		
-		std::vector<ObjCTypeRecord::TypeIndex> types;
 		std::vector<std::string> components;
 		std::vector<std::string> argname;
 		
@@ -110,7 +137,7 @@ private:
 		enum {
 			CT_Protocol,
 			CT_Class,
-			CT_Category
+			CT_Category,
 		} type;
 		
 		unsigned vm_address;
@@ -130,6 +157,8 @@ private:
 		std::string format(const ObjCTypeRecord& record, const MachO_File_ObjC& self, bool print_method_addresses, bool print_comments, bool print_ivar_offsets, bool sort_methods_alphabetically, bool show_only_exported_classes) const throw();
 	};
 	
+	struct OverlapperType;
+	
 	friend class Method_AlphabeticSorter;
 	friend class Property_AlphabeticSorter;
 	friend class ClassType;
@@ -141,7 +170,9 @@ private:
 	unsigned m_class_count, m_protocol_count, m_category_count;
 	std::vector<ClassType> ma_classes;	// classes, categories & protocols.
 	std::tr1::unordered_map<unsigned, unsigned> ma_classes_vm_address_index;	// vm_addr -> index in ma_classes
+	std::tr1::unordered_map<const char*, unsigned> ma_classes_name_index;	// class name -> index in ma_classes.
 	std::tr1::unordered_map<ObjCTypeRecord::TypeIndex, std::string> ma_include_paths;
+	std::tr1::unordered_map<ObjCTypeRecord::TypeIndex, const char*> ma_lib_path;
 	
 	ObjCTypeRecord m_record;
 	
@@ -159,6 +190,7 @@ private:
 	void tag_propertized_methods(ClassType& cls) throw();
 	
 	void propertize(ClassType& cls) throw();
+	void hide_overlapping_methods(ClassType& target, const OverlapperType& reference, HiddenMethodType hiding_method) throw();
 	
 //-------------------------------------------------------------------------------------------------------------------------------------------
 	
@@ -171,6 +203,8 @@ private:
 	friend bool mfoc_AlphabeticSorter(const ClassType* a, const ClassType* b) throw();
 	
 	std::vector<std::string> ma_string_store;	// store C-strings.
+	std::vector<Method> ma_method_store;
+	std::vector<Property> ma_property_store;
 	
 //-------------------------------------------------------------------------------------------------------------------------------------------
 	
@@ -206,6 +240,7 @@ public:
 		for (std::vector<ClassType>::iterator it = ma_classes.begin(); it != ma_classes.end(); ++ it)
 			propertize(*it);
 	}
+	void hide_overlapping_methods(bool hide_super, bool hide_proto, const char* sysroot) throw();
 	
 	void print_struct_declaration(SortBy sort_by) const throw();
 	

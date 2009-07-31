@@ -99,7 +99,15 @@ string MachO_File_ObjC::Property::format(const ObjCTypeRecord& record, const Mac
 		if (0 != pcre_exec(self.m_method_filter, self.m_method_filter_extra, name.c_str(), name.size(), 0, 0, NULL, 0))
 			return "";
 	
-	string res = "@property(";
+	string res;
+	switch (hidden) {
+		case PS_AdoptingProtocol: res = "// in a protocol: "; break;
+		case PS_Inherited: res = "// inherited: "; break;
+		default:
+			break;
+	}
+	
+	res += "@property(";
 	if (readonly)
 		res += "readonly, ";
 	if (copy)
@@ -174,18 +182,12 @@ string MachO_File_ObjC::Method::format(const ObjCTypeRecord& record, const MachO
 	
 	string res;
 	switch (propertize_status) {
-		case PS_DeclaredGetter:
-			res = "// declared property getter: ";
-			break;
-		case PS_DeclaredSetter:
-			res = "// declared property setter: ";
-			break;
-		case PS_ConvertedGetter:
-			res = "// converted property getter: ";
-			break;
-		case PS_ConvertedSetter:
-			res = "// converted property setter: ";
-			break;
+		case PS_DeclaredGetter: res = "// declared property getter: "; break;
+		case PS_DeclaredSetter: res = "// declared property setter: "; break;
+		case PS_ConvertedGetter: res = "// converted property getter: "; break;
+		case PS_ConvertedSetter: res = "// converted property setter: "; break;
+		case PS_AdoptingProtocol: res = "// in a protocol: "; break;
+		case PS_Inherited: res = "// inherited: "; break;
 		default:
 			break;
 	}

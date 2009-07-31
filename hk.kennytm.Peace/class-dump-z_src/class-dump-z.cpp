@@ -154,6 +154,7 @@ int main (int argc, char* argv[]) {
 				if (!kill_prefix.empty())
 					mf.set_kill_prefix(kill_prefix);
 			
+				mf.hide_overlapping_methods(hide_super, hide_protocols, sysroot);
 				if (propertize)
 					mf.propertize();
 								
