@@ -43,7 +43,7 @@ void print_usage () {
 			"    -A         Print implementation VM addresses.\n"
 			"    -k         Show additional comments.\n"
 			"    -R         Show pointer declarations as int *a instead of int* a.\n"
-			"    -r         Keep the raw struct names (e.g. do no replace __CFArray* with CFArrayRef).\n"
+			"    -N         Keep the raw struct names (e.g. do no replace __CFArray* with CFArrayRef).\n"
 			"\n  Filtering:\n"
 			"    -C <regex> Only display types with (original) name matching the RegExp (in PCRE syntax).\n"
 			"    -f <regex> Only display methods with (original) name matching the RegExp.\n"
@@ -76,7 +76,7 @@ int main (int argc, char* argv[]) {
 		vector<string> kill_prefix;
 		
 		// const char* regexp_string = NULL;
-		while ((c = getopt(argc, argv, "aAkC:ISsD:Rf:gpHo:X:rh:y:")) != -1) {
+		while ((c = getopt(argc, argv, "aAkC:ISsD:Rf:gpHo:X:Nh:y:")) != -1) {
 			switch (c) {
 				case 'a': print_ivar_offsets = true; break;
 				case 'A': print_method_addresses = true; break;
@@ -110,7 +110,7 @@ int main (int argc, char* argv[]) {
 					}
 					break;
 				}
-				case 'r': prettify_struct_names = false; break;
+				case 'N': prettify_struct_names = false; break;
 				case 'h':
 					if (strncmp(optarg, "proto", 5) == 0)
 						hide_protocols = true;
