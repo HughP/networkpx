@@ -317,23 +317,28 @@ string MachO_File_ObjC::ClassType::format(const ObjCTypeRecord& record, const Ma
 	
 	res.push_back('\n');
 	
+	bool is_optional = false;
 	for (vector<unsigned>::const_iterator cit = property_index_remap.begin(); cit != property_index_remap.end(); ++ cit) {
-		string formatted_property = properties[*cit].format(record, self, print_method_addresses, print_comments);
+		const Property& property = properties[*cit];
+		string formatted_property = property.format(record, self, print_method_addresses, print_comments);
 		if (!formatted_property.empty()) {
+			if (property.optional != is_optional) {
+				is_optional = property.optional;
+				res += is_optional ? "@optional\n" : "@required\n";
+			}
 			all_methods_filtered = false;
 			res += formatted_property;
 		}
 	}
 	
-	bool is_optional = false;
 	for (vector<unsigned>::const_iterator cit = method_index_remap.begin(); cit != method_index_remap.end(); ++ cit) {
 		const Method& method = methods[*cit];
-		if (method.optional != is_optional) {
-			is_optional = method.optional;
-			res += is_optional ? "@optional\n" : "@required\n";
-		}
 		string formatted_method = method.format(record, self, print_method_addresses, print_comments);
 		if (!formatted_method.empty()) {
+			if (method.optional != is_optional) {
+				is_optional = method.optional;
+				res += is_optional ? "@optional\n" : "@required\n";
+			}
 			all_methods_filtered = false;
 			res += formatted_method;
 		}

@@ -47,14 +47,15 @@ void MachO_File_ObjC::tag_propertized_methods(ClassType& cls) throw() {
 	for (vector<Property>::iterator pit = cls.properties.begin(); pit != cls.properties.end(); ++ pit) {
 		for (vector<Method>::iterator mit = cls.methods.begin(); mit != cls.methods.end(); ++ mit) {
 			// to be a getter, the method must
-			// (1) is not optional
-			// (2) is not a class method
-			// (3) accept no parameters (types.size() == 3)
-			// (4) does not return void
-			// (5) the raw name is equal to the required getter name.
-			// (The first 4 rules are just to filter out unqualified methods quicker) 
-			if (mit->propertize_status == Method::PS_None && !mit->optional && !mit->is_class_method && mit->types.size() == 3 && !m_record.is_void_type(mit->types[0]) && pit->getter == mit->raw_name) {
+			// (1) not be a class method
+			// (2) accept no parameters (types.size() == 3)
+			// (3) does not return void
+			// (4) the raw name is equal to the required getter name.
+			// (The first 3 rules are just to filter out unqualified methods quicker) 
+			if (mit->propertize_status == Method::PS_None && !mit->is_class_method && mit->types.size() == 3 && !m_record.is_void_type(mit->types[0]) && pit->getter == mit->raw_name) {
 				pit->getter_vm_address = mit->vm_address;
+				if (mit->optional)
+					pit->optional = true;
 				mit->propertize_status = Method::PS_DeclaredGetter;
 				break;
 			}
@@ -62,13 +63,14 @@ void MachO_File_ObjC::tag_propertized_methods(ClassType& cls) throw() {
 		if (!pit->readonly) {
 			for (vector<Method>::iterator mit = cls.methods.begin(); mit != cls.methods.end(); ++ mit) {
 				// to be a setter, the method must
-				// (1) is not optional
-				// (2) is not a class method
-				// (3) accept exactly one parameters (types.size() == 4)
-				// (4) returns void (not even oneway void)
-				// (5) the raw name is equal to the required setter name.
-				if (mit->propertize_status == Method::PS_None && !mit->optional && !mit->is_class_method && mit->types.size() == 4 && m_record.is_void_type(mit->types[0]) && pit->setter == mit->raw_name) {
+				// (1) not be a class method
+				// (2) accept exactly one parameters (types.size() == 4)
+				// (3) returns void (not even oneway void)
+				// (4) the raw name is equal to the required setter name.
+				if (mit->propertize_status == Method::PS_None && !mit->is_class_method && mit->types.size() == 4 && m_record.is_void_type(mit->types[0]) && pit->setter == mit->raw_name) {
 					pit->setter_vm_address = mit->vm_address;
+					if (mit->optional)
+						pit->optional = true;
 					mit->propertize_status = Method::PS_DeclaredSetter;
 					break;
 				}
