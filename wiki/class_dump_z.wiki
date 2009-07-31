@@ -98,7 +98,7 @@ Generating ivar offsets by accumulation is a tricky business, due to alignments 
 
 class-dump-z will `typedef` structs and unions to the most presentable name with heuristics.
 
-  _This feature can be explicitly turned off with the -r switch._
+  _This feature can be explicitly turned off with the -N switch._
 
 == Stable name generation for anonymous structs ==
 
