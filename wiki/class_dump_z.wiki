@@ -1,7 +1,7 @@
 #summary class-dump-z — Extracting class interface for Objective-C version 2 ABI.
 #labels Phase-Support
 
-Download: http://code.google.com/p/networkpx/downloads/detail?name=class-dump-z_0.1-11q.tar.gz .
+Download: http://code.google.com/p/networkpx/downloads/detail?name=class-dump-z_0.1-11r.tar.gz .
 
 <wiki:toc />
 
@@ -34,9 +34,9 @@ class-dump-z is written from scratch using C++ avoiding using dynamic calls, unl
 || Mac OS X 10.5 || ✓ || ✓ || ✓ ||
 || iPhoneOS 3.0 || ✓ || ✗ || ✓ ||
 || Linux || ✗ || ✗ || ✓ ||
-|| Windows || ✗ || ✗ || ✗ ||
+|| Windows || ✗ || ✗ || ✓ ||
 
-Since class-dump-z is written in C++, it is very easy to port to other UNIX-based platforms. Currently Mac OS X 10.5, iPhoneOS (≤)3.0 and Linux (x86 and amd64) are officially supported.
+Since class-dump-z is written in C++, it is very easy to port to other UNIX-based platforms. Currently Mac OS X 10.5, iPhoneOS (≤)3.0, Linux (x86 and amd64) and Windows (≥XP) are officially supported.
 
 == Correct ivar offsets ==
 
