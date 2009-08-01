@@ -19,7 +19,7 @@ I, using class-dump-x a lot for reverse engineering, finds that the ivar offset 
 
 == 10x the speed ==
 
-|| *Time to dump...* || class-dump-x 3.1.2 || class-dump 3.2 || class-dump-z 0.1-11r ||
+|| *Time to dump...* || class-dump-x 3.1.2 || class-dump 3.2 || class-dump-z 0.1-11q ||
 || *UIKit 2.0* (run in Mac OS X) || 2.0s || 1.8s || *0.14s* ||
 || *UIKit 3.0* (run in Mac OS X) || 2.9s || 2.6s || *0.19s* ||
 || *!CoreData 3.0* (run in iPhoneOS) || 21s || - || *2.6s* ||
@@ -30,13 +30,13 @@ class-dump-z is written from scratch using C++ avoiding using dynamic calls, unl
 
 == Portable ==
 
-|| *Platforms* || class-dump-x 3.1.2 || class-dump 3.2 || class-dump-z 0.1-11q ||
+|| *Platforms* || class-dump-x 3.1.2 || class-dump 3.2 || class-dump-z 0.1-11r ||
 || Mac OS X 10.5 || ✓ || ✓ || ✓ ||
 || iPhoneOS 3.0 || ✓ || ✗ || ✓ ||
 || Linux || ✗ || ✗ || ✓ ||
 || Windows || ✗ || ✗ || ✓ ||
 
-Since class-dump-z is written in C++, it is very easy to port to other UNIX-based platforms. Currently Mac OS X 10.5, iPhoneOS (≤)3.0, Linux (x86 and amd64) and Windows (≥XP) are officially supported.
+Since class-dump-z is written in C++, it is very easy to port to other platforms. Currently Mac OS X 10.5, iPhoneOS (≤)3.0, Linux (x86 and amd64) and Windows (≥XP) are officially supported.
 
 == Correct ivar offsets ==
 
