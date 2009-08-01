@@ -26,8 +26,25 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 template <typename T>
 static inline void hash_combine(size_t& seed, const T& v) {
-	seed ^= 0x9e3779b9 + (seed << 6) + (seed >> 2) + std::tr1::hash<T>(v);
+	seed ^= 0x9e3779b9 + (seed << 6) + (seed >> 2) + std::tr1::hash<T>()(v);
 }
+
+#if _MSC_VER
+#include <vector>
+namespace std {
+	namespace tr1 {
+		template <typename U>
+		struct hash<::std::vector<U> > : public unary_function<::std::vector<U>, size_t> {
+			size_t operator() (const ::std::vector<U>& v) {
+				size_t res = 0;
+				for (::std::vector<U>::const_iterator cit = v.begin(); cit != v.end(); ++ cit)
+					hash_combine(res, *cit);
+				return res;
+			}
+		};
+	}
+}
+#endif
 
 #endif
 

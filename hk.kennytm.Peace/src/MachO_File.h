@@ -54,7 +54,7 @@ protected:
 	
 public:
 	inline bool valid() const throw() { return m_is_valid; }
-	MachO_File_Simple(const char* path, const char* arch = "any") throw(std::bad_alloc,TRException);
+	MachO_File_Simple(const char* path, const char* arch = "any");
 	
 	off_t to_file_offset (unsigned vm_address, int* p_guess_segment = NULL) const throw();
 	unsigned to_vm_address (off_t file_offset, int* p_guess_segment = NULL) const throw();
@@ -133,7 +133,7 @@ public:
 		MOST_ObjCIvar
 	};
 	
-	MachO_File(const char* path, const char* arch = "any") throw(std::bad_alloc,TRException);
+	MachO_File(const char* path, const char* arch = "any");
 	
 	// try to obtain a string related to this vm_address.
 	const char* string_representation (unsigned vm_address, StringType* p_strtype = NULL) const throw();

@@ -44,7 +44,7 @@ TRException::~TRException() throw() {
 }
 
 
-DataFile::DataFile(const char* path) throw(bad_alloc,TRException) : m_fd(open(path, O_RDONLY)), m_location(0) {
+DataFile::DataFile(const char* path) : m_fd(open(path, O_RDONLY)), m_location(0) {
 	if (m_fd == -1) {
 		throw TRException("DataFile::DataFile(const char*):\n\tFail to open \"%s\".", path);
 	}

@@ -29,6 +29,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <cstddef>
 #include <stack>
 #include "pseudo_base64.h"
+#include "hash_combine.h"
 
 using namespace std;
 
@@ -41,7 +42,7 @@ static inline size_t string_hasher(const char* str) {
 	return res;
 }
 
-#ifdef _TR1_FUNCTIONAL
+#if _TR1_FUNCTIONAL || _MSC_VER
 namespace std { 
 	namespace tr1
 #else
@@ -73,7 +74,7 @@ namespace std {
 				return retval;
 			}
 		};
-#ifdef _TR1_FUNCTIONAL
+#if _TR1_FUNCTIONAL || _MSC_VER
 	}
 #endif
 }
@@ -90,7 +91,7 @@ struct MachO_File_ObjC::OverlapperType {
 
 #pragma mark -
 
-MachO_File_ObjC::MachO_File_ObjC(const char* path, bool perform_reduced_analysis) throw(std::bad_alloc, TRException) : MachO_File(path), m_guess_data_segment(1), m_guess_text_segment(0), m_class_filter(NULL), m_method_filter(NULL), m_class_filter_extra(NULL), m_method_filter_extra(NULL) {
+MachO_File_ObjC::MachO_File_ObjC(const char* path, bool perform_reduced_analysis) : MachO_File(path), m_guess_data_segment(1), m_guess_text_segment(0), m_class_filter(NULL), m_method_filter(NULL), m_class_filter_extra(NULL), m_method_filter_extra(NULL) {
 	if (perform_reduced_analysis) {
 		retrieve_reduced_class_info();
 	} else {
@@ -300,7 +301,7 @@ void MachO_File_ObjC::recursive_union_with_superclasses(ObjCTypeRecord::TypeInde
 				if (loaded_lib == ma_loaded_libraries.end()) {
 					size_t sysroot_len = strlen(sysroot);
 					bool sysroot_ends_with_slash = sysroot[sysroot_len-1] == '/';				
-					char the_path[sysroot_len + strlen(libpath) + 1];
+					char* the_path = reinterpret_cast<char*>(sysroot_len + strlen(libpath) + 1);
 					memcpy(the_path, sysroot, sysroot_len);
 					strcpy(the_path+sysroot_len, libpath+(libpath[0]=='/'&&sysroot_ends_with_slash));
 					MachO_File_ObjC* mf = NULL;

@@ -30,6 +30,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "combine_dependencies.h"
 #include "hash_combine.h"
 
+#ifdef _MSC_VER
+#define __alignof__ __alignof
+#endif
+
 using namespace std;
 
 static const char* map314[] = {
@@ -59,7 +63,7 @@ static const char* map314[] = {
 	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL
 };
 
-#ifdef _TR1_FUNCTIONAL
+#if _TR1_FUNCTIONAL || _MSC_VER
 namespace std { 
 	namespace tr1
 #else
@@ -75,7 +79,7 @@ namespace boost
 				return retval;
 			}
 		};
-#ifdef _TR1_FUNCTIONAL
+#if _TR1_FUNCTIONAL || _MSC_VER
 	}
 #endif
 }
@@ -1242,6 +1246,8 @@ void ObjCTypeRecord::print_args(TypeIndex ti, const char*& vacopy, void(*inline_
 						bits_to_skip = 0;
 					}
 					print_args(*cit, vacopy, inline_id_printer, f);
+					// an intentional minus sign.
+#pragma warning ( suppress : 4146 )
 					vacopy += (-size) % align;
 				}
 			}

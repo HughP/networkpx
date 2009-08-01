@@ -44,7 +44,7 @@ protected:
 	off_t m_location;
 	
 public:
-	DataFile(const char* path) throw(std::bad_alloc,TRException);
+	DataFile(const char* path);
 	
 	inline const char* data() const throw() { return m_data; }
 	inline off_t filesize() const throw() { return m_filesize; }

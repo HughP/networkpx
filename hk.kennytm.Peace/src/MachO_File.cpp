@@ -31,7 +31,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 using namespace std;
 
-MachO_File_Simple::MachO_File_Simple(const char* path, const char* arch) throw(std::bad_alloc,TRException) : DataFile(path), m_origin(0), m_crypt_begin(0), m_crypt_end(0) {
+MachO_File_Simple::MachO_File_Simple(const char* path, const char* arch) : DataFile(path), m_origin(0), m_crypt_begin(0), m_crypt_end(0) {
 	
 	const mach_header* mp_header = this->read_data<mach_header>();
 	
@@ -255,7 +255,7 @@ static const char* print_string_representation_format_strings_prefix[] = {"", "C
 static const char* print_string_representation_format_strings_suffix[] = {"", "\")", "\"", ")", "", ")", ""};
 
 
-MachO_File::MachO_File(const char* path, const char* arch) throw(bad_alloc,TRException) : MachO_File_Simple(path, arch), ma_symbols(NULL), m_symbols_length(0), ma_indirect_symbols(NULL), m_indirect_symbols_length(0), ma_strings(NULL), ma_cstrings(NULL), m_cstring_vmaddr(0) {
+MachO_File::MachO_File(const char* path, const char* arch) : MachO_File_Simple(path, arch), ma_symbols(NULL), m_symbols_length(0), ma_indirect_symbols(NULL), m_indirect_symbols_length(0), ma_strings(NULL), ma_cstrings(NULL), m_cstring_vmaddr(0) {
 	for (vector<const load_command*>::const_iterator cit = ma_load_commands.begin(); cit != ma_load_commands.end(); ++ cit) {
 		switch ((*cit)->cmd) {				
 			case LC_SYMTAB: {
