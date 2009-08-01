@@ -140,28 +140,29 @@ static NSComparisonResult comparePSSpecs(PSSpecifier* p1, PSSpecifier* p2, void*
 	[arr addObject:spec];
 }
 -(void)appendAppWithPath:(NSString*)path toArray:(NSMutableArray*)arr {
-	NSDictionary* infoPlist = [[NSDictionary alloc] initWithContentsOfFile:[path stringByAppendingPathComponent:@"Info.plist"]];
-	NSString* identifier = [infoPlist objectForKey:@"CFBundleIdentifier"];
+	NSBundle* appBundle = [[NSBundle alloc] initWithPath:path];
+	NSString* identifier = [appBundle bundleIdentifier];
 	
-	NSMutableSet* allRoleIDs = [[NSMutableSet alloc] init];
+	if (identifier != nil) {
+		NSMutableSet* allRoleIDs = [[NSMutableSet alloc] init];
 	
-	NSArray* roles = [infoPlist objectForKey:@"UIRoleInfo"];
-	for (NSDictionary* role in roles) {
-		NSArray* roles2 = [role objectForKey:@"Roles"];
-		for (NSDictionary* role2 in roles2) {
-			NSString* roleName = [role2 objectForKey:@"Role"];
-			[allRoleIDs addObject:[NSString stringWithFormat:@"%@-%@", identifier, roleName]];
+		for (NSDictionary* role in [appBundle objectForInfoDictionaryKey:@"UIRoleInfo"]) {
+			for (NSDictionary* role2 in [role objectForKey:@"Roles"]) {
+				NSString* roleName = [role2 objectForKey:@"Role"];
+				[allRoleIDs addObject:[NSString stringWithFormat:@"%@-%@", identifier, roleName]];
+			}
 		}
+
+		if ([allRoleIDs count] != 0) {
+			for (NSString* roleID in allRoleIDs)
+				[self appendAppWithPath:path identifier:roleID toArray:arr];
+		} else
+			[self appendAppWithPath:path identifier:identifier toArray:arr];
+
+		[allRoleIDs release];
 	}
-	
-	if ([allRoleIDs count] != 0) {
-		for (NSString* roleID in allRoleIDs)
-			[self appendAppWithPath:path identifier:roleID toArray:arr];
-	} else
-		[self appendAppWithPath:path identifier:identifier toArray:arr];
-	
-	[allRoleIDs release];
-	[infoPlist release];
+
+	[appBundle release];
 }
 -(void)populateSystemApps {
 	NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
