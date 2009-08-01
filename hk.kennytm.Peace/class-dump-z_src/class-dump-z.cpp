@@ -73,11 +73,12 @@ int main (int argc, char* argv[]) {
 		const char* type_regexp = NULL;
 		const char* method_regexp = NULL;
 		const char* output_directory = NULL;
+		vector<const char*> filenames;
 		vector<string> kill_prefix;
 		
 		// const char* regexp_string = NULL;
-		while ((c = getopt(argc, argv, "aAkC:ISsD:Rf:gpHo:X:Nh:y:")) != -1) {
-			switch (c) {
+		while (optind < argc) {
+			switch (c = getopt(argc, argv, "aAkC:ISsD:Rf:gpHo:X:Nh:y:")) {
 				case 'a': print_ivar_offsets = true; break;
 				case 'A': print_method_addresses = true; break;
 				case 'k': print_comments = true; break;
@@ -118,27 +119,28 @@ int main (int argc, char* argv[]) {
 						hide_super = true;
 					break;
 				case 'y': sysroot = optarg; break;
+				case -1: filenames.push_back(argv[optind++]); break;
 				default:
 					break;
 			}
 		}
 		
-		if (optind == argc) {
+		if (filenames.size() == 0) {
 			print_usage();
 			return 0;
 		}
 		
-		const char* filename = argv[optind];
-		
+		for (vector<const char*>::const_iterator fit = filenames.begin(); fit != filenames.end(); ++ fit) {
+			
 		try {
-			MachO_File_ObjC mf = MachO_File_ObjC(filename);
+			
+			MachO_File_ObjC mf = MachO_File_ObjC(*fit);
 		
 			if (diagnosis_option != '\0') {
 				switch (diagnosis_option) {
 					case 't': mf.print_all_types(); break;
 					case 'n': mf.print_network(); break;
 					case 'e': mf.print_extern_symbols(); break;
-//					case 'i': mf.print_protocol_adoption_network(); break;
 						
 					default:
 						printf("// Unrecognized diagnosis option: -D %c\n", diagnosis_option);
@@ -169,7 +171,7 @@ int main (int argc, char* argv[]) {
 						}
 					}
 					
-					mf.write_header_files(filename, print_method_addresses, print_comments, print_ivar_offsets, sort_methods_alphabetically, show_only_exported_classes);
+					mf.write_header_files(*fit, print_method_addresses, print_comments, print_ivar_offsets, sort_methods_alphabetically, show_only_exported_classes);
 				} else {
 					mf.print_struct_declaration(sort_by);
 					mf.print_class_type(sort_by, print_method_addresses, print_comments, print_ivar_offsets, sort_methods_alphabetically, show_only_exported_classes);
@@ -178,7 +180,9 @@ int main (int argc, char* argv[]) {
 			}
 			
 		} catch (const TRException& e) {
-			printf("/*\n\nAn exception was thrown while analyzing '%s' (with sysroot '%s'):\n\n%s\n\n*/\n", filename, sysroot, e.what());
+			printf("/*\n\nAn exception was thrown while analyzing '%s' (with sysroot '%s'):\n\n%s\n\n*/\n", *fit, sysroot, e.what());
+		}
+			
 		}
 	}
 }
