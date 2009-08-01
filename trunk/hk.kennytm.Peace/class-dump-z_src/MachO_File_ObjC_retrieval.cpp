@@ -25,6 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "string_util.h"
 #include <cstring>
 #include <cstddef>
+#include "or.h"
 
 using namespace std;
 
@@ -172,7 +173,7 @@ void MachO_File_ObjC::add_methods(ClassType& cls, const method_list_t* method_li
 		method.vm_address = reinterpret_cast<unsigned>(cur_method->imp);
 		method.raw_name = this->get_cstring(cur_method->name, &m_guess_text_segment, method.vm_address, 0, NULL);
 		if (method.raw_name == NULL) {
-			ma_string_store.push_back(numeric_format("XXEncryptedMethod_%04x", method.vm_address ?: reinterpret_cast<unsigned>(cur_method->name)));
+			ma_string_store.push_back(numeric_format("XXEncryptedMethod_%04x", OR(method.vm_address, reinterpret_cast<unsigned>(cur_method->name))));
 			method.raw_name = ma_string_store.back().c_str();
 		} else if (method.raw_name[0] == '-' || method.raw_name[0] == '+')
 			method.raw_name = strchr(method.raw_name, ' ') + 1;

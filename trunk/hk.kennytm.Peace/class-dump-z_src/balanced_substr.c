@@ -19,7 +19,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
 
+#if __cplusplus
+extern "C"
+#elif _MSC_VER
+typedef int bool;
+const bool false = 0, true = 1;
+#else
 #include <stdbool.h>
+#endif
 
 #if __cplusplus
 extern "C"

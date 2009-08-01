@@ -1,0 +1,22 @@
+CFLAGS_COMMON=/Ox /GF /EHc /EHs /fp:fast /GL /arch:SSE2 /nologo /W3 /wd4996 /wd4068 /WX /Y- /I ../include /I ../src
+
+CC=cl
+CPP=cl
+LD=link
+CFLAGS=$(CFLAGS_COMMON)
+
+.c.obj:
+	$(CC) $*.c /c $(CFLAGS) /Fo$@
+
+.cpp.obj:
+	$(CPP) $*.cpp /c $(CFLAGS) /Fo$@
+
+all:	../output/win_x86/class-dump-z.exe
+
+../output/win_x86/class-dump-z.exe: class-dump-z.obj ../src/XGetopt.obj ../src/DataFile.obj ../src/MachO_File.obj MachO_File_ObjC.obj MachO_File_ObjC_retrieval.obj MachO_File_ObjC_format.obj balanced_substr.obj crc32.obj pseudo_base64.obj objc_type.obj ../src/string_util.obj MachO_File_ObjC_debug.obj ../src/get_arch_from_flag.obj
+	$(LD) $** pcre.lib /LTCG /NOLOGO /OUT:$@
+
+clean:
+	-rm -f *.obj
+
+.PHONY:	all clean

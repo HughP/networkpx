@@ -130,6 +130,7 @@ typedef struct protocol_t {
 typedef struct protocol_list_t {
     // count is 64-bit by accident. 
     uintptr_t count;
+#pragma warning ( suppress : 4200 )
     protocol_t *list[0]; // variable-size
 } protocol_list_t;
 

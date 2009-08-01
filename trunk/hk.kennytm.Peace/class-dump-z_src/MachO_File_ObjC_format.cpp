@@ -27,6 +27,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <cstdio>
 #include <algorithm>
 #include "combine_dependencies.h"
+#include "or.h"
+#include "snprintf.h"
 
 using namespace std;
 
@@ -465,7 +467,7 @@ void MachO_File_ObjC::write_header_files(const char* filename, bool print_method
 	
 	// Write the aggregation file first.
 	const char* cached_self_path = self_path();
-	const char* self_filename = self_path() ?: filename;
+	const char* self_filename = OR(cached_self_path, filename);
 	const char* last_component = strrchr(self_filename, '/') ?: self_filename;
 	if (*last_component == '/') ++ last_component;
 	const char* dot_position = strrchr(last_component, '.');

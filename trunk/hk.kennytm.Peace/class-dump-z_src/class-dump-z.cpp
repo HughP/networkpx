@@ -119,6 +119,9 @@ int main (int argc, char* argv[]) {
 						hide_super = true;
 					break;
 				case 'y': sysroot = optarg; break;
+#if EOF != -1
+				case EOF:
+#endif
 				case -1: filenames.push_back(argv[optind++]); break;
 				default:
 					break;

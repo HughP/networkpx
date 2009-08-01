@@ -160,9 +160,9 @@ private:
 	
 	struct OverlapperType;
 	
-	friend class Method_AlphabeticSorter;
-	friend class Property_AlphabeticSorter;
-	friend class ClassType;
+	friend struct Method_AlphabeticSorter;
+	friend struct Property_AlphabeticSorter;
+	friend struct ClassType;
 	
 //-------------------------------------------------------------------------------------------------------------------------------------------
 	
@@ -222,7 +222,7 @@ public:
 		SB_Alphabetic
 	};
 	
-	MachO_File_ObjC(const char* path, bool perform_reduced_analysis = false) throw(std::bad_alloc, TRException);
+	MachO_File_ObjC(const char* path, bool perform_reduced_analysis = false);
 	~MachO_File_ObjC() throw() {
 		if (m_class_filter != NULL) pcre_free(m_class_filter);
 		if (m_method_filter != NULL) pcre_free(m_method_filter);
