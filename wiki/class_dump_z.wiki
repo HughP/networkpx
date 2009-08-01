@@ -19,7 +19,7 @@ I, using class-dump-x a lot for reverse engineering, finds that the ivar offset 
 
 == 10x the speed ==
 
-|| *Time to dump...* || class-dump-x 3.1.2 || class-dump 3.2 || class-dump-z 0.1-11q ||
+|| *Time to dump...* || class-dump-x 3.1.2 || class-dump 3.2 || class-dump-z 0.1-11r ||
 || *UIKit 2.0* (run in Mac OS X) || 2.0s || 1.8s || *0.14s* ||
 || *UIKit 3.0* (run in Mac OS X) || 2.9s || 2.6s || *0.19s* ||
 || *!CoreData 3.0* (run in iPhoneOS) || 21s || - || *2.6s* ||
