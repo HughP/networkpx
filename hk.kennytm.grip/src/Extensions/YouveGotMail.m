@@ -268,7 +268,8 @@ static void YGMConstructDescription(void* index, Message* message, CFMutableStri
 		if (message.messageFlags & 1)
 			continue;
 		CFDictionaryAddValue(messages, (const void*)(msgid++), message);
-		[dirtyAccounts addObject:message.account.fullUserName];
+		MailAccount* acct = message.account;
+		[dirtyAccounts addObject:(acct.fullUserName ?: [acct.emailAddresses objectAtIndex:0])];
 	}
 	pthread_mutex_unlock(&messageLock);
 
