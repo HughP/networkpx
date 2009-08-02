@@ -301,7 +301,7 @@ void MachO_File_ObjC::recursive_union_with_superclasses(ObjCTypeRecord::TypeInde
 				if (loaded_lib == ma_loaded_libraries.end()) {
 					size_t sysroot_len = strlen(sysroot);
 					bool sysroot_ends_with_slash = sysroot[sysroot_len-1] == '/';				
-					char* the_path = reinterpret_cast<char*>(sysroot_len + strlen(libpath) + 1);
+					char* the_path = reinterpret_cast<char*>(alloca(sysroot_len + strlen(libpath) + 1));
 					memcpy(the_path, sysroot, sysroot_len);
 					strcpy(the_path+sysroot_len, libpath+(libpath[0]=='/'&&sysroot_ends_with_slash));
 					MachO_File_ObjC* mf = NULL;
