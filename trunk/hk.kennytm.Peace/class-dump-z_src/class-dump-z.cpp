@@ -87,9 +87,12 @@ int main (int argc, char* argv[]) {
 				char cur_name[NAME_MAX+1] = "";
 				unsigned cur_name_length = 0;
 				while ((de = readdir(dir)) != NULL) {
-					if (de->d_type == DT_DIR && de->d_namlen > 4 && strcmp(de->d_name+de->d_namlen-4, ".sdk") == 0 && strncmp(de->d_name, cur_name, NAME_MAX) > 0) {
-						strncpy(cur_name, de->d_name, NAME_MAX);
-						cur_name_length = de->d_namlen;
+					if (de->d_type == DT_DIR) {
+						unsigned d_namlen = strlen(de->d_name);
+						if (d_namlen > 4 && strcmp(de->d_name+d_namlen-4, ".sdk") == 0 && strncmp(de->d_name, cur_name, NAME_MAX) > 0) {
+							strncpy(cur_name, de->d_name, NAME_MAX);
+							cur_name_length = d_namlen;
+						}
 					}
 				}
 				closedir(dir);
