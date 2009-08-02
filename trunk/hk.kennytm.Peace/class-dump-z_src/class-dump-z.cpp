@@ -25,6 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <cstring>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <dirent.h>
 
 using namespace std;
 
@@ -67,14 +68,40 @@ int main (int argc, char* argv[]) {
 		bool print_ivar_offsets = false, print_method_addresses = false, print_comments = false, sort_methods_alphabetically = false;
 		bool pointers_right_align = false, show_only_exported_classes = false, propertize = false, generate_headers = false, prettify_struct_names = true;
 		bool hide_protocols = false, hide_super = false;
+		bool delete_sysroot_on_quit = false;
 		MachO_File_ObjC::SortBy sort_by = MachO_File_ObjC::SB_None;
 		char diagnosis_option = '\0';
-		const char* sysroot = "/";
+		char* sysroot = const_cast<char*>("/");
 		const char* type_regexp = NULL;
 		const char* method_regexp = NULL;
 		const char* output_directory = NULL;
 		vector<const char*> filenames;
 		vector<string> kill_prefix;
+		
+		// search for a suitable sysroot.
+#if !_MSC_VER
+		{
+			DIR* dir = opendir("/Developer/Platforms/iPhoneOS.platform/Developer/SDKs");
+			if (dir != NULL) {
+				struct dirent* de;
+				char cur_name[NAME_MAX+1] = "";
+				unsigned cur_name_length = 0;
+				while ((de = readdir(dir)) != NULL) {
+					if (de->d_type == DT_DIR && de->d_namlen > 4 && strcmp(de->d_name+de->d_namlen-4, ".sdk") == 0 && strncmp(de->d_name, cur_name, NAME_MAX) > 0) {
+						strncpy(cur_name, de->d_name, NAME_MAX);
+						cur_name_length = de->d_namlen;
+					}
+				}
+				closedir(dir);
+				if (cur_name_length != 0) {
+					delete_sysroot_on_quit = true;
+					sysroot = new char[strlen("/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/") + cur_name_length + 1];
+					strcpy(sysroot, "/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/");
+					strcpy(sysroot+strlen("/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/"), cur_name);
+				}
+			}
+		}
+#endif
 		
 		// const char* regexp_string = NULL;
 		while (optind < argc) {
@@ -118,7 +145,13 @@ int main (int argc, char* argv[]) {
 					else if (strncmp(optarg, "super", 5) == 0)
 						hide_super = true;
 					break;
-				case 'y': sysroot = optarg; break;
+				case 'y': 
+					if (delete_sysroot_on_quit) {
+						delete[] sysroot;
+						delete_sysroot_on_quit = false;
+					}
+					sysroot = optarg;
+					break;
 #if EOF != -1
 				case EOF:
 #endif
@@ -130,8 +163,7 @@ int main (int argc, char* argv[]) {
 		
 		if (filenames.size() == 0) {
 			print_usage();
-			return 0;
-		}
+		} else {
 		
 		for (vector<const char*>::const_iterator fit = filenames.begin(); fit != filenames.end(); ++ fit) {
 			
@@ -187,5 +219,12 @@ int main (int argc, char* argv[]) {
 		}
 			
 		}
+
+		}
+		
+		if (delete_sysroot_on_quit)
+			delete[] sysroot;
 	}
+	
+	return 0;
 }

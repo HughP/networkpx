@@ -43,5 +43,6 @@ objc_type_test:	objc_type_test.o objc_type.o crc32.o pseudo_base64.o string_util
 
 clean:
 	-rm -f *.o
+	-rm -f ../src/*.o
 
 .PHONY:	all clean
