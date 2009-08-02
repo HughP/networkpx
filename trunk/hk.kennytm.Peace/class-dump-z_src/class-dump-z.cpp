@@ -25,7 +25,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <cstring>
 #include <unistd.h>
 #include <sys/stat.h>
+#if !_MSC_VER
 #include <dirent.h>
+#endif
 
 using namespace std;
 
