@@ -71,6 +71,28 @@ static inline NSString* sublayoutShiftRendering(NSString* sublayoutKey, BOOL shi
 	else
 		return shifted ? @"numbers" : @"symbols";
 }
+static inline NSArray* sublayoutSupportedTypes(NSString* sublayoutKey, BOOL shifted) {
+	if ([@"PhonePad" isEqualToString:sublayoutKey] || [@"PhonePadAlt" isEqualToString:sublayoutKey])
+		return [NSArray arrayWithObject:@"UIKeyboardTypePhonePad"];
+	else if ([@"Numbers" isEqualToString:sublayoutKey] || [sublayoutKey hasSuffix:@"Alt"])
+		return [NSArray arrayWithObject:@"UIKeyboardTypeNumbersAndPunctuation"];
+	else if ([@"NumberPad" isEqualToString:sublayoutKey])
+		return [NSArray arrayWithObject:@"UIKeyboardTypeNumberPad"];
+	else {
+		NSMutableArray* res = [NSMutableArray array];
+		if (shifted)
+			[res addObject:@"UIKeyboardTypeDefault"];
+		if ([@"URL" isEqualToString:sublayoutKey])
+			[res addObject:@"UIKeyboardTypeURL"];
+		else if ([@"SMSAddressing" isEqualToString:sublayoutKey])
+			[res addObject:@"UIKeyboardTypeNamePhonePad"];
+		else if ([@"Alphabet" isEqualToString:sublayoutKey])
+			[res addObject:@"UIKeyboardTypeASCIICapable"];
+		else if ([@"EmailAddress" isEqualToString:sublayoutKey])
+			[res addObject:@"UIKeyboardTypeEmailAddress"];
+		return res;	
+	}
+}
 
 #pragma mark -
 
@@ -683,6 +705,13 @@ static UIKBKeyplane* constructUIKBKeyplaneFromSublayout(NSMutableDictionary* lay
 		key.name = @"Shift-Key";
 		[specialKeys addObject:key];
 		
+		if (!UNDEF_OR_YES(@"shiftKeyEnabled")) {
+			UIKBAttributeList* shiftAttrib = [[UIKBAttributeList alloc] init];
+			[shiftAttrib setValue:@"disabled" forName:@"state"];
+			key.attributes = shiftAttrib;
+			[shiftAttrib release];
+		}
+		
 		UIKBGeometry* keygeom = [UIKBGeometry geometry];
 		id shrow = [sublayout objectForKey:@"shiftKeyRow"];
 		keygeom.x = UIKBLengthMakePercentage([[sublayout objectForKey:@"shiftKeyLeft"] floatValue] * 0.3125);
@@ -733,13 +762,7 @@ static UIKBKeyplane* constructUIKBKeyplaneFromSublayout(NSMutableDictionary* lay
 	[specialGeomRef2 release];
 	
 	plane.keylayouts = [NSArray arrayWithObjects:keylayout, specialLayout, nil];
-	plane.supportedTypes = [NSArray arrayWithObjects:
-							@"UIKeyboardTypeDefault",
-							@"UIKeyboardTypeASCIICapable",
-							@"UIKeyboardTypeNumbersAndPunctuation",
-							@"UIKeyboardTypeURL",
-							@"UIKeyboardTypeNamePhonePad",
-							@"UIKeyboardTypeEmailAddress", nil];
+	plane.supportedTypes = sublayoutSupportedTypes(sublayoutKey, shifted);
 	
 	return plane;
 }
