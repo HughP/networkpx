@@ -49,9 +49,9 @@
 //   error C2733: second C linkage of overloaded function 'wmemchr' not allowed
 #ifdef __cplusplus
 extern "C" {
-	+#endif
-	+#  include <wchar.h>
-	+#ifdef __cplusplus
+#endif
+#  include <wchar.h>
+#ifdef __cplusplus
 }
 #endif
 
