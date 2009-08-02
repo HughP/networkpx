@@ -13,6 +13,14 @@ You may want to see the source code of Colemak as an example of using layout.pli
 
   Please refer to PlistSpec for how to use a property list and the specification notation used here.
 
+= 3.0 Compatibility =
+In 3.0, iKeyEx will switch to use UIKeyboardLayoutStar instead. The following layout.plist features cannot be ported to the new system:
+ * Overloading PhonePad / PhonePadAlt layouts may cause the keyboard not acting correctly.
+ * popups and shiftedPopups are not supported.
+ * Due to a font problem, some texts may not be shown properly.
+ * Text traits (Colors, images and fonts) are not supported (yet). 
+ * Key charges seems cannot be disabled.
+
 = Fundamentals =
 
 On the iPhoneOS, there are 11 types of sub-layouts:
