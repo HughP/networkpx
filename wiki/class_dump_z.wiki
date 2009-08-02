@@ -170,7 +170,7 @@ Method overloading in subclass is very common in OO design, but such information
 
 Another class of useless information are those being implemented to adopt a protocol. class-dump-z can also filter them out.
 
-  _If you are running class-dump-z outside of the iPhoneOS, you have to tell class-dump-z where can the libraries be found by the -y switch._
+  _If you are running class-dump-z outside of the iPhoneOS, or you haven't installed the SDK, you have to tell class-dump-z where can the libraries be found by the -y switch._
 
 == Readable argument names ==
 || || `UIImage(UIImageDeprecated)` 3.0 ||
