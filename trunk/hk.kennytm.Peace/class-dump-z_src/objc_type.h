@@ -60,6 +60,8 @@ private:
 		bool external;
 		unsigned refcount;
 		
+		std::string encoding;
+		
 		std::string name;	// struct name or objc class name. This is an optional field for equality.
 		std::string value;	// array size, bitfield size, objc protocols. This is a required field for equality.
 		
@@ -146,6 +148,7 @@ public:
 		const Type& t = ma_type_store[idx];
 		return t.type == '7' ?  ma_type_store[idx].value : ma_type_store[idx].name;
 	}
+	const std::string& encoding_of_type(TypeIndex idx) const throw() { return ma_type_store[idx].encoding; }
 	
 	void print_network() const throw();
 	

@@ -87,6 +87,7 @@ struct MachO_File_ObjC::OverlapperType {
 	void union_with(const ClassType& cls) throw();
 	void union_with(const OverlapperType& ovlp) throw();
 	static void recursive_union_with_protocols(unsigned i, std::vector<OverlapperType>& overlappers, const std::vector<ClassType>& classes) throw();
+	void localize(ObjCTypeRecord& local, const ObjCTypeRecord& remote) throw();
 };
 
 #pragma mark -
@@ -269,6 +270,22 @@ void MachO_File_ObjC::OverlapperType::union_with(const MachO_File_ObjC::Overlapp
 	methods.insert(cls.methods.begin(), cls.methods.end());
 }
 
+void MachO_File_ObjC::OverlapperType::localize(ObjCTypeRecord& local, const ObjCTypeRecord& remote) throw() {
+	if (&local == &remote)
+		return;
+
+	// Since the unordered_set's iterator is equivalent to a const_iterator, we have to construct a new unordered_set.
+	tr1::unordered_set<ReducedMethod> old_methods;
+	methods.swap(old_methods);
+	for (tr1::unordered_set<ReducedMethod>::const_iterator mit = old_methods.begin(); mit != old_methods.end(); ++ mit) {
+		ReducedMethod m = *mit;
+		const vector<ObjCTypeRecord::TypeIndex>& types = mit->types;
+		for (unsigned i = 0; i < types.size(); ++ i)
+			m.types[i] = local.parse(remote.encoding_of_type(types[i]), false);
+		methods.insert(m);
+	}
+}
+
 void MachO_File_ObjC::recursive_union_with_protocols(unsigned i, std::vector<OverlapperType>& overlappers) const throw() {
 	OverlapperType& ovlp = overlappers[i];
 	if (!ovlp.defined) {
@@ -316,12 +333,11 @@ void MachO_File_ObjC::recursive_union_with_superclasses(ObjCTypeRecord::TypeInde
 				MachO_File_ObjC* mf = loaded_lib->second;
 				if (mf != NULL) {
 					tr1::unordered_map<ObjCTypeRecord::TypeIndex, OverlapperType> remote_superclass_overlappers;
-					const std::string& superclass_name = m_record.name_of_type(ti);
-					ObjCTypeRecord::TypeIndex remote_index = mf->m_record.parse("@\"" + superclass_name + "\"", false);
+					ObjCTypeRecord::TypeIndex remote_index = mf->m_record.parse(m_record.encoding_of_type(ti), false);
 					mf->recursive_union_with_superclasses(remote_index, remote_superclass_overlappers, sysroot);
-					for (tr1::unordered_map<ObjCTypeRecord::TypeIndex, OverlapperType>::const_iterator tit = remote_superclass_overlappers.begin(); tit != remote_superclass_overlappers.end(); ++ tit) {
-						const std::string& name = mf->m_record.name_of_type(tit->first);
-						ObjCTypeRecord::TypeIndex local_index = m_record.parse("@\"" + name + "\"", false);
+					for (tr1::unordered_map<ObjCTypeRecord::TypeIndex, OverlapperType>::iterator tit = remote_superclass_overlappers.begin(); tit != remote_superclass_overlappers.end(); ++ tit) {
+						tit->second.localize(m_record, mf->m_record);
+						ObjCTypeRecord::TypeIndex local_index = m_record.parse(mf->m_record.encoding_of_type(tit->first), false);
 						superclass_overlappers[local_index].union_with(tit->second);
 					}
 				}
