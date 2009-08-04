@@ -145,6 +145,10 @@ public:
 		return ma_is_external_symbol.find(vm_address) != ma_is_external_symbol.end();
 	}
 	
+	inline bool is_symbol(unsigned vm_address) const throw() {
+		return ma_symbol_references.find(vm_address) != ma_symbol_references.end();
+	}
+	
 	const ObjCMethod* objc_method_at_vm_address(unsigned vm_address) const throw();
 	
 	const char* library_of_relocated_symbol(unsigned vm_address) const throw();
