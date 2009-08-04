@@ -499,7 +499,7 @@ void MachO_File_ObjC::retrieve_class_info() throw() {
 				
 				ivar.name = get_cstring(cur_ivar->name, &m_guess_text_segment, reinterpret_cast<unsigned>(cur_ivar->offset), 0, NULL);
 				ivar.offset = *PEEK_VM_ADDR(cur_ivar->offset, unsigned, text);
-				ivar.is_private = is_extern_symbol(reinterpret_cast<unsigned>(cur_ivar->offset));
+				ivar.is_private = is_symbol(reinterpret_cast<unsigned>(cur_ivar->offset)) && !is_extern_symbol(reinterpret_cast<unsigned>(cur_ivar->offset));
 				if (ivar.name == NULL) {
 					ma_string_store.push_back(numeric_format("XXEncryptedIvar_%02x", ivar.offset));
 					ivar.name = ma_string_store.back().c_str();
