@@ -161,7 +161,8 @@ int main (int argc, char* argv[]) {
 				case EOF:
 #endif
 				case -1:
-					filenames.push_back(argv[optind]);
+					if (argv[optind] != NULL)
+						filenames.push_back(argv[optind]);
 					argc -= optind;
 					argv += optind;
 					optind = 1;
