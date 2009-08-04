@@ -109,7 +109,7 @@ int main (int argc, char* argv[]) {
 #endif
 		
 		// const char* regexp_string = NULL;
-		while (optind < argc) {
+		while (argc > 1) {
 			switch (c = getopt(argc, argv, "aAkC:ISsD:Rf:gpHo:X:Nh:y:")) {
 				case 'a': print_ivar_offsets = true; break;
 				case 'A': print_method_addresses = true; break;
@@ -160,7 +160,12 @@ int main (int argc, char* argv[]) {
 #if EOF != -1
 				case EOF:
 #endif
-				case -1: filenames.push_back(argv[optind++]); break;
+				case -1:
+					filenames.push_back(argv[optind]);
+					argc -= optind;
+					argv += optind;
+					optind = 1;
+					break;
 				default:
 					break;
 			}
