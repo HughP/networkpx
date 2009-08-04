@@ -487,7 +487,7 @@ static vector<string> parse_struct_members (const char* member_typestrings, bool
 	return retval;
 }
 
-ObjCTypeRecord::Type::Type(ObjCTypeRecord& record, const string& type_to_parse, bool is_struct_used_locally) : type(type_to_parse[0]), external(true), refcount(is_struct_used_locally ? 1 : Type::used_globally) {
+ObjCTypeRecord::Type::Type(ObjCTypeRecord& record, const string& type_to_parse, bool is_struct_used_locally) : type(type_to_parse[0]), external(true), refcount(is_struct_used_locally ? 1 : Type::used_globally), encoding(type_to_parse) {
 	switch (type) {
 		case '6': {	// category -- for internal use only.
 			external = false;
