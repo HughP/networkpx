@@ -306,7 +306,15 @@ string MachO_File_ObjC::ClassType::format(const ObjCTypeRecord& record, const Ma
 	
 	if (type == CT_Class && self.m_method_filter == NULL) {
 		res += " {\n";
+		bool is_private = false;
 		for (vector<Ivar>::const_iterator cit = ivars.begin(); cit != ivars.end(); ++ cit) {
+			if (is_private != cit->is_private) {
+				if (cit->is_private)
+					res += "@private\n";
+				else
+					res += "@protected\n";
+				is_private = cit->is_private;
+			}
 			res += record.format(cit->type, cit->name, 1);
 			res.push_back(';');
 			if (print_ivar_offsets) {

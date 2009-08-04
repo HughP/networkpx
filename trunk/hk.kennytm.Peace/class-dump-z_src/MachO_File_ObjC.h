@@ -111,6 +111,7 @@ private:
 		ObjCTypeRecord::TypeIndex type;
 		const char* name;
 		unsigned offset;
+		bool is_private;
 	};
 	
 	struct Method : public ReducedMethod {
