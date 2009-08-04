@@ -304,8 +304,11 @@ const char* MachO_File_ObjC::get_superclass_name(unsigned superclass_addr, unsig
 		// superclass should be an external class. read from relocation entry.
 		const char* ext_name = this->string_representation(pointer_to_superclass_addr);
 		// strip the _OBJC_CLASS_$_ beginning if there is one.
-		if (ext_name != NULL && strncmp(ext_name, "_OBJC_CLASS_$_", strlen("_OBJC_CLASS_$_")) == 0)
-			ext_name += strlen("_OBJC_CLASS_$_");
+		if (ext_name != NULL) {
+			if (strncmp(ext_name, "_OBJC_CLASS_$_", strlen("_OBJC_CLASS_$_")) == 0)
+				ext_name += strlen("_OBJC_CLASS_$_");
+		} else
+			ext_name = "XXUnknownSuperclass";
 		superclass_index = m_record.add_external_objc_class(ext_name);
 		
 		const char* lib_path = library_of_relocated_symbol(pointer_to_superclass_addr);
@@ -320,8 +323,11 @@ const char* MachO_File_ObjC::get_superclass_name(unsigned superclass_addr, unsig
 		if (cit == ma_classes_vm_address_index.end()) {
 			// actually an extenal class :(. Search again from reloc entry.
 			const char* ext_name = this->string_representation(superclass_addr);
-			if (ext_name != NULL && strncmp(ext_name, "_OBJC_CLASS_$_", strlen("_OBJC_CLASS_$_")) == 0)
-				ext_name += strlen("_OBJC_CLASS_$_");
+			if (ext_name != NULL) {
+				if (strncmp(ext_name, "_OBJC_CLASS_$_", strlen("_OBJC_CLASS_$_")) == 0)
+					ext_name += strlen("_OBJC_CLASS_$_");
+			} else
+				ext_name = "XXUnknownSuperclass";
 			superclass_index = m_record.add_external_objc_class(ext_name);
 			
 			const char* lib_path = library_of_relocated_symbol(superclass_addr);
