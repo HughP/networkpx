@@ -314,7 +314,7 @@ MachO_File::MachO_File(const char* path, const char* arch) : MachO_File_Simple(p
 			case S_NON_LAZY_SYMBOL_POINTERS:
 			case S_LAZY_SYMBOL_POINTERS:
 			case S_SYMBOL_STUBS: {
-				unsigned stride = s->reserved2 ?: 4;
+				unsigned stride = s->reserved2 ? s->reserved2 : 4;
 				unsigned end_index = s->reserved1 + s->size/stride;
 				
 				for (unsigned i = s->reserved1, vm_address = s->addr; i < end_index; ++ i, vm_address += stride)
