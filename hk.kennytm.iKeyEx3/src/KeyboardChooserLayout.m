@@ -1,6 +1,6 @@
 /*
 
-FILE_NAME ... DESCRIPTION
+KeyboardChooserLayout.m ... Keyboard chooser layout.
  
 Copyright (c) 2009, KennyTM~
 All rights reserved.
@@ -30,88 +30,77 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  
 */
 
-#import <iKeyEx/ImageLoader.h>
-#import <iKeyEx/UIKBSound.h>
-#import <iKeyEx/UIKBInfo.h>
 #import <UIKit/UIKit.h>
-#import <UIKit2/UIKeyboardLayout.h>
-#import <UIKit2/Functions.h>
-#import <UIKit2/UIKeyboardImpl.h>
-#import <UIKit4/UIEasyTableView.h>
+#import <UIKit/UIKit2.h>
+#import "libiKeyEx.h"
 
-@interface KeyboardChooserLayout : UIKeyboardLayout {
+@interface KeyboardChooserLayout : UIKeyboardLayout<UITableViewDelegate, UITableViewDataSource> {
 	NSArray* inputModes;
-	UIEasyTableView* table;
+	UITableView* table;
 	NSInteger checkedMode;
 	UIKeyboardImpl* impl;
 	UIView* blackLine;
 }
--(id)initWithFrame:(CGRect)frm;
--(void)showKeyboardType:(UIKeyboardType)kbtype withAppearance:(UIKeyboardAppearance)appr;
--(void)refresh;
--(void)layoutSubviews;
--(void)dealloc;
--(void)tableView:(UITableView*)view styleCell:(UITableViewCell*)cell atIndexPath:(NSIndexPath*)path;
--(void)tableView:(UITableView*)view didSelectRowAtIndexPath:(NSIndexPath*)path;
 @end
 
 @implementation KeyboardChooserLayout
--(id)initWithFrame:(CGRect)frm {
-	if ((self = [super initWithFrame:frm])) {
-		impl = [UIKeyboardImpl sharedInstance];
-		blackLine = [[UIView alloc] initWithFrame:CGRectMake(0, 0, frm.size.width, 1)];
-		blackLine.backgroundColor = [UIColor blackColor];
-		[self addSubview:blackLine];
-		[blackLine release];
-		self.backgroundColor = [UIColor clearColor];
-		[self refresh];
-	}
-	return self;
-}
--(void)showKeyboardType:(UIKeyboardType)kbtype withAppearance:(UIKeyboardAppearance)appr {
-	[self refresh];
-}
 -(void)refresh {
 	[inputModes release];
 	inputModes = [UIKeyboardGetActiveInputModes() retain];
 	checkedMode = [inputModes indexOfObject:[impl inputModeLastChosen]];
-	[table removeFromSuperview];
 	
-	NSMutableArray* titles = [[NSMutableArray alloc] init];
-	for (NSString* mode in inputModes)
-		[titles addObject:UIKBGetKeyboardDisplayName(mode)];
-	
-	CGRect bounds = self.bounds;
-	table = [[UIEasyTableView alloc] initWithFrame:CGRectMake(0, 1, bounds.size.width, bounds.size.height-1)
-											 style:UITableViewStyleGrouped
-										   headers:nil
-											  data:titles, nil];
-	[titles release];
-	
-	[table registerCellStyler:self action:@selector(tableView:styleCell:atIndexPath:)];
-	[table registerSelectionMonitor:self action:@selector(tableView:didSelectRowAtIndexPath:)];
-	[self addSubview:table];
-	[table release];
 	[table reloadData];
 	[table scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:checkedMode inSection:0]
 				 atScrollPosition:UITableViewScrollPositionMiddle
 						 animated:NO];
 }
--(void)layoutSubviews {
-	CGRect bounds = self.bounds;
-	table.frame = CGRectMake(0, 1, bounds.size.width, bounds.size.height-1);
-	blackLine.frame = CGRectMake(0, 0, bounds.size.width, 1);
+
+-(BOOL)shouldShowIndicator { return NO; }
+
+-(id)initWithFrame:(CGRect)frm {
+	if ((self = [super initWithFrame:frm])) {
+		impl = [UIKeyboardImpl sharedInstance];
+		blackLine = [[UIView alloc] initWithFrame:CGRectMake(0, 0, frm.size.width, 1)];
+		blackLine.backgroundColor = [UIColor blackColor];
+		blackLine.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleBottomMargin;
+		[self addSubview:blackLine];
+		[blackLine release];
+		self.backgroundColor = [UIColor clearColor];
+		[self refresh];
+		table = [[UITableView alloc] initWithFrame:CGRectMake(0, 1, frm.size.width, frm.size.height-1) style:UITableViewStyleGrouped];
+		table.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+		table.delegate = self;
+		table.dataSource = self;
+		[self addSubview:table];
+		[table release];
+		self.autoresizesSubviews = YES;
+	}
+	return self;
+}
+
+-(UITableViewCell*)tableView:(UITableView*)tableView cellForRowAtIndexPath:(NSIndexPath*)indexPath {
+	NSInteger row = indexPath.row;
+	UITableViewCell* cachedCell = [tableView dequeueReusableCellWithIdentifier:@"."];
+	if (cachedCell == nil)
+		cachedCell = [[[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"."] autorelease];
+	cachedCell.textLabel.text = IKXNameOfMode([inputModes objectAtIndex:row]);
+	cachedCell.accessoryType = (row == checkedMode) ? UITableViewCellAccessoryCheckmark : UITableViewCellAccessoryNone;
+	return cachedCell;
+}
+-(NSInteger)tableView:(UITableView*)tableView numberOfRowsInSection:(NSInteger)section {
+	return [inputModes count];
+}
+
+-(void)showKeyboardType:(UIKeyboardType)kbtype withAppearance:(UIKeyboardAppearance)appr {
+	[self refresh];
 }
 -(void)dealloc {
 	[inputModes release];
 	[super dealloc];
 }
 
--(void)tableView:(UITableView*)view styleCell:(UITableViewCell*)cell atIndexPath:(NSIndexPath*)path {
-	cell.accessoryType = (path.row == checkedMode) ? UITableViewCellAccessoryCheckmark : UITableViewCellAccessoryNone;
-}
 -(void)tableView:(UITableView*)view didSelectRowAtIndexPath:(NSIndexPath*)path {
-	[UIKBSound play];
+	IKXPlaySound();
 	[impl setInputMode:[inputModes objectAtIndex:path.row]];
 	[impl showInputModeIndicator];
 	[impl setInputModeLastChosenPreference];
