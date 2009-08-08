@@ -374,10 +374,9 @@ DefineHook(CFDictionaryRef, UIKeyboardRomanAccentVariants, NSString* str, NSStri
 }
 
 static CFDictionaryRef GetOriginalVariants(NSString* str) {
-	NSString* curLang = UIKeyboardGetCurrentUILanguage();
-	NSObject* locObj = UIKeyboardLocalizedObject([NSString stringWithFormat:@"Roman-Accent-%@", str], curLang, nil);
+	NSObject* locObj = UIKeyboardLocalizedObject([NSString stringWithFormat:@"Roman-Accent-%@", str], nil, nil);
 	if ([locObj isKindOfClass:[NSDictionary class]]) {
-		CFDictionaryRef retval = Original(UIKeyboardRomanAccentVariants)(str, curLang);
+		CFDictionaryRef retval = Original(UIKeyboardRomanAccentVariants)(str, nil);
 		if (retval != NULL)
 			return retval;
 	}
