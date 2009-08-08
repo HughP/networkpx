@@ -30,13 +30,22 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  
 */
 
+#import <Foundation/Foundation.h>
+#import <UIKit/UIKit2.h>
+#import "UIKBKeyboardFromLayoutPlist.h"
+#import <objc/runtime.h>
+#import "libiKeyEx.h"
+#import <mach-o/nlist.h>
+
 // Use substrate.h on iPhoneOS, and APELite on x86/ppc for debugging.
 #ifdef __arm__
 #import <substrate.h>
+#define REGPARM3 
 #elif __i386__ || __ppc__
 extern void* APEPatchCreate(const void* original, const void* replacement);
 #define MSHookFunction(original, replacement, result) (*(result) = APEPatchCreate((original), (replacement)))
 IMP MSHookMessage(Class _class, SEL sel, IMP imp, const char* prefix);
+#define REGPARM3 __attribute__((regparm(3)))
 #else
 #error Not supported in non-ARM/i386/PPC system.
 #endif
@@ -54,22 +63,14 @@ static rettype replaced_##funcname (__VA_ARGS__)
 
 #define DefineHiddenHook(rettype, funcname, ...) \
 static rettype (*funcname) (__VA_ARGS__); \
-__attribute__((regparm(3))) \
-static rettype (*original_##funcname) (__VA_ARGS__); \
-__attribute__((regparm(3))) \
-static rettype replaced_##funcname (__VA_ARGS__)
+REGPARM3 static rettype (*original_##funcname) (__VA_ARGS__); \
+REGPARM3 static rettype replaced_##funcname (__VA_ARGS__)
 
 int lookup_function_pointers(const char* filename, ...);
 
-#define InstallHook(funcname) MSHookFunction(funcname, replaced_##funcname, &original_##funcname)
+#define InstallHook(funcname) MSHookFunction(funcname, replaced_##funcname, (void**)&original_##funcname)
 #define InstallObjCInstanceHook(cls, sel, delimited_name) original_##delimited_name = (void*)MSHookMessage(cls, sel, (IMP)replaced_##delimited_name, NULL)
 #define InstallObjCClassHook(cls, sel, delimited_name) original_##delimited_name = (void*)method_setImplementation(class_getClassMethod(cls, sel), (IMP)replaced_##delimited_name)
-
-#import <Foundation/Foundation.h>
-#import <UIKit/UIKit2.h>
-#import "UIKBKeyboardFromLayoutPlist.h"
-#import <objc/runtime.h>
-#import "libiKeyEx.h"
 
 extern NSMutableArray* UIKeyboardGetSupportedInputModes();
 extern NSString* UIKeyboardDynamicDictionaryFile(NSString* mode);
@@ -104,8 +105,6 @@ DefineHook(Class, UIKeyboardLayoutClassForInputModeInOrientation, NSString* mode
 		return Original(UIKeyboardLayoutClassForInputModeInOrientation)(modeString, orientation);
 	
 	else {
-		BOOL isLandscape = [orientation isEqualToString:@"Landscape"];
-		
 		NSString* layoutRef = IKXLayoutReference(modeString);
 		if ([layoutRef characterAtIndex:0] == '=')	// Refered layout.
 			return Original(UIKeyboardLayoutClassForInputModeInOrientation)([layoutRef substringFromIndex:1], orientation);
@@ -124,7 +123,7 @@ DefineHook(Class, UIKeyboardLayoutClassForInputModeInOrientation, NSString* mode
 					return retval;
 			}
 			// Note: UIKeyboardLayoutQWERTY[Landscape] crashes the simulator.
-			return [UIKeyboardLayoutEmoji class];
+			return objc_getClass("UIKeyboardLayoutEmoji");
 		}
 	}
 }
@@ -312,8 +311,7 @@ DefineHook(NSString*, UIKeyboardStaticUnigramsFilePathForInputModeAndFileExtensi
 
 //------------------------------------------------------------------------------
 
-extern NSString* UIKeyboardGetCurrentInputMode();
-extern NSString* UIKeyboardGetCurrentUILanguage();
+static CFDictionaryRef GetOriginalVariants(NSString* str);
 
 DefineHook(CFDictionaryRef, UIKeyboardRomanAccentVariants, NSString* str, NSString* lang) {
 	NSString* curMode = UIKeyboardGetCurrentInputMode();
@@ -331,7 +329,7 @@ DefineHook(CFDictionaryRef, UIKeyboardRomanAccentVariants, NSString* str, NSStri
 			else {
 				CFDictionaryRef retval = CFDictionaryGetValue(dict, str);
 				if (retval == NULL) {
-					retval = Original(UIKeyboardRomanAccentVariants)(str, UIKeyboardGetCurrentUILanguage()) ?: (CFDictionaryRef)kCFNull;
+					retval = GetOriginalVariants(str);
 					CFDictionaryAddValue(dict, str, retval);
 				}
 				return retval == (CFDictionaryRef)kCFNull ? NULL : retval;
@@ -367,12 +365,23 @@ DefineHook(CFDictionaryRef, UIKeyboardRomanAccentVariants, NSString* str, NSStri
 			
 			CFDictionaryRef retval = CFDictionaryGetValue(resDict, str);
 			if (retval == NULL) {
-				retval = Original(UIKeyboardRomanAccentVariants)(str, UIKeyboardGetCurrentUILanguage()) ?: (CFDictionaryRef)kCFNull;
+				retval = GetOriginalVariants(str);
 				CFDictionaryAddValue(resDict, str, retval);
 			}
 			return retval == (CFDictionaryRef)kCFNull ? NULL : retval;
 		}
 	}
+}
+
+static CFDictionaryRef GetOriginalVariants(NSString* str) {
+	NSString* curLang = UIKeyboardGetCurrentUILanguage();
+	NSObject* locObj = UIKeyboardLocalizedObject([NSString stringWithFormat:@"Roman-Accent-%@", str], curLang, nil);
+	if ([locObj isKindOfClass:[NSDictionary class]]) {
+		CFDictionaryRef retval = Original(UIKeyboardRomanAccentVariants)(str, curLang);
+		if (retval != NULL)
+			return retval;
+	}
+	return (CFDictionaryRef)kCFNull;
 }
 
 //------------------------------------------------------------------------------
@@ -473,11 +482,17 @@ DefineHiddenHook(id, LookupLocalizedObject, NSString* key, NSString* mode, id un
 //------------------------------------------------------------------------------
 
 void initialize () {
-	lookup_function_pointers("UIKit",
-							 "_GetKeyboardDataFromBundle", &GetKeyboardDataFromBundle,
-							 "_UIKBGetKeyboardByName", &UIKBGetKeyboardByName,
-							 "_LookupLocalizedObject", &LookupLocalizedObject,
-							 NULL);
+	NSAutoreleasePool* pool = [NSAutoreleasePool new];
+	
+	struct nlist nl[4];
+	memset(nl, 0, sizeof(nl));
+	nl[0].n_un.n_name = "_GetKeyboardDataFromBundle";
+	nl[1].n_un.n_name = "_UIKBGetKeyboardByName";
+	nl[2].n_un.n_name = "_LookupLocalizedObject";
+	nlist([[[NSBundle bundleForClass:[UIApplication class]] executablePath] UTF8String], nl);
+	GetKeyboardDataFromBundle = (void*)nl[0].n_value;
+	UIKBGetKeyboardByName = (void*)nl[1].n_value;
+	LookupLocalizedObject = (void*)nl[2].n_value;
 	
 	InstallHook(UIKeyboardInputModeUsesKBStar);
 	InstallHook(UIKeyboardLayoutClassForInputModeInOrientation);
@@ -492,7 +507,7 @@ void initialize () {
 	InstallHook(UIKeyboardLayoutDefaultTypeForInputModeIsASCIICapable);
 	InstallHook(LookupLocalizedObject);
 	
-	Class UIKeyboardLayoutStar_class = [UIKeyboardLayoutStar class];
+	Class UIKeyboardLayoutStar_class = objc_getClass("UIKeyboardLayoutStar");
 	Class UIKeyboardLayoutRoman_class = [UIKeyboardLayoutRoman class];
 	Class UIKeyboardImpl_class = [UIKeyboardImpl class];
 	
@@ -504,4 +519,6 @@ void initialize () {
 	
 	NSMutableArray* supportedModes = UIKeyboardGetSupportedInputModes();
 	[supportedModes addObjectsFromArray:[[IKXConfigDictionary() objectForKey:@"modes"] allKeys]];
+	
+	[pool drain];
 }

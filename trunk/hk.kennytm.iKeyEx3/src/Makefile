@@ -47,21 +47,26 @@ SimOptions=-arch i686 \
 DontThumbSources=-
 
 # x86 or arm
-Platform=x86
+Platform=arm
 
-AllTargets=libiKeyEx KeyboardChooser
+AllTargets=libiKeyEx UIHook KeyboardChooser
 
 libiKeyEx_Sources=libiKeyEx.o
 libiKeyEx_Target=$(LibPath)/libiKeyEx.dylib
 ifeq ($(Platform),x86)
-libiKeyEx_Options=-lobjc -framework Foundation -framework UIKit -dynamiclib -install_name `pwd`/$(LibPath)/libiKeyEx.dylib
+libiKeyEx_InstallNamePrefix=`pwd`/$(LibPath)
 else
-libiKeyEx_Options=-lobjc -framework Foundation -framework UIKit -dynamiclib -install_name /usr/lib/libiKeyEx.dylib
+libiKeyEx_InstallNamePrefix=/usr/lib
 endif
+libiKeyEx_Options=-lobjc -framework Foundation -framework UIKit -dynamiclib -install_name $(libiKeyEx_InstallNamePrefix)/libiKeyEx.dylib
 
 KeyboardChooser_Sources=KeyboardChooserLayout.o
 KeyboardChooser_Target=$(iKeyExPath)/Keyboards/__KeyboardChooser.keyboard/__KeyboardChooser
 KeyboardChooser_Options=-lobjc -framework Foundation -framework UIKit -framework CoreGraphics -bundle -liKeyEx
+
+UIHook_Sources=iKeyEx3.o UIKBKeyboardFromLayoutPlist.o
+UIHook_Target=$(MobileSubstratePath)/UIHook-iKeyEx3.dylib
+UIHook_Options=-lobjc -framework Foundation -framework UIKit -framework TextInput -dynamiclib -liKeyEx -lsubstrate -init _initialize
 
 #-----------------------------------------------------------------------------------------------------------------
 #-----------------------------------------------------------------------------------------------------------------
