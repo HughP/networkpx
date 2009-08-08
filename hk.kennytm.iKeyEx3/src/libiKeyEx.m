@@ -95,7 +95,7 @@ extern NSString* IKXNameOfMode(NSString* modeString) {
 			NSLocale* curLocale = [NSLocale currentLocale];
 			NSRange locRange = [modeString rangeOfString:@"-"];
 			if (locRange.location == NSNotFound) {
-				return [curLocale displayNameForKey:NSLocaleIdentifier value:modeString];
+				return [curLocale displayNameForKey:NSLocaleIdentifier value:modeString] ?: modeString;
 			} else {
 				NSString* localeStr = [curLocale displayNameForKey:NSLocaleIdentifier value:[modeString substringToIndex:locRange.location]];
 				NSString* type = [@"UI" stringByAppendingString:[modeString substringFromIndex:locRange.location]];
