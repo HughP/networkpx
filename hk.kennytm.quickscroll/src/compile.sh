@@ -1,0 +1,3 @@
+#!/bin/bash
+
+/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/gcc-4.2 -arch armv6 -std=c99 -isysroot /Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS3.0.sdk -I/Developer/Platforms/iPhoneOS.platform/Developer/usr/include/gcc/darwin/default -I/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS3.0.sdk/usr/lib/gcc/arm-apple-darwin9/4.2.1/include -L/usr/local/lib -F/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS3.0.sdk/System/Library/PrivateFrameworks/ -Wall -mcpu=arm1176jzf-s -O2 -framework UIKit -framework Foundation -framework CoreGraphics -lsubstrate -dynamiclib -o ../deb/Library/MobileSubstrate/DynamicLibraries/QuickScroll.dylib -I../../../../../iphone-private-frameworks -I../../include -init _initialize QuickScroll.m

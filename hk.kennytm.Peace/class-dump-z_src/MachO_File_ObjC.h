@@ -104,7 +104,7 @@ private:
 		
 		Property() : ReducedProperty(), getter_vm_address(0), setter_vm_address(0), hidden(PS_None), optional(false), impl_method(IM_None), gc_strength(GC_None) {}
 		
-		std::string format(const ObjCTypeRecord& record, const MachO_File_ObjC& self, bool print_method_addresses, bool print_comments) const throw();
+		std::string format(const ObjCTypeRecord& record, const MachO_File_ObjC& self, bool print_method_addresses, int print_comments) const throw();
 	};
 	
 	struct Ivar {
@@ -131,7 +131,7 @@ private:
 		
 		Method() : vm_address(0), propertize_status(PS_None), components(3) {}
 		
-		std::string format(const ObjCTypeRecord& record, const MachO_File_ObjC& self, bool print_method_addresses, bool print_comments) const throw();
+		std::string format(const ObjCTypeRecord& record, const MachO_File_ObjC& self, bool print_method_addresses, int print_comments) const throw();
 	};
 	
 	struct ClassType {
@@ -156,7 +156,7 @@ private:
 				
 		std::vector<unsigned> adopted_protocols;
 		
-		std::string format(const ObjCTypeRecord& record, const MachO_File_ObjC& self, bool print_method_addresses, bool print_comments, bool print_ivar_offsets, bool sort_methods_alphabetically, bool show_only_exported_classes) const throw();
+		std::string format(const ObjCTypeRecord& record, const MachO_File_ObjC& self, bool print_method_addresses, int print_comments, bool print_ivar_offsets, bool sort_methods_alphabetically, bool show_only_exported_classes) const throw();
 	};
 	
 	struct OverlapperType;
@@ -238,7 +238,7 @@ public:
 	unsigned categories_count() const throw() { return m_category_count; }
 	unsigned protocols_count() const throw() { return m_protocol_count; }
 	
-	void print_class_type(SortBy sort_by, bool print_method_addresses, bool print_comments, bool print_ivar_offsets, bool sort_methods_alphabetically, bool show_only_exported_classes) const throw();
+	void print_class_type(SortBy sort_by, bool print_method_addresses, int print_comments, bool print_ivar_offsets, bool sort_methods_alphabetically, bool show_only_exported_classes) const throw();
 	
 	void set_pointers_right_aligned(bool right_aligned = true) throw() { m_record.pointers_right_aligned = right_aligned; }
 	void set_prettify_struct_names(bool prettify_struct_names = true) throw() { m_record.prettify_struct_names = prettify_struct_names; }
@@ -254,7 +254,7 @@ public:
 	
 	void print_struct_declaration(SortBy sort_by) const throw();
 	
-	void write_header_files(const char* filename, bool print_method_addresses, bool print_comments, bool print_ivar_offsets, bool sort_methods_alphabetically, bool show_only_exported_classes) const throw();
+	void write_header_files(const char* filename, bool print_method_addresses, int print_comments, bool print_ivar_offsets, bool sort_methods_alphabetically, bool show_only_exported_classes) const throw();
 	
 //-------------------------------------------------------------------------------------------------------------------------------------------
 	
