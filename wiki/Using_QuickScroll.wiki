@@ -1,0 +1,8 @@
+#summary User manual of !QuickScroll
+
+!QuickScroll lets you scroll through a Web page (including PDF files and Word documents) quickly.
+
+ # In a long web page, triple tap on anywhere (hold one finger and triple tap the other to avoid resizing).
+ # A dialog will appear. Drag the green box to scroll around.
+
+http://x0e.xanga.com/81cf253038730251702823/w199873521.png
