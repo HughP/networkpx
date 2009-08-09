@@ -98,8 +98,13 @@ extern NSString* IKXNameOfMode(NSString* modeString) {
 				return [curLocale displayNameForKey:NSLocaleIdentifier value:modeString] ?: modeString;
 			} else {
 				NSString* localeStr = [curLocale displayNameForKey:NSLocaleIdentifier value:[modeString substringToIndex:locRange.location]];
+				if ([modeString hasPrefix:@"zh"]) {
+					NSUInteger firstOpen = [localeStr rangeOfString:@"("].location;
+					if (firstOpen != NSNotFound)
+						localeStr = [localeStr substringWithRange:NSMakeRange(firstOpen+1, [localeStr length]-2-firstOpen)];
+				}
 				NSString* type = [@"UI" stringByAppendingString:[modeString substringFromIndex:locRange.location]];
-				return [NSString stringWithFormat:@"%@ (%@)", localeStr, UIKeyboardLocalizedString(type, nil, nil)];
+				return [NSString stringWithFormat:@"%@ (%@)", localeStr, UIKeyboardLocalizedString(type, modeString, nil)];
 			}
 		}
 		

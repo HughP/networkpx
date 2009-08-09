@@ -325,7 +325,7 @@ static UIKBKeyplane* constructUIKBKeyplaneFromSublayout(NSMutableDictionary* lay
 	[attribs release];
 	
 #pragma mark Phase 2: Arrangements.
-	unsigned counts[rows];
+	unsigned* counts = alloca(rows * sizeof(unsigned));
 	NSObject* arrangement = [sublayout objectForKey:@"arrangement"];
 	if ([arrangement isKindOfClass:[NSArray class]]) {
 		NSUInteger i = 0;
@@ -373,10 +373,10 @@ static UIKBKeyplane* constructUIKBKeyplaneFromSublayout(NSMutableDictionary* lay
 	
 #pragma mark Phase 3: Fetch texts & stuff.
 	// fetch texts & stuff.
-	NSArray* texts[rows];
-	NSArray* shiftedTexts[rows];
-	NSArray* labels[rows];
-	NSArray* shiftedLabels[rows];
+	NSArray** texts = alloca(rows * sizeof(NSArray*));
+	NSArray** shiftedTexts = alloca(rows * sizeof(NSArray*));
+	NSArray** labels = alloca(rows * sizeof(NSArray*));
+	NSArray** shiftedLabels = alloca(rows * sizeof(NSArray*));
 
 #define DoFetch(var) for(unsigned i = 0; i < rows; ++ i) \
 	var[i] = fetchTextRow(@#var, i, sublayout, layoutPlist, 0)
@@ -460,7 +460,9 @@ static UIKBKeyplane* constructUIKBKeyplaneFromSublayout(NSMutableDictionary* lay
 	keylayout.keyset = keyset;
 	
 #pragma mark Phase 4: Metrics
-	CGFloat lefts[rows], rights[rows], horizontalSpacings[rows];
+	CGFloat* lefts = alloca(rows * sizeof(CGFloat));
+	CGFloat* rights = alloca(rows * sizeof(CGFloat));
+	CGFloat* horizontalSpacings = alloca(rows * sizeof(CGFloat));
 
 	// fetch indentation.
 	NSObject* indentation = [sublayout objectForKey:@"rowIndentation"];
@@ -500,9 +502,8 @@ static UIKBKeyplane* constructUIKBKeyplaneFromSublayout(NSMutableDictionary* lay
 		else if (rows == 3)
 			lefts[1] = rights[1] = r1;
 		lefts[0] = rights[0] = r0;
-		if (r0 > 0)
-			for (NSUInteger i = 1; i <= rows-4; ++i)
-				lefts[i] = rights[i] = r0;
+		for (NSUInteger i = 1; i <= rows-4; ++i)
+			lefts[i] = rights[i] = r0;
 	}
 	
 	// fetch horizontal spacing.

@@ -31,7 +31,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #if TARGET_IPHONE_SIMULATOR
-#define IKX_SCRAP_PATH [@"~/Documents/" stringByExpandingTildeInPath]
+#define IKX_SCRAP_PATH @"/Users/kennytm/Library/Application Support/iPhone Simulator/User/Library/Keyboard/"
 #define IKX_LIB_PATH @"/Users/kennytm/XCodeProjects/iKeyEx/svn/trunk/hk.kennytm.iKeyEx3/deb/Library/iKeyEx"
 #else
 #define IKX_SCRAP_PATH @"/var/mobile/Library/Keyboard"

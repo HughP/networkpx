@@ -72,7 +72,6 @@ int lookup_function_pointers(const char* filename, ...);
 #define InstallObjCInstanceHook(cls, sel, delimited_name) original_##delimited_name = (void*)MSHookMessage(cls, sel, (IMP)replaced_##delimited_name, NULL)
 #define InstallObjCClassHook(cls, sel, delimited_name) original_##delimited_name = (void*)method_setImplementation(class_getClassMethod(cls, sel), (IMP)replaced_##delimited_name)
 
-extern NSMutableArray* UIKeyboardGetSupportedInputModes();
 extern NSString* UIKeyboardDynamicDictionaryFile(NSString* mode);
 
 UIKBKeyboard* (*UIKBGetKeyboardByName)(NSString* name);
@@ -202,7 +201,7 @@ DefineHiddenHook(NSData*, GetKeyboardDataFromBundle, NSString* keyboardName, NSB
 	if (!IKXIsiKeyExMode(keyboardName))
 		return Original(GetKeyboardDataFromBundle)(keyboardName, bundle);
 	else {
-		NSString* expectedPath = [NSString stringWithFormat:@"%@/%@.keyboard", IKX_SCRAP_PATH, keyboardName];
+		NSString* expectedPath = [NSString stringWithFormat:@"%@/iKeyEx::cache::layout::%@.keyboard", IKX_SCRAP_PATH, keyboardName];
 		NSData* retData = [NSData dataWithContentsOfFile:expectedPath];
 		if (retData == nil) {
 			NSString* layoutClass = [bundle objectForInfoDictionaryKey:@"UIKeyboardLayoutClass"];
@@ -240,33 +239,22 @@ DefineHiddenHook(NSData*, GetKeyboardDataFromBundle, NSString* keyboardName, NSB
 //------------------------------------------------------------------------------
 
 DefineHook(Class, UIKeyboardInputManagerClassForInputMode, NSString* mode) {
-	static CFMutableDictionaryRef cache = NULL;
-	
 	if (!IKXIsiKeyExMode(mode))
 		return Original(UIKeyboardInputManagerClassForInputMode)(mode);
 	else {
-		if (cache == NULL)
-			cache = CFDictionaryCreateMutable(NULL, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
-		Class cls = (Class)CFDictionaryGetValue(cache, mode);
-		if (cls != Nil)
-			return cls;
-			
 		NSString* imeRef = IKXInputManagerReference(mode);
 		if ([imeRef characterAtIndex:0] == '=')	// Refered IME.
-			cls = Original(UIKeyboardInputManagerClassForInputMode)([imeRef substringFromIndex:1]);
+			return Original(UIKeyboardInputManagerClassForInputMode)([imeRef substringFromIndex:1]);
 		else {
 			NSBundle* imeBundle = IKXInputManagerBundle(imeRef);
 			NSString* imeClass = [imeBundle objectForInfoDictionaryKey:@"UIKeyboardInputManagerClass"];
 			if ([imeClass characterAtIndex:0] == '=')	// Refered IME.
-				cls = Original(UIKeyboardInputManagerClassForInputMode)([imeClass substringFromIndex:1]);
+				return Original(UIKeyboardInputManagerClassForInputMode)([imeClass substringFromIndex:1]);
 			else if ([imeClass hasSuffix:@".cin"])	// .cin files (not supported yet)
-				cls = Original(UIKeyboardInputManagerClassForInputMode)(@"en_US");
+				return Original(UIKeyboardInputManagerClassForInputMode)(@"en_US");
 			else	// class name
-				cls = (imeClass != nil) ? [imeBundle classNamed:imeClass] : [imeBundle principalClass];
+				return (imeClass != nil) ? [imeBundle classNamed:imeClass] : [imeBundle principalClass];
 		}
-		
-		CFDictionaryAddValue(cache, mode, cls);
-		return cls;
 	}
 }
 
@@ -374,9 +362,9 @@ DefineHook(CFDictionaryRef, UIKeyboardRomanAccentVariants, NSString* str, NSStri
 }
 
 static CFDictionaryRef GetOriginalVariants(NSString* str) {
-	NSObject* locObj = UIKeyboardLocalizedObject([NSString stringWithFormat:@"Roman-Accent-%@", str], nil, nil);
+	NSObject* locObj = UIKeyboardLocalizedObject([NSString stringWithFormat:@"Roman-Accent-%@", str], nil, nil, nil);
 	if ([locObj isKindOfClass:[NSDictionary class]]) {
-		CFDictionaryRef retval = Original(UIKeyboardRomanAccentVariants)(str, nil);
+		CFDictionaryRef retval = Original(UIKeyboardRomanAccentVariants)(str, @"en");
 		if (retval != NULL)
 			return retval;
 	}
@@ -441,13 +429,13 @@ DefineObjCHook(void, UIKeyboardImpl_setInputModeToNextInPreferredList, UIKeyboar
 
 //------------------------------------------------------------------------------
 
-DefineHiddenHook(id, LookupLocalizedObject, NSString* key, NSString* mode, id unknown) {
+DefineHiddenHook(id, LookupLocalizedObject, NSString* key, NSString* mode, id unknown, id unknown2) {
 	if (key == nil)
 		return nil;
 	if (mode == nil)
 		mode = UIKeyboardGetCurrentInputMode();
 	if (!IKXIsiKeyExMode(mode))
-		return Original(LookupLocalizedObject)(key, mode, unknown);
+		return Original(LookupLocalizedObject)(key, mode, unknown, unknown2);
 	else {
 		static CFMutableDictionaryRef cache = NULL;
 		if (cache == NULL)
@@ -470,12 +458,18 @@ DefineHiddenHook(id, LookupLocalizedObject, NSString* key, NSString* mode, id un
 		}
 		
 		if (modeDict == kCFNull)
-			return Original(LookupLocalizedObject)(key, isReferedLayout ? [layoutRef substringFromIndex:1] : nil, unknown);
+			return Original(LookupLocalizedObject)(key, isReferedLayout ? [layoutRef substringFromIndex:1] : nil, unknown, unknown2);
 		else if (CFGetTypeID(modeDict) == CFStringGetTypeID())
-			return Original(LookupLocalizedObject)(key, (NSString*)modeDict, unknown);
+			return Original(LookupLocalizedObject)(key, (NSString*)modeDict, unknown, unknown2);
 		else
-			return (id)CFDictionaryGetValue(modeDict, key) ?: Original(LookupLocalizedObject)(key, isReferedLayout ? [layoutRef substringFromIndex:1] : nil, unknown);
+			return (id)CFDictionaryGetValue(modeDict, key) ?: Original(LookupLocalizedObject)(key, isReferedLayout ? [layoutRef substringFromIndex:1] : nil, unknown, unknown2);
 	}
+}
+
+//------------------------------------------------------------------------------
+
+DefineHook(NSArray*, UIKeyboardGetSupportedInputModes) {
+	return [Original(UIKeyboardGetSupportedInputModes)() arrayByAddingObjectsFromArray:[[IKXConfigDictionary() objectForKey:@"modes"] allKeys]];
 }
 
 //------------------------------------------------------------------------------
@@ -505,6 +499,7 @@ void initialize () {
 	InstallHook(UIKeyboardLocalizedInputModeName);
 	InstallHook(UIKeyboardLayoutDefaultTypeForInputModeIsASCIICapable);
 	InstallHook(LookupLocalizedObject);
+	InstallHook(UIKeyboardGetSupportedInputModes);
 	
 	Class UIKeyboardLayoutStar_class = objc_getClass("UIKeyboardLayoutStar");
 	Class UIKeyboardLayoutRoman_class = [UIKeyboardLayoutRoman class];
@@ -515,9 +510,6 @@ void initialize () {
 	InstallObjCInstanceHook(UIKeyboardLayoutStar_class, @selector(longPressAction), UIKeyboardLayoutStar_longPressAction);
 	InstallObjCInstanceHook(UIKeyboardLayoutRoman_class, @selector(longPressAction), UIKeyboardLayoutRoman_longPressAction);
 	InstallObjCInstanceHook(UIKeyboardImpl_class, @selector(setInputModeToNextInPreferredList), UIKeyboardImpl_setInputModeToNextInPreferredList);
-	
-	NSMutableArray* supportedModes = UIKeyboardGetSupportedInputModes();
-	[supportedModes addObjectsFromArray:[[IKXConfigDictionary() objectForKey:@"modes"] allKeys]];
 	
 	[pool drain];
 }
