@@ -1,4 +1,4 @@
-#summary User manual of !QuickScroll
+#summary User manual of QuickScroll
 
 !QuickScroll lets you scroll through a Web page (including PDF files and Word documents) quickly.
 
