@@ -1,0 +1,7 @@
+modes = {
+	"iKeyEx:__KeyboardChooser" = {
+		layout = "__KeyboardChooser";
+		manager = "=en_US";
+		name = "Keyboard Chooser";
+	};
+};

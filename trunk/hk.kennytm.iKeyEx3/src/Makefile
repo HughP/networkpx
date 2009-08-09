@@ -5,7 +5,7 @@ iPhoneSimSDKPath=$(iPhoneSimDevPath)/SDKs/iPhoneSimulator3.0.sdk
 MobileSubstratePath=../deb/Library/MobileSubstrate/DynamicLibraries
 iKeyExPath=../deb/Library/iKeyEx
 SharedSrcPath=../../src
-PrefsBundlePath=../deb/System/Library/PreferenceBundles
+PrefBundlePath=../deb/System/Library/PreferenceBundles
 PrivateFrameworksPath=../../../../../iphone-private-frameworks
 LibPath=../deb/usr/lib
 
@@ -44,12 +44,12 @@ SimOptions=-arch i686 \
 	-D__IPHONE_OS_VERSION_MIN_REQUIRED=30000 \
 	-O2
 
-DontThumbSources=-
+DontThumbSources=UIKBKeyboardFromLayoutPlist.m
 
 # x86 or arm
 Platform=arm
 
-AllTargets=libiKeyEx UIHook KeyboardChooser
+AllTargets=libiKeyEx KeyboardChooser PrefBundle iKeyExKBMan UIHook
 
 libiKeyEx_Sources=libiKeyEx.o
 libiKeyEx_Target=$(LibPath)/libiKeyEx.dylib
@@ -58,15 +58,23 @@ libiKeyEx_InstallNamePrefix=`pwd`/$(LibPath)
 else
 libiKeyEx_InstallNamePrefix=/usr/lib
 endif
-libiKeyEx_Options=-lobjc -framework Foundation -framework UIKit -dynamiclib -install_name $(libiKeyEx_InstallNamePrefix)/libiKeyEx.dylib
+libiKeyEx_Options=-framework Foundation -framework UIKit -dynamiclib -install_name $(libiKeyEx_InstallNamePrefix)/libiKeyEx.dylib
 
 KeyboardChooser_Sources=KeyboardChooserLayout.o
 KeyboardChooser_Target=$(iKeyExPath)/Keyboards/__KeyboardChooser.keyboard/__KeyboardChooser
-KeyboardChooser_Options=-lobjc -framework Foundation -framework UIKit -framework CoreGraphics -bundle -liKeyEx
+KeyboardChooser_Options=-framework Foundation -framework UIKit -framework CoreGraphics -bundle -liKeyEx
 
 UIHook_Sources=iKeyEx3.o UIKBKeyboardFromLayoutPlist.o
 UIHook_Target=$(MobileSubstratePath)/UIHook-iKeyEx3.dylib
-UIHook_Options=-lobjc -framework Foundation -framework UIKit -framework TextInput -dynamiclib -liKeyEx -lsubstrate -init _initialize
+UIHook_Options=-framework Foundation -framework UIKit -framework TextInput -dynamiclib -liKeyEx -lsubstrate -init _initialize
+
+PrefBundle_Sources=Pref.o
+PrefBundle_Target=$(PrefBundlePath)/iKeyEx.bundle/iKeyEx
+PrefBundle_Options=-framework Foundation -framework UIKit -framework Preferences -liKeyEx -bundle
+
+iKeyExKBMan_Sources=iKeyEx-KBMan.o
+iKeyExKBMan_Target=../deb/usr/bin/iKeyEx-KBMan
+iKeyExKBMan_Options=-framework Foundation -liKeyEx
 
 #-----------------------------------------------------------------------------------------------------------------
 #-----------------------------------------------------------------------------------------------------------------

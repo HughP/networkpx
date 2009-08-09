@@ -1,0 +1,7 @@
+entry = {
+	bundle = iKeyEx;
+	cell = PSLinkCell;
+	icon = icon.png;
+	isController = 1;
+	label = iKeyEx;
+};

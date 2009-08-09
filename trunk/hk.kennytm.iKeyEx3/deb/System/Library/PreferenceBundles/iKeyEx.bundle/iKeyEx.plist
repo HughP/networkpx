@@ -1,0 +1,17 @@
+title = "iKeyEx";
+items = (
+
+{	cell = PSLinkListCell;
+	label = Keyboards;
+	get = keyboardCount;
+	set = "setKeyboards:";
+	detail = PSDetailController;
+	pane = iKeyExKeyboardsPane; },
+
+{ cell = PSGroupCell; },
+
+{	cell = PSLinkCell;
+	label = "Mix and Match";
+	detail = iKeyExMixAndMatchController; },
+
+);
