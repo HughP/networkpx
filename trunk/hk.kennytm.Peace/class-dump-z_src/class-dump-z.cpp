@@ -45,6 +45,7 @@ void print_usage () {
 			"    -a         Print ivar offsets\n"
 			"    -A         Print implementation VM addresses.\n"
 			"    -k         Show additional comments.\n"
+			"    -k -k      Show even more comments.\n"
 			"    -R         Show pointer declarations as int *a instead of int* a.\n"
 			"    -N         Keep the raw struct names (e.g. do no replace __CFArray* with CFArrayRef).\n"
 			"\n  Filtering:\n"
@@ -67,11 +68,12 @@ int main (int argc, char* argv[]) {
 		print_usage();
 	} else {
 		int c;
-		bool print_ivar_offsets = false, print_method_addresses = false, print_comments = false, sort_methods_alphabetically = false;
+		bool print_ivar_offsets = false, print_method_addresses = false, sort_methods_alphabetically = false;
 		bool pointers_right_align = false, show_only_exported_classes = false, propertize = false, generate_headers = false, prettify_struct_names = true;
-		bool hide_protocols = false, hide_super = false;
+		bool hide_protocols = false, hide_super = false, hide_underscore = true;
 		bool delete_sysroot_on_quit = false;
 		MachO_File_ObjC::SortBy sort_by = MachO_File_ObjC::SB_None;
+		int print_comments = 0;
 		char diagnosis_option = '\0';
 		char* sysroot = const_cast<char*>("/");
 		const char* type_regexp = NULL;
@@ -113,7 +115,7 @@ int main (int argc, char* argv[]) {
 			switch (c = getopt(argc, argv, "aAkC:ISsD:Rf:gpHo:X:Nh:y:")) {
 				case 'a': print_ivar_offsets = true; break;
 				case 'A': print_method_addresses = true; break;
-				case 'k': print_comments = true; break;
+				case 'k': ++ print_comments; break;
 				case 's': sort_methods_alphabetically = true; break;
 				case 'D': diagnosis_option = *optarg; break;	// diagnosis options, not to be used publicly.
 				case 'C': type_regexp = optarg; break;
@@ -149,6 +151,8 @@ int main (int argc, char* argv[]) {
 						hide_protocols = true;
 					else if (strncmp(optarg, "super", 5) == 0)
 						hide_super = true;
+					else if (strncmp(optarg, "under", 5) == 0)
+						hide_underscore = true;
 					break;
 				case 'y': 
 					if (delete_sysroot_on_quit) {

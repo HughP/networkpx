@@ -32,8 +32,6 @@
 
 #import <UIKit/UIKit.h>
 
-@class UISearchBarBackground;
-
 typedef enum UI3FilePickerPurpose {
 	UI3FilePickerPurposeOpen,
 	UI3FilePickerPurposeOpenMultiple,
