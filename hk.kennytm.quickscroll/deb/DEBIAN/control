@@ -1,8 +1,8 @@
 Package: hk.kennytm.quickscroll
 Name: QuickScroll
-Version: 0.1-12a
+Version: 0.1-12b
 Architecture: iphoneos-arm
-Description: Quickly scroll through a Web page. Initiate with triple tap.
+Description: Quickly scroll through anything. Initiate with triple tap.
 Homepage: http://code.google.com/p/networkpx/
 Maintainer: KennyTM~ <kennytm+QuickScroll@gmail.com>
 Author: KennyTM~ <kennytm+QuickScroll@gmail.com>
