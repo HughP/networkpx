@@ -30,7 +30,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  
 */
 
-#import <UIKit/UIKit2.h>
+#import <UIKit/UIKit.h>
+#import <UIKit/UIScrollView2.h>
+#import <UIKit/UIWebDocumentView.h>
+#import <UIKit/UIAlertView.h>
+#import <UIKit/UIView2.h>
+#import <UIKit/UIAlertSheetTextField.h>
 #import "substrate.h"
 
 @interface WebPDFView : UIView
@@ -38,11 +43,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 -(unsigned)pageNumberForRect:(CGRect)rect;
 @end
 
-__attribute__((pure))
-static inline CGAffineTransform CGAffineTransformMakeTransformBetweenCGRects(CGRect from, CGRect to) {
-	CGFloat sx = to.size.width/from.size.width, sy = to.size.height/from.size.height;
-	return CGAffineTransformMake(sx, 0, 0, sy, to.origin.x - sx * from.origin.x, to.origin.y - sx * from.origin.y);
-}
+
 
 static CGColorRef greenColor, translucentGreenColor;
 static UIImage* alertBackground;
@@ -50,20 +51,20 @@ static NSString* doneText, *scrollerText, *goText, *pageNumberText;
 
 __attribute__((visibility("hidden")))
 @interface DragView : UIView {
-	UIWebDocumentView* webDocView;
-	CGRect wdvFrame, drawFrame, dragRegion;
+@package
+	UIScrollView* webDocView;
+	UIWebDocumentView* associatedWebView;
+@private
+	CGRect drawFrame, dragRegion;
 	CGAffineTransform inverse_tx;
-	BOOL touchMoved;
 	CGSize dragShift;
 }
-@property(assign) UIWebDocumentView* webDocView;
 @end
 @implementation DragView
-@synthesize webDocView;
 -(void)scrollTo {
 	CGPoint p = CGPointApplyAffineTransform(dragRegion.origin, inverse_tx);
-	[webDocView _setScrollerOffset:p];
-	[webDocView updatePDFPageNumberLabel];
+	[webDocView setOffset:p];
+	[associatedWebView updatePDFPageNumberLabel];
 }
 -(void)correctDragRegion {
 	if (dragRegion.origin.x < drawFrame.origin.x)
@@ -97,9 +98,8 @@ __attribute__((visibility("hidden")))
 	[self scrollTo];
 }
 -(void)setFrame:(CGRect)newFrame {
-	wdvFrame = webDocView.frame;
-	wdvFrame.origin = CGPointZero;
-	CGFloat wdvAspectRatio = wdvFrame.size.height / wdvFrame.size.width;
+	CGSize wdvFrame = webDocView.contentSize;
+	CGFloat wdvAspectRatio = wdvFrame.height / wdvFrame.width;
 	
 	// Page is like a long rectangle.
 	if (wdvAspectRatio > 2.5f)
@@ -118,10 +118,17 @@ __attribute__((visibility("hidden")))
 	[super setFrame:CGRectInset(drawFrame, -1, -1)];
 	drawFrame.origin = CGPointMake(1, 1);
 	
-	CGAffineTransform tx = CGAffineTransformMakeTransformBetweenCGRects(wdvFrame, drawFrame);
-	inverse_tx = CGAffineTransformInvert(tx);
+	CGFloat sx = wdvFrame.width/drawFrame.size.width, sy = wdvFrame.height/drawFrame.size.height;
 	
-	dragRegion = CGRectApplyAffineTransform(webDocView.visibleBounds, tx);
+	CGAffineTransform tx = CGAffineTransformMake(1.f/sx, 0, 0, 1.f/sy, 1, 1);
+//	inverse_tx = CGAffineTransformInvert(tx);
+	inverse_tx = CGAffineTransformMake(sx, 0, 0, sy, -sx, -sy);
+	
+	CGRect visRect;
+	visRect.origin = webDocView.offset;
+	visRect.size = webDocView.frame.size;
+	
+	dragRegion = CGRectApplyAffineTransform(visRect, tx);
 }
 -(void)drawRect:(CGRect)rect {
 	CGContextRef c = UIGraphicsGetCurrentContext();
@@ -157,7 +164,7 @@ __attribute__((visibility("hidden")))
 -(void)layout {
 	[super layout];
 	
-	UIThreePartButton* btn = [self buttonAtIndex:0];
+	UIView* btn = [self buttonAtIndex:0];
 	
 	if (!layoutDetermined) {
 		CGRect btnFrame = btn.frame;
@@ -171,11 +178,12 @@ __attribute__((visibility("hidden")))
 	self.frame = selfFrame;
 	btn.frame = buttonFrame;
 }
--(id)initWithDocumentView:(UIWebDocumentView*)v {
+-(id)initWithDocumentView:(UIScrollView*)v andWebView:(UIWebDocumentView*)w {
 	if ((self = [super initWithTitle:nil message:nil delegate:self cancelButtonTitle:doneText otherButtonTitles:nil])) {
 		dv = [DragView new];
 		dv.backgroundColor = [UIColor clearColor];
-		dv.webDocView = v;
+		dv->webDocView = v;
+		dv->associatedWebView = w;
 		[self addSubview:dv];
 		[dv release];
 		
@@ -216,7 +224,7 @@ __attribute__((visibility("hidden")))
 	int buttonID = button.tag;
 	[super _buttonClicked:button];
 	if (buttonID == 1) {
-		WebDocViewScroller* alert = [[WebDocViewScroller alloc] initWithDocumentView:webView];
+		WebDocViewScroller* alert = [[WebDocViewScroller alloc] initWithDocumentView:[webView _scroller] andWebView:webView];
 		[alert layout];
 		[alert release];
 	} else {
@@ -254,17 +262,25 @@ __attribute__((visibility("hidden")))
 @end
 
 
-static void (*original_touchesEnded_withEvent_)(UIWebDocumentView* self, SEL _cmd, NSSet* touches, UIEvent* event);
-static void replaced_touchesEnded_withEvent_(UIWebDocumentView* self, SEL _cmd, NSSet* touches, UIEvent* event) {
-	if ([[touches anyObject] tapCount] == 3) {
-		UIAlertView* alert;
-		if (WebPDF(self))
-			alert = [[PDFJumpToScroller alloc] initWithDocumentView:self];
-		else
-			alert = [[WebDocViewScroller alloc] initWithDocumentView:self];
-		[alert release];
+
+static Class UIWebDocumentView_Class;
+static void (*original_UIWindow__sendTouchesForEvent_)(UIWindow* self, SEL _cmd, UIEvent* event);
+static void replaced_UIWindow__sendTouchesForEvent_(UIWindow* self, SEL _cmd, UIEvent* event) {
+	UITouch* anyTouch = [event.allTouches anyObject];
+	if (anyTouch.phase == UITouchPhaseEnded && anyTouch.tapCount == 3) {
+		UIView* view = anyTouch.view;
+		UIScrollView* scroller = [view _scroller];
+		if (scroller != nil) {
+			UIAlertView* alert = nil;
+			if ([view isKindOfClass:UIWebDocumentView_Class] && WebPDF((UIWebDocumentView*)view))
+				alert = [[PDFJumpToScroller alloc] initWithDocumentView:(UIWebDocumentView*)view];
+			else
+				alert = [[WebDocViewScroller alloc] initWithDocumentView:scroller andWebView:nil];
+			[alert release];
+		}
 	}
-	original_touchesEnded_withEvent_(self, _cmd, touches, event);
+	
+	original_UIWindow__sendTouchesForEvent_(self, _cmd, event);
 }
 
 
@@ -320,9 +336,11 @@ void initialize() {
 	CGSize imgSize = img.size;
 	alertBackground = [[img stretchableImageWithLeftCapWidth:imgSize.width/2 topCapHeight:imgSize.height/2] retain];
 	
+	UIWebDocumentView_Class = [UIWebDocumentView class];
+	
 	atexit(&releaseColors);
 	
-	original_touchesEnded_withEvent_ = (void*)MSHookMessage([UIWebDocumentView class], @selector(touchesEnded:withEvent:), (IMP)replaced_touchesEnded_withEvent_, NULL);
+	original_UIWindow__sendTouchesForEvent_ = (void*)MSHookMessage([UIWindow class], @selector(_sendTouchesForEvent:), (IMP)replaced_UIWindow__sendTouchesForEvent_, NULL);
 	
 	[pool drain];
 }
