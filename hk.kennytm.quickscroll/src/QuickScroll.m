@@ -33,7 +33,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #import <UIKit/UIKit2.h>
 #import "substrate.h"
 
-@interface WebPDFView : NSObject
+@interface WebPDFView : UIView
 -(unsigned)totalPages;
 -(unsigned)pageNumberForRect:(CGRect)rect;
 @end
@@ -98,6 +98,7 @@ __attribute__((visibility("hidden")))
 }
 -(void)setFrame:(CGRect)newFrame {
 	wdvFrame = webDocView.frame;
+	wdvFrame.origin = CGPointZero;
 	CGFloat wdvAspectRatio = wdvFrame.size.height / wdvFrame.size.width;
 	
 	// Page is like a long rectangle.
@@ -219,7 +220,8 @@ __attribute__((visibility("hidden")))
 		[alert layout];
 		[alert release];
 	} else {
-		CGRect* rects = pageRects(WebPDF(webView));
+		WebPDFView* pdf = WebPDF(webView);
+		CGRect* rects = pageRects(pdf);
 		NSString* text = [self textField].text;
 		if ([text length] != 0) {
 			NSInteger val = [[self textField].text integerValue]-1;
@@ -228,7 +230,7 @@ __attribute__((visibility("hidden")))
 			else if (val > totalPageCount)
 				val = totalPageCount-1;
 			if (val != oldPage)
-				[webView _setScrollerOffset:rects[val].origin];
+				[webView _setScrollerOffset:[pdf convertPoint:rects[val].origin toView:nil]];
 		}
 		[webView updatePDFPageNumberLabel];
 	}
@@ -239,7 +241,7 @@ __attribute__((visibility("hidden")))
 		webView = v;
 		WebPDFView* pdfView = WebPDF(v);
 		totalPageCount = [pdfView totalPages];
-		oldPage = [pdfView pageNumberForRect:v.visibleRect];
+		oldPage = [pdfView pageNumberForRect:[pdfView convertRect:v.visibleRect fromView:nil]];
 		self.message = [NSString stringWithFormat:@"%@ (1 - %u):", pageNumberText, totalPageCount];
 		UITextField* textField = [self addTextFieldWithValue:[NSString stringWithFormat:@"%u", oldPage] label:nil];
 		-- oldPage;
@@ -309,7 +311,7 @@ void initialize() {
 	if (localizationMap == nil)
 		localizationMap = [localizationDictionary objectForKey:@"en"];
 	
-	doneText = [[localizationMap objectForKey:@"Done"] retain];
+	doneText = [[localizationMap objectForKey:@"Close"] retain];
 	scrollerText = [[localizationMap objectForKey:@"Scroller"] retain];
 	pageNumberText = [[localizationMap objectForKey:@"Page number"] retain];
 	goText = [[localizationMap objectForKey:@"Go"] retain];
