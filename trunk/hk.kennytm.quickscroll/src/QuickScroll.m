@@ -32,6 +32,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #import <UIKit/UIKit.h>
 #import <UIKit/UIScrollView2.h>
+#import <UIKit/UIScroller.h>
 #import <UIKit/UIWebDocumentView.h>
 #import <UIKit/UIAlertView.h>
 #import <UIKit/UIView2.h>
@@ -44,10 +45,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 @end
 
 
-
 static CGColorRef greenColor, translucentGreenColor;
 static UIImage* alertBackground;
-static NSString* doneText, *scrollerText, *goText, *pageNumberText;
+enum { locClose, locScroller, locPageNumber, locGo, loc_Count };
+static NSString* const locKeys[] = {@"Close", @"Scroller", @"Page number", @"Go"};
+static NSString* locTexts[loc_Count];
+
 
 __attribute__((visibility("hidden")))
 @interface DragView : UIView {
@@ -55,31 +58,32 @@ __attribute__((visibility("hidden")))
 	UIScrollView* webDocView;
 	UIWebDocumentView* associatedWebView;
 @private
-	CGRect drawFrame, dragRegion;
+	CGRect dragRegion;
 	CGAffineTransform inverse_tx;
-	CGSize dragShift;
+	CGSize dragShift, drawSize, drawShift;
 }
 @end
 @implementation DragView
 -(void)scrollTo {
 	CGPoint p = CGPointApplyAffineTransform(dragRegion.origin, inverse_tx);
-	[webDocView setOffset:p];
+	[webDocView setOffset:CGPointMake(p.x - drawShift.width, p.y - drawShift.height)];
 	[associatedWebView updatePDFPageNumberLabel];
 }
 -(void)correctDragRegion {
-	if (dragRegion.origin.x < drawFrame.origin.x)
-		dragRegion.origin.x = drawFrame.origin.x;
-	else if (dragRegion.origin.x + dragRegion.size.width > drawFrame.origin.x + drawFrame.size.width)
-		dragRegion.origin.x = drawFrame.origin.x + drawFrame.size.width - dragRegion.size.width;
+	if (dragRegion.origin.x < 1)
+		dragRegion.origin.x = 1;
+	else if (dragRegion.origin.x + dragRegion.size.width > drawSize.width)
+		dragRegion.origin.x = drawSize.width - dragRegion.size.width;
 	
-	if (dragRegion.origin.y < drawFrame.origin.y)
-		dragRegion.origin.y = drawFrame.origin.y;
-	else if (dragRegion.origin.y + dragRegion.size.height > drawFrame.origin.y + drawFrame.size.height)
-		dragRegion.origin.y = drawFrame.origin.y + drawFrame.size.height - dragRegion.size.height;
+	if (dragRegion.origin.y < 1)
+		dragRegion.origin.y = 1;
+	else if (dragRegion.origin.y + dragRegion.size.height > drawSize.height)
+		dragRegion.origin.y = drawSize.height - dragRegion.size.height;
 }
 -(void)touchesBegan:(NSSet*)touches withEvent:(UIEvent*)event {
 	CGPoint lastPoint = [[touches anyObject] locationInView:self];
-	if (!CGRectContainsPoint(dragRegion, lastPoint)) {
+//	if (!CGRectContainsPoint(dragRegion, lastPoint)) {
+	if (lastPoint.x < dragRegion.origin.x || lastPoint.x > dragRegion.origin.x + dragRegion.size.width || lastPoint.y < dragRegion.origin.y || lastPoint.y > dragRegion.origin.y + dragRegion.size.height) {
 		dragRegion.origin = CGPointMake(lastPoint.x - dragRegion.size.width/2, lastPoint.y - dragRegion.size.height/2);
 		[self correctDragRegion];
 		dragShift = CGSizeMake(dragRegion.size.width/2, dragRegion.size.height/2);
@@ -99,6 +103,15 @@ __attribute__((visibility("hidden")))
 }
 -(void)setFrame:(CGRect)newFrame {
 	CGSize wdvFrame = webDocView.contentSize;
+	
+	if ([webDocView respondsToSelector:@selector(contentInset)]) {
+		UIEdgeInsets insets = webDocView.contentInset;
+		drawShift = CGSizeMake(insets.left, insets.top);
+		wdvFrame.width += insets.left + insets.right;
+		wdvFrame.height += insets.top + insets.bottom;
+	} else
+		drawShift = CGSizeMake(0, 0);
+	
 	CGFloat wdvAspectRatio = wdvFrame.height / wdvFrame.width;
 	
 	// Page is like a long rectangle.
@@ -110,25 +123,23 @@ __attribute__((visibility("hidden")))
 	// Solve these equations:
 	// [1] height * width = AREA
 	// [2] height / width = wdvAspectRatio
-	CGPoint oldOrigin = newFrame.origin;
 	static const CGFloat AREA = 16000;
 	CGFloat height = sqrtf(AREA * wdvAspectRatio);
-	drawFrame = CGRectIntegral(CGRectMake(oldOrigin.x, oldOrigin.y, AREA / height, height));
+	drawSize = CGSizeMake(AREA / height, height);
 	
-	[super setFrame:CGRectInset(drawFrame, -1, -1)];
-	drawFrame.origin = CGPointMake(1, 1);
+	CGFloat sx = wdvFrame.width/drawSize.width, sy = wdvFrame.height/drawSize.height;
 	
-	CGFloat sx = wdvFrame.width/drawFrame.size.width, sy = wdvFrame.height/drawFrame.size.height;
+	drawSize.width = (long)(drawSize.width + 1);
+	drawSize.height = (long)(drawSize.height + 1);
+	[super setFrame:CGRectMake(newFrame.origin.x-1, newFrame.origin.y-1, drawSize.width + 1, drawSize.height + 1)];
 	
 	CGAffineTransform tx = CGAffineTransformMake(1.f/sx, 0, 0, 1.f/sy, 1, 1);
-//	inverse_tx = CGAffineTransformInvert(tx);
 	inverse_tx = CGAffineTransformMake(sx, 0, 0, sy, -sx, -sy);
 	
-	CGRect visRect;
-	visRect.origin = webDocView.offset;
-	visRect.size = webDocView.frame.size;
-	
-	dragRegion = CGRectApplyAffineTransform(visRect, tx);
+	CGRect dragRegion0 = webDocView.bounds;
+	dragRegion0.origin.x += drawShift.width;
+	dragRegion0.origin.y += drawShift.height;
+	dragRegion = CGRectApplyAffineTransform(dragRegion0, tx);
 }
 -(void)drawRect:(CGRect)rect {
 	CGContextRef c = UIGraphicsGetCurrentContext();
@@ -143,7 +154,10 @@ __attribute__((visibility("hidden")))
 		dragRegionBlownUp.origin.y -= 4-dragRegionBlownUp.size.height/2;
 		dragRegionBlownUp.size.height = 8;
 	}
-	dragRegionBlownUp = CGRectIntegral(dragRegionBlownUp);
+	dragRegionBlownUp.origin.x = (long)(dragRegionBlownUp.origin.x);
+	dragRegionBlownUp.origin.y = (long)(dragRegionBlownUp.origin.y);
+	dragRegionBlownUp.size.width = (long)(dragRegionBlownUp.size.width);
+	dragRegionBlownUp.size.height = (long)(dragRegionBlownUp.size.height);
 	CGContextFillRect(c, dragRegionBlownUp);
 	CGContextStrokeRectWithWidth(c, dragRegionBlownUp, 2);
 }
@@ -178,37 +192,46 @@ __attribute__((visibility("hidden")))
 	self.frame = selfFrame;
 	btn.frame = buttonFrame;
 }
--(id)initWithDocumentView:(UIScrollView*)v andWebView:(UIWebDocumentView*)w {
-	if ((self = [super initWithTitle:nil message:nil delegate:self cancelButtonTitle:doneText otherButtonTitles:nil])) {
-		dv = [DragView new];
-		dv.backgroundColor = [UIColor clearColor];
-		dv->webDocView = v;
-		dv->associatedWebView = w;
-		[self addSubview:dv];
-		[dv release];
-		
-		[self show];
++(WebDocViewScroller*)showWithScrollView:(UIScrollView*)v webView:(UIWebDocumentView*)w {
+	CGSize contentSize = v.contentSize, bounds = v.bounds.size;
+	if (contentSize.width <= bounds.width && contentSize.height <= bounds.height)
+		return nil;
+	
+	WebDocViewScroller* x = [self new];
+	if (x != nil) {
+		[x addButtonWithTitle:locTexts[locClose]];
+		DragView* dv = [DragView new];
+		if (dv != nil) {
+			dv.backgroundColor = [UIColor clearColor];
+			dv->webDocView = v;
+			dv->associatedWebView = w;
+		}
+		[x addSubview:dv];
+		x->dv =dv;
+		[x show];
+		[x release];
 	}
-	return self;
+	return x;
 }
 @end
 
+static inline ptrdiff_t offsetForClassAndName(Class cls, const char* str) {
+	return ivar_getOffset(class_getInstanceVariable(cls, str));
+}
+
+
 
 static ptrdiff_t pdfOffset = 0;
-static WebPDFView* WebPDF(UIWebDocumentView* view) {
-	if (pdfOffset == 0) {
-		Ivar ivar = class_getInstanceVariable([UIWebDocumentView class], "_pdf");
-		pdfOffset = ivar_getOffset(ivar);
-	}
+static inline WebPDFView* WebPDF(UIWebDocumentView* view) {
+	if (pdfOffset == 0)
+		pdfOffset = offsetForClassAndName([UIWebDocumentView class], "_pdf");
 	return *(WebPDFView**)((char*)view + pdfOffset);
 }
 
 static ptrdiff_t pageRectsOffset = 0;
-static CGRect* pageRects(WebPDFView* view) {
-	if (pageRectsOffset == 0) {
-		Ivar ivar = class_getInstanceVariable([view class], "_pageRects");
-		pageRectsOffset = ivar_getOffset(ivar);
-	}
+static inline CGRect* pageRects(WebPDFView* view) {
+	if (pageRectsOffset == 0)
+		pageRectsOffset = offsetForClassAndName([view class], "_pageRects");
 	return *(CGRect**)((char*)view + pageRectsOffset);
 }
 
@@ -217,6 +240,7 @@ __attribute__((visibility("hidden")))
 @interface PDFJumpToScroller : UIAlertView {
 	unsigned totalPageCount, oldPage;
 	UIWebDocumentView* webView;
+	WebPDFView* pdfView;
 }
 @end
 @implementation PDFJumpToScroller
@@ -224,76 +248,89 @@ __attribute__((visibility("hidden")))
 	int buttonID = button.tag;
 	[super _buttonClicked:button];
 	if (buttonID == 1) {
-		WebDocViewScroller* alert = [[WebDocViewScroller alloc] initWithDocumentView:[webView _scroller] andWebView:webView];
-		[alert layout];
-		[alert release];
+		[[WebDocViewScroller showWithScrollView:[webView _scroller] webView:webView] layout];
 	} else {
-		WebPDFView* pdf = WebPDF(webView);
-		CGRect* rects = pageRects(pdf);
+		CGRect* rects = pageRects(pdfView);
 		NSString* text = [self textField].text;
 		if ([text length] != 0) {
-			NSInteger val = [[self textField].text integerValue]-1;
-			if (val < 0)
-				val = 0;
-			else if (val > totalPageCount)
-				val = totalPageCount-1;
+			NSInteger val = [[self textField].text integerValue];
+			if (val < 1)
+				val = 1;
+			else if (val >= totalPageCount)
+				val = totalPageCount;
 			if (val != oldPage)
-				[webView _setScrollerOffset:[pdf convertPoint:rects[val].origin toView:nil]];
+				[webView _setScrollerOffset:[pdfView convertPoint:rects[val-1].origin toView:nil]];
 		}
 		[webView updatePDFPageNumberLabel];
 	}
 }
--(id)initWithDocumentView:(UIWebDocumentView*)v {
-	if ((self = [super initWithTitle:nil message:nil delegate:self cancelButtonTitle:scrollerText otherButtonTitles:goText, nil])) {
-		// Get current page.
-		webView = v;
-		WebPDFView* pdfView = WebPDF(v);
-		totalPageCount = [pdfView totalPages];
-		oldPage = [pdfView pageNumberForRect:[pdfView convertRect:v.visibleRect fromView:nil]];
-		self.message = [NSString stringWithFormat:@"%@ (1 - %u):", pageNumberText, totalPageCount];
-		UITextField* textField = [self addTextFieldWithValue:[NSString stringWithFormat:@"%u", oldPage] label:nil];
-		-- oldPage;
-		textField.keyboardType = UIKeyboardTypeNumberPad;
-		textField.textAlignment = UITextAlignmentCenter;
-		[self show];
++(void)showWithWebView:(UIWebDocumentView*)v pdfView:(WebPDFView*)pdfView_ {
+	unsigned pageCount = [pdfView_ totalPages];
+	if (pageCount > 0) {
+		PDFJumpToScroller* x = [self new];
+		if (x != nil) {
+			[x addButtonWithTitle:locTexts[locScroller]];
+			[x addButtonWithTitle:locTexts[locGo]];
+			x->webView = v;
+			x->pdfView = pdfView_;
+			x->totalPageCount = pageCount;
+			x.message = [NSString stringWithFormat:@"%@ (1 – %u):", locTexts[locPageNumber], pageCount];
+			x->oldPage = [pdfView_ pageNumberForRect:[pdfView_ convertRect:v.visibleRect fromView:nil]];
+			UITextField* textField = [x addTextFieldWithValue:[NSString stringWithFormat:@"%u", x->oldPage] label:nil];
+			textField.keyboardType = UIKeyboardTypeNumberPad;
+			textField.textAlignment = UITextAlignmentCenter;
+			[x show];
+			[x release];
+		}
 	}
-	return self;
 }
 @end
 
 
 
-static Class UIWebDocumentView_Class;
 static void (*original_UIWindow__sendTouchesForEvent_)(UIWindow* self, SEL _cmd, UIEvent* event);
 static void replaced_UIWindow__sendTouchesForEvent_(UIWindow* self, SEL _cmd, UIEvent* event) {
-	UITouch* anyTouch = [event.allTouches anyObject];
-	if (anyTouch.phase == UITouchPhaseEnded && anyTouch.tapCount == 3) {
-		UIView* view = anyTouch.view;
-		UIScrollView* scroller = [view _scroller];
-		if (scroller != nil) {
-			UIAlertView* alert = nil;
-			if ([view isKindOfClass:UIWebDocumentView_Class] && WebPDF((UIWebDocumentView*)view))
-				alert = [[PDFJumpToScroller alloc] initWithDocumentView:(UIWebDocumentView*)view];
-			else
-				alert = [[WebDocViewScroller alloc] initWithDocumentView:scroller andWebView:nil];
-			[alert release];
+	if (self.windowLevel < UIWindowLevelAlert) {
+		NSArray* allTouchesArray = [event.allTouches allObjects];
+		int allTouchesCount = [allTouchesArray count];
+		UITouch* allTouches[allTouchesCount];
+		[allTouchesArray getObjects:allTouches];
+		for (int i = 0; i < allTouchesCount; ++ i) {
+			UITouch* anyTouch = allTouches[i];
+			if (anyTouch.phase == UITouchPhaseEnded && anyTouch.tapCount >= 3) {
+				UIScrollView* view = nil;
+				UIView* prevView = anyTouch.view;
+				while (prevView != nil) {
+					if ((view = [prevView _scroller]))
+						break;
+					else
+						prevView = prevView.superview;
+				}
+				if (view != nil) {
+					if ([prevView isKindOfClass:[UIWebDocumentView class]]) { 
+						WebPDFView* pdfView = WebPDF((UIWebDocumentView*)prevView);
+						if (pdfView != nil) {
+							[PDFJumpToScroller showWithWebView:(UIWebDocumentView*)prevView pdfView:pdfView];
+							break;
+						}
+					}
+					[WebDocViewScroller showWithScrollView:view webView:nil];
+					break;
+				}
+			}
 		}
 	}
-	
 	original_UIWindow__sendTouchesForEvent_(self, _cmd, event);
 }
 
 
 static void releaseColors() {
+	[alertBackground release];
 	CGColorRelease(greenColor);
 	CGColorRelease(translucentGreenColor);
-	[alertBackground release];
-	[doneText release];
-	[goText release];
-	[pageNumberText release];
-	[scrollerText release];
+	for (int i = 0; i < 4; ++ i)
+		[locTexts[i] release];
 }
-
 
 void initialize() {
 	NSAutoreleasePool* pool = [NSAutoreleasePool new];
@@ -307,7 +344,6 @@ void initialize() {
 	
 	CGColorSpaceRelease(rgbColorSpace);
 	
-	
 #if TARGET_IPHONE_SIMULATOR
 	NSDictionary* dict = [NSDictionary dictionaryWithContentsOfFile:@"/Users/kennytm/XCodeProjects/iKeyEx/svn/trunk/hk.kennytm.quickscroll/deb/Library/MobileSubstrate/DynamicLibraries/QuickScroll.plist"];
 #else
@@ -315,28 +351,23 @@ void initialize() {
 #endif
 	NSDictionary* localizationDictionary = [dict objectForKey:@"Localization"];
 		
-	NSArray* preferedLocalization = [NSBundle preferredLocalizationsFromArray:[localizationDictionary allKeys]]; 
+	NSArray* preferedLocalization = [NSBundle preferredLocalizationsFromArray:[localizationDictionary allKeys]] ; 
 	NSDictionary* localizationMap = nil;
-	for (NSString* loc in preferedLocalization) {
-		NSDictionary* curMap = [localizationDictionary objectForKey:loc];
-		if (curMap != nil) {
-			localizationMap = curMap;
+	int pLK = [preferedLocalization count];
+	NSString* locs[pLK];
+	[preferedLocalization getObjects:locs];
+	for (int i = 0; i < pLK; ++ i) {
+		localizationMap = [localizationDictionary objectForKey:locs[i]];
+		if (localizationMap != nil)
 			break;
-		}
 	}
-	if (localizationMap == nil)
-		localizationMap = [localizationDictionary objectForKey:@"en"];
 	
-	doneText = [[localizationMap objectForKey:@"Close"] retain];
-	scrollerText = [[localizationMap objectForKey:@"Scroller"] retain];
-	pageNumberText = [[localizationMap objectForKey:@"Page number"] retain];
-	goText = [[localizationMap objectForKey:@"Go"] retain];
-	
+	for (int i = 0; i < 4; ++ i)
+		locTexts[i] = [[localizationMap objectForKey:locKeys[i]] retain];
+		
 	UIImage* img = [UIImage imageWithData:[dict objectForKey:@"AlertBackground"]];
 	CGSize imgSize = img.size;
 	alertBackground = [[img stretchableImageWithLeftCapWidth:imgSize.width/2 topCapHeight:imgSize.height/2] retain];
-	
-	UIWebDocumentView_Class = [UIWebDocumentView class];
 	
 	atexit(&releaseColors);
 	
