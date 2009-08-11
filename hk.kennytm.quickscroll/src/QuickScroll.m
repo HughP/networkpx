@@ -154,8 +154,8 @@ __attribute__((visibility("hidden")))
 		dragRegionBlownUp.origin.y -= 4-dragRegionBlownUp.size.height/2;
 		dragRegionBlownUp.size.height = 8;
 	}
-	dragRegionBlownUp.origin.x = (long)(dragRegionBlownUp.origin.x);
-	dragRegionBlownUp.origin.y = (long)(dragRegionBlownUp.origin.y);
+	dragRegionBlownUp.origin.x = (long)(dragRegionBlownUp.origin.x+0.75);
+	dragRegionBlownUp.origin.y = (long)(dragRegionBlownUp.origin.y+0.75);
 	dragRegionBlownUp.size.width = (long)(dragRegionBlownUp.size.width);
 	dragRegionBlownUp.size.height = (long)(dragRegionBlownUp.size.height);
 	CGContextFillRect(c, dragRegionBlownUp);
