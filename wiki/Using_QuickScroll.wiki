@@ -1,8 +1,16 @@
 #summary User manual of QuickScroll
 
-!QuickScroll lets you scroll through a Web page (including PDF files and Word documents) quickly.
+!QuickScroll lets you scroll through anywhere quickly.
 
- # In a long web page, triple tap on anywhere (hold one finger and triple tap the other to avoid resizing).
+ # In a long page, triple tap on anywhere (hold one finger and triple tap the other to avoid resizing).
  # A dialog will appear. Drag the green box to scroll around.
 
-http://x0e.xanga.com/81cf253038730251702823/w199873521.png
+http://xb0.xanga.com/38cf9b0046536251796686/w199954674.png  http://xe1.xanga.com/efff640a09634251796690/w199954677.png  http://x39.xanga.com/1f5f960056437251796692/w199954679.png  http://x9c.xanga.com/facf970409037251796695/w199954680.png
+
+!QuickScroll also supports PDF paging.
+
+ # In a PDF file, triple tap on anywhere (hold one finger and triple tap the other to avoid resizing).
+ # A dialog will appear. Enter the page number and press "Go" to jump to that page.
+ # Press "Scroller" to scroll around.
+
+http://x07.xanga.com/f94f700727d35251797650/w199955452.png
