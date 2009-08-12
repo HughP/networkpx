@@ -83,7 +83,7 @@ __attribute__((visibility("hidden")))
 -(void)touchesBegan:(NSSet*)touches withEvent:(UIEvent*)event {
 	CGPoint lastPoint = [[touches anyObject] locationInView:self];
 //	if (!CGRectContainsPoint(dragRegion, lastPoint)) {
-	if (lastPoint.x < dragRegion.origin.x || lastPoint.x > dragRegion.origin.x + dragRegion.size.width || lastPoint.y < dragRegion.origin.y || lastPoint.y > dragRegion.origin.y + dragRegion.size.height) {
+	if (lastPoint.x < dragRegion.origin.x || lastPoint.x >= dragRegion.origin.x + dragRegion.size.width || lastPoint.y < dragRegion.origin.y || lastPoint.y >= dragRegion.origin.y + dragRegion.size.height) {
 		dragRegion.origin = CGPointMake(lastPoint.x - dragRegion.size.width/2, lastPoint.y - dragRegion.size.height/2);
 		[self correctDragRegion];
 		dragShift = CGSizeMake(dragRegion.size.width/2, dragRegion.size.height/2);
@@ -134,7 +134,7 @@ __attribute__((visibility("hidden")))
 		[self setFrame:CGRectMake(10, 10, drawSize.width + 1, drawSize.height + 1)];
 	}
 	
-	CGFloat sx = wdvFrame.width/(drawSize.width-2), sy = wdvFrame.height/(drawSize.height-2);
+	CGFloat sx = wdvFrame.width/(drawSize.width-1), sy = wdvFrame.height/(drawSize.height-1);
 	
 	CGAffineTransform tx = CGAffineTransformMake(1.f/sx, 0, 0, 1.f/sy, 1, 1);
 	inverse_tx = CGAffineTransformMake(sx, 0, 0, sy, -sx, -sy);
