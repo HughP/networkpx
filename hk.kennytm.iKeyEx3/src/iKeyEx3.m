@@ -282,7 +282,7 @@ DefineHook(NSString*, UIKeyboardDynamicDictionaryFile, NSString* mode) {
 
 DefineHook(NSString*, UIKeyboardStaticUnigramsFilePathForInputModeAndFileExtension, NSString* mode, NSString* ext) {
 	if (!IKXIsiKeyExMode(mode))
-		return Original(UIKeyboardDynamicDictionaryFile)(mode);
+		return Original(UIKeyboardStaticUnigramsFilePathForInputModeAndFileExtension)(mode, ext);
 	else {
 		NSString* imeRef = IKXInputManagerReference(mode);
 		if ([imeRef characterAtIndex:0] == '=')	// Refered IME.
@@ -483,9 +483,9 @@ void initialize () {
 	nl[1].n_un.n_name = "_UIKBGetKeyboardByName";
 	nl[2].n_un.n_name = "_LookupLocalizedObject";
 	nlist([[[NSBundle bundleForClass:[UIApplication class]] executablePath] UTF8String], nl);
-	GetKeyboardDataFromBundle = (void*)nl[0].n_value;
-	UIKBGetKeyboardByName = (void*)nl[1].n_value;
-	LookupLocalizedObject = (void*)nl[2].n_value;
+	GetKeyboardDataFromBundle = (void*)(nl[0].n_value + (nl[0].n_desc & N_ARM_THUMB_DEF ? 1 : 0));
+	UIKBGetKeyboardByName = (void*)(nl[1].n_value + (nl[0].n_desc & N_ARM_THUMB_DEF ? 1 : 0));
+	LookupLocalizedObject = (void*)(nl[2].n_value + (nl[0].n_desc & N_ARM_THUMB_DEF ? 1 : 0));
 	
 	InstallHook(UIKeyboardInputModeUsesKBStar);
 	InstallHook(UIKeyboardLayoutClassForInputModeInOrientation);
