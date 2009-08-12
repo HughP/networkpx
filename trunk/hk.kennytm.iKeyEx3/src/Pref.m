@@ -372,9 +372,12 @@ static void recomputeAllModes() {
 	return [NSString stringWithFormat:@"%u", modesCount];
 }
 -(void)setKeyboards:(NSArray*)keyboards {
+	if ([keyboards count] == 0)
+		keyboards = [NSArray arrayWithObject:@"en_US"];
 	modesCount = [keyboards count];
 	UIKeyboardSetActiveInputModes(keyboards);
 	[impl setInputModePreference];
+	[impl setInputMode:[keyboards lastObject]];
 }
 
 @end
