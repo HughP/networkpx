@@ -142,6 +142,12 @@ __attribute__((visibility("hidden")))
 	CGRect dragRegion0 = webDocView.bounds;
 	dragRegion0.origin.x += drawShift.width;
 	dragRegion0.origin.y += drawShift.height;
+	
+	if (dragRegion0.size.width > wdvFrame.width)
+		dragRegion0.size.width = wdvFrame.width;
+	if (dragRegion0.size.height > wdvFrame.height)
+		dragRegion0.size.height = wdvFrame.height;
+	
 	dragRegion = CGRectApplyAffineTransform(dragRegion0, tx);
 }
 -(void)drawRect:(CGRect)rect {
