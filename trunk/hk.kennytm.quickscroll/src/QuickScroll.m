@@ -101,10 +101,10 @@ __attribute__((visibility("hidden")))
 	[self setNeedsDisplay];
 	[self scrollTo];
 }
--(void)setFrame:(CGRect)newFrame {
+-(void)updateFrame:(BOOL)resetDrawSize {
 	CGSize wdvFrame = webDocView.contentSize;
 	
-	if ([webDocView respondsToSelector:@selector(contentInset)]) {
+	if ([webDocView isKindOfClass:[UIScrollView class]]) {
 		UIEdgeInsets insets = webDocView.contentInset;
 		drawShift = CGSizeMake(insets.left, insets.top);
 		wdvFrame.width += insets.left + insets.right;
@@ -114,24 +114,27 @@ __attribute__((visibility("hidden")))
 	
 	CGFloat wdvAspectRatio = wdvFrame.height / wdvFrame.width;
 	
-	// Page is like a long rectangle.
-	if (wdvAspectRatio > 2.5f)
-		wdvAspectRatio = 2.5f;
-	else if (wdvAspectRatio < 0.5f)
-		wdvAspectRatio = 0.5f;
+	if (resetDrawSize) {
+		// Page is like a long rectangle.
+		if (wdvAspectRatio > 2.5f)
+			wdvAspectRatio = 2.5f;
+		else if (wdvAspectRatio < 0.5f)
+			wdvAspectRatio = 0.5f;
+		
+		// Solve these equations:
+		// [1] height * width = AREA
+		// [2] height / width = wdvAspectRatio
+		static const CGFloat AREA = 16000;
+		CGFloat height = sqrtf(AREA * wdvAspectRatio);
+		drawSize = CGSizeMake(AREA / height, height);
+		
+		drawSize.width = (long)(drawSize.width + 1);
+		drawSize.height = (long)(drawSize.height + 1);
+		
+		[self setFrame:CGRectMake(10, 10, drawSize.width + 1, drawSize.height + 1)];
+	}
 	
-	// Solve these equations:
-	// [1] height * width = AREA
-	// [2] height / width = wdvAspectRatio
-	static const CGFloat AREA = 16000;
-	CGFloat height = sqrtf(AREA * wdvAspectRatio);
-	drawSize = CGSizeMake(AREA / height, height);
-	
-	CGFloat sx = wdvFrame.width/drawSize.width, sy = wdvFrame.height/drawSize.height;
-	
-	drawSize.width = (long)(drawSize.width + 1);
-	drawSize.height = (long)(drawSize.height + 1);
-	[super setFrame:CGRectMake(newFrame.origin.x-1, newFrame.origin.y-1, drawSize.width + 1, drawSize.height + 1)];
+	CGFloat sx = wdvFrame.width/(drawSize.width-2), sy = wdvFrame.height/(drawSize.height-2);
 	
 	CGAffineTransform tx = CGAffineTransformMake(1.f/sx, 0, 0, 1.f/sy, 1, 1);
 	inverse_tx = CGAffineTransformMake(sx, 0, 0, sy, -sx, -sy);
@@ -166,11 +169,15 @@ __attribute__((visibility("hidden")))
 
 __attribute__((visibility("hidden")))
 @interface WebDocViewScroller : UIAlertView {
-	DragView* dv;
 	CGRect selfFrame, buttonFrame;
+@package
+	DragView* dv;
 	BOOL layoutDetermined;
 }
 @end
+
+static WebDocViewScroller* sharedScroller;
+
 @implementation WebDocViewScroller
 -(void)drawRect:(CGRect)rect {
 	[alertBackground drawInRect:rect];
@@ -181,16 +188,19 @@ __attribute__((visibility("hidden")))
 	UIView* btn = [self buttonAtIndex:0];
 	
 	if (!layoutDetermined) {
-		CGRect btnFrame = btn.frame;
-		dv.frame = CGRectMake(btnFrame.origin.x, btnFrame.origin.x, 0, 0);
+		[dv updateFrame:YES];
 		CGRect dvFrame = dv.frame;
-		buttonFrame = CGRectMake(dvFrame.origin.x, dvFrame.size.height + dvFrame.origin.y + 8, dvFrame.size.width, btnFrame.size.height);
-		selfFrame = CGRectMake(0, 0, dvFrame.size.width + 2*dvFrame.origin.x, buttonFrame.origin.y + dvFrame.origin.y + btnFrame.size.height);
+		buttonFrame = CGRectMake(dvFrame.origin.x, dvFrame.size.height + dvFrame.origin.y + 8, dvFrame.size.width, 43);
+		selfFrame = CGRectMake(0, 0, dvFrame.size.width + 2*dvFrame.origin.x, buttonFrame.origin.y + dvFrame.origin.y + 43);
 		layoutDetermined = YES;
 	}
 	
 	self.frame = selfFrame;
 	btn.frame = buttonFrame;
+}
+-(void)dealloc {
+	sharedScroller = nil;
+	[super dealloc];
 }
 +(WebDocViewScroller*)showWithScrollView:(UIScrollView*)v webView:(UIWebDocumentView*)w {
 	CGSize contentSize = v.contentSize, bounds = v.bounds.size;
@@ -210,10 +220,19 @@ __attribute__((visibility("hidden")))
 		x->dv =dv;
 		[x show];
 		[x release];
+		sharedScroller = x;
 	}
 	return x;
 }
 @end
+
+
+static void updateScroller(UIScrollView* v) {
+	if (sharedScroller != nil && sharedScroller->dv != nil && sharedScroller->dv->webDocView == v) {
+		[sharedScroller->dv updateFrame:NO];
+		[sharedScroller->dv setNeedsDisplay];
+	}
+}
 
 static inline ptrdiff_t offsetForClassAndName(Class cls, const char* str) {
 	return ivar_getOffset(class_getInstanceVariable(cls, str));
@@ -301,10 +320,10 @@ static void replaced_UIWindow__sendTouchesForEvent_(UIWindow* self, SEL _cmd, UI
 				UIScrollView* view = nil;
 				UIView* prevView = anyTouch.view;
 				while (prevView != nil) {
-					if ((view = [prevView _scroller]))
+					view = (UIScrollView*)prevView.superview;
+					if ([view isKindOfClass:[UIScrollView class]] || [view isKindOfClass:[UIScroller class]])
 						break;
-					else
-						prevView = prevView.superview;
+					prevView = view;
 				}
 				if (view != nil) {
 					if ([prevView isKindOfClass:[UIWebDocumentView class]]) { 
@@ -322,6 +341,19 @@ static void replaced_UIWindow__sendTouchesForEvent_(UIWindow* self, SEL _cmd, UI
 	}
 	original_UIWindow__sendTouchesForEvent_(self, _cmd, event);
 }
+
+static void (*original_UIScroller_setContentSize_)(UIScroller* self, SEL _cmd, CGSize newSize);
+static void replaced_UIScroller_setContentSize_(UIScroller* self, SEL _cmd, CGSize newSize) {
+	original_UIScroller_setContentSize_(self, _cmd, newSize);
+	updateScroller((UIScrollView*)self);
+}
+
+static void (*original_UIScrollView_setContentSize_)(UIScrollView* self, SEL _cmd, CGSize newSize);
+static void replaced_UIScrollView_setContentSize_(UIScrollView* self, SEL _cmd, CGSize newSize) {
+	original_UIScrollView_setContentSize_(self, _cmd, newSize);
+	updateScroller(self);
+}
+
 
 
 static void releaseColors() {
@@ -372,6 +404,8 @@ void initialize() {
 	atexit(&releaseColors);
 	
 	original_UIWindow__sendTouchesForEvent_ = (void*)MSHookMessage([UIWindow class], @selector(_sendTouchesForEvent:), (IMP)replaced_UIWindow__sendTouchesForEvent_, NULL);
+	original_UIScroller_setContentSize_ = (void*)MSHookMessage([UIScroller class], @selector(setContentSize:), (IMP)replaced_UIScroller_setContentSize_, NULL);
+	original_UIScrollView_setContentSize_ = (void*)MSHookMessage([UIScrollView class], @selector(setContentSize:), (IMP)replaced_UIScrollView_setContentSize_, NULL);
 	
 	[pool drain];
 }
