@@ -1,5 +1,7 @@
-Filter={Bundles=(com.apple.UIKit);};
-Localization={
+Filter = {
+	Bundles = (com.apple.UIKit);
+};
+Localization = {
 	en = {
 		Scroller = Scroller;
 		Go = Go;
@@ -17,6 +19,12 @@ Localization={
 		Go = Vai;
 		"Page number" = "Numero pagina";
 		Close = Chiudi;
+	};
+	ja = {
+		Scroller = "スクロールラー";
+		Go = "開";
+		"Page number" = "ページ番号";
+		Close = "閉じる";
 	};
 	zh_TW = {
 		Scroller = "捲軸";
