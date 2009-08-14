@@ -1,6 +1,8 @@
 #summary How to Copy Text from MobileSafari using ℏClipboard.
 #labels Phase-Support
 
+  <font color="red">_This page is deprecated in 3.0_</font>
+
 Since ℏClipboard is a keyboard extension, the keyboard must show up for ℏClipboard to work. However, most parts of a web page is not designed for text entering, so ℏClipboard can't work. Nevertheless, using the bookmarklets I present here you can either send the whole page to !MobileMail where you can edit, or turn text elements on the web page into a text field by clicking it, and so ℏClipboard can be used. 
 
  <wiki:gadget url="http://networkpx.googlecode.com/svn/wiki/COPY_TEXT_FROM_SAFARI.xml" height="300" width="600" />
