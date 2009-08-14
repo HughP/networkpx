@@ -1,6 +1,8 @@
 #summary How to use ℏClipboard
 #labels Phase-Support
 
+  <font color="red">_This page is deprecated in 3.0_</font>
+
 <wiki:toc/>
 
 = Introduction =
