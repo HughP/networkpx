@@ -1,6 +1,8 @@
 #summary (Theme Makers) Creating a theme for iKeyEx
 #labels Phase-Implementation
 
+  <font color="red">_This page is deprecated in 3.0_</font>
+
 <wiki:toc/>
 
 = Introduction =
