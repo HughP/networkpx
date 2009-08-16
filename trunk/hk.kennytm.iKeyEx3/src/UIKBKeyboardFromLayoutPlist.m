@@ -405,12 +405,15 @@ static UIKBKeyplane* constructUIKBKeyplaneFromSublayout(NSMutableDictionary* lay
 			UIKBKey* key = [UIKBKey key];
 			if (j < count) {
 				NSString* str = [textArr objectAtIndex:j];
+				if ([str isKindOfClass:[NSDictionary class]])
+					str = [(NSDictionary*)str objectForKey:@"text"];
+				
 				key.name = str;
 				key.representedString = str;
+				
 				NSString* lbl = [labelArr objectAtIndex:j];
-				if ([lbl isKindOfClass:[NSDictionary class]]) {
+				if ([lbl isKindOfClass:[NSDictionary class]])
 					lbl = [(NSDictionary*)lbl objectForKey:@"text"];
-				}
 				key.displayString = lbl;
 				if ([@" " isEqualToString:str]) {
 					key.displayType = @"Space";
@@ -586,7 +589,7 @@ static UIKBKeyplane* constructUIKBKeyplaneFromSublayout(NSMutableDictionary* lay
 		for (unsigned j = 0; j < counts[i]; ++ j) {
 			if (j >= textsCount)
 				break;
-			else if ([[(shifted ? shiftedTexts : texts)[i] objectAtIndex:j] isEqualToString:@""])
+			else if ([@"" isEqualToString:[(shifted ? shiftedTexts : texts)[i] objectAtIndex:j]])
 				continue;
 			UIKBGeometry* keygeom = [UIKBGeometry geometry];
 			keygeom.x = UIKBLengthMakePercentage(j*keywidth);

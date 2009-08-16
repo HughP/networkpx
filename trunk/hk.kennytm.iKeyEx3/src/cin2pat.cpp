@@ -1,6 +1,6 @@
 /*
 
-FILE_NAME ... DESCRIPTION
+cin2pat.cpp ... Convert a .cin file to Patricia tree dump.
  
 Copyright (c) 2009, KennyTM~
 All rights reserved.
@@ -30,47 +30,49 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  
 */
 
-#if TARGET_IPHONE_SIMULATOR
-#define IKX_SCRAP_PATH @"/Users/kennytm/Library/Application Support/iPhone Simulator/User/Library/Keyboard/"
-#define IKX_LIB_PATH @"/Users/kennytm/XCodeProjects/iKeyEx/svn/trunk/hk.kennytm.iKeyEx3/deb/Library/iKeyEx"
-#else
-#define IKX_SCRAP_PATH @"/var/mobile/Library/Keyboard"
-#define IKX_LIB_PATH @"/Library/iKeyEx"
-#endif
+#include "pattrie.hpp"
+#include <fstream>
+#include <string>
 
-#if __cplusplus
-extern "C" {
-#endif
-
-@class NSString, NSDictionary, NSBundle;
-
-/// Check if an input mode is an iKeyEx mode.
-BOOL IKXIsiKeyExMode(NSString* modeString);
-/// Check if an input mode is an iKeyEx internal mode.
-BOOL IKXIsInternalMode(NSString* modeString);
-
-/// Get the iKeyEx configuration dictionary.
-NSDictionary* IKXConfigDictionary();
-/// Reload the config dictionary from disk.
-void IKXFlushConfigDictionary();
-
-/// Get the layout reference of an iKeyEx input mode.
-NSString* IKXLayoutReference(NSString* modeString);
-/// Get the input manager reference of an iKeyEx input mode.
-NSString* IKXInputManagerReference(NSString* modeString);
-
-/// Get the bundle of a custom keyboard layout.
-NSBundle* IKXLayoutBundle(NSString* layoutReference);
-/// Get the bundle of a custom input manager.
-NSBundle* IKXInputManagerBundle(NSString* imeReference);
-
-/// Plays the "click" sound.
-void IKXPlaySound();
-
-/// Get name of input mode.
-NSString* IKXNameOfMode(NSString* modeString);
-
-#if __cplusplus
+static wchar_t encode_utf8(const unsigned char x[]) {
+	if (0xf0 == (x[0] & 0xf0))
+		return ((x[0] & 0x7) << 18) | ((x[1] & 0x3f) << 12) | ((x[2] & 0x3f) << 6) | ((x[3] & 0x3f) << 0);
+	else if (0xe0 == (x[0] & 0xe0))
+		return ((x[0] & 0xf) << 12) | ((x[1] & 0x3f) << 6) | ((x[2] & 0x3f) << 0);
+	else if (0xc0 == (x[0] & 0xc0))
+		return ((x[0] & 0x1f) << 6) | ((x[1] & 0x3f) << 0);
+	else
+		return x[0];
 }
-#endif
-		
+
+extern "C" void IKXConvertCinToPat(const char* cin_path, const char* pat_path) {
+	std::ifstream fin (cin_path);
+	std::string s;
+	IKX::WritablePatTrie<IKX::IMEContent> pat;
+	
+	bool in_chardef_mode = false;
+	while (fin) {
+		std::getline(fin, s);
+		if (in_chardef_mode) {
+			if (s == "%chardef end")
+				break;
+			
+			IKX::IMEContent cont;
+			
+			size_t first_space_character = s.find_first_of(" \t");
+			cont.key.length = std::min(first_space_character, sizeof(cont.key.content));
+			std::memcpy(cont.key.content, s.c_str(), cont.key.length);
+			size_t first_nonspace_character = s.find_first_not_of(" \t", first_space_character+1);
+			cont.value.length = 1;
+			cont.value.local_candidates[0] = encode_utf8(reinterpret_cast<const unsigned char*>(s.c_str()) + first_nonspace_character);
+			
+			pat.insert(cont);
+		} else {
+			if (s == "%chardef begin")
+				in_chardef_mode = true;
+		}
+	}
+	
+	pat.write_to_file(pat_path);
+}
+

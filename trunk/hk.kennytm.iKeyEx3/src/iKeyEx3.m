@@ -36,6 +36,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #import <objc/runtime.h>
 #import "libiKeyEx.h"
 #import <mach-o/nlist.h>
+#import "IKXCinInputManager.h"
 
 // Use substrate.h on iPhoneOS, and APELite on x86/ppc for debugging.
 #ifdef __arm__
@@ -116,11 +117,18 @@ DefineHook(Class, UIKeyboardLayoutClassForInputModeInOrientation, NSString* mode
 			if ([layoutClass characterAtIndex:0] == '=')	// Refered layout.
 				return Original(UIKeyboardLayoutClassForInputModeInOrientation)([layoutClass substringFromIndex:1], orientation);
 			else if ([layoutClass rangeOfString:@"."].location == NSNotFound) {	// Just a class.
-				[layoutBundle load];
+				BOOL loaded = [layoutBundle load];
+				
 				Class retval = NSClassFromString(layoutClass);
 				if (retval != Nil)
 					return retval;
-			}
+				retval = [layoutBundle principalClass];
+				if (retval != Nil)
+					return retval;
+				NSLog(@"iKeyEx: Layout class '%@' not found. (loaded=%d)", layoutClass, loaded);
+			} else
+				NSLog(@"iKeyEx: Unknown layout class.");
+				
 			// Note: UIKeyboardLayoutQWERTY[Landscape] crashes the simulator.
 			return objc_getClass("UIKeyboardLayoutEmoji");
 		}
@@ -250,9 +258,9 @@ DefineHook(Class, UIKeyboardInputManagerClassForInputMode, NSString* mode) {
 			NSString* imeClass = [imeBundle objectForInfoDictionaryKey:@"UIKeyboardInputManagerClass"];
 			if ([imeClass characterAtIndex:0] == '=')	// Refered IME.
 				return Original(UIKeyboardInputManagerClassForInputMode)([imeClass substringFromIndex:1]);
-			else if ([imeClass hasSuffix:@".cin"])	// .cin files (not supported yet)
-				return Original(UIKeyboardInputManagerClassForInputMode)(@"en_US");
-			else	// class name
+			else if ([imeClass hasSuffix:@".cin"]) {
+				return [IKXCinInputManager class];
+			} else	// class name
 				return (imeClass != nil) ? [imeBundle classNamed:imeClass] : [imeBundle principalClass];
 		}
 	}
@@ -473,6 +481,8 @@ DefineHook(NSArray*, UIKeyboardGetSupportedInputModes) {
 }
 
 //------------------------------------------------------------------------------
+
+void nlist(const char*, struct nlist[]);
 
 void initialize () {
 	NSAutoreleasePool* pool = [NSAutoreleasePool new];
