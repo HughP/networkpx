@@ -4,4 +4,9 @@ modes = {
 		manager = "=en_US";
 		name = "Keyboard Chooser";
 	};
+	"iKeyEx:倉頡三代" = {
+		layout = "=en_US";
+		manager = "倉頡三代";
+		name = "倉頡三代";
+	};
 };

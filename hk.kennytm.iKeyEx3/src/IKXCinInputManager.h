@@ -30,47 +30,23 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  
 */
 
-#if TARGET_IPHONE_SIMULATOR
-#define IKX_SCRAP_PATH @"/Users/kennytm/Library/Application Support/iPhone Simulator/User/Library/Keyboard/"
-#define IKX_LIB_PATH @"/Users/kennytm/XCodeProjects/iKeyEx/svn/trunk/hk.kennytm.iKeyEx3/deb/Library/iKeyEx"
-#else
-#define IKX_SCRAP_PATH @"/var/mobile/Library/Keyboard"
-#define IKX_LIB_PATH @"/Library/iKeyEx"
+#ifndef IKXCININPUTMANAGER_H
+#define IKXCININPUTMANAGER_H
+
+#ifndef IKXCININPUTMANAGER_MM
+typedef void __IKXCinInputManagerPatTrie;
 #endif
 
-#if __cplusplus
-extern "C" {
-#endif
+#import <Foundation/Foundation.h>
+#import <UIKit/UIKeyboardInputManager.h>
 
-@class NSString, NSDictionary, NSBundle;
-
-/// Check if an input mode is an iKeyEx mode.
-BOOL IKXIsiKeyExMode(NSString* modeString);
-/// Check if an input mode is an iKeyEx internal mode.
-BOOL IKXIsInternalMode(NSString* modeString);
-
-/// Get the iKeyEx configuration dictionary.
-NSDictionary* IKXConfigDictionary();
-/// Reload the config dictionary from disk.
-void IKXFlushConfigDictionary();
-
-/// Get the layout reference of an iKeyEx input mode.
-NSString* IKXLayoutReference(NSString* modeString);
-/// Get the input manager reference of an iKeyEx input mode.
-NSString* IKXInputManagerReference(NSString* modeString);
-
-/// Get the bundle of a custom keyboard layout.
-NSBundle* IKXLayoutBundle(NSString* layoutReference);
-/// Get the bundle of a custom input manager.
-NSBundle* IKXInputManagerBundle(NSString* imeReference);
-
-/// Plays the "click" sound.
-void IKXPlaySound();
-
-/// Get name of input mode.
-NSString* IKXNameOfMode(NSString* modeString);
-
-#if __cplusplus
+@interface IKXCinInputManager : UIKeyboardInputManager {
+	__IKXCinInputManagerPatTrie* pat;
+	
+	NSMutableString* ime_string;
+	NSMutableString* remaining_string;
 }
+@end
+
+
 #endif
-		
