@@ -44,6 +44,8 @@ The source of the character tables in iKeyEx Chinese Support package are
 == Phrase tables ==
 Phrases (a.k.a. Associated Words 聯想 / 相關字詞) can be used to complete a character into a word. In the most common scenario, after you have accepted a character candidate (say, 義), a list of completions (e.g. 大利, 工, 務, 正辭嚴, etc.) will be shown to quickly finish a word.
 
+The total number of phrases should be less than 16 millions (0x00FFFFFF). 
+
 The source of the iKeyEx Chinese Support table are obtained from:
  * Traditional Chinese: [http://svn.csie.net/log.php?repname=chewing&path=%2Flibchewing%2Ftrunk%2Fdata%2Ftsi.src&rev=0&isdir= 新酷音詞庫] (tsi.src from libchewing. LGPL.)
  * Simplified Chinese: [http://scim.svn.sourceforge.net/viewvc/scim/scim-pinyin/trunk/data/phrase_lib.txt?view=log 智能拼音词库] (phrase_lib.txt from scim-pinyin, with words having frequency = 0 filtered out. GPL.)
