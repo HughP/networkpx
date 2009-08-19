@@ -26,7 +26,7 @@ The input string *must be* in lowercase and consists of *9 or less* characters (
 = Phrase and character tables =
 Phrase and characters tables are used to sort characters and display associated words in a candidate list. The tables can be downloaded from the iKeyEx Chinese Support package, but you can create one on your own.
 
-The phrase tables should be stored in `/Library/iKeyEx/Phrase/<Language>/` with file extension .txt, and encoded in UTF-8. The general format is
+The phrase tables should be stored in `/Library/iKeyEx/Phrase/<Language>/` and encoded in UTF-8. The general format is
 {{{
 <Phrase>\n
 <Phrase>\n
@@ -35,7 +35,7 @@ The phrase tables should be stored in `/Library/iKeyEx/Phrase/<Language>/` with 
 The higher the character, the more frequent it appears.
 
 == Character tables ==
-Character table is used to calculate ordering in a candidate list. It must be named as `__Characters.txt`.
+Character table is used to calculate ordering in a candidate list. It must have an extension of `.chrs`.
 
 The source of the character tables in iKeyEx Chinese Support package are
  * Traditional Chinese: http://technology.chtsai.org/charfreq/ (?)
@@ -44,7 +44,7 @@ The source of the character tables in iKeyEx Chinese Support package are
 == Phrase tables ==
 Phrases (a.k.a. Associated Words 聯想 / 相關字詞) can be used to complete a character into a word. In the most common scenario, after you have accepted a character candidate (say, 義), a list of completions (e.g. 大利, 工, 務, 正辭嚴, etc.) will be shown to quickly finish a word.
 
-The total number of phrases should be less than 16 millions (0x00FFFFFF). 
+A phrase table must have an extension of `.phrs`. The total number of phrases should be less than 16 millions (0x00FFFFFF). 
 
 The source of the iKeyEx Chinese Support table are obtained from:
  * Traditional Chinese: [http://svn.csie.net/log.php?repname=chewing&path=%2Flibchewing%2Ftrunk%2Fdata%2Ftsi.src&rev=0&isdir= 新酷音詞庫] (tsi.src from libchewing. LGPL.)
