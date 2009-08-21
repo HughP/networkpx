@@ -7,7 +7,7 @@ Homepage: http://code.google.com/p/networkpx/
 Maintainer: KennyTM~ <kennytm+iKeyEx3@gmail.com>
 Author: KennyTM~ <kennytm+iKeyEx3@gmail.com>
 Section: Keyboards
-Depends: hk.kennytm.iKeyEx (>=0.1-99d)
+Depends: hk.kennytm.ikeyex (>=0.1-99d)
 Installed-Size: 2468
 Support: http://code.google.com/p/networkpx/wiki/FAQ
 dev: kennytm
