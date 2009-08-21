@@ -1,0 +1,6 @@
+#!/bin/sh
+
+if [[ $1 == remove || $1 == upgrade ]]; then
+	/usr/bin/iKeyEx-KBMan purge-all
+fi
+exit 0;

@@ -1,0 +1,9 @@
+#!/bin/bash
+
+if [[ $1 == configure || $1 == abort-remove ]]; then
+	/usr/bin/iKeyEx-KBMan select-phrase zh-Hant "新酷音詞庫";
+	/usr/bin/iKeyEx-KBMan select-phrase zh-Hans "智能拼音词库";
+	/usr/bin/iKeyEx-KBMan select-chars zh-Hant "黃氏新聞組字頻表";
+	/usr/bin/iKeyEx-KBMan select-chars zh-Hans "识字汉语网站字频表";
+fi
+exit 0;

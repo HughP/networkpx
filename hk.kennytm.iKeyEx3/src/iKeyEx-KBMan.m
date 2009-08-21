@@ -32,6 +32,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #import <Foundation/Foundation.h>
 #import "libiKeyEx.h"
+#include <notify.h>
+#include "cin2pat.h"
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #define GLOBALS_PREFS_PATH @"/var/mobile/Library/Preferences/.GlobalPreferences.plist"
 
@@ -53,11 +58,28 @@ static void print_usage () {
 			"   unregister-ime <ime>\n"
 			"    - Deactivate and unregister all modes using the specified input\n"
 			"      manager.\n"
+			"   cache-ime <ime>\n"
+			"    - Generate cache for the specified input manager.\n"
+			"   cache-phrase <language> <phrase>\n"
+			"    - Generate cache for the specified phrase table.\n"
+			"   select-phrase <lang> <phrase>\n"
+			"    - Use a phrase table for a specific language.\n"
+			"   select-chars <lang> <phrase>\n"
+			"    - Use a characters table for a specific language.\n"
+			"   deselect-phrase <lang> <phrase>\n"
+			"    - Deselect a phrase table for a specific language.\n"
+			"   deselect-chars <lang> <phrase>\n"
+			"    - Deselect a characters table for a specific language.\n"
 			"   purge-layout <layout>\n"
 			"    - Clear automatically generated cache for the specified layout.\n"
 			"   purge-ime <ime>\n"
 			"    - Clear automatically generated cache for the specified input\n"
-			"      manager.\n\n"
+			"      manager.\n"
+			"   purge-phrase <language> <phrase>\n"
+			"    - Clear automatically generated cache for the specified phrase\n"
+			"      table.\n\n"
+			"   purge-all\n"
+			"    - Clear all automatically generated cache.\n"
 	);
 }
 
@@ -71,6 +93,16 @@ static BOOL check_internal (const char* x) {
 		return NO;
 	} else
 		return YES;
+}
+
+static void SaveConfig(NSDictionary* configDict) {
+	if ([configDict writeToFile:IKX_LIB_PATH@"/Config.plist" atomically:YES]) {
+		const char* utfPath = [IKX_LIB_PATH@"/Config.plist" UTF8String];
+		chmod(utfPath, 0666);
+		chown(utfPath, 501, 501);
+		notify_post("hk.kennytm.iKeyEx3.FlushConfigDictionary");
+	} else
+		fprintf(stderr, "Error: Cannot save config. All changes will be lost.\n");
 }
 
 static NSString* modeStringOf (const char* mode) {
@@ -94,6 +126,10 @@ static void Register(NSString* modeString, const char* name, const char* layout,
 	
 	NSMutableDictionary* configDict = [NSMutableDictionary dictionaryWithContentsOfFile:IKX_LIB_PATH@"/Config.plist"];
 	NSMutableDictionary* modesDict = [configDict objectForKey:@"modes"];
+	if (modesDict == nil) {
+		modesDict = [NSMutableDictionary dictionary];
+		[configDict setObject:modesDict forKey:@"modes"];
+	}
 	if ([modesDict objectForKey:modeString] != nil)
 		fprintf(stderr, "Warning: Input mode '%s' was already registered. Re-registering.\n\n", [modeString UTF8String]);
 	NSDictionary* regDict = [NSDictionary dictionaryWithObjectsAndKeys:
@@ -102,7 +138,7 @@ static void Register(NSString* modeString, const char* name, const char* layout,
 							 [NSString stringWithUTF8String:ime], @"manager",
 							 nil];
 	[modesDict setObject:regDict forKey:modeString];
-	[configDict writeToFile:IKX_LIB_PATH@"/Config.plist" atomically:YES];
+	SaveConfig(configDict);
 }
 
 static void Activate(NSString* modeString) {
@@ -121,7 +157,7 @@ static void Unregister(NSString* modeString) {
 	Deactivate(modeString);
 	NSMutableDictionary* configDict = [NSMutableDictionary dictionaryWithContentsOfFile:IKX_LIB_PATH@"/Config.plist"];
 	[[configDict objectForKey:@"modes"] removeObjectForKey:modeString];
-	[configDict writeToFile:IKX_LIB_PATH@"/Config.plist" atomically:YES];
+	SaveConfig(configDict);
 }
 
 static void UnregisterWhere(NSString* key, const char* matching) {
@@ -135,7 +171,7 @@ static void UnregisterWhere(NSString* key, const char* matching) {
 			[modesToRemove addObject:mode];
 	}
 	[modesDict removeObjectsForKeys:modesToRemove];
-	[configDict writeToFile:IKX_LIB_PATH@"/Config.plist" atomically:NO];
+	SaveConfig(configDict);
 	
 	NSMutableDictionary* globalsDict = [NSMutableDictionary dictionaryWithContentsOfFile:GLOBALS_PREFS_PATH];
 	[[globalsDict objectForKey:@"AppleKeyboards"] removeObjectsInArray:modesToRemove];
@@ -154,13 +190,60 @@ static void PurgeWithPrefix(NSString* prefix) {
 	}
 }
 
+static void CacheIME(const char* mode) {
+	NSString* imePath = [NSString stringWithFormat:IKX_LIB_PATH@"/InputManagers/%s.ime", mode];
+	NSBundle* imeBundle = [NSBundle bundleWithPath:imePath];
+	NSString* cinName = [imeBundle objectForInfoDictionaryKey:@"UIKeyboardInputManagerClass"];
+	if (![cinName hasSuffix:@".cin"]) {
+		fprintf(stderr, "Error: Cannot generate cache for non-.cin IME '%s'.\n", mode);
+		return;
+	}
+	NSString* cinPath = [imeBundle pathForResource:cinName ofType:nil];
+	NSString* patPath = [NSString stringWithFormat:IKX_SCRAP_PATH@"/iKeyEx::cache::ime::%s.pat", mode];
+	NSString* knsPath = [[patPath stringByDeletingPathExtension] stringByAppendingPathExtension:@"kns"];
+	
+	printf("Info: Converting .cin IME '%s' to Patricia trie dump. Please wait a few seconds... ", mode);
+	IKXConvertCinToPat([cinPath UTF8String], [patPath UTF8String], [knsPath UTF8String]);
+	printf("Done.\n");
+}
+
+static void CachePhrase(const char* lang, const char* phrase) {
+	NSString* phraseTablePath = [NSString stringWithFormat:IKX_LIB_PATH@"/Phrase/%s/%s.phrs", lang, phrase];
+	NSString* triePath = [NSString stringWithFormat:IKX_SCRAP_PATH@"/iKeyEx::cache::phrase::%s::%s.phrs.pat", lang, phrase];
+	
+	printf("Info: Converting phrase table '%s' (%s) to Patricia trie dump. Please wait a few seconds... ", phrase, lang);
+	IKXConvertPhraseToPat([phraseTablePath UTF8String], [triePath UTF8String]);
+	printf("Done.\n");
+}
+
+static void SelectPhrase(const char* lang, const char* phrase, unsigned index) {
+	NSMutableDictionary* configDict = [NSMutableDictionary dictionaryWithContentsOfFile:IKX_LIB_PATH@"/Config.plist"];
+	NSMutableDictionary* phraseDict = [configDict objectForKey:@"phrase"];
+	if (phraseDict == nil) {
+		phraseDict = [NSMutableDictionary dictionary];
+		[configDict setObject:phraseDict forKey:@"phrase"];
+	}
+	NSString* langStr = [NSString stringWithUTF8String:lang];
+	NSMutableArray* langArr = [phraseDict objectForKey:langStr];
+	if (langArr == nil) {
+		langArr = [NSMutableArray arrayWithObjects:@"__Internal", @"__Internal", nil];
+		[phraseDict setObject:langArr forKey:langStr];
+	}
+	[langArr replaceObjectAtIndex:index withObject:[NSString stringWithUTF8String:phrase]];
+	SaveConfig(configDict);
+}
+static void DeselectPhrase(const char* lang, const char* phrase, unsigned index) {
+	const char* curPhrase = [[[[NSDictionary dictionaryWithContentsOfFile:IKX_LIB_PATH@"/Config.plist"]
+							   objectForKey:[NSString stringWithUTF8String:lang]] objectAtIndex:index] UTF8String];
+	if (strcmp(curPhrase, phrase) == 0)
+		SelectPhrase(lang, "__Internal", index);
+}
 
 int main (int argc, const char* argv[]) {
-	if (argc > 2) {
+	if (argc >= 2) {
 		NSAutoreleasePool* pool = [NSAutoreleasePool new];
 		
 		const char* command = argv[1];
-		
 		
 		if (strcmp(command, "register") == 0) {
 			if (argc < 6)
@@ -212,6 +295,20 @@ deprecated_remove:
 				if (check_internal(argv[2]))
 					UnregisterWhere(@"manager", argv[2]);
 			}
+		} else if (strcmp(command, "cache-ime") == 0) {
+			if (argc < 3)
+				print_arg_error("cache-ime", 1);
+			else {
+				if (check_internal(argv[2]))
+					CacheIME(argv[2]);
+			}
+		} else if (strcmp(command, "cache-phrase") == 0) {
+			if (argc < 4)
+				print_arg_error("cache-phrase", 4);
+			else {
+				if (check_internal(argv[3]))
+					CachePhrase(argv[2], argv[3]);
+			}
 		} else if (strcmp(command, "purge") == 0) {
 			fprintf(stderr, "Warning: 'purge' command is deprecated in iKeyEx 3. Use 'purge-layout' instead.\n\n");
 			goto deprecated_purge;
@@ -226,10 +323,17 @@ deprecated_purge:
 				print_arg_error("purge-ime", 1);
 			else
 				PurgeWithPrefix([NSString stringWithFormat:@"iKeyEx::cache::ime::%s", argv[2]]);
+		} else if (strcmp(command, "purge-phrase") == 0) {
+			if (argc < 4)
+				print_arg_error("purge-phrase", 2);
+			else
+				PurgeWithPrefix([NSString stringWithFormat:@"iKeyEx::cache::phrase::%s::%s", argv[2], argv[3]]);
+		} else if (strcmp(command, "purge-all") == 0) {
+			PurgeWithPrefix(@"iKeyEx::cache::");
 		} else if (strcmp(command, "add") == 0) {
 			fprintf(stderr, "Warning: 'add' command is deprecated in iKeyEx 3. Use 'register' and 'activate' instead.\n\n");
 			if (argc < 3)
-				fprintf(stderr, "Error: 'add' requires 1 argument.\n\n");
+				print_arg_error("add", 1);
 			else {
 				NSString* ms = modeStringOf(argv[2]);
 				if (ms != nil) {
@@ -237,6 +341,26 @@ deprecated_purge:
 					Activate(ms);
 				}
 			}
+		} else if (strcmp(command, "select-phrase") == 0) {
+			if (argc < 4)
+				print_arg_error("select-phrase", 2);
+			else
+				SelectPhrase(argv[2], argv[3], 0);
+		} else if (strcmp(command, "select-chars") == 0) {
+			if (argc < 4)
+				print_arg_error("select-chars", 2);
+			else
+				SelectPhrase(argv[2], argv[3], 1);
+		} else if (strcmp(command, "deselect-phrase") == 0) {
+			if (argc < 4)
+				print_arg_error("deselect-phrase", 2);
+			else
+				DeselectPhrase(argv[2], argv[3], 0);
+		} else if (strcmp(command, "deselect-chars") == 0) {
+			if (argc < 4)
+				print_arg_error("deselect-chars", 2);
+			else
+				DeselectPhrase(argv[2], argv[3], 1);
 		} else
 			fprintf(stderr, "Error: Unrecognized command '%s'.\n\n", argv[1]);
 		
