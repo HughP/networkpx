@@ -50,6 +50,7 @@ using namespace IKX;
 -(NSUInteger)length { return [[self word] length]; }
 -(void)getCharacters:(unichar*)buffer { [[self word] getCharacters:buffer]; }
 -(const char*)UTF8String { return [self wordUTF8String]; }
+-(BOOL)isEqualToString:(CandWord*)another { return [[self word] isEqualToString:[another word]]; }
 @end
 
 

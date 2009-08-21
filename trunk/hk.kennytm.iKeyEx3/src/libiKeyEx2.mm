@@ -204,6 +204,17 @@ extern "C" void IKXCharacterTableSort(IKXCharacterTableRef charTable, NSMutableA
 	if (charTable == NULL || chars == nil || charTable->empty())
 		return;
 	[chars sortUsingFunction:reinterpret_cast<NSComparisonResult(*)(id,id,void*)>(chars_table_sorter) context:charTable];
+	// Remove duplicated values.
+	NSMutableIndexSet* indicesToRemove = [NSMutableIndexSet indexSet];
+	NSString* lastObject = nil;
+	NSUInteger i = 0;
+	for (NSString* thisObject in chars) {
+		if ([lastObject isEqualToString:thisObject])
+			[indicesToRemove addIndex:i];
+		++ i;
+		lastObject = thisObject;
+	}
+	[chars removeObjectsAtIndexes:indicesToRemove];
 }
 
 extern "C" void IKXCharacterTableDealloc(IKXCharacterTableRef charTable) {

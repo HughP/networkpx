@@ -610,7 +610,14 @@ static NSMutableDictionary* mutableConfigDict() {
 		configDict = [[NSMutableDictionary alloc] initWithContentsOfFile:IKX_LIB_PATH@"/Config.plist"];
 		if (configDict == nil) {
 			// Generate an initial miminum structure.
-			configDict = [[NSMutableDictionary alloc] initWithObjectsAndKeys:[NSMutableDictionary dictionary], @"modes", [NSMutableDictionary dictionary], @"phrase", @"1", @"kbChooser", nil];
+			configDict = [[NSMutableDictionary alloc] initWithObjectsAndKeys:
+						  [NSMutableDictionary dictionary], @"modes",
+						  [NSMutableDictionary dictionaryWithObjectsAndKeys:
+						   [NSArray arrayWithObjects:@"__Internal", @"__Internal"], @"zh-Hant",
+						   [NSArray arrayWithObjects:@"__Internal", @"__Internal"], @"zh-Hans",
+						  nil], @"phrase",
+						  @"1", @"kbChooser",
+						  nil];
 			configMutated = YES;
 			saveConfig();
 		}

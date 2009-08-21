@@ -1,0 +1,13 @@
+Package: hk.kennytm.chinese-phrase
+Name: iKeyEx 額外繁簡中文字頻表及詞庫
+Version: 0.2-0
+Architecture: iphoneos-arm
+Description: 此檔案為 iKeyEx 繁簡中文提供字頻表及詞庫各一，有效提昇 .cin 輸入法的準確度。繁體中文字頻表取自黃世昆博士於 1993-94 年 Usenet 錄得的統計資料，共有一萬三千個字，而詞庫則為新酷音 SVN r1047 版本，共有十三萬個詞語。简体中文字频表取自「识字汉语」(http://readmandarin.com/) 网站于 2007 年从十万个网站统计得共五千字之字频。而词库是基于 SCIM 的智能拼音 SVN r93 的版本，累计十三万六千个词语。
+Homepage: http://code.google.com/p/networkpx/
+Maintainer: KennyTM~ <kennytm+iKeyEx3@gmail.com>
+Author: KennyTM~ <kennytm+iKeyEx3@gmail.com>
+Section: Keyboards
+Depends: hk.kennytm.iKeyEx (>=0.1-99d)
+Installed-Size: 2468
+Support: http://code.google.com/p/networkpx/wiki/FAQ
+dev: kennytm
