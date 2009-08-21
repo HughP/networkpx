@@ -1,0 +1,48 @@
+title = "Characters and phrase tables";
+items = (
+
+{ cell = PSGroupCell; label = "Traditional Chinese"; },
+
+{ cell = PSLinkListCell;
+	detail = PSListItemsController;
+	lang = "zh-Hant";
+	type = "chrs";
+	label = "Characters table";
+	valuesDataSource = "listValues:";
+	titlesDataSource = "listTitles:";
+	get = "get:";
+	set = "set::"; },
+
+{ cell = PSLinkListCell;
+	detail = PSListItemsController;
+	lang = "zh-Hant";
+	type = "phrs";
+	label = "Phrase table";
+	valuesDataSource = "listValues:";
+	titlesDataSource = "listTitles:";
+	get = "get:";
+	set = "set::"; },
+
+{ cell = PSGroupCell; label = "Simplified Chinese"; },
+
+{ cell = PSLinkListCell;
+	detail = PSListItemsController;
+	lang = "zh-Hans";
+	type = "chrs";
+	label = "Characters table";
+	valuesDataSource = "listValues:";
+	titlesDataSource = "listTitles:";
+	get = "get:";
+	set = "set::"; },
+
+{ cell = PSLinkListCell;
+	detail = PSListItemsController;
+	lang = "zh-Hans";
+	type = "phrs";
+	label = "Phrase table";
+	valuesDataSource = "listValues:";
+	titlesDataSource = "listTitles:";
+	get = "get:";
+	set = "set::"; }
+
+);

@@ -105,7 +105,7 @@ DefineHook(Class, UIKeyboardLayoutClassForInputModeInOrientation, NSString* mode
 		return Original(UIKeyboardLayoutClassForInputModeInOrientation)(modeString, orientation);
 	
 	else {
-		NSString* layoutRef = IKXLayoutReference(modeString);
+		NSString* layoutRef = IKXLayoutReference(modeString);		
 		if ([layoutRef characterAtIndex:0] == '=')	// Refered layout.
 			return Original(UIKeyboardLayoutClassForInputModeInOrientation)([layoutRef substringFromIndex:1], orientation);
 		else {
@@ -209,7 +209,7 @@ DefineHiddenHook(NSData*, GetKeyboardDataFromBundle, NSString* keyboardName, NSB
 	if (!IKXIsiKeyExMode(keyboardName))
 		return Original(GetKeyboardDataFromBundle)(keyboardName, bundle);
 	else {
-		NSString* expectedPath = [NSString stringWithFormat:@"%@/iKeyEx::cache::layout::%@.keyboard", IKX_SCRAP_PATH, keyboardName];
+		NSString* expectedPath = [NSString stringWithFormat:IKX_SCRAP_PATH@"/iKeyEx::cache::layout::%@.keyboard", keyboardName];
 		NSData* retData = [NSData dataWithContentsOfFile:expectedPath];
 		if (retData == nil) {
 			NSString* layoutClass = [bundle objectForInfoDictionaryKey:@"UIKeyboardLayoutClass"];
@@ -407,11 +407,11 @@ DefineObjCHook(unsigned, UIKeyboardLayoutRoman_downActionFlagsForKey_, UIKeyboar
 	return Original(UIKeyboardLayoutRoman_downActionFlagsForKey_)(self, _cmd, key) | ([self typeForKey:key] == 7 ? 0x80 : 0);
 }
 
-static BOOL longPressedInternationalKey = NO;
+static int longPressedInternationalKey = 0;
 DefineObjCHook(void, UIKeyboardLayoutStar_longPressAction, UIKeyboardLayoutStar* self, SEL _cmd) {
 	UIKBKey* activeKey = [self activeKey];
 	if (activeKey != nil && [@"International" isEqualToString:activeKey.interactionType]) {
-		longPressedInternationalKey = YES;
+		longPressedInternationalKey = 1;
 		[self cancelTouchTracking];
 	} else
 		Original(UIKeyboardLayoutStar_longPressAction)(self, _cmd);
@@ -420,19 +420,19 @@ DefineObjCHook(void, UIKeyboardLayoutStar_longPressAction, UIKeyboardLayoutStar*
 DefineObjCHook(void, UIKeyboardLayoutRoman_longPressAction, UIKeyboardLayoutRoman* self, SEL _cmd) {
 	void* activeKey = [self activeKey];
 	if (activeKey != NULL && [self typeForKey:activeKey] == 7) {
-		longPressedInternationalKey = YES;
+		longPressedInternationalKey = 1;
 		[self cancelTouchTracking];
 	} else
 		Original(UIKeyboardLayoutRoman_longPressAction)(self, _cmd);
 }
 
 DefineObjCHook(void, UIKeyboardImpl_setInputModeToNextInPreferredList, UIKeyboardImpl* self, SEL _cmd) {
-	if (longPressedInternationalKey) {
+	if (longPressedInternationalKey == IKXKeyboardChooserPreference()) {
 		[self setInputModeLastChosenPreference];
 		[self setInputMode:@"iKeyEx:__KeyboardChooser"];
-		longPressedInternationalKey = NO;
 	} else
 		Original(UIKeyboardImpl_setInputModeToNextInPreferredList)(self, _cmd);
+	longPressedInternationalKey = 0;
 }
 
 //------------------------------------------------------------------------------
@@ -482,7 +482,16 @@ DefineHook(NSArray*, UIKeyboardGetSupportedInputModes) {
 
 //------------------------------------------------------------------------------
 
+#if TARGET_IPHONE_SIMULATOR
 void nlist(const char*, struct nlist[]);
+#endif
+
+static void fixInputMode () {
+	if ([@"iKeyEx:__KeyboardChooser" isEqualToString:UIKeyboardGetCurrentInputMode()]) {
+		UIKeyboardImpl* impl = [UIKeyboardImpl sharedInstance];
+		[impl setInputMode:[impl inputModeLastChosen]];
+	}
+}
 
 void initialize () {
 	NSAutoreleasePool* pool = [NSAutoreleasePool new];
@@ -520,6 +529,15 @@ void initialize () {
 	InstallObjCInstanceHook(UIKeyboardLayoutStar_class, @selector(longPressAction), UIKeyboardLayoutStar_longPressAction);
 	InstallObjCInstanceHook(UIKeyboardLayoutRoman_class, @selector(longPressAction), UIKeyboardLayoutRoman_longPressAction);
 	InstallObjCInstanceHook(UIKeyboardImpl_class, @selector(setInputModeToNextInPreferredList), UIKeyboardImpl_setInputModeToNextInPreferredList);
+	
+	CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL,
+									(CFNotificationCallback)IKXFlushConfigDictionary,
+									CFSTR("hk.kennytm.iKeyEx3.FlushConfigDictionary"),
+									NULL, CFNotificationSuspensionBehaviorDrop);
+	CFNotificationCenterAddObserver(CFNotificationCenterGetLocalCenter(), NULL,
+									(CFNotificationCallback)fixInputMode,
+									CFSTR("UIApplicationWillTerminateNotification"),
+									NULL, CFNotificationSuspensionBehaviorDeliverImmediately);
 	
 	[pool drain];
 }

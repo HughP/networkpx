@@ -33,7 +33,7 @@
 #import <UIKit/UIKit.h>
 #import <UIKit/UIKit2.h>
 #import "libiKeyEx.h"
-#import <pthread.h>
+#include <libkern/OSAtomic.h>
 
 extern BOOL IKXIsiKeyExMode(NSString* modeString) {
 	return [modeString hasPrefix:@"iKeyEx:"];
@@ -42,31 +42,56 @@ extern BOOL IKXIsInternalMode(NSString* modeString) {
 	return [modeString hasPrefix:@"iKeyEx:__"];
 }
 
-static NSDictionary* _IKXConfigDictionary;
-static pthread_mutex_t _IKXConfigDictionaryLock = PTHREAD_MUTEX_INITIALIZER;
+static NSDictionary* _IKXConfigDictionary = nil;
+static int _IKXKeyboardChooserPref = 3, _IKXConfirmWithSpacePref = 2;
 extern NSDictionary* IKXConfigDictionary() {
-	pthread_mutex_lock(&_IKXConfigDictionaryLock);
-	if (_IKXConfigDictionary == nil)
-		_IKXConfigDictionary = [[NSDictionary alloc] initWithContentsOfFile:IKX_LIB_PATH@"/Config.plist"];
-	pthread_mutex_unlock(&_IKXConfigDictionaryLock);
+	if (_IKXConfigDictionary == nil) {
+		NSDictionary* temp_IKXConfigDictionary = [[NSDictionary alloc] initWithContentsOfFile:IKX_LIB_PATH@"/Config.plist"];
+		if (!OSAtomicCompareAndSwapPtrBarrier(nil, temp_IKXConfigDictionary, (void*volatile*)&_IKXConfigDictionary))
+			[temp_IKXConfigDictionary release];
+	}
 	return _IKXConfigDictionary;
 }
 
 extern void IKXFlushConfigDictionary() {
-	pthread_mutex_lock(&_IKXConfigDictionaryLock);
-	[_IKXConfigDictionary release];
-	_IKXConfigDictionary = nil;
-	pthread_mutex_unlock(&_IKXConfigDictionaryLock);
+	if (_IKXConfigDictionary != nil) {
+		NSDictionary* temp_IKXConfigDictionary = _IKXConfigDictionary;
+		if (OSAtomicCompareAndSwapPtrBarrier(temp_IKXConfigDictionary, nil, (void*volatile*)&_IKXConfigDictionary)) {
+			_IKXKeyboardChooserPref = 3;
+			_IKXConfirmWithSpacePref = 2;
+			[temp_IKXConfigDictionary release];
+		}
+	}
+}
+extern int IKXKeyboardChooserPreference() { 
+	if (_IKXKeyboardChooserPref >= 3) {
+		NSString* kbChooser = [IKXConfigDictionary() objectForKey:@"kbChooser"];
+		_IKXKeyboardChooserPref = kbChooser ? [kbChooser integerValue] : 1;
+	}
+	return _IKXKeyboardChooserPref;
+}
+extern BOOL IKXConfirmWithSpacePreference() {
+	if (_IKXConfirmWithSpacePref >= 2) {
+		NSNumber* confWithSpace = [IKXConfigDictionary() objectForKey:@"confirmWithSpace"];
+		_IKXConfirmWithSpacePref = confWithSpace ? [confWithSpace boolValue] : 1;
+	}
+	return _IKXConfirmWithSpacePref;
 }
 
 //------------------------------------------------------------------------------
 
 extern NSString* IKXLayoutReference(NSString* modeString) {
-	return [[[IKXConfigDictionary() objectForKey:@"modes"] objectForKey:modeString] objectForKey:@"layout"];
+	if ([modeString isEqualToString:@"iKeyEx:__KeyboardChooser"])
+		return @"__KeyboardChooser";
+	else
+		return [[[IKXConfigDictionary() objectForKey:@"modes"] objectForKey:modeString] objectForKey:@"layout"];
 }
 
 extern NSString* IKXInputManagerReference(NSString* modeString) {
-	return [[[IKXConfigDictionary() objectForKey:@"modes"] objectForKey:modeString] objectForKey:@"manager"];
+	if ([modeString isEqualToString:@"iKeyEx:__KeyboardChooser"])
+		return @"=en_US";
+	else
+		return [[[IKXConfigDictionary() objectForKey:@"modes"] objectForKey:modeString] objectForKey:@"manager"];
 }
 
 extern NSBundle* IKXLayoutBundle(NSString* layoutReference) {
@@ -110,3 +135,4 @@ extern NSString* IKXNameOfMode(NSString* modeString) {
 		
 	}
 }
+

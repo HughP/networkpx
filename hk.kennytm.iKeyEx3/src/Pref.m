@@ -33,8 +33,15 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #import <Preferences/Preferences.h>
 #import <UIKit/UIKit2.h>
 #import "libiKeyEx.h"
+#include <notify.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+
+#define LS(key) ([selfBundle localizedStringForKey:(key) value:nil table:@"iKeyEx"])
 
 static NSArray* allSupportedModesSorted = nil;
+static NSMutableDictionary* configDict = nil;
+static BOOL configMutated = NO;
 
 static NSComparisonResult sortByMovingIKXKeyboardsToFront(NSString* a, NSString* b, NSString* priortyLang) {
 	BOOL ai = IKXIsiKeyExMode(a), bi = IKXIsiKeyExMode(b);
@@ -55,6 +62,30 @@ static void recomputeAllModes() {
 	allSupportedModesSorted = [[UIKeyboardGetSupportedInputModes() sortedArrayUsingFunction:(void*)sortByMovingIKXKeyboardsToFront context:curLang] retain];
 }
 
+static NSUInteger setKeyboards(UIKeyboardImpl* impl, NSArray* keyboards) {
+	if ([keyboards count] == 0)
+		keyboards = [NSArray arrayWithObject:@"en_US"];
+	UIKeyboardSetActiveInputModes(keyboards);
+	[impl setInputModePreference];
+	[impl setInputMode:[keyboards lastObject]];
+	return [keyboards count];
+}
+
+static void saveConfig() {
+	if (configMutated) {
+		NSString* configPath = IKX_LIB_PATH@"/Config.plist";
+		if ([configDict writeToFile:configPath atomically:YES]) {
+			configMutated = NO;
+			chmod([configPath UTF8String], 0666);
+			notify_post("hk.kennytm.iKeyEx3.FlushConfigDictionary");
+		} else
+			NSLog(@"iKeyEx: Warning: Failed to save '%@'. All configs will be lost.", configPath);
+	}
+}
+static NSMutableDictionary* mutableConfigDict() {
+	configMutated = YES;
+	return configDict;
+}
 
 
 @interface iKeyExEditKeyboardController : PSListController {
@@ -63,7 +94,6 @@ static void recomputeAllModes() {
 	NSArray* imeRefs;
 	NSArray* imeTitles;
 	
-	NSMutableDictionary* configDict;
 	NSMutableDictionary* subConfigDict;
 	NSString* modeName;
 }
@@ -117,8 +147,17 @@ static void recomputeAllModes() {
 	return self;
 }
 -(void)suspend {
-	if ([[subConfigDict objectForKey:@"name"] length] == 0)
-		[[configDict objectForKey:@"modes"] removeObjectForKey:modeName];
+	if ([[subConfigDict objectForKey:@"name"] length] == 0) {
+		[[mutableConfigDict() objectForKey:@"modes"] removeObjectForKey:modeName];
+		NSArray* activeModes = UIKeyboardGetActiveInputModes();
+		NSUInteger curModeLoc = [activeModes indexOfObject:modeName];
+		if (curModeLoc != NSNotFound) {
+			NSMutableArray* newActiveModes = [activeModes mutableCopy];
+			[newActiveModes removeObjectAtIndex:curModeLoc];
+			setKeyboards([UIKeyboardImpl sharedInstance], newActiveModes);
+			[newActiveModes release];
+		}
+	}
 	[self.specifier->target performSelector:@selector(reloadSpecifiers)];
 	[super suspend];
 }
@@ -128,15 +167,14 @@ static void recomputeAllModes() {
 	[imeRefs release];
 	[imeTitles release];
 	[modeName release];
-	[configDict release];
 	[super dealloc];
 }
 -(NSString*)ime { return [subConfigDict objectForKey:@"manager"]; }
--(void)setIme:(NSString*)x { [subConfigDict setObject:x forKey:@"manager"]; }
+-(void)setIme:(NSString*)x { configMutated = YES; [subConfigDict setObject:(x?:@"=en_US") forKey:@"manager"]; }
 -(NSString*)layout { return [subConfigDict objectForKey:@"layout"]; }
--(void)setLayout:(NSString*)x { [subConfigDict setObject:x forKey:@"layout"]; }
+-(void)setLayout:(NSString*)x { configMutated = YES; [subConfigDict setObject:(x?:@"=en_US") forKey:@"layout"]; }
 -(NSString*)displayName { return [subConfigDict objectForKey:@"name"]; }
--(void)setDisplayName:(NSString*)x { if ([x length] > 0) [subConfigDict setObject:x forKey:@"name"]; }
+-(void)setDisplayName:(NSString*)x { if ([x length] > 0) { configMutated = YES; [subConfigDict setObject:x forKey:@"name"]; } }
 
 -(void)deleteMode {
 	// This will indirectly tell -suspend to delete this mode.
@@ -147,15 +185,14 @@ static void recomputeAllModes() {
 -(NSArray*)specifiers {
 	if (_specifiers == nil) {
 		PSSpecifier* selfSpec = self.specifier;
-		configDict = [[selfSpec->target performSelector:@selector(configDict)] retain];
 		modeName = [[selfSpec propertyForKey:@"modeName"] retain];
-		BOOL modeNameWasNil = modeName == nil;
+		BOOL modeNameWasNil = (modeName == nil);
 		if (modeNameWasNil) {
 			CFUUIDRef uuid = CFUUIDCreate(NULL);
 			CFStringRef uuidString = CFUUIDCreateString(NULL, uuid);
 			modeName = [[@"iKeyEx:" stringByAppendingString:(NSString*)uuidString] retain];
 			subConfigDict = [NSMutableDictionary dictionaryWithObjectsAndKeys:@"=en_US", @"layout", @"=en_US", @"manager", @"", @"name", nil];
-			[[configDict objectForKey:@"modes"] setObject:subConfigDict forKey:modeName];
+			[[mutableConfigDict() objectForKey:@"modes"] setObject:subConfigDict forKey:modeName];
 			CFRelease(uuidString);
 			CFRelease(uuid);
 		} else {
@@ -164,26 +201,30 @@ static void recomputeAllModes() {
 		
 		NSMutableArray* specs = [NSMutableArray arrayWithObject:[PSSpecifier emptyGroupSpecifier]];
 		
-		PSSpecifier* layoutSpec = [PSSpecifier preferenceSpecifierNamed:@"Layout" target:self set:@selector(setLayout:) get:@selector(layout) detail:[PSListItemsController class] cell:PSLinkListCell edit:Nil];
+		NSBundle* selfBundle = [self bundle];
+		
+		PSSpecifier* layoutSpec = [PSSpecifier preferenceSpecifierNamed:LS(@"Layout") target:self set:@selector(setLayout:) get:@selector(layout) detail:[PSListItemsController class] cell:PSLinkListCell edit:Nil];
 		layoutSpec.titleDictionary = [NSDictionary dictionaryWithObjects:layoutTitles forKeys:layoutRefs];
 		layoutSpec.values = layoutRefs;
 		[specs addObject:layoutSpec];
 		
-		PSSpecifier* imeSpec = [PSSpecifier preferenceSpecifierNamed:@"Input manager" target:self set:@selector(setIme:) get:@selector(ime) detail:[PSListItemsController class] cell:PSLinkListCell edit:Nil];
+		PSSpecifier* imeSpec = [PSSpecifier preferenceSpecifierNamed:LS(@"Input manager") target:self set:@selector(setIme:) get:@selector(ime) detail:[PSListItemsController class] cell:PSLinkListCell edit:Nil];
 		imeSpec.titleDictionary = [NSDictionary dictionaryWithObjects:imeTitles forKeys:imeRefs];
 		imeSpec.values = imeRefs;
 		[specs addObject:imeSpec];
 		
-		PSSpecifier* displayNameSpec = [PSSpecifier preferenceSpecifierNamed:@"Name" target:self set:@selector(setDisplayName:) get:@selector(displayName) detail:[PSDetailController class] cell:PSLinkListCell edit:[PSTextEditingPane class]];
+		PSSpecifier* displayNameSpec = [PSSpecifier preferenceSpecifierNamed:LS(@"Name") target:self set:@selector(setDisplayName:) get:@selector(displayName) detail:[PSDetailController class] cell:PSLinkListCell edit:[PSTextEditingPane class]];
 		[specs addObject:displayNameSpec];
 		
 		if (!modeNameWasNil) {
 			[specs addObject:[PSSpecifier emptyGroupSpecifier]];
 			
-			PSConfirmationSpecifier* deleteSpec = [PSConfirmationSpecifier preferenceSpecifierNamed:@"Delete" target:self set:NULL get:NULL detail:Nil cell:PSButtonCell edit:Nil];
+			NSString* delStr = LS(@"Delete");
+			
+			PSConfirmationSpecifier* deleteSpec = [PSConfirmationSpecifier preferenceSpecifierNamed:delStr target:self set:NULL get:NULL detail:Nil cell:PSButtonCell edit:Nil];
 			deleteSpec->action = @selector(deleteMode);
 			[deleteSpec setProperty:(id)kCFBooleanTrue forKey:@"isDestructive"];
-			[deleteSpec setupWithDictionary:[NSDictionary dictionaryWithObjectsAndKeys:@"Delete", @"okTitle", @"Cancel", @"cancelTitle", nil]];
+			[deleteSpec setupWithDictionary:[NSDictionary dictionaryWithObjectsAndKeys:delStr, @"okTitle", LS(@"Cancel"), @"cancelTitle", nil]];
 			[specs addObject:deleteSpec];
 		}
 		
@@ -196,16 +237,9 @@ static void recomputeAllModes() {
 
 
 @interface iKeyExMixAndMatchController : PSListController {
-	NSMutableDictionary* configDict;
 }
 @end
 @implementation iKeyExMixAndMatchController
--(id)initForContentSize:(CGSize)size {
-	if ((self = [super initForContentSize:size]))
-		configDict = [[NSMutableDictionary alloc] initWithContentsOfFile:IKX_LIB_PATH@"/Config.plist"];
-	return self;
-}
--(NSMutableDictionary*)configDict { return configDict; }
 -(NSArray*)specifiers {
 	if (_specifiers == nil) {
 		NSMutableArray* specs = [NSMutableArray array];
@@ -221,9 +255,11 @@ static void recomputeAllModes() {
 		
 		[specs sortUsingSelector:@selector(titleCompare:)];
 		
+		NSBundle* selfBundle = [self bundle];
+		
 		NSArray* topSpecs = [NSArray arrayWithObjects:
 							 [PSSpecifier emptyGroupSpecifier],
-							 [PSSpecifier preferenceSpecifierNamed:@"Create" target:self set:NULL get:NULL detail:[iKeyExEditKeyboardController class] cell:PSLinkCell edit:Nil],
+							 [PSSpecifier preferenceSpecifierNamed:LS(@"Make") target:self set:NULL get:NULL detail:[iKeyExEditKeyboardController class] cell:PSLinkCell edit:Nil],
 							 [PSSpecifier emptyGroupSpecifier],
 							 nil];
 		[specs insertObjects:topSpecs atIndexes:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(0, 3)]];
@@ -233,14 +269,8 @@ static void recomputeAllModes() {
 	return _specifiers;
 }
 -(void)suspend {
-	[configDict writeToFile:IKX_LIB_PATH@"/Config.plist" atomically:NO];
-	IKXFlushConfigDictionary();
 	recomputeAllModes();
 	[super suspend];
-}
--(void)dealloc {
-	[configDict release];
-	[super dealloc];
 }
 @end
 
@@ -347,6 +377,228 @@ static void recomputeAllModes() {
 
 #pragma mark -
 
+@interface ClearCachePane : PSEditingPane<UITableViewDataSource, UITableViewDelegate, UIActionSheetDelegate> {
+	NSMutableArray* filenames[4];
+	NSFileManager* fman;
+	NSMutableArray* selectedIndexPaths;
+	UITableView* table;
+}
+@end
+@implementation ClearCachePane
+-(BOOL)drawLabel { return NO; }
+-(void)dealloc {
+	for (unsigned i = 0; i < sizeof(filenames)/sizeof(NSMutableArray*); ++ i)
+		[filenames[i] release];
+	[fman release];
+	[selectedIndexPaths release];
+	[super dealloc];
+}
+-(id)initWithFrame:(CGRect)frame {
+	if ((self = [super initWithFrame:frame])) {
+		fman = [[NSFileManager defaultManager] retain];
+		
+		for (unsigned i = 0; i < sizeof(filenames)/sizeof(NSMutableArray*); ++ i)
+			filenames[i] = [NSMutableArray new];
+		
+		for (NSString* fn in [fman contentsOfDirectoryAtPath:IKX_SCRAP_PATH error:NULL]) {
+			if ([fn hasPrefix:@"iKeyEx::cache::"]) {
+				NSString* substring = [fn substringFromIndex:strlen("iKeyEx::cache::")];
+				if ([substring hasPrefix:@"ime::"]) {
+					if (![substring hasSuffix:@".kns"])
+						[filenames[1] addObject:fn];
+				} else if ([substring hasPrefix:@"layout::"])
+					[filenames[0] addObject:fn];
+				else if ([substring hasPrefix:@"phrase::"])
+					[filenames[2] addObject:fn];
+				else
+					[filenames[3] addObject:fn];
+			}
+		}
+		
+		table = [[UITableView alloc] initWithFrame:frame style:UITableViewStyleGrouped];
+		table.editing = YES;
+		table.allowsSelectionDuringEditing = YES;
+		table.dataSource = self;
+		table.delegate = self;
+		[self addSubview:table];
+		[table release];
+	}
+	return self;
+}
+
+-(UITableViewCell*)tableView:(UITableView*)tableView cellForRowAtIndexPath:(NSIndexPath*)indexPath {
+	NSUInteger sect = indexPath.section;
+	NSBundle* selfBundle = [self->_delegate bundle];
+	
+	if (sect == 0) {
+		UITableViewCell* cell = [tableView dequeueReusableCellWithIdentifier:@"del"];
+		if (cell == nil)
+			cell = [[[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"del"] autorelease];
+		NSUInteger selCount = [[tableView indexPathsForSelectedRows] count];
+		UILabel* textLabel = cell.textLabel;
+		textLabel.text =  [NSString stringWithFormat:LS(selCount == 1 ? @"Delete %u cache file" : @"Delete %u cache files"), selCount];
+		textLabel.textAlignment = UITextAlignmentCenter;
+		return cell;
+	} else {
+		UITableViewCell* cell = [tableView dequeueReusableCellWithIdentifier:@"."];
+		if (cell == nil)
+			cell = [[[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"."] autorelease];
+		
+		NSString* fn = [filenames[sect-1] objectAtIndex:indexPath.row];
+		NSUInteger fnlen = [fn length];
+		NSUInteger thirdDoubleColon = [fn rangeOfString:@"::" options:0 range:NSMakeRange(strlen("iKeyEx::cache::"), fnlen-strlen("iKeyEx::cache::"))].location;
+		if (thirdDoubleColon == NSNotFound)
+			thirdDoubleColon = strlen("iKeyEx::cache::")-2;
+		thirdDoubleColon += 2;
+		NSUInteger firstDot = [fn rangeOfString:@"." options:0 range:NSMakeRange(thirdDoubleColon, fnlen-thirdDoubleColon)].location;
+		if (firstDot == NSNotFound)
+			firstDot = fnlen;
+		NSString* fnn = [fn substringWithRange:NSMakeRange(thirdDoubleColon, firstDot - thirdDoubleColon)];
+		NSUInteger fourthColon = [fnn rangeOfString:@"::"].location;
+		NSString* language = nil;
+		if (fourthColon != NSNotFound) {
+			language = [fnn substringToIndex:fourthColon];
+			fnn = [fnn substringFromIndex:fourthColon+2];
+		}
+		if ([fnn isEqualToString:@"__Internal"])
+			fnn = LS(@"Built-in");
+		else if ([fnn hasPrefix:@"iKeyEx:"])
+			fnn = [fnn substringFromIndex:strlen("iKeyEx:")];
+		if (language != nil) {
+			if ([language isEqualToString:@"zh-Hant"])
+				language = LS(@"Traditional Chinese");
+			else if ([language isEqualToString:@"zh-Hans"])
+				language = LS(@"Simplified Chinese");
+			else
+				language = [[NSLocale currentLocale] displayNameForKey:NSLocaleIdentifier value:language];
+			fnn = [NSString stringWithFormat:@"%@ (%@)", fnn, language];
+		}
+		cell.textLabel.text = fnn;
+		return cell;
+	}
+}
+-(NSInteger)numberOfSectionsInTableView:(UITableView*)tableView {
+	return sizeof(filenames)/sizeof(NSMutableArray*) + 1;
+}
+-(NSInteger)tableView:(UITableView*)tableView numberOfRowsInSection:(NSInteger)section {
+	if (section == 0)
+		return 1;
+	else
+		return [filenames[section-1] count];
+}
+-(UITableViewCellEditingStyle)tableView:(UITableView*)tableView editingStyleForRowAtIndexPath:(NSIndexPath*)indexPath {
+	return indexPath.section ? 3 : UITableViewCellEditingStyleNone;
+}
+-(NSString*)tableView:(UITableView*)tableView titleForHeaderInSection:(NSInteger)section {
+	static NSString* const headers[] = {@"Layout", @"Input manager", @"Phrase table", @"Others"};
+	if (section > 0 && [filenames[section-1] count] > 0) {
+		NSBundle* selfBundle = [self->_delegate bundle];
+		return LS(headers[section-1]);
+	} else
+		return nil;
+}
+-(void)tableView:(UITableView*)tableView didSelectRowAtIndexPath:(NSIndexPath*)indexPath {
+	if (indexPath.section > 0) {
+		[tableView reloadRowsAtIndexPaths:[NSArray arrayWithObject:[NSIndexPath indexPathForRow:0 inSection:0]] withRowAnimation:UITableViewRowAnimationNone];
+	} else {
+		NSArray* tempSelectedIndexPaths = [tableView indexPathsForSelectedRows];
+		NSUInteger cacheCount = [tempSelectedIndexPaths count]-1;
+		if (cacheCount > 0) {
+			[selectedIndexPaths release];
+			selectedIndexPaths = [tempSelectedIndexPaths mutableCopy];
+			NSBundle* selfBundle = [self->_delegate bundle];
+			NSString* selfTitle = [NSString stringWithFormat:LS(cacheCount == 1 ? @"Delete %u cache file" : @"Delete %u cache files"), cacheCount];
+			UIActionSheet* sheet = [[UIActionSheet alloc] initWithTitle:nil delegate:self cancelButtonTitle:LS(@"Cancel") destructiveButtonTitle:selfTitle otherButtonTitles:nil];
+			[sheet showInView:self];
+			[sheet release];
+		}
+		[tableView deselectRowAtIndexPath:indexPath animated:YES];
+	}
+}
+-(void)tableView:(UITableView*)tableView didDeselectRowAtIndexPath:(NSIndexPath*)indexPath {
+	if (indexPath.section > 0) {
+		[tableView reloadRowsAtIndexPaths:[NSArray arrayWithObject:[NSIndexPath indexPathForRow:0 inSection:0]] withRowAnimation:UITableViewRowAnimationNone];
+	}
+}
+-(void)actionSheet:(UIActionSheet*)actionSheet clickedButtonAtIndex:(NSInteger)buttonIndex {
+	if (buttonIndex == actionSheet.destructiveButtonIndex) {
+		NSUInteger topIndex = NSNotFound;
+		NSUInteger i = 0;
+		NSUInteger fnCount = sizeof(filenames)/sizeof(NSMutableArray*);
+		NSMutableIndexSet* indicesToRemove[fnCount];
+		for (unsigned i = 0; i < fnCount; ++ i)
+			indicesToRemove[i] = [NSMutableIndexSet indexSet];
+			
+		for (NSIndexPath* idx in selectedIndexPaths) {
+			NSUInteger sect = idx.section;
+			if (sect > 0) {
+				NSError* err = nil;
+				NSUInteger row = idx.row;
+				[fman changeCurrentDirectoryPath:IKX_SCRAP_PATH];
+				NSString* fn = [filenames[sect-1] objectAtIndex:row];
+				if (![fman removeItemAtPath:fn error:&err])
+					NSLog(@"iKeyEx Prefs: Warning: Cannot remove '%@' for reason '%@'.", fn, [err localizedDescription]);
+				[indicesToRemove[sect-1] addIndex:row];
+			} else
+				topIndex = i;
+			++ i;
+		}
+		for (unsigned i = 0; i < fnCount; ++ i)
+			[filenames[i] removeObjectsAtIndexes:indicesToRemove[i]];
+		[selectedIndexPaths removeObjectAtIndex:topIndex];
+		[table deleteRowsAtIndexPaths:selectedIndexPaths withRowAnimation:UITableViewRowAnimationLeft];
+		
+		[selectedIndexPaths release];
+		selectedIndexPaths = nil;
+	}
+}
+@end
+
+
+
+
+@interface CharAndPhraseTablesController : PSListController
+@end
+@implementation CharAndPhraseTablesController
+-(NSArray*)specifiers {
+	if (_specifiers == nil) {
+		_specifiers = [[self loadSpecifiersFromPlistName:@"Characters and phrase tables" target:self] retain];
+	}
+	return _specifiers;
+}
+
+-(NSArray*)list:(PSSpecifier*)spec internalName:(NSString*)internalName {
+	if (spec == nil)
+		return nil;
+	
+	NSFileManager* fman = [NSFileManager defaultManager];
+	NSString* path = [IKX_LIB_PATH@"/Phrase" stringByAppendingPathComponent:[spec propertyForKey:@"lang"]];
+	NSArray* fns = [[fman contentsOfDirectoryAtPath:path error:NULL] pathsMatchingExtensions:[NSArray arrayWithObject:[spec propertyForKey:@"type"]]];
+	NSMutableArray* res = [NSMutableArray arrayWithObject:internalName];
+	for (NSString* fn in fns) {
+		NSString* f = [fn stringByDeletingPathExtension];
+		if (![f isEqualToString:@"__Internal"])
+			[res addObject:f];
+	}
+	return res;
+}
+-(NSArray*)listValues:(PSSpecifier*)spec { return [self list:spec internalName:@"__Internal"]; }
+-(NSArray*)listTitles:(PSSpecifier*)spec {
+	NSBundle* selfBundle = [self bundle];
+	return [self list:spec internalName:LS(@"Built-in")];
+}
+-(NSString*)get:(PSSpecifier*)spec {
+	return [[[configDict objectForKey:@"phrase"] objectForKey:[spec propertyForKey:@"lang"]]
+			objectAtIndex:([@"chrs" isEqualToString:[spec propertyForKey:@"type"]] ? 1 : 0)] ?: @"__Internal";
+}
+-(void)set:(NSString*)val :(PSSpecifier*)spec {
+	[[[mutableConfigDict() objectForKey:@"phrase"] objectForKey:[spec propertyForKey:@"lang"]]
+	 replaceObjectAtIndex:([@"chrs" isEqualToString:[spec propertyForKey:@"type"]] ? 1 : 0) withObject:val];
+}
+@end
+
+
+
 @interface iKeyExPrefListController : PSListController {
 	NSUInteger modesCount;
 	UIKeyboardImpl* impl;
@@ -355,6 +607,13 @@ static void recomputeAllModes() {
 @implementation iKeyExPrefListController
 -(id)initForContentSize:(CGSize)size {
 	if ((self = [super initForContentSize:size])) {
+		configDict = [[NSMutableDictionary alloc] initWithContentsOfFile:IKX_LIB_PATH@"/Config.plist"];
+		if (configDict == nil) {
+			// Generate an initial miminum structure.
+			configDict = [[NSMutableDictionary alloc] initWithObjectsAndKeys:[NSMutableDictionary dictionary], @"modes", [NSMutableDictionary dictionary], @"phrase", @"1", @"kbChooser", nil];
+			configMutated = YES;
+			saveConfig();
+		}
 		impl = [UIKeyboardImpl sharedInstance];
 		recomputeAllModes();
 	}
@@ -368,16 +627,18 @@ static void recomputeAllModes() {
 	return _specifiers;
 }
 
--(NSString*)keyboardCount {
-	return [NSString stringWithFormat:@"%u", modesCount];
-}
--(void)setKeyboards:(NSArray*)keyboards {
-	if ([keyboards count] == 0)
-		keyboards = [NSArray arrayWithObject:@"en_US"];
-	modesCount = [keyboards count];
-	UIKeyboardSetActiveInputModes(keyboards);
-	[impl setInputModePreference];
-	[impl setInputMode:[keyboards lastObject]];
+-(NSString*)keyboardCount { return [NSString stringWithFormat:@"%u", modesCount]; }
+-(void)setKeyboards:(NSArray*)keyboards { modesCount = setKeyboards(impl, keyboards); }
+
+-(NSString*)kbChooser { return [configDict objectForKey:@"kbChooser"] ?: @"2"; }
+-(void)setKbChooser:(NSString*)chsr { [mutableConfigDict() setObject:chsr forKey:@"kbChooser"]; }
+
+-(NSNumber*)confirmWithSpace { return [configDict objectForKey:@"confirmWithSpace"] ?: (id)kCFBooleanTrue; }
+-(void)setConfirmWithSpace:(NSNumber*)val { [mutableConfigDict() setObject:val forKey:@"confirmWithSpace"]; }
+
+-(void)suspend {
+	saveConfig();
+	[super suspend];
 }
 
 @end

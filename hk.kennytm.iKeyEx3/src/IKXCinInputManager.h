@@ -33,20 +33,23 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef IKXCININPUTMANAGER_H
 #define IKXCININPUTMANAGER_H
 
-#ifndef IKXCININPUTMANAGER_MM
-typedef void __IKXCinInputManagerPatTrie;
-#endif
-
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKeyboardInputManager.h>
+#import "libiKeyEx.h"
+
+@class IKXCandidateComputer;
 
 @interface IKXCinInputManager : UIKeyboardInputManager {
-	__IKXCinInputManagerPatTrie* pat;
+@private
+	// Immutable stuff.
+	IKXCandidateComputer* candidate_computer;
 	
-	NSMutableString* ime_string;
-	NSMutableString* remaining_string;
+	// Mutable stuff.
+	NSMutableString* input_string;
+	BOOL wait_for_remaining_input;
+	BOOL shown_completion;
+	unsigned valid_input_string_length;
 }
 @end
-
 
 #endif

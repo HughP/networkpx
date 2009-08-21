@@ -31,7 +31,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #if TARGET_IPHONE_SIMULATOR
-#define IKX_SCRAP_PATH @"/Users/kennytm/Library/Application Support/iPhone Simulator/User/Library/Keyboard/"
+#define IKX_SCRAP_PATH @"/Users/kennytm/Library/Application Support/iPhone Simulator/User/Library/Keyboard"
 #define IKX_LIB_PATH @"/Users/kennytm/XCodeProjects/iKeyEx/svn/trunk/hk.kennytm.iKeyEx3/deb/Library/iKeyEx"
 #else
 #define IKX_SCRAP_PATH @"/var/mobile/Library/Keyboard"
@@ -43,6 +43,14 @@ extern "C" {
 #endif
 
 @class NSString, NSDictionary, NSBundle;
+	
+#ifndef IKX_PATTRIE_HPP
+	typedef void* IKXPhraseCompletionTableRef;
+	typedef void* IKXCharacterTableRef;
+#else
+	typedef IKX::ReadonlyPatTrie<IKX::PhraseContent>* IKXPhraseCompletionTableRef;
+	typedef std::tr1::unordered_map<std::string, unsigned>* IKXCharacterTableRef;
+#endif
 
 /// Check if an input mode is an iKeyEx mode.
 BOOL IKXIsiKeyExMode(NSString* modeString);
@@ -53,6 +61,9 @@ BOOL IKXIsInternalMode(NSString* modeString);
 NSDictionary* IKXConfigDictionary();
 /// Reload the config dictionary from disk.
 void IKXFlushConfigDictionary();
+	
+	int IKXKeyboardChooserPreference();
+	BOOL IKXConfirmWithSpacePreference();
 
 /// Get the layout reference of an iKeyEx input mode.
 NSString* IKXLayoutReference(NSString* modeString);
@@ -69,6 +80,17 @@ void IKXPlaySound();
 
 /// Get name of input mode.
 NSString* IKXNameOfMode(NSString* modeString);
+	
+	
+	IKXPhraseCompletionTableRef IKXPhraseCompletionTableCreate(NSString* language);	///< Create default phrase completion table for specific language.
+	NSArray* IKXPhraseCompletionTableSearch(IKXPhraseCompletionTableRef completionTable, NSString* prefix);	///< Retrieve a list of completions, sorted by frequency, of a Chinese phrase prefix.
+	void IKXPhraseCompletionTableDealloc(IKXPhraseCompletionTableRef completionTable);	///< Delete the phrase completion table.
+	
+	IKXCharacterTableRef IKXCharacterTableCreate(NSString* language);
+	void IKXCharacterTableSort(IKXCharacterTableRef charTable, NSMutableArray* chars);
+	void IKXCharacterTableDealloc(IKXCharacterTableRef charTable);
+	
+	
 
 #if __cplusplus
 }

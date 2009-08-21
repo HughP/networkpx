@@ -1,7 +1,9 @@
 title = "iKeyEx";
 items = (
 
-{	cell = PSLinkListCell;
+{ cell = PSGroupCell; },
+
+{ cell = PSLinkListCell;
 	label = Keyboards;
 	get = keyboardCount;
 	set = "setKeyboards:";
@@ -10,8 +12,38 @@ items = (
 
 { cell = PSGroupCell; },
 
-{	cell = PSLinkCell;
-	label = "Mix and Match";
+{ cell = PSLinkCell;
+	label = "Mix and match";
 	detail = iKeyExMixAndMatchController; },
+
+{ cell = PSGroupCell; },
+
+{ cell = PSLinkListCell;
+	label = "Keyboard chooser";
+	validTitles = (
+		"Invoke by Holding int'l key",
+		"Invoke by Tapping int'l key",
+		"Disable");
+	validValues = (1, 0, 2);
+	shortTitles = (Hold, Tap, Disable);
+	detail = PSListItemsController;
+	get = kbChooser;
+	set = "setKbChooser:"; },
+
+{ cell = PSLinkCell;
+	label = "Delete cache";
+	detail = PSDetailController;
+	pane = ClearCachePane; },
+
+{ cell = PSGroupCell; label = ".cin Input method engine"; },
+
+{ cell = PSSwitchCell;
+	label = "Confirm with spacebar";
+	get = confirmWithSpace;
+	set = "setConfirmWithSpace:"; },
+
+{ cell = PSLinkCell;
+	label = "Characters and phrase tables";
+	detail = CharAndPhraseTablesController; },
 
 );

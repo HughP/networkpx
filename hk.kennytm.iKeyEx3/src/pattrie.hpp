@@ -48,29 +48,32 @@ namespace IKX {
 
 	template <typename Self, size_t T_bits>
 	struct CommonContent {
-		bool bit (unsigned n) const {
+		template <typename U>
+		bool bit (unsigned n, const U& trie) const {
 			unsigned the_byte = n / T_bits;
 			
 			if (the_byte >= IKX_THIS->length())
 				return false;
 			else
-				return (IKX_THIS->key_data()[the_byte] >> (T_bits - 1 - n%T_bits)) & 1;
+				return (IKX_THIS->key_data(trie)[the_byte] >> (T_bits - 1 - n%T_bits)) & 1;
 		}
 		
 		size_t bit_length() const { return IKX_THIS->length() * T_bits; }
 		
-		size_t first_different_bit(const Self& other) const {
+		template <typename U>
+		size_t first_different_bit(const Self& other, const U& trie) const {
 			bool i_am_shorter = IKX_THIS->length() < other.length();
 			size_t limit = i_am_shorter ? IKX_THIS->length() : other.length();
+			typeof(IKX_THIS->key_data(trie)) my_key_data = IKX_THIS->key_data(trie), other_key_data = other.key_data(trie);
 			for (size_t object = 0; object < limit; ++ object) {
-				unsigned diff = IKX_THIS->key_data()[object] ^ other.key_data()[object];
+				unsigned diff = my_key_data[object] ^ other_key_data[object];
 				if (diff) {
 					size_t res = __builtin_clz(diff) + T_bits - sizeof(unsigned)*8;
 					return object * T_bits + res;
 				}
 			}
 			size_t true_limit = i_am_shorter ? other.length() : IKX_THIS->length();
-			typeof(IKX_THIS->key_data()) data = i_am_shorter ? other.key_data() : IKX_THIS->key_data();
+			typeof(IKX_THIS->key_data(trie)) data = i_am_shorter ? other_key_data : my_key_data;
 			for (size_t object = limit; object < true_limit; ++ object) {
 				if (data[object]) {
 					size_t res = __builtin_clz(data[object]) + T_bits - sizeof(unsigned)*8;
@@ -80,79 +83,145 @@ namespace IKX {
 			return true_limit * T_bits;
 		}
 		
-		bool operator==(const Self& other) const {
+		template <typename U>
+		bool equal(const Self& other, const U& trie) const {
 			return (IKX_THIS->length() == other.length() &&
-					std::memcmp(IKX_THIS->key_data(), other.key_data(), IKX_THIS->length()*T_bits/8) == 0);
+					std::memcmp(IKX_THIS->key_data(trie), other.key_data(trie), IKX_THIS->length()*T_bits/8) == 0);
 		}
 		
-		bool has_prefix(const Self& other) const {
+		template <typename U>
+		bool has_prefix(const Self& other, const U& trie) const {
 			return (IKX_THIS->length() >= other.length() &&
-					std::memcmp(IKX_THIS->key_data(), other.key_data(), other.length()*T_bits/8) == 0);
+					std::memcmp(IKX_THIS->key_data(trie), other.key_data(trie), other.length()*T_bits/8) == 0);
 		}
 	};
 
 	struct IMEContent : public CommonContent<IMEContent, 8> {
-		static const size_t kLocalCandidateLimit = 6;
+		static const size_t kLocalCandidateStringLength = sizeof(const uint16_t*)/sizeof(uint16_t);
 		
-		struct {
-			char content[15];
-			unsigned char length;
-		} key;
-		struct {
-			size_t length;
-			unsigned external_candidates;
-			wchar_t local_candidates[kLocalCandidateLimit];
-		} value;
+		char key_content[9];
+		unsigned char key_length : 7;
+		
+		unsigned char candidate_is_pointer : 1;
+		uint16_t candidate_string_length;
+		union {
+			uint32_t external;
+			uint16_t local[kLocalCandidateStringLength];
+			const uint16_t* pointer;	// Assume 32-bit system.
+		} candidates;
 		
 		IMEContent() { std::memset(this, 0, sizeof(*this)); }
-		size_t length() const { return key.length; }
-		const char* key_data() const { return key.content; }
+		size_t length() const { return key_length; }
+		
+		template <typename U>
+		const char* key_data(const U&) const { return key_content; }
 		
 		template<typename U>
 		void append(const IMEContent& other, U& trie) {
-			if (value.length < kLocalCandidateLimit-1) {
-				value.local_candidates[value.length] = other.value.local_candidates[0];
-			} else if (value.length == kLocalCandidateLimit-1) {
-				// Move local_candidates to external_candidates.
-				value.external_candidates = trie.insert_extra_content(value.local_candidates, kLocalCandidateLimit);
-				trie.insert_extra_content(other.value.local_candidates, 1);
-			} else
-				// FIXME: We assume candidates of the same sequence are grouped together.
-				trie.insert_extra_content(other.value.local_candidates, 1);
-			++ value.length;
+			const uint16_t* other_cands = other.candidates_array(trie);
+			if (candidate_string_length + other.candidate_string_length < kLocalCandidateStringLength) {
+				candidates.local[candidate_string_length] = 0;
+				for (unsigned i = 0; i < other.candidate_string_length; ++ i)
+					candidates.local[candidate_string_length + 1 + i] = other_cands[i];
+			} else if (candidate_string_length <= kLocalCandidateStringLength) {
+				candidates.external = trie.append_extra_content(candidates.local, candidate_string_length);
+				trie.append_separator_to_extra_content();
+				trie.append_extra_content(other_cands, other.candidate_string_length);
+			} else {
+				uint16_t* tmp = candidate_string_length < 128 ? reinterpret_cast<uint16_t*>(alloca(candidate_string_length*sizeof(uint16_t))) : new uint16_t[candidate_string_length];
+				
+				std::memcpy(tmp, trie.extra_content() + candidates.external, candidate_string_length*sizeof(uint16_t));
+				trie.delete_extra_content(candidates.external, candidate_string_length);
+				candidates.external = trie.append_extra_content(tmp, candidate_string_length);
+				trie.append_separator_to_extra_content();
+				trie.append_extra_content(other_cands, other.candidate_string_length);
+				
+				if (candidate_string_length >= 128)
+					delete[] tmp;
+			}
+			candidate_string_length += 1 + other.candidate_string_length;
 		}
 		
 		template<typename U>
-		const wchar_t* candidates(const U& trie) const {
-			if (value.length < kLocalCandidateLimit)
-				return value.local_candidates;
+		const uint16_t* candidates_array(const U& trie) const {
+			if (candidate_is_pointer)
+				return candidates.pointer;
+			if (candidate_string_length <= kLocalCandidateStringLength)
+				return candidates.local;
 			else
-				return trie.extra_content() + value.external_candidates;
+				return trie.extra_content() + candidates.external;
 		}
 		
-		IMEContent(const char* a, wchar_t b) {
-			key.length = std::strlen(a);
-			std::memcpy(key.content, a, key.length);
-			value.length = 1;
-			value.external_candidates = 0;
-			value.local_candidates[0] = b;
+		template<typename U>
+		void localize(U& trie) {
+			if (candidate_is_pointer) {
+				candidate_is_pointer = 0;
+				if (candidate_string_length <= kLocalCandidateStringLength)
+					std::memcpy(candidates.local, candidates.pointer, candidate_string_length * sizeof(uint16_t));
+				else
+					candidates.external = trie.append_extra_content(candidates.pointer, candidate_string_length);
+			}
+		}
+		
+		IMEContent(const uint8_t* key, size_t keylen, const uint16_t* ptr, size_t pxlen) : key_length(std::min(keylen, sizeof(key_content))), candidate_is_pointer(1), candidate_string_length(pxlen) {
+			std::memcpy(key_content, key, key_length);
+			candidates.pointer = ptr;
 		}
 		
 		bool operator<(const IMEContent& other) const {
-			return key.length < other.key.length || (key.length == other.key.length && std::memcmp(key.content, other.key.content, key.length) < 0);
+			return key_length < other.key_length || (key_length == other.key_length && std::memcmp(key_content, other.key_content, key_length) < 0);
 		}
+		
+		unsigned extra_content_index() const { return !candidate_is_pointer && candidate_string_length > kLocalCandidateStringLength ? candidates.external : ~0u; }
+		void set_extra_content_index(unsigned new_index) { candidates.external = new_index; }
+		size_t extra_content_length() const { return candidate_string_length; }
 	};
 
 	struct PhraseContent : public CommonContent<PhraseContent, 16> {
-		uint16_t len;
-		uint16_t characters[15];
+		static const size_t kLocalCandidateStringLength = sizeof(const uint16_t*)/sizeof(uint16_t);
 		
+		uint8_t len;
+		bool is_pointer;
+		__attribute__((packed))
+		union {
+			uint32_t external;
+			uint16_t local[kLocalCandidateStringLength];
+			const uint16_t* pointer;
+		} phrase;
+			
 		PhraseContent() { std::memset(this, 0, sizeof(*this)); }
+		PhraseContent(const uint16_t* ptr, size_t pxlen) : len(pxlen), is_pointer(true) { phrase.pointer = ptr; }
 		size_t length() const { return len; }
-		const uint16_t* key_data() const { return characters; }
+		
+		template<typename U>
+		const uint16_t* key_data(const U& trie) const {
+			if (is_pointer)
+				return phrase.pointer;
+			else if (len <= kLocalCandidateStringLength)
+				return phrase.local;
+			else
+				return trie.extra_content() + phrase.external;
+		}
 		
 		template<typename U>
 		void append(const PhraseContent& other, U& trie) {}
+		
+		unsigned extra_content_index() const { return is_pointer || len <= kLocalCandidateStringLength ? ~0u : phrase.external; }
+		void set_extra_content_index(unsigned new_index) { phrase.external = new_index; }
+		size_t extra_content_length() const { return len; }
+				
+		template<typename U>
+		void localize(U& trie) {
+			if (len <= kLocalCandidateStringLength)
+				std::memcpy(phrase.local, phrase.pointer, len * sizeof(uint16_t));
+			else
+				phrase.external = trie.append_extra_content(phrase.pointer, len);
+		}
+		
+		template<typename U>
+		const uint16_t* phrase_string(const U& trie) const {
+			return key_data(trie);
+		}
 	};
 
 	//------------------------------------------------------------------------------------------------------------------------------------------
@@ -161,15 +230,18 @@ namespace IKX {
 
 	struct Node {
 		typedef unsigned ID;
-		static const ID InvalidID = ~0u;
+		static const ID InvalidID = 0xFFFFFF;
 		
-		size_t position;
-		ID left;
-		ID right;
+		unsigned short position : 16;
+		__attribute__((packed))
+		unsigned left : 24;
+		unsigned right : 24;
+				
+		bool is_data() const { return right == InvalidID; }
+		unsigned data() const { return position | left << 16; }
+		void set_data(unsigned d) { position = d & 0xFFFF; left = d >> 16; }
 		
-		bool is_data() const { return left == InvalidID && right == InvalidID; }
-		
-		Node(size_t pos = 0, ID l = InvalidID, ID r = InvalidID) : position(pos), left(l), right(r) {}
+		Node(unsigned d) : right(InvalidID) { set_data(d); }
 	};
 
 	template<typename Self, typename T>
@@ -177,7 +249,7 @@ namespace IKX {
 	protected:
 		bool calculate_direction(const Node& node, const T& element) const {
 			if (node.position < element.bit_length())
-				return element.bit(node.position);
+				return element.bit(node.position, *IKX_THIS);
 			else
 				return false;
 		}
@@ -210,7 +282,8 @@ namespace IKX {
 		}
 		
 	public:
-		std::vector<T> prefix_search(const T& prefix, size_t limit = ~0u) const {
+		/// Return a vector of elements that matches the specified prefix.
+		std::vector<T> prefix_search(const T& prefix, std::vector<unsigned>* content_indices = NULL) const {
 			std::vector<T> retval;
 			if (IKX_THIS->node_list_length() != 0) {
 				Node::ID top;
@@ -219,7 +292,7 @@ namespace IKX {
 				const Node* _node_list = IKX_THIS->node_list();
 				const T* _content_list = IKX_THIS->content_list();
 				
-				if (_content_list[_node_list[p].position].has_prefix(prefix)) {
+				if (_content_list[_node_list[p].data()].has_prefix(prefix, *IKX_THIS)) {
 					std::vector<const Node*> node_stack;
 					node_stack.push_back(_node_list + top);
 					
@@ -228,9 +301,9 @@ namespace IKX {
 						node_stack.pop_back();
 						
 						if (node->is_data()) {
-							retval.push_back(_content_list[node->position]);
-							if (retval.size() >= limit)
-								break;
+							retval.push_back(_content_list[node->data()]);
+							if (content_indices != NULL)
+								content_indices->push_back(node->data());
 						} else {
 							node_stack.push_back(_node_list + node->left);
 							node_stack.push_back(_node_list + node->right);
@@ -241,15 +314,24 @@ namespace IKX {
 			return retval;
 		}
 		
-		bool contains(const T& element, T* result = NULL) const {
-			if (IKX_THIS->node_list_length() == 0) {
+		bool contains_prefix(const T& prefix) const {
+			if (IKX_THIS->node_list_length() == 0)
 				return false;
-			} else {
-				Content_ID kid = IKX_THIS->node_list()[walk(element)].position;
-				const T& res = IKX_THIS->content_list()[kid];
-				if (res == element) {
-					if (result != NULL) 
+			else
+				return IKX_THIS->content_list()[IKX_THIS->node_list()[walk(prefix)].data()].has_prefix(prefix, IKX_THIS);
+		}
+		
+		bool contains(const T& element, T* result = NULL, unsigned* index = NULL) const {
+			if (IKX_THIS->node_list_length() == 0)
+				return false;
+			else {
+				unsigned content_index = IKX_THIS->node_list()[walk(element)].data();
+				const T& res = IKX_THIS->content_list()[content_index];
+				if (res.equal(element, *IKX_THIS)) {
+					if (result != NULL)
 						*result = res;
+					if (index != NULL)
+						*index = content_index;
 					return true;
 				} else
 					return false;
@@ -259,7 +341,7 @@ namespace IKX {
 
 	template<typename T>
 	class WritablePatTrie : public CommonPatTrie<WritablePatTrie<T>, T> {
-		std::vector<wchar_t> extra_content;
+		std::vector<uint16_t> extra_content_list;
 		std::vector<Node> nodes;
 		std::vector<T> content;
 		
@@ -271,13 +353,31 @@ namespace IKX {
 		
 		WritablePatTrie() {}
 		
-		unsigned insert_extra_content(const wchar_t* cnt, size_t count) {
-			unsigned retval = extra_content.size(); 
-			extra_content.reserve(retval + count);
-			for (size_t i = 0; i < count; ++ i)
-				extra_content.push_back(cnt[i]);
+		unsigned append_extra_content(const uint16_t* cnt, size_t length) {
+			unsigned retval = extra_content_list.size();
+			if (length == 1)
+				extra_content_list.push_back(*cnt);
+			else
+				extra_content_list.insert(extra_content_list.end(), cnt, cnt+length);
 			return retval;
 		}
+		void append_separator_to_extra_content() {
+			extra_content_list.push_back(0);
+		}
+		void delete_extra_content(unsigned index, size_t length) {
+			if (extra_content_list.size() == index + length)
+				extra_content_list.resize(index);
+		}
+		void compact_extra_content() {
+			std::vector<uint16_t> old_extra_content = extra_content_list;
+			extra_content_list.clear();
+			for (typename std::vector<T>::iterator it = content.begin(); it != content.end(); ++ it) {
+				unsigned old_index = it->extra_content_index();
+				if (old_index != ~0u)
+					it->set_extra_content_index(append_extra_content(&(old_extra_content[old_index]), it->extra_content_length()));
+			}
+		}
+		const uint16_t* extra_content() const { return &(extra_content_list.front()); }
 		
 		void insert(const T& element) {
 			if (node_list_length() == 0) {
@@ -285,18 +385,19 @@ namespace IKX {
 				nodes.push_back(Node(0));
 			} else {
 				Node::ID best = walk(element);
-				T& k = content[nodes[best].position];
-				size_t crit_bit_pos = element.first_different_bit(k);
+				T& k = content[nodes[best].data()];
+				size_t crit_bit_pos = element.first_different_bit(k, *this);
 				
 				if (crit_bit_pos >= std::max(element.bit_length(), k.bit_length())) {
 					k.append(element, *this);
 					return;
 				}
 				
-				bool elem_bit = element.bit(crit_bit_pos);
+				bool elem_bit = element.bit(crit_bit_pos, *this);
 				
 				nodes.push_back(Node(content.size()));
 				content.push_back(element);
+//				content.back().localize(*this);
 				
 				Node::ID p = 0;
 				while (true) {
@@ -305,7 +406,7 @@ namespace IKX {
 						break;
 					if (q.position > crit_bit_pos)
 						break;
-					p = element.bit(q.position) ? q.left : q.right;
+					p = element.bit(q.position, *this) ? q.left : q.right;
 				}
 				
 				nodes.push_back(nodes[p]);
@@ -325,7 +426,7 @@ namespace IKX {
 			
 			size_t temp;
 			std::fread(&temp, sizeof(size_t), 1, f);
-			if (temp != 3141526535u) {
+			if (temp != 3141592654u) {
 				syslog(LOG_WARNING, "The file '%s' is not a valid Patricia-tree cache.", filename);
 				goto done;
 			}
@@ -341,7 +442,7 @@ namespace IKX {
 			while (!feof(f)) {
 				wchar_t w[256];
 				size_t actual = std::fread(w, sizeof(wchar_t), 256, f);
-				extra_content.insert(extra_content.end(), w, w+actual);
+				extra_content_list.insert(extra_content_list.end(), w, w+actual);
 			}
 			
 	done:
@@ -352,7 +453,7 @@ namespace IKX {
 			std::FILE* f = std::fopen(filename, "wb");
 			
 			// Magic of our file.
-			size_t temp = 3141526535u;
+			size_t temp = 3141592654u;
 			std::fwrite(&temp, sizeof(size_t), 1, f);
 			
 			// Nodes.
@@ -366,7 +467,7 @@ namespace IKX {
 			std::fwrite(&(content.front()), sizeof(T), temp, f);
 			
 			// Extra contents.
-			std::fwrite(&(extra_content.front()), sizeof(wchar_t), extra_content.size(), f);
+			std::fwrite(&(extra_content_list.front()), sizeof(uint16_t), extra_content_list.size(), f);
 			
 			std::fclose(f);
 		}
@@ -374,7 +475,7 @@ namespace IKX {
 
 	template <typename T>
 	class ReadonlyPatTrie : public CommonPatTrie<ReadonlyPatTrie<T>, T> {
-		const wchar_t* _extra_content;
+		const uint16_t* _extra_content;
 		size_t _nodes_size;
 		const Node* _nodes;
 		size_t _content_size;
@@ -390,7 +491,7 @@ namespace IKX {
 		const T* content_list() const { return _content; }
 		size_t content_list_length() const { return _content_size; }
 		
-		const wchar_t* extra_content() const { return _extra_content; }
+		const uint16_t* extra_content() const { return _extra_content; }
 		
 		bool valid() const { return fildes >= 0; }
 		
@@ -409,7 +510,7 @@ namespace IKX {
 			
 			if (_map == NULL)
 				syslog(LOG_WARNING, "iKeyEx failed to map '%s' into memory.", filename);
-			else if (*reinterpret_cast<size_t*>(_map) != 3141526535u) {
+			else if (*reinterpret_cast<size_t*>(_map) != 3141592654u) {
 				syslog(LOG_WARNING, "The file '%s' is not a valid Patricia-tree cache.", filename);
 				munmap(_map, filesize);
 			} else
@@ -430,7 +531,7 @@ namespace IKX {
 			_xmap += sizeof(size_t);
 			_content = reinterpret_cast<const T*>(_xmap);
 			_xmap += _content_size * sizeof(T);
-			_extra_content = reinterpret_cast<const wchar_t*>(_xmap);
+			_extra_content = reinterpret_cast<const uint16_t*>(_xmap);
 		}
 		
 		~ReadonlyPatTrie() {
@@ -516,3 +617,4 @@ int main(int argc, const char* argv[]) {
 }
 
 #endif
+
