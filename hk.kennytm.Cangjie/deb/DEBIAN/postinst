@@ -1,0 +1,9 @@
+#!/bin/bash
+
+if [[ $1 == configure || $1 == abort-remove ]]; then
+	/usr/bin/iKeyEx-KBMan register "倉頡三代" "倉頡三代" "倉頡QWERTY鍵盤" "倉頡三代";
+	/usr/bin/iKeyEx-KBMan register "倉頡五代" "倉頡五代" "倉頡QWERTY鍵盤" "倉頡五代";
+	/usr/bin/iKeyEx-KBMan activate "倉頡三代";
+	echo "已啟用「倉頡三代」。如要變更，請到「設定 → iKeyEx → 鍵盤」。";
+fi
+exit 0;

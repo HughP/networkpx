@@ -1,0 +1,8 @@
+#!/bin/bash
+
+if [[ $1 == remove ]]; then
+	/usr/bin/iKeyEx-KBMan unregister-layout "倉頡QWERTY鍵盤";
+	/usr/bin/iKeyEx-KBMan unregister-ime "倉頡五代";
+	/usr/bin/iKeyEx-KBMan unregister-ime "倉頡三代";
+fi
+exit 0;

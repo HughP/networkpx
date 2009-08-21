@@ -1,0 +1,42 @@
+Alphabet = {
+	labels = (
+		("手", "田", "水", "口", "廿", "卜", "山", "戈", "人", "心"),
+		("日", "尸", "木", "火", "土", "竹", "十", "大", "中"),
+		("Ｚ", "難", "金", "女", "月", "弓", "一")
+	);
+	texts = (
+		(q, w, e, r, t, y, u, i, o, p),
+		(a, s, d, f, g, h, j, k, l),
+		(z, x, c, v, b, n, m)
+	);	
+};
+Numbers = {
+	texts = (
+		(1, 2, 3, 4, 5, 6, 7, 8, 9, 0),
+		("＠", "／", "：", "；", "（", "）", "$", "「", "」", "\""),
+		("。", "，", "、", "？", "！")
+	);
+	shiftedTexts = (
+		("[", "]", "{", "}", "#", "%", "-", "*", "+", "="),
+		("_", "\\", "|", "~", "＜", "＞", "¥", "€", "£", "•"),
+		(".", ",", "'", "?", "!")
+	);
+	arrangement = Alt;
+	rowIndentation = Alt;
+};
+URL = {
+	labels = ("=Alphabet[0]", "=Alphabet[1]", "=Alphabet[2]", (".", "/", ".com"));
+	texts = ("=Alphabet[0]", "=Alphabet[1]", "=Alphabet[2]", (".", "/", ".com"));
+	arrangement = "Default|WithURLRow4";
+	hasSpaceKey = 0;
+};
+SMSAddressing = {
+	labels = ("=Alphabet[0]", "=Alphabet[1]", "=Alphabet[2]");
+	texts = ("=Alphabet[0]", "=Alphabet[1]", "=Alphabet[2]");
+};
+EmailAddress = {
+	labels = ("=Alphabet[0]", "=Alphabet[1]", "=Alphabet[2]", (" ", "@", "."));
+	texts = ("=Alphabet[0]", "=Alphabet[1]", "=Alphabet[2]", (" ", "@", "."));
+	arrangement = "Default|WithURLRow4";
+	hasSpaceKey = 0;
+};
