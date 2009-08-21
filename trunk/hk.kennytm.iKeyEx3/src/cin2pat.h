@@ -34,9 +34,16 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define IKX_CIN2PAT_H
 
 #if __cplusplus
-extern "C"
+extern "C" {
 #endif
 
-void IKXConvertCinToPat(const char* cin_path, const char* pat_path);
+	void IKXConvertCinToPat(const char* cin_path, const char* pat_path, const char* keys_path);
+	void IKXConvertPhraseToPat(const char* txt_path, const char* pat_path);
+	
+	void IKXConvertChineseWordTrieToPhrase(const char* dat_path, int longer_than_1, const char* txt_path, const char* alt_txt_path);
+	
+#if __cplusplus
+}
+#endif
 
 #endif
