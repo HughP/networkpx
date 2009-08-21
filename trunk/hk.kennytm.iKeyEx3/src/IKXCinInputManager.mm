@@ -250,10 +250,10 @@ __attribute__((visibility("hidden")))
 	[super dealloc];
 }
 
--(NSString*)addInput:(NSString*)input flags:(unsigned int)flags point:(CGPoint)pt firstDelete:(unsigned*)charsToDelete fromVariantKey:(BOOL)isVar {
+-(NSString*)addInput:(NSString*)rawInput flags:(unsigned int)flags point:(CGPoint)pt firstDelete:(unsigned*)charsToDelete fromVariantKey:(BOOL)isVar {
 	UIKeyboardImpl* impl = [UIKeyboardImpl sharedInstance];
 	*charsToDelete = 0;
-	input = [input lowercaseString];
+	NSString* input = [rawInput lowercaseString];
 	unsigned input_length = [input length];
 	
 	if (wait_for_remaining_input)
@@ -261,19 +261,20 @@ __attribute__((visibility("hidden")))
 	else if (input_length > 0 && ![impl shouldSkipCandidateSelection]) {
 		unichar first_char = [input characterAtIndex:0];
 		
-		bool still_valid = false;
-		if (![candidate_computer isValidKey:first_char]) {
+		if (flags == 1 || isVar || ![candidate_computer isValidKey:first_char]) {
 			[impl acceptCurrentCandidate];
-			[self setInput:@""];			
-		} else {
-			still_valid = [input_string length] <= valid_input_string_length;
-			[input_string appendString:input];
-			if (still_valid) {
-				if ([candidate_computer containsPrefix:input_string])
-					valid_input_string_length += input_length;
-				else
-					still_valid = false;
-			}
+			NSString* stringToAppend = [[self inputString] stringByAppendingString:rawInput] ?: rawInput;
+			[self setInput:@""];
+			return stringToAppend;			
+		} 
+		
+		bool still_valid = [input_string length] <= valid_input_string_length;
+		[input_string appendString:input];
+		if (still_valid) {
+			if ([candidate_computer containsPrefix:input_string])
+				valid_input_string_length += input_length;
+			else
+				still_valid = false;
 		}
 		[impl setShift:NO];
 		if (still_valid)
