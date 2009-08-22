@@ -613,8 +613,8 @@ static NSMutableDictionary* mutableConfigDict() {
 			configDict = [[NSMutableDictionary alloc] initWithObjectsAndKeys:
 						  [NSMutableDictionary dictionary], @"modes",
 						  [NSMutableDictionary dictionaryWithObjectsAndKeys:
-						   [NSArray arrayWithObjects:@"__Internal", @"__Internal"], @"zh-Hant",
-						   [NSArray arrayWithObjects:@"__Internal", @"__Internal"], @"zh-Hans",
+						   [NSArray arrayWithObjects:@"__Internal", @"__Internal", nil], @"zh-Hant",
+						   [NSArray arrayWithObjects:@"__Internal", @"__Internal", nil], @"zh-Hans",
 						  nil], @"phrase",
 						  @"1", @"kbChooser",
 						  nil];
