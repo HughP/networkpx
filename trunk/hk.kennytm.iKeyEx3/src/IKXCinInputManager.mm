@@ -46,6 +46,7 @@ using namespace IKX;
 #include "cin2pat.h"
 #import <ActorKit/ActorKit.h>
 #include <pthread.h>
+#include <sys/time.h>
 
 @implementation CandWord (iKeyEx_Extensions)
 -(NSUInteger)length { return [[self word] length]; }
@@ -211,8 +212,18 @@ __attribute__((visibility("hidden")))
 }
 -(NSArray*)commit {
 	pthread_mutex_lock(&cclock);
-	while (computing)
-		pthread_cond_wait(&cccond, &cclock);
+	if (computing) {
+		struct timeval now;
+		gettimeofday(&now, NULL);
+		struct timespec timeout;
+		timeout.tv_nsec = 0;
+		timeout.tv_sec = now.tv_sec + 2;
+		int err = pthread_cond_timedwait(&cccond, &cclock, &timeout);
+		if (err == ETIMEDOUT)
+			NSLog(@"iKeyEx: Error: The candidates list took too much time to compute.");
+		else if (err != 0)
+			NSLog(@"iKeyEx: Error: pthread_cond_timedwait returned %d, which should not happen. Close all windows and leave this building now.", err);
+	}
 	NSArray* cands = current_candidates;
 	pthread_mutex_unlock(&cclock);
 	return cands;
