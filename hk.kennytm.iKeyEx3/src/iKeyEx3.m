@@ -229,7 +229,7 @@ DefineHiddenHook(NSData*, GetKeyboardDataFromBundle, NSString* keyboardName, NSB
 				NSMutableDictionary* layoutDict = [NSMutableDictionary dictionaryWithContentsOfFile:layoutPath];
 				if (orientation == nil)
 					orientation = extractOrientation(keyboardName, lastDash);
-				UIKBKeyboard* keyboard = IKXUIKBKeyboardFromLayoutPlist(layoutDict, [keyboardName substringFromIndex:lastDash], [@"Landscape" isEqualToString:orientation]);
+				UIKBKeyboard* keyboard = IKXUIKBKeyboardFromLayoutPlist(layoutDict, [keyboardName substringFromIndex:lastDash+1], [@"Landscape" isEqualToString:orientation]);
 				NSMutableData* dataToSave = [NSMutableData data];
 				NSKeyedArchiver* archiver = [[NSKeyedArchiver alloc] initForWritingWithMutableData:dataToSave];
 				[archiver encodeObject:keyboard forKey:@"keyboard"];

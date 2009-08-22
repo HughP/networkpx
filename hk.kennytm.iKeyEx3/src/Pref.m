@@ -415,7 +415,7 @@ static void recomputeAllModes() {
 	for (NSString* fn in [fman contentsOfDirectoryAtPath:IKX_SCRAP_PATH error:NULL]) {
 		if ([fn hasPrefix:@"iKeyEx::cache::"]) {
 			NSString* substring = [fn substringFromIndex:strlen("iKeyEx::cache::")];
-			unsigned index;
+			unsigned index = 4;
 			NSString* displayName;
 			
 			if ([substring hasPrefix:@"ime::"]) {
