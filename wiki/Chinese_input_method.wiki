@@ -1,3 +1,6 @@
+#summary Features that iKeyEx supports for Chinese IME.
+#labels Phase-Implementation,Phase-Design
+
 = .cin Input Managers =
 Starting from iKeyEx 0.1-99d, .cin input managers are supported natively. The .cin format allows table-based IME, like Cangjie (倉頡), Pinyin (拼音) etc to be created. 
 
@@ -34,8 +37,10 @@ The phrase tables should be stored in `/Library/iKeyEx/Phrase/<Language>/` and e
 }}}
 The higher the character, the more frequent it appears.
 
-== Character tables ==
-Character table is used to calculate ordering in a candidate list. It must have an extension of `.chrs`.
+== Characters tables ==
+Characters table is used to calculate ordering in a candidate list. It must have an extension of `.chrs`.
+
+Each entry of a characters table should occupy no more than 2 UTF-16 code-points (The file itself should still be encoded in UTF-8, as above). The number of entry must be less than 2.1 billion (2^31^).
 
 The source of the character tables in iKeyEx Chinese Support package are
  * Traditional Chinese: http://technology.chtsai.org/charfreq/ (?)
