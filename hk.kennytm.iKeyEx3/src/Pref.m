@@ -57,11 +57,6 @@ static NSComparisonResult sortByMovingIKXKeyboardsToFront(NSString* a, NSString*
 		return NSOrderedDescending;
 }
 
-static void recomputeAllModes() {
-	NSString* curLang = [[NSLocale currentLocale] objectForKey:NSLocaleLanguageCode];
-	allSupportedModesSorted = [[UIKeyboardGetSupportedInputModes() sortedArrayUsingFunction:(void*)sortByMovingIKXKeyboardsToFront context:curLang] retain];
-}
-
 static NSUInteger setKeyboards(UIKeyboardImpl* impl, NSArray* keyboards) {
 	if ([keyboards count] == 0)
 		keyboards = [NSArray arrayWithObject:@"en_US"];
@@ -77,6 +72,7 @@ static void saveConfig() {
 		if ([configDict writeToFile:configPath atomically:YES]) {
 			configMutated = NO;
 			chmod([configPath UTF8String], 0666);
+			IKXFlushConfigDictionary();
 			notify_post("hk.kennytm.iKeyEx3.FlushConfigDictionary");
 		} else
 			NSLog(@"iKeyEx: Warning: Failed to save '%@'. All configs will be lost.", configPath);
@@ -86,6 +82,13 @@ static NSMutableDictionary* mutableConfigDict() {
 	configMutated = YES;
 	return configDict;
 }
+
+static void recomputeAllModes() {
+	saveConfig();
+	NSString* curLang = [[NSLocale currentLocale] objectForKey:NSLocaleLanguageCode];
+	allSupportedModesSorted = [[UIKeyboardGetSupportedInputModes() sortedArrayUsingFunction:(void*)sortByMovingIKXKeyboardsToFront context:curLang] retain];
+}
+
 
 
 @interface iKeyExEditKeyboardController : PSListController {
@@ -378,7 +381,8 @@ static NSMutableDictionary* mutableConfigDict() {
 #pragma mark -
 
 @interface ClearCachePane : PSEditingPane<UITableViewDataSource, UITableViewDelegate, UIActionSheetDelegate> {
-	NSMutableArray* filenames[4];
+	NSMutableArray* displayNames[5];
+	NSMutableDictionary* filenames[5];	// display name --> all related filenames.
 	NSFileManager* fman;
 	NSMutableArray* selectedIndexPaths;
 	UITableView* table;
@@ -387,56 +391,116 @@ static NSMutableDictionary* mutableConfigDict() {
 @implementation ClearCachePane
 -(BOOL)drawLabel { return NO; }
 -(void)dealloc {
-	for (unsigned i = 0; i < sizeof(filenames)/sizeof(NSMutableArray*); ++ i)
+	for (unsigned i = 0; i < sizeof(displayNames)/sizeof(NSMutableArray*); ++ i) {
+		[displayNames[i] release];
 		[filenames[i] release];
+	}
 	[fman release];
 	[selectedIndexPaths release];
 	[super dealloc];
 }
--(id)initWithFrame:(CGRect)frame {
-	if ((self = [super initWithFrame:frame])) {
-		fman = [[NSFileManager defaultManager] retain];
-		
-		for (unsigned i = 0; i < sizeof(filenames)/sizeof(NSMutableArray*); ++ i)
-			filenames[i] = [NSMutableArray new];
-		
-		for (NSString* fn in [fman contentsOfDirectoryAtPath:IKX_SCRAP_PATH error:NULL]) {
-			if ([fn hasPrefix:@"iKeyEx::cache::"]) {
-				NSString* substring = [fn substringFromIndex:strlen("iKeyEx::cache::")];
-				if ([substring hasPrefix:@"ime::"]) {
-					if (![substring hasSuffix:@".kns"])
-						[filenames[1] addObject:fn];
-				} else if ([substring hasPrefix:@"layout::"])
-					[filenames[0] addObject:fn];
-				else if ([substring hasPrefix:@"phrase::"])
-					[filenames[2] addObject:fn];
-				else
-					[filenames[3] addObject:fn];
-			}
-		}
-		
-		table = [[UITableView alloc] initWithFrame:frame style:UITableViewStyleGrouped];
-		table.editing = YES;
-		table.allowsSelectionDuringEditing = YES;
-		table.dataSource = self;
-		table.delegate = self;
-		[self addSubview:table];
-		[table release];
+-(void)setPreferenceSpecifier:(id)newSpec {
+	[super setPreferenceSpecifier:newSpec];
+	
+	fman = [[NSFileManager defaultManager] retain];
+	
+	for (unsigned i = 0; i < sizeof(displayNames)/sizeof(NSMutableArray*); ++ i) {
+		filenames[i] = [NSMutableDictionary new];
+		displayNames[i] = [NSMutableArray new];
 	}
-	return self;
+	
+	NSBundle* selfBundle = [self->_delegate bundle];
+	NSLocale* curLocale = [NSLocale currentLocale];
+	
+	for (NSString* fn in [fman contentsOfDirectoryAtPath:IKX_SCRAP_PATH error:NULL]) {
+		if ([fn hasPrefix:@"iKeyEx::cache::"]) {
+			NSString* substring = [fn substringFromIndex:strlen("iKeyEx::cache::")];
+			unsigned index;
+			NSString* displayName;
+			
+			if ([substring hasPrefix:@"ime::"]) {
+				index = 1;
+				displayName = [[substring substringFromIndex:strlen("ime::")] stringByDeletingPathExtension];
+			} else if ([substring hasPrefix:@"layout::"]) {
+				index = 0;
+				displayName = [substring substringFromIndex:strlen("layout::")];
+				if ([displayName hasPrefix:@"iKeyEx:"])
+					displayName = [displayName substringFromIndex:strlen("iKeyEx:")];				
+				
+				NSUInteger lastDash = [displayName rangeOfString:@"-" options:NSBackwardsSearch].location;
+				if (lastDash != NSNotFound) {
+					NSUInteger lastSecondDash = [displayName rangeOfString:@"-" options:NSBackwardsSearch range:NSMakeRange(0, lastDash-1)].location;
+					if (lastSecondDash != NSNotFound)
+						lastDash = lastSecondDash;
+					displayName = [displayName substringToIndex:lastDash];
+				}
+			} else if ([substring hasPrefix:@"phrase::"]) {
+				if ([substring hasSuffix:@".pat"])
+					index = 2;
+				else if ([substring hasSuffix:@".hash"])
+					index = 3;
+				displayName = [substring substringFromIndex:strlen("phrase::")];
+				NSUInteger fourthColon = [displayName rangeOfString:@"::"].location;
+				NSString* language = [displayName substringToIndex:fourthColon];
+				NSUInteger lastDot = [displayName rangeOfString:@"." options:NSBackwardsSearch
+														  range:NSMakeRange(fourthColon+2, [displayName length]-fourthColon-2)].location;
+				if (lastDot != NSNotFound) {
+					NSUInteger lastSecondDot = [displayName rangeOfString:@"." options:NSBackwardsSearch
+																	range:NSMakeRange(fourthColon+2, lastDot-fourthColon-2)].location;
+					if (lastSecondDot != NSNotFound)
+						lastDot = lastSecondDot;
+					displayName = [displayName substringWithRange:NSMakeRange(fourthColon+2, lastDot-fourthColon-2)];
+				} else
+					displayName = [displayName substringFromIndex:fourthColon+2];
+				
+				if ([@"__Internal" isEqualToString:displayName])
+					displayName = LS(@"Built-in");
+				
+				if ([@"zh-Hant" isEqualToString:language])
+					language = LS(@"Traditional Chinese");
+				else if ([@"zh-Hans" isEqualToString:language])
+					language = LS(@"Simplified Chinese");
+				else
+					language = [curLocale displayNameForKey:NSLocaleIdentifier value:language];
+				
+				displayName = [displayName stringByAppendingFormat:@" (%@)", language];
+				
+			} else {
+				index = 4;
+				displayName = substring;
+			}
+			
+			NSMutableArray* arr = [filenames[index] objectForKey:displayName];
+			if (arr == nil) {
+				arr = [NSMutableArray array];
+				[filenames[index] setObject:arr forKey:displayName];
+				[displayNames[index] addObject:displayName];
+			}
+			[arr addObject:fn];
+		}
+	}
+	
+	table = [[UITableView alloc] initWithFrame:self.frame style:UITableViewStyleGrouped];
+	table.editing = YES;
+	table.allowsSelectionDuringEditing = YES;
+	table.dataSource = self;
+	table.delegate = self;
+	[self addSubview:table];
+	[table release];
+	
 }
-
 -(UITableViewCell*)tableView:(UITableView*)tableView cellForRowAtIndexPath:(NSIndexPath*)indexPath {
 	NSUInteger sect = indexPath.section;
-	NSBundle* selfBundle = [self->_delegate bundle];
 	
 	if (sect == 0) {
+		NSBundle* selfBundle = [self->_delegate bundle];
+		
 		UITableViewCell* cell = [tableView dequeueReusableCellWithIdentifier:@"del"];
 		if (cell == nil)
 			cell = [[[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"del"] autorelease];
 		NSUInteger selCount = [[tableView indexPathsForSelectedRows] count];
 		UILabel* textLabel = cell.textLabel;
-		textLabel.text =  [NSString stringWithFormat:LS(selCount == 1 ? @"Delete %u cache file" : @"Delete %u cache files"), selCount];
+		textLabel.text = [NSString stringWithFormat:LS(selCount == 1 ? @"Delete %u cache entry" : @"Delete %u cache entries"), selCount];
 		textLabel.textAlignment = UITextAlignmentCenter;
 		return cell;
 	} else {
@@ -444,54 +508,25 @@ static NSMutableDictionary* mutableConfigDict() {
 		if (cell == nil)
 			cell = [[[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"."] autorelease];
 		
-		NSString* fn = [filenames[sect-1] objectAtIndex:indexPath.row];
-		NSUInteger fnlen = [fn length];
-		NSUInteger thirdDoubleColon = [fn rangeOfString:@"::" options:0 range:NSMakeRange(strlen("iKeyEx::cache::"), fnlen-strlen("iKeyEx::cache::"))].location;
-		if (thirdDoubleColon == NSNotFound)
-			thirdDoubleColon = strlen("iKeyEx::cache::")-2;
-		thirdDoubleColon += 2;
-		NSUInteger firstDot = [fn rangeOfString:@"." options:0 range:NSMakeRange(thirdDoubleColon, fnlen-thirdDoubleColon)].location;
-		if (firstDot == NSNotFound)
-			firstDot = fnlen;
-		NSString* fnn = [fn substringWithRange:NSMakeRange(thirdDoubleColon, firstDot - thirdDoubleColon)];
-		NSUInteger fourthColon = [fnn rangeOfString:@"::"].location;
-		NSString* language = nil;
-		if (fourthColon != NSNotFound) {
-			language = [fnn substringToIndex:fourthColon];
-			fnn = [fnn substringFromIndex:fourthColon+2];
-		}
-		if ([fnn isEqualToString:@"__Internal"])
-			fnn = LS(@"Built-in");
-		else if ([fnn hasPrefix:@"iKeyEx:"])
-			fnn = [fnn substringFromIndex:strlen("iKeyEx:")];
-		if (language != nil) {
-			if ([language isEqualToString:@"zh-Hant"])
-				language = LS(@"Traditional Chinese");
-			else if ([language isEqualToString:@"zh-Hans"])
-				language = LS(@"Simplified Chinese");
-			else
-				language = [[NSLocale currentLocale] displayNameForKey:NSLocaleIdentifier value:language];
-			fnn = [NSString stringWithFormat:@"%@ (%@)", fnn, language];
-		}
-		cell.textLabel.text = fnn;
+		cell.textLabel.text = [displayNames[sect-1] objectAtIndex:indexPath.row];
 		return cell;
 	}
 }
 -(NSInteger)numberOfSectionsInTableView:(UITableView*)tableView {
-	return sizeof(filenames)/sizeof(NSMutableArray*) + 1;
+	return sizeof(displayNames)/sizeof(NSMutableArray*) + 1;
 }
 -(NSInteger)tableView:(UITableView*)tableView numberOfRowsInSection:(NSInteger)section {
 	if (section == 0)
 		return 1;
 	else
-		return [filenames[section-1] count];
+		return [displayNames[section-1] count];
 }
 -(UITableViewCellEditingStyle)tableView:(UITableView*)tableView editingStyleForRowAtIndexPath:(NSIndexPath*)indexPath {
 	return indexPath.section ? 3 : UITableViewCellEditingStyleNone;
 }
 -(NSString*)tableView:(UITableView*)tableView titleForHeaderInSection:(NSInteger)section {
-	static NSString* const headers[] = {@"Layout", @"Input manager", @"Phrase table", @"Others"};
-	if (section > 0 && [filenames[section-1] count] > 0) {
+	static NSString* const headers[] = {@"Layout", @"Input manager", @"Phrase table", @"Characters table", @"Others"};
+	if (section > 0 && [displayNames[section-1] count] > 0) {
 		NSBundle* selfBundle = [self->_delegate bundle];
 		return LS(headers[section-1]);
 	} else
@@ -507,7 +542,7 @@ static NSMutableDictionary* mutableConfigDict() {
 			[selectedIndexPaths release];
 			selectedIndexPaths = [tempSelectedIndexPaths mutableCopy];
 			NSBundle* selfBundle = [self->_delegate bundle];
-			NSString* selfTitle = [NSString stringWithFormat:LS(cacheCount == 1 ? @"Delete %u cache file" : @"Delete %u cache files"), cacheCount];
+			NSString* selfTitle = [NSString stringWithFormat:LS(cacheCount == 1 ? @"Delete %u cache entry" : @"Delete %u cache entries"), cacheCount];
 			UIActionSheet* sheet = [[UIActionSheet alloc] initWithTitle:nil delegate:self cancelButtonTitle:LS(@"Cancel") destructiveButtonTitle:selfTitle otherButtonTitles:nil];
 			[sheet showInView:self];
 			[sheet release];
@@ -524,30 +559,36 @@ static NSMutableDictionary* mutableConfigDict() {
 	if (buttonIndex == actionSheet.destructiveButtonIndex) {
 		NSUInteger topIndex = NSNotFound;
 		NSUInteger i = 0;
-		NSUInteger fnCount = sizeof(filenames)/sizeof(NSMutableArray*);
+		NSUInteger fnCount = sizeof(displayNames)/sizeof(NSMutableArray*);
 		NSMutableIndexSet* indicesToRemove[fnCount];
 		for (unsigned i = 0; i < fnCount; ++ i)
 			indicesToRemove[i] = [NSMutableIndexSet indexSet];
 			
+		[fman changeCurrentDirectoryPath:IKX_SCRAP_PATH];
 		for (NSIndexPath* idx in selectedIndexPaths) {
 			NSUInteger sect = idx.section;
 			if (sect > 0) {
 				NSError* err = nil;
 				NSUInteger row = idx.row;
-				[fman changeCurrentDirectoryPath:IKX_SCRAP_PATH];
-				NSString* fn = [filenames[sect-1] objectAtIndex:row];
-				if (![fman removeItemAtPath:fn error:&err])
-					NSLog(@"iKeyEx Prefs: Warning: Cannot remove '%@' for reason '%@'.", fn, [err localizedDescription]);
+				for (NSString* fn in [filenames[sect-1] objectForKey:[displayNames[sect-1] objectAtIndex:row]])
+					if (![fman removeItemAtPath:fn error:&err])
+						NSLog(@"iKeyEx Prefs: Warning: Cannot remove '%@' for reason '%@'.", fn, [err localizedDescription]);
 				[indicesToRemove[sect-1] addIndex:row];
 			} else
 				topIndex = i;
 			++ i;
 		}
-		for (unsigned i = 0; i < fnCount; ++ i)
-			[filenames[i] removeObjectsAtIndexes:indicesToRemove[i]];
+		for (unsigned i = 0; i < fnCount; ++ i) {
+			NSArray* objs = [displayNames[i] objectsAtIndexes:indicesToRemove[i]];
+			[filenames[i] removeObjectsForKeys:objs];
+			[displayNames[i] removeObjectsAtIndexes:indicesToRemove[i]];
+		}
 		[selectedIndexPaths removeObjectAtIndex:topIndex];
+		for (NSIndexPath* idx in selectedIndexPaths)
+			[table deselectRowAtIndexPath:idx animated:NO];
 		[table deleteRowsAtIndexPaths:selectedIndexPaths withRowAnimation:UITableViewRowAnimationLeft];
-		
+		[table reloadRowsAtIndexPaths:[NSArray arrayWithObject:[NSIndexPath indexPathForRow:0 inSection:0]]
+					 withRowAnimation:UITableViewRowAnimationNone];
 		[selectedIndexPaths release];
 		selectedIndexPaths = nil;
 	}
@@ -619,7 +660,6 @@ static NSMutableDictionary* mutableConfigDict() {
 						  @"1", @"kbChooser",
 						  nil];
 			configMutated = YES;
-			saveConfig();
 		}
 		impl = [UIKeyboardImpl sharedInstance];
 		recomputeAllModes();

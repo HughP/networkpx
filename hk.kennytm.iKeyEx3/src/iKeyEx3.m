@@ -165,7 +165,7 @@ DefineHook(NSString*, UIKeyboardGetKBStarKeyboardName, NSString* mode, NSString*
 					@"Email"
 				};
 				
-				return [NSString stringWithFormat:@"%@-%@-%@", mode, orientation, typeName[type]];
+				return [NSString stringWithFormat:@"iKeyEx:%@-%@-%@", layoutRef, orientation, typeName[type]];
 			}
 		}
 	}

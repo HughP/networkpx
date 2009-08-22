@@ -21,5 +21,5 @@ Tap = Pulsar;
 "Phrase table" = "Tablas de frases";
 "Built-in" = "Built-in";
 "Delete cache" = "Borrar caché";
-"Delete %u cache file" = "Borrar %u archivo de caché";
-"Delete %u cache files" = "Borrar %u archivos de caché";
+"Delete %u cache entry" = "Borrar %u artículo de caché";
+"Delete %u cache entries" = "Borrar %u artículos de caché";
