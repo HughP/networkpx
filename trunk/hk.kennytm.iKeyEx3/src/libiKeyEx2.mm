@@ -40,38 +40,41 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <queue>
 #include <fstream>
 #include <string>
-#include <tr1/unordered_map>
+#include "hash.hpp"
 #import <Foundation/Foundation.h>
 #import "libiKeyEx.h"
 #import <UIKit/UIKit-Structs.h>
 
-extern "C" IKXPhraseCompletionTableRef IKXPhraseCompletionTableCreate(NSString* language) {
-	NSString* tableName = [[[IKXConfigDictionary() objectForKey:@"phrase"] objectForKey:language] objectAtIndex:0] ?: @"__Internal";
+// This ought to be one of the craziest template function I've written :p
+template <typename S, NSUInteger tableIndex, NSString*& extension, NSString*& cacheExt, NSString*& pinyinOrSinglechars, void(*conversionFunction)(const char* from, const char* to)>
+static inline S* PhraseTableCreate(NSString* language) {
+	NSString* tableName = [[[IKXConfigDictionary() objectForKey:@"phrase"] objectForKey:language] objectAtIndex:tableIndex] ?: @"__Internal";
 	
-	NSString* tableFn = [tableName stringByAppendingPathExtension:@"phrs"];
+	NSString* tableFn = [tableName stringByAppendingPathExtension:extension];
 	NSFileManager* fman = [NSFileManager defaultManager];
 	
 	NSString* srcPath = [NSString stringWithFormat:IKX_LIB_PATH@"/Phrase/%@/%@", language, tableFn];
 	NSString* altPath = [NSString stringWithFormat:IKX_SCRAP_PATH@"/iKeyEx::cache::phrase::%@::%@", language, tableFn];
+	
 	if ([fman fileExistsAtPath:altPath]) {
 		if ([fman fileExistsAtPath:srcPath])
 			[fman removeItemAtPath:altPath error:NULL];
 		else {
 			if (![fman moveItemAtPath:altPath toPath:srcPath error:NULL])
 				srcPath = altPath;
-		}
+		}		
 	}
 	
-	NSString* cachePath = [altPath stringByAppendingPathExtension:@"pat"];
+	NSString* cachePath = [altPath stringByAppendingPathExtension:cacheExt];
 	if (![fman fileExistsAtPath:cachePath]) {
 		// Try to create a cache file.
 		if (![fman fileExistsAtPath:srcPath]) {
 			// Oops even the source is absent. Try to create one if it's an internal table.
 			if ([tableName isEqualToString:@"__Internal"]) {
 				// Yes it's an internal table. Perform conversion.
-				NSString* datFn0 = [NSString stringWithFormat:@"Pinyin-Unigrams-%@", language];
+				NSString* datFn0 = [NSString stringWithFormat:@"%@-Unigrams-%@", pinyinOrSinglechars, language];
 				NSString* phrasePath = [UIKeyboardBundleForInputMode(language) pathForResource:datFn0 ofType:@"dat"];
-				IKXConvertChineseWordTrieToPhrase([phrasePath UTF8String], 1, [srcPath UTF8String], [altPath UTF8String]);
+				IKXConvertChineseWordTrieToPhrase([phrasePath UTF8String], 1 - tableIndex, [srcPath UTF8String], [altPath UTF8String]);
 				if (![fman fileExistsAtPath:srcPath])
 					srcPath = altPath;
 			} else {
@@ -81,12 +84,27 @@ extern "C" IKXPhraseCompletionTableRef IKXPhraseCompletionTableCreate(NSString* 
 			}
 		}
 		
-		// The srcPath should now confirmed to be exist, or is constructed. Now convert it to pattrie dump.
-		IKXConvertPhraseToPat([srcPath UTF8String], [cachePath UTF8String]);
+		conversionFunction([srcPath UTF8String], [cachePath UTF8String]);
 	}
 	
-	// The cache should now exist. Now just new the pattrie and return.
-	return new IKX::ReadonlyPatTrie<IKX::PhraseContent>([cachePath UTF8String]);
+	return new S([cachePath UTF8String]);
+}
+
+NSString* _IKXPhraseCompletionTable_extension = @"phrs";
+NSString* _IKXPhraseCompletionTable_cacheExt = @"pat";
+NSString* _IKXPhraseCompletionTable_pinyinOrSinglechars = @"Pinyin";
+
+NSString* _IKXCharacterTable_extension = @"chrs";
+NSString* _IKXCharacterTable_cacheExt = @"hash";
+NSString* _IKXCharacterTable_pinyinOrSinglechars = @"singleChar";
+
+extern "C" IKXPhraseCompletionTableRef IKXPhraseCompletionTableCreate(NSString* language) {
+	return PhraseTableCreate<
+		IKX::ReadonlyPatTrie<IKX::PhraseContent>, 0,
+		_IKXPhraseCompletionTable_extension,
+		_IKXPhraseCompletionTable_cacheExt,
+		_IKXPhraseCompletionTable_pinyinOrSinglechars,
+		&IKXConvertPhraseToPat>(language);
 }
 
 extern "C" void IKXPhraseCompletionTableDealloc(IKXPhraseCompletionTableRef completionTable) {
@@ -141,67 +159,36 @@ extern "C" NSArray* IKXPhraseCompletionTableSearch(IKXPhraseCompletionTableRef c
 }
 
 extern "C" IKXCharacterTableRef IKXCharacterTableCreate(NSString* language) {
-	NSString* tableName = [[[IKXConfigDictionary() objectForKey:@"phrase"] objectForKey:language] objectAtIndex:1] ?: @"__Internal";
-	
-	NSString* tableFn = [tableName stringByAppendingPathExtension:@"chrs"];
-	NSFileManager* fman = [NSFileManager defaultManager];
-	
-	NSString* srcPath = [NSString stringWithFormat:IKX_LIB_PATH@"/Phrase/%@/%@", language, tableFn];
-	NSString* altPath = [NSString stringWithFormat:IKX_SCRAP_PATH@"/iKeyEx::cache::phrase::%@::%@", language, tableFn];
-	if ([fman fileExistsAtPath:altPath]) {
-		if ([fman fileExistsAtPath:srcPath])
-			[fman removeItemAtPath:altPath error:NULL];
-		else {
-			if (![fman moveItemAtPath:altPath toPath:srcPath error:NULL])
-				srcPath = altPath;
-		}
-	}
-	
-	if (![fman fileExistsAtPath:srcPath]) {
-		if ([tableName isEqualToString:@"__Internal"]) {
-			NSString* datFn0 = [NSString stringWithFormat:@"singleChar-Unigrams-%@", language];
-			NSString* phrasePath = [UIKeyboardBundleForInputMode(language) pathForResource:datFn0 ofType:@"dat"];
-			IKXConvertChineseWordTrieToPhrase([phrasePath UTF8String], 0, [srcPath UTF8String], [altPath UTF8String]);
-			if (![fman fileExistsAtPath:srcPath])
-				srcPath = altPath;
-		} else {
-			// Nothing can be done. Fail.
-			NSLog(@"iKeyEx: Error: The file '%@' does not exist. Please check if the config is sane.", srcPath);
-			return NULL;
-		}
-	}
-		
-	IKXCharacterTableRef retval = new std::tr1::unordered_map<std::string, unsigned>;
-	std::ifstream fin ([srcPath UTF8String]);
-	std::string s;
-	unsigned i = 0;
-	while (fin) {
-		std::getline(fin, s);
-		if (!s.empty())
-			retval->insert(std::pair<std::string, unsigned>(s, i++));
-	}
-	
-	return retval;
+	return PhraseTableCreate<
+		IKX::ReadonlyHashTable<IKX::CharactersBucket>, 1,
+		_IKXCharacterTable_extension,
+		_IKXCharacterTable_cacheExt,
+		_IKXCharacterTable_pinyinOrSinglechars,
+		&IKXConvertPhraseToHash>(language);
 }
 
 static NSComparisonResult chars_table_sorter(NSString* a, NSString* b, IKXCharacterTableRef charTable) {
-	const char* au = [a UTF8String], *bu = [b UTF8String];
-	std::tr1::unordered_map<std::string, unsigned>::const_iterator ait = charTable->find(au), bit = charTable->find(bu);
+	size_t alen = std::min([a length], 2u), blen = std::min([b length], 2u);
 	
-	if (ait == charTable->end()) {
-		if (bit == charTable->end())
-			return std::strcmp(au, bu);
+	IKX::CharactersBucket ab, bb;
+	[a getCharacters:ab.chars range:NSMakeRange(0, alen)];
+	[b getCharacters:bb.chars range:NSMakeRange(0, blen)];
+	
+	bool ac = charTable->get(ab), bc = charTable->get(bb);
+	
+	if (!ac) {
+		if (!bc)
+			return ab.compare(bb);
 		else
 			return NSOrderedDescending;
-	} else if (bit == charTable->end())
+	} else if (!bc)
 		return NSOrderedAscending;
-	else {
-		return ait->second < bit->second ? NSOrderedAscending : ait->second > bit->second ? NSOrderedDescending : NSOrderedSame;
-	}
+	else
+		return ab.rank < bb.rank ? NSOrderedAscending : ab.rank > bb.rank ? NSOrderedDescending : NSOrderedSame;
 }
 
 extern "C" void IKXCharacterTableSort(IKXCharacterTableRef charTable, NSMutableArray* chars) {
-	if (charTable == NULL || chars == nil || charTable->empty())
+	if (charTable == NULL || chars == nil || charTable->size() == 0)
 		return;
 	[chars sortUsingFunction:reinterpret_cast<NSComparisonResult(*)(id,id,void*)>(chars_table_sorter) context:charTable];
 	// Remove duplicated values.

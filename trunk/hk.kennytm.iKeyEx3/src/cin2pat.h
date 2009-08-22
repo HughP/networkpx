@@ -39,6 +39,7 @@ extern "C" {
 
 	void IKXConvertCinToPat(const char* cin_path, const char* pat_path, const char* keys_path);
 	void IKXConvertPhraseToPat(const char* txt_path, const char* pat_path);
+	void IKXConvertPhraseToHash(const char* txt_path, const char* hash_path);
 	
 	void IKXConvertChineseWordTrieToPhrase(const char* dat_path, int longer_than_1, const char* txt_path, const char* alt_txt_path);
 	
