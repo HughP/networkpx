@@ -33,6 +33,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define IKXCININPUTMANAGER_MM
 
 #include "pattrie.hpp"
+#include "hash.hpp"
 #include <tr1/unordered_map>
 
 using namespace IKX;
@@ -49,6 +50,7 @@ using namespace IKX;
 @implementation CandWord (iKeyEx_Extensions)
 -(NSUInteger)length { return [[self word] length]; }
 -(void)getCharacters:(unichar*)buffer { [[self word] getCharacters:buffer]; }
+-(void)getCharacters:(unichar*)buffer range:(NSRange)range { [[self word] getCharacters:buffer range:range]; }
 -(const char*)UTF8String { return [self wordUTF8String]; }
 -(BOOL)isEqualToString:(CandWord*)another { return [[self word] isEqualToString:[another word]]; }
 @end

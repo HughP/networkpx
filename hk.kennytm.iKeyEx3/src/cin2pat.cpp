@@ -37,6 +37,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <TextInput/KBWordTrie.hpp>
 #include <cstdio>
 #include "ConvertUTF.h"
+#include "hash.hpp"
 
 
 extern "C" void IKXConvertCinToPat(const char* cin_path, const char* pat_path, const char* keys_path) {
@@ -137,6 +138,34 @@ extern "C" void IKXConvertPhraseToPat(const char* txt_path, const char* pat_path
 	}
 	
 	pat.write_to_file(pat_path);
+}
+
+extern "C" void IKXConvertPhraseToHash(const char* txt_path, const char* hash_path) {
+	std::vector<IKX::CharactersBucket> buckets;
+	std::ifstream fin (txt_path);
+	std::string s;
+	
+	IKX::CharactersBucket bucket;
+	bucket.filled = 1;
+	
+	while (fin) {
+		getline(fin, s);
+		if (s.empty())
+			continue;
+		
+		std::memset(bucket.chars, 0, sizeof(bucket.chars));
+		uint16_t* buffer = bucket.chars;
+		const uint8_t* cstr = reinterpret_cast<const uint8_t*>(s.c_str());
+		
+		ConvertUTF8toUTF16(&cstr, cstr + s.length(), &buffer, buffer+sizeof(bucket.chars)/sizeof(uint16_t), lenientConversion);
+		
+		buckets.push_back(bucket);
+		
+		++ bucket.rank;
+	}
+	
+	IKX::WritableHashTable<IKX::CharactersBucket> hash (buckets);
+	hash.write_to_file(hash_path);
 }
 
 static bool sort_word(const KB::Word& a, const KB::Word& b) {

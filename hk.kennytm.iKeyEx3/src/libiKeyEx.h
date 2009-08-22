@@ -49,7 +49,7 @@ extern "C" {
 	typedef void* IKXCharacterTableRef;
 #else
 	typedef IKX::ReadonlyPatTrie<IKX::PhraseContent>* IKXPhraseCompletionTableRef;
-	typedef std::tr1::unordered_map<std::string, unsigned>* IKXCharacterTableRef;
+	typedef IKX::ReadonlyHashTable<IKX::CharactersBucket>* IKXCharacterTableRef;
 #endif
 
 /// Check if an input mode is an iKeyEx mode.
