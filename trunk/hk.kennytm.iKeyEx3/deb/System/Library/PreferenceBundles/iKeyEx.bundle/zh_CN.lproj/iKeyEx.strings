@@ -20,5 +20,5 @@ Tap = "轻按";
 "Phrase table" = "词库";
 "Built-in" = "内置";
 "Delete cache" = "清除缓存";
-"Delete %u cache file" = "删除 %u 个缓存文件";
-"Delete %u cache files" = "删除 %u 个缓存文件";
+"Delete %u cache entry" = "删除 %u 个缓存条目";
+"Delete %u cache entries" = "删除 %u 个缓存条目";

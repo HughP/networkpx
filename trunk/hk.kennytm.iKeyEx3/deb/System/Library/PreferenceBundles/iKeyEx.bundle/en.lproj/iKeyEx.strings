@@ -21,5 +21,5 @@ Tap = Tap;
 "Phrase table" = "Phrase table";
 "Built-in" = "Built-in";
 "Delete cache" = "Delete cache";
-"Delete %u cache file" = "Delete %u cache file";
-"Delete %u cache files" = "Delete %u cache files";
+"Delete %u cache entry" = "Delete %u cache entry";
+"Delete %u cache entries" = "Delete %u cache entries";

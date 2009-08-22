@@ -44,11 +44,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace IKX {
 	
 	struct CharactersBucket {
-		unsigned filled : 8;
-		unsigned rank : 24;
+		uint32_t rank;	// & 1 -> filled, & 0 = not filled.
 		uint16_t chars[2];
 		
 		CharactersBucket() { std::memset(this, 0, sizeof(*this)); }
+		
+		bool filled() const { return rank & 1; }
 		
 		uint32_t hash() const {
 			return *reinterpret_cast<const uint32_t*>(chars);
@@ -84,7 +85,7 @@ namespace IKX {
 			size_t capac = static_cast<const Self*>(this)->capacity();
 			size_t expected_location = bucket.hash() % capac;
 			while (true) {
-				if (!list[expected_location].filled)
+				if (!list[expected_location].filled())
 					return false;
 				else if (list[expected_location] != bucket) {
 					++ expected_location;
@@ -128,7 +129,7 @@ namespace IKX {
 			// Now insert the list to the buckets.
 			for (typename std::vector<Bucket>::const_iterator cit = bucket_list.begin(); cit != bucket_list.end(); ++ cit) {
 				uint16_t expected_location = cit->hash() % actual_capacity;
-				while (buckets[expected_location].filled) {
+				while (buckets[expected_location].filled()) {
 					++ expected_location;
 					if (expected_location == actual_capacity)
 						expected_location = 0;

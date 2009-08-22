@@ -146,7 +146,7 @@ extern "C" void IKXConvertPhraseToHash(const char* txt_path, const char* hash_pa
 	std::string s;
 	
 	IKX::CharactersBucket bucket;
-	bucket.filled = 1;
+	bucket.rank = 1;
 	
 	while (fin) {
 		getline(fin, s);
@@ -161,7 +161,7 @@ extern "C" void IKXConvertPhraseToHash(const char* txt_path, const char* hash_pa
 		
 		buckets.push_back(bucket);
 		
-		++ bucket.rank;
+		bucket.rank += 2;
 	}
 	
 	IKX::WritableHashTable<IKX::CharactersBucket> hash (buckets);
