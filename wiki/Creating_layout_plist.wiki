@@ -18,7 +18,6 @@ In 3.0, iKeyEx will switch to use UIKeyboardLayoutStar instead. The following la
  * Overloading PhonePad / PhonePadAlt layouts may cause the keyboard not acting correctly.
  * popups and shiftedPopups are not supported.
  * Due to a font problem, some texts may not be shown properly.
- * Text traits (Colors, images and fonts) are not supported (yet). 
  * Key charges seems cannot be disabled.
 
 = Fundamentals =
