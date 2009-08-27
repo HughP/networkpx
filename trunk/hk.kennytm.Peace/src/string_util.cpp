@@ -200,13 +200,13 @@ void lowercase_first_word(string& str) throw() {
 
 void articlize_keyword(string& str) throw() {
 	static const char* keywords[][26] = {
-		{"abstract", "bitand", "case", "default", "else", "false", "goto", NULL, "if", NULL, NULL, "long", "mutable", "namespace", "offsetof", "private", NULL, "register", "self", "template", "union", "virtual", "while", "xor", NULL, NULL},
-		{"and", "bitor", "catch", "delete", "enum", "float", NULL, NULL, "inline", NULL, NULL, NULL, NULL, "new", "oneway", "protected", NULL, "restrict", "short", "this", "unsigned", "void", NULL, NULL, NULL, NULL},
-		{"asm", "bool", "char", "do", "explicit", "for", NULL, NULL, "int", NULL, NULL, NULL, NULL, "nil", "operator", "public", NULL, "return", "signed", "throw", "using", "volatile", NULL, NULL, NULL, NULL},
-		{"assert", "break", "class", "double", "extern", "friend", NULL, NULL, "in", NULL, NULL, NULL, NULL, "not", "or", NULL, NULL, NULL, "sizeof", "true", NULL, NULL, NULL, NULL, NULL, NULL},
-		{NULL, "bycopy", "compl", NULL, NULL, NULL, NULL, NULL, "out", NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, "static", "try", NULL, NULL, NULL, NULL, NULL, NULL},
-		{NULL, "byref", "const", NULL, NULL, NULL, NULL, NULL, "inout", NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, "struct", "typedef", NULL, NULL, NULL, NULL, NULL, NULL},
-		{NULL, NULL, "continue", NULL, NULL, NULL, NULL, NULL, "id", NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, "super", "typeid", NULL, NULL, NULL, NULL, NULL, NULL},
+		{"abstract", "bitand", "case", "default", "else", "false", "goto", NULL, "id", NULL, NULL, "long", "mutable", "namespace", "offsetof", "private", NULL, "register", "self", "template", "union", "virtual", "while", "xor", NULL, NULL},
+		{"and", "bitor", "catch", "delete", "enum", "float", NULL, NULL, "if", NULL, NULL, NULL, NULL, "new", "oneway", "protected", NULL, "restrict", "short", "this", "unsigned", "void", NULL, NULL, NULL, NULL},
+		{"asm", "bool", "char", "do", "explicit", "for", NULL, NULL, "in", NULL, NULL, NULL, NULL, "nil", "operator", "public", NULL, "return", "signed", "throw", "using", "volatile", NULL, NULL, NULL, NULL},
+		{"assert", "break", "class", "double", "extern", "friend", NULL, NULL, "inline", NULL, NULL, NULL, NULL, "not", "or", NULL, NULL, NULL, "sizeof", "true", NULL, NULL, NULL, NULL, NULL, NULL},
+		{NULL, "bycopy", "compl", NULL, NULL, NULL, NULL, NULL, "inout", NULL, NULL, NULL, NULL, NULL, "out", NULL, NULL, NULL, "static", "try", NULL, NULL, NULL, NULL, NULL, NULL},
+		{NULL, "byref", "const", NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, "struct", "typedef", NULL, NULL, NULL, NULL, NULL, NULL},
+		{NULL, NULL, "continue", NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, "super", "typeid", NULL, NULL, NULL, NULL, NULL, NULL},
 		{NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, "switch", "typename", NULL, NULL, NULL, NULL, NULL, NULL},
 		{NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, "typeof", NULL, NULL, NULL, NULL, NULL, NULL}
 	};
