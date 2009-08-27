@@ -168,6 +168,10 @@ namespace IKX {
 			candidates.pointer = ptr;
 		}
 		
+		IMEContent(const char* key) : key_length(std::min(std::strlen(key), sizeof(key_content))), candidate_is_pointer(0), candidate_string_length(0) {
+			std::memcpy(key_content, key, key_length);
+		}
+		
 		bool operator<(const IMEContent& other) const {
 			return key_length < other.key_length || (key_length == other.key_length && std::memcmp(key_content, other.key_content, key_length) < 0);
 		}

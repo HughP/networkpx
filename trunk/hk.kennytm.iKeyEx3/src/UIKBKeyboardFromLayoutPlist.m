@@ -405,16 +405,22 @@ static UIKBKeyplane* constructUIKBKeyplaneFromSublayout(NSMutableDictionary* lay
 			UIKBKey* key = [UIKBKey key];
 			if (j < count) {
 				NSString* str = [textArr objectAtIndex:j];
-				if ([str isKindOfClass:[NSDictionary class]])
-					str = [(NSDictionary*)str objectForKey:@"text"];
+				NSDictionary* traits = nil;
+				if ([str isKindOfClass:[NSDictionary class]]) {
+					traits = (NSDictionary*)str;
+					str = [traits objectForKey:@"text"];
+				}
 				
 				key.name = str;
 				key.representedString = str;
 				
 				NSString* lbl = [labelArr objectAtIndex:j];
-				if ([lbl isKindOfClass:[NSDictionary class]])
-					lbl = [(NSDictionary*)lbl objectForKey:@"text"];
+				if ([lbl isKindOfClass:[NSDictionary class]]) {
+					traits = (NSDictionary*)lbl;
+					lbl = [traits objectForKey:@"text"];
+				}
 				key.displayString = lbl;
+				
 				if ([@" " isEqualToString:str]) {
 					key.displayType = @"Space";
 					key.interactionType = @"Space";
@@ -439,9 +445,13 @@ static UIKBKeyplane* constructUIKBKeyplaneFromSublayout(NSMutableDictionary* lay
 					key.displayType = @"String";
 					key.interactionType = @"String-Popup";
 					key.name = str;
-					if ([@"'" isEqualToString:str]) {
+					BOOL is_prime = [@"'" isEqualToString:str];
+					if (is_prime || traits != nil) {
 						UIKBAttributeList* attribs = [[UIKBAttributeList alloc] init];
-						[attribs setValue:@"yes" forName:@"more-after"];
+						if (is_prime)
+							[attribs setValue:@"yes" forName:@"more-after"];
+						if (traits != nil)
+							[attribs setValue:traits forName:@"iKeyEx:traits"];
 						key.attributes = attribs;
 						[attribs release];
 					}
