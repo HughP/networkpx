@@ -37,41 +37,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #import "libiKeyEx.h"
 #import <mach-o/nlist.h>
 #import "IKXCinInputManager.h"
-
-// Use substrate.h on iPhoneOS, and APELite on x86/ppc for debugging.
-#ifdef __arm__
-#import <substrate.h>
-#define REGPARM3 
-#elif __i386__ || __ppc__
-extern void* APEPatchCreate(const void* original, const void* replacement);
-#define MSHookFunction(original, replacement, result) (*(result) = APEPatchCreate((original), (replacement)))
-IMP MSHookMessage(Class _class, SEL sel, IMP imp, const char* prefix);
-#define REGPARM3 __attribute__((regparm(3)))
-#else
-#error Not supported in non-ARM/i386/PPC system.
-#endif
-
-#define Original(funcname) original_##funcname
-
-#define DefineHook(rettype, funcname, ...) \
-rettype funcname (__VA_ARGS__); \
-static rettype (*original_##funcname) (__VA_ARGS__); \
-static rettype replaced_##funcname (__VA_ARGS__)
-
-#define DefineObjCHook(rettype, funcname, ...) \
-static rettype (*original_##funcname) (__VA_ARGS__); \
-static rettype replaced_##funcname (__VA_ARGS__)
-
-#define DefineHiddenHook(rettype, funcname, ...) \
-static rettype (*funcname) (__VA_ARGS__); \
-REGPARM3 static rettype (*original_##funcname) (__VA_ARGS__); \
-REGPARM3 static rettype replaced_##funcname (__VA_ARGS__)
-
-int lookup_function_pointers(const char* filename, ...);
-
-#define InstallHook(funcname) MSHookFunction(funcname, replaced_##funcname, (void**)&original_##funcname)
-#define InstallObjCInstanceHook(cls, sel, delimited_name) original_##delimited_name = (void*)MSHookMessage(cls, sel, (IMP)replaced_##delimited_name, NULL)
-#define InstallObjCClassHook(cls, sel, delimited_name) original_##delimited_name = (void*)method_setImplementation(class_getClassMethod(cls, sel), (IMP)replaced_##delimited_name)
+#import <substrate2.h>
 
 extern NSString* UIKeyboardDynamicDictionaryFile(NSString* mode);
 
@@ -482,8 +448,70 @@ DefineHook(NSArray*, UIKeyboardGetSupportedInputModes) {
 
 //------------------------------------------------------------------------------
 
+static CFMutableDictionaryRef cachedColors = NULL;
+
+DefineHook(UIKBThemeRef, UIKBThemeCreate, UIKBKeyboard* keyboard, UIKBKey* key, int x) {
+	UIKBThemeRef theme = Original(UIKBThemeCreate)(keyboard, key, x);
+	if (theme != NULL) {
+		NSDictionary* traits = [key.attributes valueForName:@"iKeyEx:traits"];
+		if (traits != nil) {
+			NSString* font = [traits objectForKey:@"font"];
+			if (font != nil)
+				theme->fontName = (CFStringRef)font;
+			
+			NSArray* color = [traits objectForKey:@"color"];
+			if (color != nil) {
+				NSUInteger componentsCount = [color count];
+				if (componentsCount != 0) {
+					CGColorRef newColor = (CGColorRef)CFDictionaryGetValue(cachedColors, color);
+					if (newColor == NULL) {
+						CGFloat components[4] = {1, 1, 1, 1};
+						CGColorSpaceRef space = NULL;
+
+						switch (componentsCount) {
+							case 2:
+								components[1] = [[color objectAtIndex:0] floatValue];
+							case 1:
+								space = CGColorSpaceCreateDeviceGray();
+								components[0] = [[color objectAtIndex:0] floatValue];
+								break;
+						
+							default:
+								components[3] = [[color objectAtIndex:3] floatValue];
+							case 3:
+								space = CGColorSpaceCreateDeviceRGB();
+								components[0] = [[color objectAtIndex:0] floatValue];
+								components[1] = [[color objectAtIndex:1] floatValue];
+								components[2] = [[color objectAtIndex:2] floatValue];
+								break;
+						}
+						
+						newColor = CGColorCreate(space, components);
+						CFDictionarySetValue(cachedColors, color, newColor);
+						CGColorRelease(newColor);
+					}
+					theme->symbolColor = newColor;
+				}
+			}
+			
+			id sizeScale = [traits objectForKey:@"size"];
+			if (sizeScale != nil) {
+				CGFloat size = [sizeScale floatValue];
+				if (size <= 0)
+					size = 1;
+				theme->fontSize *= size;
+				if (theme->fontSize < theme->minFontSize)
+					theme->minFontSize = theme->fontSize;
+			}
+		}
+	}
+	return theme;
+}
+
+//------------------------------------------------------------------------------
+
 #if TARGET_IPHONE_SIMULATOR
-void nlist(const char*, struct nlist[]);
+#define N_ARM_THUMB_DEF 0
 #endif
 
 static void fixInputMode () {
@@ -506,6 +534,8 @@ void initialize () {
 	UIKBGetKeyboardByName = (void*)(nl[1].n_value + (nl[0].n_desc & N_ARM_THUMB_DEF ? 1 : 0));
 	LookupLocalizedObject = (void*)(nl[2].n_value + (nl[0].n_desc & N_ARM_THUMB_DEF ? 1 : 0));
 	
+	cachedColors = CFDictionaryCreateMutable(NULL, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+	
 	InstallHook(UIKeyboardInputModeUsesKBStar);
 	InstallHook(UIKeyboardLayoutClassForInputModeInOrientation);
 	InstallHook(GetKeyboardDataFromBundle);
@@ -519,6 +549,7 @@ void initialize () {
 	InstallHook(UIKeyboardLayoutDefaultTypeForInputModeIsASCIICapable);
 	InstallHook(LookupLocalizedObject);
 	InstallHook(UIKeyboardGetSupportedInputModes);
+	InstallHook(UIKBThemeCreate);
 	
 	Class UIKeyboardLayoutStar_class = objc_getClass("UIKeyboardLayoutStar");
 	Class UIKeyboardLayoutRoman_class = [UIKeyboardLayoutRoman class];

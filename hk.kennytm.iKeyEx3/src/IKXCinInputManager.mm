@@ -408,5 +408,11 @@ __attribute__((visibility("hidden")))
 }
 
 -(void)setShallowPrediction:(BOOL)shallow {}
+
+-(BOOL)stringEndsWord:(NSString*)str {
+	if ([str length] == 0)
+		return YES;
+	return ![candidate_computer isValidKey:[str characterAtIndex:0]];
+}
 @end
 
