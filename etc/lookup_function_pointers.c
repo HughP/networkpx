@@ -43,13 +43,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <sys/stat.h>		// fstat
 
 struct ImageLoaderMachO {
-	void* vptr;
-	// why?
-#if __arm || __arm__
-	void* vptr2;
-#endif
-	char _ImageLoader[68];
-	
+	// There's something before, which will be calculated later.
 	const struct mach_header* fMachOData;
 	const uint8_t* fLinkEditBase;
 	const struct nlist* fSymbolTable;
@@ -59,7 +53,12 @@ struct ImageLoaderMachO {
 	// the rest are not important.
 };
 
-typedef struct ImageLoaderMachO* (*FPTR)(unsigned index);
+union pImageLoaderMachO {
+	const void* const* rawImage;
+	const struct ImageLoaderMachO* theImage;
+};
+
+typedef union pImageLoaderMachO (*FPTR)(unsigned index);
 static FPTR dyld_getIndexedImage = NULL;
 
 static int get_image_index(const char* filename) {
@@ -75,6 +74,20 @@ static int get_image_index(const char* filename) {
 	}
 	return -1;
 }
+
+static int struct_shift = 0;
+static void set_struct_shift() {
+	// Heuristic to get the struct shift.
+	const struct mach_header* header = _dyld_get_image_header(1);
+	union pImageLoaderMachO image = dyld_getIndexedImage(1);
+	for (unsigned i = 0; i < 0x100; ++ i) {
+		if (image.rawImage[i] == header) {
+			struct_shift = i;
+			break;
+		}
+	}
+}
+
 
 /*
  Big big big assumptions:
@@ -136,6 +149,7 @@ found_arch:
 					for (uint32_t j = 0; j < curcmd->nsyms; ++j, ++symbols) {
 						if (strcmp(strings + symbols->n_un.n_strx, "__ZN4dyld15getIndexedImageEj") == 0) {
 							dyld_getIndexedImage = (FPTR)symbols->n_value;
+							set_struct_shift();
 							retval = 0;
 							goto cleanup;
 						}	
@@ -192,7 +206,9 @@ int lookup_function_pointers(const char* filename, ...) {
 	int index = get_image_index(filename);
 	if (index < 0)
 		return -2;
-	const struct ImageLoaderMachO* image = dyld_getIndexedImage(index);
+	union pImageLoaderMachO pImage = dyld_getIndexedImage(index);
+	pImage.rawImage += struct_shift;
+	const struct ImageLoaderMachO* image = pImage.theImage;
 	int symcount = get_image_symbol_count(image);
 	if (symcount < 0)
 		return -2 + symcount;
@@ -206,28 +222,28 @@ int lookup_function_pointers(const char* filename, ...) {
 	while ((requested_symname = va_arg(ap, const char*)) != NULL) {
 		uint32_t* p_addr = va_arg(ap, uint32_t*);
 		
-		unsigned requested_symname_len1 = strlen(requested_symname) + 1;
-		int scan_direction = memcmp(requested_symname, previously_requested_symname, requested_symname_len1);
+		int scan_direction = strcmp(requested_symname, previously_requested_symname);
 		int stop_index = current_index;
 		if (scan_direction >= 0) {
+			syslog(4, "%p, %s", image->fSymbolTable, image->fStrings);
 			for (; current_index < symcount; ++current_index)
-				if (memcmp(image->fStrings+image->fSymbolTable[current_index].n_un.n_strx, requested_symname, requested_symname_len1) == 0)
+				if (strcmp(image->fStrings+image->fSymbolTable[current_index].n_un.n_strx, requested_symname) == 0)
 					goto found;
 			for (current_index = 0; current_index < stop_index; ++current_index)
-				if (memcmp(image->fStrings+image->fSymbolTable[current_index].n_un.n_strx, requested_symname, requested_symname_len1) == 0)
+				if (strcmp(image->fStrings+image->fSymbolTable[current_index].n_un.n_strx, requested_symname) == 0)
 					goto found;
 		} else {
 			for (; current_index >= 0; --current_index)
-				if (memcmp(image->fStrings+image->fSymbolTable[current_index].n_un.n_strx, requested_symname, requested_symname_len1) == 0)
+				if (strcmp(image->fStrings+image->fSymbolTable[current_index].n_un.n_strx, requested_symname) == 0)
 					goto found;
 			for (current_index = symcount-1; current_index > stop_index; --current_index)
-				if (memcmp(image->fStrings+image->fSymbolTable[current_index].n_un.n_strx, requested_symname, requested_symname_len1) == 0)
+				if (strcmp(image->fStrings+image->fSymbolTable[current_index].n_un.n_strx, requested_symname) == 0)
 					goto found;
 		}
 		
 		*p_addr = 0;
 		continue;
-		
+
 found:
 		*p_addr = image->fSymbolTable[current_index].n_value + image->fSlide;
 		previously_requested_symname = requested_symname;
