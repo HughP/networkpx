@@ -38,6 +38,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #import <mach-o/nlist.h>
 #import "IKXCinInputManager.h"
 #import <substrate2.h>
+#import "CMLSelection.h"
+#import <objc/message.h>
+#import <WebCore/wak/WebCoreThread.h>
 
 extern NSString* UIKeyboardDynamicDictionaryFile(NSString* mode);
 
@@ -510,6 +513,214 @@ DefineHook(UIKBThemeRef, UIKBThemeCreate, UIKBKeyboard* keyboard, UIKBKey* key, 
 
 //------------------------------------------------------------------------------
 
+typedef NSString* (*ControlAction) (id<UIKeyboardInput> delegate, UIKeyboardImpl* impl, NSString* input);
+
+static void moveSelectionPointTo(id<UIKeyboardInput> delegate, UIKeyboardImpl* impl, CGFloat offset, CGFloat y_multiple) {
+	CGRect curRect = [(UIDefaultKeyboardInput*)delegate caretRect];
+	CGRect newLoc = CGRectMake(curRect.origin.x, curRect.origin.y + offset + y_multiple * curRect.size.height, 1, 1);
+	if ([delegate isKindOfClass:[UIView class]]) {
+		[impl prepareForSelectionChange];
+		
+		[impl setSelectionWithPoint:newLoc.origin];
+		[[(UIView*)delegate _scroller] scrollRectToVisible:newLoc animated:YES];
+	} else {
+		WebThreadLock();
+		[(DOMNode*)delegate setSelectionWithPoint:newLoc.origin];
+//		[delegate scrollIntoViewIfNeeded:YES];
+		WebThreadUnlock();
+	}
+}
+
+static NSString* caEsc  (id<UIKeyboardInput> delegate, UIKeyboardImpl* impl, NSString* input) {
+	if ([delegate isKindOfClass:[UIResponder class]])
+		[(UIResponder*)delegate resignFirstResponder];
+	return nil;
+}
+static NSString* caLeft (id<UIKeyboardInput> delegate, UIKeyboardImpl* impl, NSString* input) {
+	NSRange curRange = getSelection(delegate, NULL);
+	if (curRange.location != NSNotFound) {
+		if (curRange.length != 0) {
+			curRange.length = 0;
+		} else
+			curRange.location --;
+		if (curRange.location >= 0)
+			setSelection(delegate, curRange);
+	}
+	return nil;
+}
+static NSString* caRight(id<UIKeyboardInput> delegate, UIKeyboardImpl* impl, NSString* input) {
+	NSRange curRange = getSelection(delegate, NULL);
+	if (curRange.location != NSNotFound) {
+		if (curRange.length != 0) {
+			curRange.location += curRange.length;
+			curRange.length = 0;
+		} else
+			curRange.location ++;
+		if (curRange.location <= [delegate.text length])
+			setSelection(delegate, curRange);
+	}
+	return nil;
+}
+static NSString* caUp   (id<UIKeyboardInput> delegate, UIKeyboardImpl* impl, NSString* input) {
+	moveSelectionPointTo(delegate, impl, 0, -1);
+	return nil;
+}
+static NSString* caDown (id<UIKeyboardInput> delegate, UIKeyboardImpl* impl, NSString* input) {
+	moveSelectionPointTo(delegate, impl, 0, 1);
+	return nil;	
+}
+static NSString* caHome (id<UIKeyboardInput> delegate, UIKeyboardImpl* impl, NSString* input) {
+	setSelection(delegate, NSMakeRange(0, 0));
+	return nil;
+}
+static NSString* caEnd  (id<UIKeyboardInput> delegate, UIKeyboardImpl* impl, NSString* input) {
+	setSelection(delegate, NSMakeRange([delegate.text length], 0));
+	return nil;
+}
+static NSString* caDel  (id<UIKeyboardInput> delegate, UIKeyboardImpl* impl, NSString* input) {
+	NSRange curRange = getSelection(delegate, NULL);
+	if (curRange.length == 0) {
+		if (curRange.location >= [delegate.text length])
+			return nil;
+		++ curRange.location;
+		setSelection(delegate, curRange);
+	}
+	[impl handleDelete];
+	return nil;
+}
+static NSString* caPgUp (id<UIKeyboardInput> delegate, UIKeyboardImpl* impl, NSString* input) {
+	CGFloat frameHeight = 1;
+	if ([delegate isKindOfClass:[UIView class]])
+		frameHeight = ((UIView*)delegate).superview.frame.size.height;
+	moveSelectionPointTo(delegate, impl, -frameHeight, 0);
+	return nil;	
+}
+static NSString* caPgDn (id<UIKeyboardInput> delegate, UIKeyboardImpl* impl, NSString* input) {
+	CGFloat frameHeight = 1;
+	if ([delegate isKindOfClass:[UIView class]])
+		frameHeight = ((UIView*)delegate).superview.frame.size.height;
+	moveSelectionPointTo(delegate, impl, frameHeight, 1);
+	return nil;
+}
+static NSString* caKP   (id<UIKeyboardInput> delegate, UIKeyboardImpl* impl, NSString* input) {
+	NSString* actualString = [input substringWithRange:NSMakeRange(2, [input length]-3)];
+	if ([@"Enter" isEqualToString:actualString]) return @"\n";
+	else if ([@"Plus" isEqualToString:actualString]) return @"+";
+	else if ([@"Minus" isEqualToString:actualString]) return @"-";
+	else if ([@"Multiply" isEqualToString:actualString]) return @"*";
+	else if ([@"Divide" isEqualToString:actualString]) return @"/";
+	else if ([@"Point" isEqualToString:actualString]) return @".";
+	else return actualString;
+}
+static NSString* caApp  (id<UIKeyboardInput> delegate, UIKeyboardImpl* impl, NSString* input) {
+	[[UIMenuController sharedMenuController] setMenuVisible:YES animated:YES];
+	return nil;
+}
+static NSString* caShift(id<UIKeyboardInput> delegate, UIKeyboardImpl* impl, NSString* input) {
+	[impl toggleShift];
+	return nil;
+}
+
+static NSString* const keys[] = {
+@"<Esc>",	// = \x1B
+@"<Up>", @"<Down>", @"<Left>", @"<Right>",
+@"<F1>", @"<F2>", @"<F3>", @"<F4>", @"<F5>", @"<F6>", @"<F7>", @"<F8>", @"<F9>", @"<F10>", @"<F11>", @"<F12>",
+@"<Home>", @"<End>", @"<Insert>", @"<Del>", @"<PageUp>", @"<PageDown>",
+@"<k0>", @"<k1>", @"<k2>", @"<k3>", @"<k4>", @"<k5>", @"<k6>", @"<k7>", @"<k8>", @"<k9>",
+@"<kPlus>", @"<kMinus>", @"<kMultiply>", @"<kDivide>", @"<kPoint>", @"<kEnter>",
+@"<ShiftL>", @"<ShiftR>", @"<CtrlL>", @"<CtrlR>", @"<AltL>", @"<AltR>", @"<MetaL>", @"<MetaR>",
+@"<WinL>", @"<WinR>", @"<App>",
+@"<SuperL>", @"<SuperR>", @"<HyperL>", @"<HyperR>", @"<CapsLock>", @"<PrintScreen>", @"<Pause>", @"<ScrollLock>",
+};
+
+#define CSI @"\x1B["
+#define SS3 @"\x1BO"
+
+static NSString* const keyANSI[] = {
+@"\x1B",
+CSI@"A", CSI@"B", CSI@"D", CSI@"C",
+SS3@"P", SS3@"Q", SS3@"R", SS3@"S", CSI@"15~", CSI@"17~", CSI@"18~", CSI@"19~", CSI@"20~", CSI@"21~", CSI@"23~", CSI@"24~",
+CSI@"1~", CSI@"4~", CSI@"2~", CSI@"3~", CSI@"5~", CSI@"6~",
+SS3@"p", SS3@"q", SS3@"r", SS3@"s", SS3@"t", SS3@"u", SS3@"v", SS3@"w", SS3@"x", SS3@"y",
+@"+", SS3@"m", @"*", @"/", SS3@"n", SS3@"M",
+@"<ShiftL>", @"<ShiftR>", @"<CtrlL>", @"<CtrlR>", @"<AltL>", @"<AltR>", @"<MetaL>", @"<MetaR>",
+@"<WinL>", @"<WinR>", @"<App>",
+@"<SuperL>", @"<SuperR>", @"<HyperL>", @"<HyperR>", @"<CapsLock>", @"<PrintScreen>", @"<Pause>", @"<ScrollLock>",
+};
+
+#undef CSI
+#undef SS3
+
+static NSString* const keyX11[] = {
+@"\uFF1B",
+@"\uFF52", @"\uFF54", @"\uFF51", @"\uFF53",
+@"\uFFBE", @"\uFFBF", @"\uFFC0", @"\uFFC1", @"\uFFC2", @"\uFFC3", @"\uFFC4", @"\uFFC5", @"\uFFC6", @"\uFFC7", @"\uFFC8", @"\uFFC9",
+@"\uFF50", @"\uFF57", @"\uFF63", @"\uFFFF", @"\uFF55", @"\uFF56",
+@"\uFFB0", @"\uFFB1", @"\uFFB2", @"\uFFB3", @"\uFFB4", @"\uFFB5", @"\uFFB6", @"\uFFB7", @"\uFFB8", @"\uFFB9",
+@"\uFFBA", @"\uFFAD", @"\uFFAA", @"\uFFAF", @"\uFFAE", @"\uFF8D",
+@"\uFFE1", @"\uFFE2", @"\uFFE3", @"\uFFE4", @"\uFFE9", @"\uFFEA", @"\uFFE7", @"\uEEE8",
+@"\uFF5B", @"\uFF5C", @"\uFF5D",
+@"\uFFEB", @"\uFFEC", @"\uFFED", @"\uFFEE", @"\uFFE5", @"\uFF61", @"\uFF13", @"\uFF14",
+};
+
+static ControlAction const keyNormal[] = {
+caEsc,
+caUp, caDown, caLeft, caRight,
+NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 
+caHome, caEnd, NULL, caDel, caPgUp, caPgDn,
+caKP, caKP, caKP, caKP, caKP, caKP, caKP, caKP, caKP, caKP, 
+caKP, caKP, caKP, caKP, caKP, caKP, 
+caShift, caShift, NULL, NULL, NULL, NULL, NULL, NULL, 
+NULL, NULL, caApp,
+NULL, NULL, NULL, NULL, caShift, NULL, NULL, NULL,
+};
+
+static NSString* sendControlAction(id<UIKeyboardInput> delegate, UIKeyboardImpl* impl, NSString* input, UIKBKey* key) {
+	IKXAppType appType = IKXAppTypeOfCurrentApplication();
+	if (appType == IKXAppTypeANSI) {
+		static CFDictionaryRef ctrlAnsiTable = NULL;
+		if (!ctrlAnsiTable)
+			ctrlAnsiTable = CFDictionaryCreate(NULL, (const void**)keys, (const void**)keyANSI, sizeof(keys)/sizeof(keys[0]), &kCFTypeDictionaryKeyCallBacks, NULL);
+		NSString* actualString = (NSString*)CFDictionaryGetValue(ctrlAnsiTable, input);
+		if (actualString != nil) {
+			UIApplication* termapp = [UIApplication sharedApplication];
+			if ([termapp respondsToSelector:@selector(handleInputFromMenu:)]) {
+				objc_msgSend(termapp, @selector(handleInputFromMenu:), actualString);
+				return nil;
+			} else
+				return actualString;
+		}	
+	} else if (appType == IKXAppTypeX11) {
+		static CFDictionaryRef ctrlVncTable = NULL;
+		if (!ctrlVncTable)
+			ctrlVncTable = CFDictionaryCreate(NULL, (const void**)keys, (const void**)keyX11, sizeof(keys)/sizeof(keys[0]), &kCFTypeDictionaryKeyCallBacks, NULL);
+		NSString* actualString = (NSString*)CFDictionaryGetValue(ctrlVncTable, input);
+		if (actualString != nil)
+			return actualString;
+	} else {
+		static CFDictionaryRef ctrlNormalTable = NULL;
+		if (ctrlNormalTable == NULL)
+			ctrlNormalTable = CFDictionaryCreate(NULL, (const void**)keys, (const void**)keyNormal, sizeof(keys)/sizeof(keys[0]), &kCFTypeDictionaryKeyCallBacks, NULL);
+		ControlAction action = CFDictionaryGetValue(ctrlNormalTable, input);
+		if (action != nil)
+			return action(delegate, impl, input);
+	}
+	return input;
+}
+
+DefineObjCHook(void, UIKeyboardLayoutStar_sendStringAction_forKey_, UIKeyboardLayoutStar* self, SEL _cmd, NSString* input, UIKBKey* key) {
+	if ([input hasPrefix:@"<"] && [input hasSuffix:@">"]) {
+		UIKeyboardImpl* impl = [UIKeyboardImpl sharedInstance];
+		id<UIKeyboardInput> del = [impl delegate];
+		input = sendControlAction(del, impl, input, key);
+		if (input == nil)
+			return;
+	}
+	Original(UIKeyboardLayoutStar_sendStringAction_forKey_)(self, _cmd, input, key);
+}
+
+//------------------------------------------------------------------------------
+
 #if TARGET_IPHONE_SIMULATOR
 #define N_ARM_THUMB_DEF 0
 #endif
@@ -561,6 +772,8 @@ void initialize () {
 	InstallObjCInstanceHook(UIKeyboardLayoutRoman_class, @selector(longPressAction), UIKeyboardLayoutRoman_longPressAction);
 	InstallObjCInstanceHook(UIKeyboardImpl_class, @selector(setInputModeToNextInPreferredList), UIKeyboardImpl_setInputModeToNextInPreferredList);
 	
+	InstallObjCInstanceHook(UIKeyboardLayoutStar_class, @selector(sendStringAction:forKey:), UIKeyboardLayoutStar_sendStringAction_forKey_);
+		
 	CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL,
 									(CFNotificationCallback)IKXFlushConfigDictionary,
 									CFSTR("hk.kennytm.iKeyEx3.FlushConfigDictionary"),

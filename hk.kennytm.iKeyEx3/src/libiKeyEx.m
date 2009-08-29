@@ -44,6 +44,7 @@ extern BOOL IKXIsInternalMode(NSString* modeString) {
 
 static NSDictionary* _IKXConfigDictionary = nil;
 static int _IKXKeyboardChooserPref = 3, _IKXConfirmWithSpacePref = 2;
+static IKXAppType _IKXCurrentAppType = IKXAppTypeError;
 extern NSDictionary* IKXConfigDictionary() {
 	if (_IKXConfigDictionary == nil) {
 		NSDictionary* temp_IKXConfigDictionary = [[NSDictionary alloc] initWithContentsOfFile:IKX_LIB_PATH@"/Config.plist"];
@@ -59,6 +60,7 @@ extern void IKXFlushConfigDictionary() {
 		if (OSAtomicCompareAndSwapPtrBarrier(temp_IKXConfigDictionary, nil, (void*volatile*)&_IKXConfigDictionary)) {
 			_IKXKeyboardChooserPref = 3;
 			_IKXConfirmWithSpacePref = 2;
+			_IKXCurrentAppType = IKXAppTypeError;
 			[temp_IKXConfigDictionary release];
 		}
 	}
@@ -136,3 +138,37 @@ extern NSString* IKXNameOfMode(NSString* modeString) {
 	}
 }
 
+//------------------------------------------------------------------------------
+
+IKXAppType IKXAppTypeOfCurrentApplication() {
+	if (_IKXCurrentAppType == IKXAppTypeError) {
+		NSString* appID = [[NSBundle mainBundle] bundleIdentifier];
+		NSDictionary* appTypes = [IKXConfigDictionary() objectForKey:@"appTypes"];
+		NSSet* ansiApps = [NSSet setWithArray:[appTypes objectForKey:@"ANSI"]];
+		if (!ansiApps)
+			ansiApps = [NSSet setWithObject:@"com.googlecode.mobileterminal"];
+		if ([ansiApps containsObject:appID])
+			_IKXCurrentAppType = IKXAppTypeANSI;
+		else {
+			NSSet* vncApps = [NSSet setWithArray:[appTypes objectForKey:@"VNC"]];
+			// Note: I haven't tested on every one of these...
+			if (!vncApps)
+				vncApps = [NSSet setWithObjects:
+						   @"com.jugaari.teleport",
+						   @"dk.mochasoft.vnc",
+						   @"dk.mochasoft.vnclite",
+						   @"com.logmein.ignition",
+						   @"com.readpixel.remotetap",
+						   @"com.pratikkumar.RemoteJr",
+						   @"com.clickgamer.vncpocketoffice",
+						   @"com.robohippo.hipporemote",
+						   @"com.leptonic.AirMote",
+						   nil];
+			if ([vncApps containsObject:appID])
+				_IKXCurrentAppType = IKXAppTypeX11;
+			else
+				_IKXCurrentAppType = IKXAppTypeNormal;
+		}
+	}
+	return _IKXCurrentAppType;
+}
