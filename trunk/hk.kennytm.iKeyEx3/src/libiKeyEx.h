@@ -90,6 +90,15 @@ NSString* IKXNameOfMode(NSString* modeString);
 	void IKXCharacterTableSort(IKXCharacterTableRef charTable, NSMutableArray* chars);
 	void IKXCharacterTableDealloc(IKXCharacterTableRef charTable);
 	
+	/// Find the application type of a specific app.
+	typedef enum {
+		IKXAppTypeNormal,
+		IKXAppTypeANSI,
+		IKXAppTypeX11,
+		
+		IKXAppTypeError
+	} IKXAppType;
+	IKXAppType IKXAppTypeOfCurrentApplication();
 	
 
 #if __cplusplus
