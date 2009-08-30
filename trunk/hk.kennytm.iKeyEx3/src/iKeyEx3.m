@@ -369,7 +369,13 @@ DefineHook(BOOL, UIKeyboardLayoutDefaultTypeForInputModeIsASCIICapable, NSString
 //------------------------------------------------------------------------------
 
 DefineObjCHook(unsigned, UIKeyboardLayoutStar_downActionFlagsForKey_, UIKeyboardLayoutStar* self, SEL _cmd, UIKBKey* key) {
-	return Original(UIKeyboardLayoutStar_downActionFlagsForKey_)(self, _cmd, key) | ([@"International" isEqualToString:key.interactionType] ? 0x80 : 0);
+	BOOL hasLongAction = [@"International" isEqualToString:key.interactionType];
+	if (!hasLongAction) {
+		NSString* input = key.representedString;
+		if ([input hasPrefix:@"<"] && [input hasSuffix:@">"])
+			hasLongAction = YES;
+	}
+	return Original(UIKeyboardLayoutStar_downActionFlagsForKey_)(self, _cmd, key) | (hasLongAction ? 0x80 : 0);
 }
 
 DefineObjCHook(unsigned, UIKeyboardLayoutRoman_downActionFlagsForKey_, UIKeyboardLayoutRoman* self, SEL _cmd, void* key) {
@@ -377,14 +383,6 @@ DefineObjCHook(unsigned, UIKeyboardLayoutRoman_downActionFlagsForKey_, UIKeyboar
 }
 
 static int longPressedInternationalKey = 0;
-DefineObjCHook(void, UIKeyboardLayoutStar_longPressAction, UIKeyboardLayoutStar* self, SEL _cmd) {
-	UIKBKey* activeKey = [self activeKey];
-	if (activeKey != nil && [@"International" isEqualToString:activeKey.interactionType]) {
-		longPressedInternationalKey = 1;
-		[self cancelTouchTracking];
-	} else
-		Original(UIKeyboardLayoutStar_longPressAction)(self, _cmd);
-}
 
 DefineObjCHook(void, UIKeyboardLayoutRoman_longPressAction, UIKeyboardLayoutRoman* self, SEL _cmd) {
 	void* activeKey = [self activeKey];
@@ -675,7 +673,24 @@ NULL, NULL, caApp,
 NULL, NULL, NULL, NULL, caShift, NULL, NULL, NULL,
 };
 
-static NSString* sendControlAction(id<UIKeyboardInput> delegate, UIKeyboardImpl* impl, NSString* input, UIKBKey* key) {
+//-------------------------------------------------------------------------------------------------------------------------------------------
+
+static CFRunLoopTimerRef delayTimer = NULL;
+static NSString* sendControlAction(id<UIKeyboardInput> delegate, UIKeyboardImpl* impl, NSString* input, UIKBKey* key);
+
+struct sendControlActionProxyStruct {
+	id<UIKeyboardInput> delegate;
+	UIKeyboardImpl* impl;
+	NSString* input;
+	UIKBKey* key;
+};
+
+static void sendControlActionProxy (CFRunLoopTimerRef timer, struct sendControlActionProxyStruct* info) {
+	if (delayTimer)
+		sendControlAction(info->delegate, info->impl, info->input, info->key);
+}
+
+static NSString* sendControlAction(id<UIKeyboardInput> delegate, UIKeyboardImpl* impl, NSString* input, UIKBKey* key) {	
 	IKXAppType appType = IKXAppTypeOfCurrentApplication();
 	if (appType == IKXAppTypeANSI) {
 		static CFDictionaryRef ctrlAnsiTable = NULL;
@@ -709,6 +724,27 @@ static NSString* sendControlAction(id<UIKeyboardInput> delegate, UIKeyboardImpl*
 }
 
 DefineObjCHook(void, UIKeyboardLayoutStar_sendStringAction_forKey_, UIKeyboardLayoutStar* self, SEL _cmd, NSString* input, UIKBKey* key) {
+	if (delayTimer) {
+		CFRunLoopTimerRef oldTimer = delayTimer;
+		delayTimer = NULL;
+		
+		CFRunLoopTimerContext ctx;
+		ctx.version = 0;
+		CFRunLoopTimerGetContext(oldTimer, &ctx);
+		struct sendControlActionProxyStruct* st = (struct sendControlActionProxyStruct*)ctx.info;
+		if (st) {
+			[st->delegate release];
+			[st->impl release];
+			[st->input release];
+			[st->key release];
+			free(st);
+		}
+		
+		CFRunLoopTimerInvalidate(oldTimer);
+		CFRelease(oldTimer);
+		return;
+	}
+	
 	if ([input hasPrefix:@"<"] && [input hasSuffix:@">"]) {
 		UIKeyboardImpl* impl = [UIKeyboardImpl sharedInstance];
 		id<UIKeyboardInput> del = [impl delegate];
@@ -717,6 +753,32 @@ DefineObjCHook(void, UIKeyboardLayoutStar_sendStringAction_forKey_, UIKeyboardLa
 			return;
 	}
 	Original(UIKeyboardLayoutStar_sendStringAction_forKey_)(self, _cmd, input, key);
+}
+
+DefineObjCHook(void, UIKeyboardLayoutStar_longPressAction, UIKeyboardLayoutStar* self, SEL _cmd) {
+	UIKBKey* activeKey = [self activeKey];
+	if (activeKey != nil && [@"International" isEqualToString:activeKey.interactionType]) {
+		longPressedInternationalKey = 1;
+		[self cancelTouchTracking];
+	} else {
+		NSString* input = activeKey.representedString;
+		if ([input hasPrefix:@"<"] && [input hasSuffix:@">"]) {
+			UIKeyboardImpl* impl = [UIKeyboardImpl sharedInstance];
+			id<UIKeyboardInput> delegate = [impl delegate];
+			
+			struct sendControlActionProxyStruct* st = malloc(sizeof(struct sendControlActionProxyStruct));
+			st->delegate = [delegate retain];
+			st->impl = [impl retain];
+			st->input = [input retain];
+			st->key = [activeKey retain];
+			CFRunLoopTimerContext ctx;
+			memset(&ctx, 0, sizeof(ctx));
+			ctx.info = st;
+			delayTimer = CFRunLoopTimerCreate(NULL, CFAbsoluteTimeGetCurrent(), 0.125, 0, 0, (CFRunLoopTimerCallBack)sendControlActionProxy, &ctx);
+			CFRunLoopAddTimer(CFRunLoopGetMain(), delayTimer, kCFRunLoopDefaultMode);
+		} else
+			Original(UIKeyboardLayoutStar_longPressAction)(self, _cmd);
+	}
 }
 
 //------------------------------------------------------------------------------
