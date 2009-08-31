@@ -2,6 +2,7 @@
 
 if [[ $1 == install ]]; then
 	iKeyEx-KBMan register "iKeyEx:5RowQWERTY" "5-Row QWERTY" 5RowQWERTY "=en_US"
+	iKeyEx-KBMan activate "iKeyEx:5RowQWERTY"
 	exit 0
 elif [[ $1 == upgrade ]]; then
 	# Preserve the config.
