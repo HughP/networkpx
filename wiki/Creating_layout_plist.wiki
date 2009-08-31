@@ -19,6 +19,7 @@ In 3.0, iKeyEx will switch to use UIKeyboardLayoutStar instead. The following la
  * popups and shiftedPopups are not supported.
  * Due to a font problem, some texts may not be shown properly.
  * Key charges seems cannot be disabled.
+ * There can be no images on keys.
 
 = Fundamentals =
 
@@ -422,6 +423,45 @@ The complete spec:
 </tr>
 </table>
 
+=== Control keys (3.0 only) ===
+
+From 3.0 onwards control keys are supported natively (previously it was part of 5-Row QWERTY). Control keys are those which perform actions other than emitting a character, e.g. moving the cursor around, hiding the keyboard, etc. Control keys can be used by putting `<Keyname>` in the `texts`. The Keyname follows Vim convention if possible.
+
+Control keys behave differently in ANSI and X11 apps. The key maps to actual key-symbols or escape sequences in those apps.
+
+|| *Control key* || *Normal behavior* || *ANSI supported* || *X11 supported* ||
+|| `<Esc>` || Hide the keyboard || ✓ || ✓ ||
+|| `<Left>`, `<Right>`, `<Up>`, `<Down>` || Move cursor || ✓ || ✓ ||
+|| `<F1>` – `<F12>` || ✗ || ✓ || ✓ ||
+|| `<Home>` || Move cursor to beginning of text || ✓ || ✓ ||
+|| `<End>` || Move cursor to end of text || ✓ || ✓ ||
+|| `<Insert>` || ✗ || ✓ || ✓ ||
+|| `<Del>` || Forward delete ||  ✓ || ✓ ||
+|| `<PageUp>`, `<PageDown>` || Move cursor position by one page || ✓ || ✓ ||
+|| `<k0>` – `<k9>` || Output 0 – 9 || ✓ || ✓ ||
+|| `<kPlus>`, `<kMultiply>`, `<kDivide>` || Output `+`, `*` and `/` || Output `+`, `*` and `/` || ✓ ||
+|| `<kMinus>`, `<kPoint>`, `<kEnter>` || Ouput `-`, `.` and `\n` || ✓ || ✓ ||
+|| `<ShiftL>`, `<ShiftR>` || Toggle shift || ✗ || ✓ ||
+|| `<CtrlL>`, `<CtrlR>` || ✗ || Output `[CTRL]` || ✓ ||
+|| `<AltL>`, `<AltR>`, `<MetaL>` `<MetaR>` || ✗ || ✗ || ✓ ||
+|| `<WinL>`, `<WinR>`, `<SuperL>` `<SuperR>`, `<HyperL>` `<HyperR>` ||  ✗ || ✗ || ✓ ||
+|| `<App>` || Show the copy/paste menu || ✗ || ✓ ||
+|| `<CapsLock>` || Toggle shift ||  ✗ || ✓ ||
+|| `<PrintScreen>`, `<Pause>`, `<ScrollLock>` ||  ✗ || ✗ || ✓ ||
+
+By default, ANSI apps contains:
+ * !MobileTerminal
+and X11 apps (which includes VNC apps) contains:
+ * Jaadu VNC
+ * Mocha VNC
+ * Mocha VNC Lite
+ * !LogMeIn Ignition
+ * !RemoteTap
+ * Remote Jr.
+ * VNC Pocket Office
+ * !HippoRemote
+ * !AirMote
+(Note that we haven't tested on all of these apps.)
 
 == arrangement ==
 arrangement specifies how many keys will be present in each row, e.g.
