@@ -77,9 +77,9 @@ static void print_usage () {
 			"      manager.\n"
 			"   purge-phrase <language> <phrase>\n"
 			"    - Clear automatically generated cache for the specified phrase\n"
-			"      table.\n\n"
+			"      table.\n"
 			"   purge-all\n"
-			"    - Clear all automatically generated cache.\n"
+			"    - Clear all automatically generated cache.\n\n"
 	);
 }
 
@@ -115,7 +115,7 @@ static NSString* modeStringOf (const char* mode) {
 		return nil;
 
 	if (hasiKeyExPrefixAlready)
-		return [NSString stringWithUTF8String:mode];
+		return [NSString stringWithUTF8String:mode-strlen("iKeyEx:")];
 	else
 		return [NSString stringWithFormat:@"iKeyEx:%s", mode];
 }
@@ -317,7 +317,7 @@ deprecated_purge:
 			if (argc < 3)
 				print_arg_error("purge-layout", 1);
 			else
-				PurgeWithPrefix([NSString stringWithFormat:@"iKeyEx::cache::layout::%s", argv[2]]);
+				PurgeWithPrefix([NSString stringWithFormat:@"iKeyEx::cache::layout::iKeyEx:%s", argv[2]]);
 		} else if (strcmp(command, "purge-ime") == 0) {
 			if (argc < 3)
 				print_arg_error("purge-ime", 1);

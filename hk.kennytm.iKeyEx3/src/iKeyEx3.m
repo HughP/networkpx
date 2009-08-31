@@ -382,7 +382,7 @@ DefineObjCHook(unsigned, UIKeyboardLayoutStar_downActionFlagsForKey_, UIKeyboard
 	BOOL hasLongAction = [@"International" isEqualToString:key.interactionType];
 	if (!hasLongAction) {
 		NSString* input = key.representedString;
-		if ([input hasPrefix:@"<"] && [input hasSuffix:@">"])
+		if ([input hasPrefix:@"<"] && [input hasSuffix:@">"] && ![input isEqualToString:@"<Esc>"])
 			hasLongAction = YES;
 	}
 	return Original(UIKeyboardLayoutStar_downActionFlagsForKey_)(self, _cmd, key) | (hasLongAction ? 0x80 : 0);
