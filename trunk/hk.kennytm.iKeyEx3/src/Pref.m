@@ -293,15 +293,12 @@ static void prepareLinks(iKeyExCustomizeController* self, NSString* suffix, NSMu
 			NSBundle* bdl = [NSBundle bundleWithPath:path];
 			NSString* psBundlePath = [bdl pathForResource:[bdl objectForInfoDictionaryKey:@"PSBundle"] ofType:@"bundle"];
 			if (psBundlePath != nil) {
-				NSBundle* psBundle = [NSBundle bundleWithPath:psBundlePath];
-				if (psBundle != nil) {
-					PSSpecifier* linkCell = [PSSpecifier preferenceSpecifierNamed:[path stringByDeletingPathExtension]
-																		   target:self set:NULL get:NULL detail:Nil cell:PSLinkCell edit:Nil];
-					[linkCell setProperty:psBundle forKey:@"lazy-bundle"];
-					linkCell->action = @selector(lazyLoadBundle:);
-					
-					[layoutLinks addObject:linkCell];
-				}
+				PSSpecifier* linkCell = [PSSpecifier preferenceSpecifierNamed:[path stringByDeletingPathExtension]
+																	   target:self set:NULL get:NULL detail:Nil cell:PSLinkCell edit:Nil];
+				[linkCell setProperty:psBundlePath forKey:@"lazy-bundle"];
+				linkCell->action = @selector(lazyLoadBundle:);
+				
+				[layoutLinks addObject:linkCell];
 			}
 		}
 	}
