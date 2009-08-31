@@ -37,7 +37,7 @@
 #import <Preferences/PSEditingPane.h>
 #import <UIKit/UIKit.h>
 #import <UIKit2/UIAlert.h>
-#import <UIKit3/UIUtilities.h>
+//#import <UIKit3/UIUtilities.h>
 #import <UIKit3/UIActionSheetPro.h>
 #import <UIKit4/UIBigCharacterHUD.h>
 #import <UIKit4/UIEasyPickerView.h>
@@ -49,7 +49,6 @@
 #define CURBUNDLE_PATH iKeyEx_KeyboardsPath@"/5RowQWERTY.keyboard/Preferences.bundle"
 
 static const wchar_t symbols[] = L"!@#$%^&*()`~-=[]\\;',./«»_+{}|:\"<>?¿¡•€£¥₩¢°±µ½§␀";
-static BOOL cacheDirty = YES;
 
 static NSString* const IMEs[] = {
 	@"en_US", @"en_GB",
@@ -85,10 +84,10 @@ static NSString* const numPadTexts[][3] = {
 {@"0", @"" , @"."},
 };
 static NSString* const controlKeysTexts[][3] = {
-{@"\x1B",    @"\x1B[1~", @"\x1B[5~"},
-{@"\x1B[3~", @"\x1B[4~", @"\x1B[6~"},
-{@"",         @"\x1B[A", @""},
-{@"\x1B[D", @"\x1B[B", @"\x1B[C"},
+{@"<Esc>",    @"<Home>", @"<PageUp>"},
+{@"<Del>", @"<End>", @"<PageDown>"},
+{@"",         @"<Up>", @""},
+{@"<Left>", @"<Down>", @"<Right>"},
 };
 
 
@@ -146,6 +145,11 @@ nil, nil, nil, @"’", @"˓", @"˔", @"˕", @"˖",
 @"/", @"˒", @"˽", nil, nil, @"ˣ", nil, @"˭",
 @"`", @"´", @"῀", @"᾽", @"΅", @"ͺ", nil, @"₌"};
 
+
+static NSString* UILocalizedString(const char* s) {
+	return [[NSBundle bundleForClass:[UIApplication class]] localizedStringForKey:[NSString stringWithUTF8String:s] value:nil table:nil];
+}
+
 __attribute__((pure))
 NSString* actualDisplayStringForString(NSString* t) {
 	if ([t length] == 1) {
@@ -165,100 +169,66 @@ NSString* actualDisplayStringForString(NSString* t) {
 }
 
 __attribute__((pure))
-NSObject* actualDisplayObjectForString(NSString* t, BOOL isPopup) {
+NSObject* actualDisplayObjectForString(NSString* t /*, BOOL isPopup*/) {
 	if ([t length] == 0) return t;
-	NSArray* gray = [NSArray arrayWithObject:[NSNumber numberWithFloat:0.5f]];
-	NSNumber* point2 = [NSNumber numberWithFloat:0.2f];
+	NSNumber* point5 = [NSNumber numberWithFloat:0.5f];
+	NSArray* gray = [NSArray arrayWithObject:point5];
+	
 	if ([@"\t" isEqualToString:t]) {
-		if (isPopup)
-			return @"Tab";
-		else
 			return [NSDictionary dictionaryWithObjectsAndKeys:
 					gray, @"color",
-					@"⇥", @"text",
+					@"Tab", @"text",
+					point5, @"size",
 					nil];
 	} else if ([@"\n" isEqualToString:t]) {
-		if (isPopup)
-			return [NSDictionary dictionaryWithObjectsAndKeys:
-					point2, @"size",
-					@"Return", @"text",
-					nil];
-		else
 			return [NSDictionary dictionaryWithObjectsAndKeys:
 					gray, @"color",
-					@"↵", @"text",
+					@"Return", @"text",
+					point5, @"size",
 					nil];
 	} else if ([@" " isEqualToString:t]) {
-		if (isPopup)
-			return [NSDictionary dictionaryWithObjectsAndKeys:
-					[NSNumber numberWithFloat:0.25f], @"size",
-					@"Space", @"text",
-					nil];
-		else
 			return [NSDictionary dictionaryWithObjectsAndKeys:
 					gray, @"color",
-					@"␣", @"text",
+					@" ", @"text",
 					nil];
-	} else if ([@"\x1b" isEqualToString:t]) {
-		if (isPopup)
-			return @"Esc";
-		else
-			return [NSDictionary dictionaryWithObject:@"/Library/iKeyEx/Keyboards/5RowQWERTY.keyboard/esc.png" forKey:@"image"];
+	} else if ([@"<Esc>" isEqualToString:t]) {
+		return [NSDictionary dictionaryWithObjectsAndKeys:
+				gray, @"color",
+				@"Esc", @"text",
+				point5, @"size",
+				nil];
 	} else if ([t length] > 1) {
-		if ([t characterAtIndex:0] == '\x1b' && [t length] >= 3) {
-			switch ([t characterAtIndex:2]) {
-				case 'A': return @"↑";
-				case 'B': return @"↓";
-				case 'C': return @"→";
-				case 'D': return @"←";
-				case '1':
-					if (isPopup)
+		if ([t hasPrefix:@"<"] && [t hasSuffix:@">"]) {
+			switch ([t characterAtIndex:1] ) {
+				case 'U': return @"↑";
+				case 'D':
+					if ([t isEqualToString:@"<Down>"])
+						return @"↓";
+					else
 						return [NSDictionary dictionaryWithObjectsAndKeys:
-								point2, @"size",
+								gray, @"color",
+								@"Del", @"text",
+								point5, @"size",
+								nil];
+				case 'R': return @"→";
+				case 'L': return @"←";
+				case 'H':
+						return [NSDictionary dictionaryWithObjectsAndKeys:
+								gray, @"color",
 								@"Home", @"text",
-								nil];
-					else
+								point5, @"size",
+								nil];						
+				case 'E':
 						return [NSDictionary dictionaryWithObjectsAndKeys:
 								gray, @"color",
-								@"↖", @"text",
+								@"End", @"text",
+								point5, @"size",
 								nil];
-				case '3':
-					if (isPopup)
-						return @"Del.";
-					else
+				case 'P':
 						return [NSDictionary dictionaryWithObjectsAndKeys:
 								gray, @"color",
-								@"⌦", @"text",
-								nil];
-				case '4':
-					if (isPopup)
-						return @"End";
-					else
-						return [NSDictionary dictionaryWithObjectsAndKeys:
-								gray, @"color",
-								@"↘", @"text",
-								nil];
-				case '5':
-					if (isPopup)
-						return [NSDictionary dictionaryWithObjectsAndKeys:
-								[NSNumber numberWithFloat:0.3f], @"size",
-								@"Page Up", @"text",
-								nil];
-					else
-						return [NSDictionary dictionaryWithObjectsAndKeys:
-								gray, @"color",
-								@"⇞", @"text",
-								nil];
-				case '6':
-					if (isPopup)
-						return [NSDictionary dictionaryWithObjectsAndKeys:
-								[NSNumber numberWithFloat:0.3f], @"size",
-								@"Page Down", @"text",
-								nil];
-					else
-						return [NSDictionary dictionaryWithObjectsAndKeys:
-								gray, @"color",
-								@"⇟", @"text",
+								([t isEqualToString:@"<PageUp>"])?@"PgUp":@"PgDn", @"text",
+								point5, @"size",
 								nil];
 				default:
 					return t;
@@ -298,6 +268,7 @@ UIColor* colorForString(NSString* t) {
 		case 0: return [UIColor darkTextColor];
 		case 1: return [UIColor grayColor];
 		case 2: return [UIColor redColor];
+		default: return [UIColor blackColor];
 	}
 }
 
@@ -314,10 +285,10 @@ typedef union UTF16Character {
 
 #include <errno.h>
 void clearCache () {
-	// purge only once.
-	if (cacheDirty) {
-		iKeyEx_KBMan("purge", "5RowQWERTY");
-		cacheDirty = NO;
+	pid_t pid = fork();
+	if (pid == 0) {
+		execl("/usr/bin/iKeyEx-KBMan", "/usr/bin/iKeyEx-KBMan", "purge-layout", "5RowQWERTY");
+		_exit(0);
 	}
 }
 
@@ -807,50 +778,38 @@ void clearCache () {
 	[shiftedTexts addObject:@"="];
 	
 	NSMutableArray* labels = [NSMutableArray arrayWithCapacity:5];
-	NSMutableArray* popups = [NSMutableArray arrayWithCapacity:5];
 	i = 0;
 	for (NSArray* row in texts) {
 		NSMutableArray* curLabel = [NSMutableArray arrayWithCapacity:8];
-		NSMutableArray* curPopup = [NSMutableArray arrayWithCapacity:8];
 		for (NSString* col in row) {
-			[curLabel addObject:actualDisplayObjectForString(col, NO)];
-			[curPopup addObject:actualDisplayObjectForString(col, YES)];
+			[curLabel addObject:actualDisplayObjectForString(col)];
 		}
 		[labels addObject:curLabel];
-		[popups addObject:curPopup];
 		++ i;
 		if (i == 4)
 			break;
 	}
 	[labels addObject:@"="];
-	[popups addObject:@"="];
 	
 	NSMutableArray* shiftedLabels = [NSMutableArray arrayWithCapacity:5];
-	NSMutableArray* shiftedPopups = [NSMutableArray arrayWithCapacity:5];
 	i = 0;
 	for (NSArray* row in shiftedTexts) {
 		NSMutableArray* curLabel = [NSMutableArray arrayWithCapacity:8];
-		NSMutableArray* curPopup = [NSMutableArray arrayWithCapacity:8];
 		for (NSString* col in row) {
-			[curLabel addObject:actualDisplayObjectForString(col, NO)];
-			[curPopup addObject:actualDisplayObjectForString(col, YES)];
+			[curLabel addObject:actualDisplayObjectForString(col)];
 		}
 		[shiftedLabels addObject:curLabel];
-		[shiftedPopups addObject:curPopup];
 		++ i;
 		if (i == 4)
 			break;
 	}
 	[shiftedLabels addObject:@"="];
-	[shiftedPopups addObject:@"="];
 	
 	NSMutableDictionary* numbersSublayout = [layoutPlist objectForKey:@"Numbers"];
 	[numbersSublayout setObject:texts forKey:@"texts"];
 	[numbersSublayout setObject:shiftedTexts forKey:@"shiftedTexts"];
 	[numbersSublayout setObject:labels forKey:@"labels"];
 	[numbersSublayout setObject:shiftedLabels forKey:@"shiftedLabels"];
-	[numbersSublayout setObject:popups forKey:@"popups"];
-	[numbersSublayout setObject:shiftedPopups forKey:@"shiftedPopups"];
 	[layoutPlist setObject:numbersSublayout forKey:@"Numbers"];
 	
 	// Done :)
@@ -865,8 +824,6 @@ void clearCache () {
 		infoPlist = [[NSMutableDictionary alloc] initWithContentsOfFile:INFO_PATH];
 		
 		[self readLayout];
-		
-		cacheDirty = YES;
 	}
 	return self;
 }
