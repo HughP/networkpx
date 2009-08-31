@@ -144,27 +144,27 @@ extern NSString* IKXNameOfMode(NSString* modeString) {
 extern IKXAppType IKXAppTypeOfCurrentApplication() {
 	// Make sure Error is not returned if a flush happened during calculation.
 	while (_IKXCurrentAppType == IKXAppTypeError) {
-		NSString* appID = [[NSBundle mainBundle] bundleIdentifier];
+		NSString* appID = [[[NSBundle mainBundle] bundleIdentifier] lowercaseString];
 		NSDictionary* appTypes = [IKXConfigDictionary() objectForKey:@"appTypes"];
 		NSSet* ansiApps = [NSSet setWithArray:[appTypes objectForKey:@"ANSI"]];
-		if (!ansiApps)
+		if (![ansiApps count])
 			ansiApps = [NSSet setWithObject:@"com.googlecode.mobileterminal"];
 		if ([ansiApps containsObject:appID])
 			_IKXCurrentAppType = IKXAppTypeANSI;
 		else {
 			NSSet* vncApps = [NSSet setWithArray:[appTypes objectForKey:@"VNC"]];
 			// Note: I haven't tested on every one of these...
-			if (!vncApps)
+			if (![vncApps count])
 				vncApps = [NSSet setWithObjects:
 						   @"com.jugaari.teleport",
 						   @"dk.mochasoft.vnc",
 						   @"dk.mochasoft.vnclite",
 						   @"com.logmein.ignition",
 						   @"com.readpixel.remotetap",
-						   @"com.pratikkumar.RemoteJr",
+						   @"com.pratikkumar.remotejr",
 						   @"com.clickgamer.vncpocketoffice",
 						   @"com.robohippo.hipporemote",
-						   @"com.leptonic.AirMote",
+						   @"com.leptonic.airmote",
 						   nil];
 			if ([vncApps containsObject:appID])
 				_IKXCurrentAppType = IKXAppTypeX11;
