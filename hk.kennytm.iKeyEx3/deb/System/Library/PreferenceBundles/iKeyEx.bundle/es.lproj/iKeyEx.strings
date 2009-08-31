@@ -24,3 +24,6 @@ Tap = Pulsar;
 "Delete %u cache entry" = "Borrar %u artículo de caché";
 "Delete %u cache entries" = "Borrar %u artículos de caché";
 "Loading..." = "Cargando...";
+"Associated phrases" = "Frases asociadas";
+Customize = Personalizar;
+"Nothing to customize." = "Nada que personalizar.";

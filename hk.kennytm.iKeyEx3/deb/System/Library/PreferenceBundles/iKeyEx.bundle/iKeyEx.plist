@@ -31,6 +31,10 @@ items = (
 	set = "setKbChooser:"; },
 
 { cell = PSLinkCell;
+	label = Customize;
+	detail = iKeyExCustomizeController; },
+
+{ cell = PSLinkCell;
 	label = "Delete cache";
 	detail = PSDetailController;
 	pane = ClearCachePane; },
@@ -45,5 +49,11 @@ items = (
 { cell = PSLinkCell;
 	label = "Characters and phrase tables";
 	detail = CharAndPhraseTablesController; },
+
+{ cell = PSSwitchCell;
+	label = "Associated phrases";
+	get = disallowCompletion;
+	set = "setDisallowCompletion:"; 
+	negate = 1; },
 
 );

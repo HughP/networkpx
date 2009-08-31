@@ -250,7 +250,7 @@ static void recomputeAllModes() {
 @implementation iKeyExMixAndMatchController
 -(NSArray*)specifiers {
 	if (_specifiers == nil) {
-		NSMutableArray* specs = [NSMutableArray array];
+		NSMutableArray* specs = [NSMutableArray new];
 		
 		NSDictionary* modesDict = [configDict objectForKey:@"modes"];
 		for (NSString* modeName in modesDict) {
@@ -272,7 +272,7 @@ static void recomputeAllModes() {
 							 nil];
 		[specs insertObjects:topSpecs atIndexes:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(0, 3)]];
 		
-		_specifiers = [specs retain];
+		_specifiers = specs;
 	}
 	return _specifiers;
 }
@@ -282,7 +282,66 @@ static void recomputeAllModes() {
 }
 @end
 
+#pragma mark -
 
+@interface iKeyExCustomizeController : PSListController
+@end
+@implementation iKeyExCustomizeController
+static void prepareLinks(iKeyExCustomizeController* self, NSString* suffix, NSMutableArray* layoutLinks, NSFileManager* fman) {
+	for (NSString* path in [fman contentsOfDirectoryAtPath:@"." error:NULL]) {
+		if ([path hasSuffix:suffix]) {
+			NSBundle* bdl = [NSBundle bundleWithPath:path];
+			NSString* psBundlePath = [bdl pathForResource:[bdl objectForInfoDictionaryKey:@"PSBundle"] ofType:@"bundle"];
+			if (psBundlePath != nil) {
+				NSBundle* psBundle = [NSBundle bundleWithPath:psBundlePath];
+				if (psBundle != nil) {
+					PSSpecifier* linkCell = [PSSpecifier preferenceSpecifierNamed:[path stringByDeletingPathExtension]
+																		   target:self set:NULL get:NULL detail:Nil cell:PSLinkCell edit:Nil];
+					[linkCell setProperty:psBundle forKey:@"lazy-bundle"];
+					linkCell->action = @selector(lazyLoadBundle:);
+					
+					[layoutLinks addObject:linkCell];
+				}
+			}
+		}
+	}
+}
+
+-(NSArray*)specifiers {
+	if (_specifiers == nil) {
+		NSMutableArray* specs = [NSMutableArray new];
+		
+		NSBundle* selfBundle = [self bundle];
+		NSFileManager* fman = [NSFileManager defaultManager];
+		
+		NSMutableArray* layoutLinks = [NSMutableArray array];
+		[fman changeCurrentDirectoryPath:IKX_LIB_PATH@"/Keyboards"];
+		prepareLinks(self, @".keyboard", layoutLinks, fman);
+		if ([layoutLinks count] != 0) {
+			[specs addObject:[PSSpecifier groupSpecifierWithName:LS(@"Layout")]];
+			[specs addObjectsFromArray:layoutLinks];
+		}
+		
+		[layoutLinks removeAllObjects];
+		[fman changeCurrentDirectoryPath:IKX_LIB_PATH@"/InputManagers"];
+		prepareLinks(self, @".ime", layoutLinks, fman);
+		if ([layoutLinks count] != 0) {
+			[specs addObject:[PSSpecifier groupSpecifierWithName:LS(@"Input manager")]];
+			[specs addObjectsFromArray:layoutLinks];
+		}
+		
+		if ([specs count] == 0)
+			[specs addObject:[PSSpecifier groupSpecifierWithName:LS(@"Nothing to customize.")]];
+		
+		_specifiers = specs;
+	}
+	return _specifiers;
+}
+@end
+
+
+
+#pragma mark -
 
 @interface iKeyExKeyboardsPane : PSEditingPane<UITableViewDataSource, UITableViewDelegate> {
 	NSMutableArray* allModes;
@@ -687,6 +746,9 @@ static void recomputeAllModes() {
 
 -(NSNumber*)confirmWithSpace { return [configDict objectForKey:@"confirmWithSpace"] ?: (id)kCFBooleanTrue; }
 -(void)setConfirmWithSpace:(NSNumber*)val { [mutableConfigDict() setObject:val forKey:@"confirmWithSpace"]; }
+
+-(NSNumber*)disallowCompletion { return (NSNumber*)([[configDict objectForKey:@"disallowCompletion"] boolValue] ? kCFBooleanFalse : kCFBooleanFalse); }
+-(void)setDisallowCompletion:(NSNumber*)val { [mutableConfigDict() setObject:(NSNumber*)([val boolValue]?kCFBooleanFalse:kCFBooleanFalse) forKey:@"disallowCompletion"]; }
 
 -(void)suspend {
 	saveConfig();

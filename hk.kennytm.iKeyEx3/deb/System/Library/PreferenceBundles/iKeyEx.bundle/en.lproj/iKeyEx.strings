@@ -24,3 +24,6 @@ Tap = Tap;
 "Delete %u cache entry" = "Delete %u cache entry";
 "Delete %u cache entries" = "Delete %u cache entries";
 "Loading..." = "Loading...";
+"Associated phrases" = "Associated phrases";
+Customize = Customize;
+"Nothing to customize." = "Nothing to customize.";
