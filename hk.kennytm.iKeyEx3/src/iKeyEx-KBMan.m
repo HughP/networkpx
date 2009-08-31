@@ -96,8 +96,8 @@ static BOOL check_internal (const char* x) {
 }
 
 static void SaveConfig(NSDictionary* configDict) {
-	if ([configDict writeToFile:IKX_LIB_PATH@"/Config.plist" atomically:YES]) {
-		const char* utfPath = [IKX_LIB_PATH@"/Config.plist" UTF8String];
+	if ([configDict writeToFile:IKX_CONFIG_PATH atomically:YES]) {
+		const char* utfPath = [IKX_CONFIG_PATH UTF8String];
 		chmod(utfPath, 0666);
 		chown(utfPath, 501, 501);
 		notify_post("hk.kennytm.iKeyEx3.FlushConfigDictionary");
@@ -124,7 +124,7 @@ static void Register(NSString* modeString, const char* name, const char* layout,
 	if (!check_internal(layout) || !check_internal(ime))
 		return;
 	
-	NSMutableDictionary* configDict = [NSMutableDictionary dictionaryWithContentsOfFile:IKX_LIB_PATH@"/Config.plist"];
+	NSMutableDictionary* configDict = [NSMutableDictionary dictionaryWithContentsOfFile:IKX_CONFIG_PATH];
 	NSMutableDictionary* modesDict = [configDict objectForKey:@"modes"];
 	if (modesDict == nil) {
 		modesDict = [NSMutableDictionary dictionary];
@@ -155,14 +155,14 @@ static void Deactivate(NSString* modeString) {
 
 static void Unregister(NSString* modeString) {
 	Deactivate(modeString);
-	NSMutableDictionary* configDict = [NSMutableDictionary dictionaryWithContentsOfFile:IKX_LIB_PATH@"/Config.plist"];
+	NSMutableDictionary* configDict = [NSMutableDictionary dictionaryWithContentsOfFile:IKX_CONFIG_PATH];
 	[[configDict objectForKey:@"modes"] removeObjectForKey:modeString];
 	SaveConfig(configDict);
 }
 
 static void UnregisterWhere(NSString* key, const char* matching) {
 	NSString* test = [NSString stringWithUTF8String:matching];
-	NSMutableDictionary* configDict = [NSMutableDictionary dictionaryWithContentsOfFile:IKX_LIB_PATH@"/Config.plist"];
+	NSMutableDictionary* configDict = [NSMutableDictionary dictionaryWithContentsOfFile:IKX_CONFIG_PATH];
 	NSMutableDictionary* modesDict = [configDict objectForKey:@"modes"];
 	NSMutableArray* modesToRemove = [NSMutableArray array];
 	for (NSString* mode in modesDict) {
@@ -217,7 +217,7 @@ static void CachePhrase(const char* lang, const char* phrase) {
 }
 
 static void SelectPhrase(const char* lang, const char* phrase, unsigned index) {
-	NSMutableDictionary* configDict = [NSMutableDictionary dictionaryWithContentsOfFile:IKX_LIB_PATH@"/Config.plist"];
+	NSMutableDictionary* configDict = [NSMutableDictionary dictionaryWithContentsOfFile:IKX_CONFIG_PATH];
 	NSMutableDictionary* phraseDict = [configDict objectForKey:@"phrase"];
 	if (phraseDict == nil) {
 		phraseDict = [NSMutableDictionary dictionary];
@@ -233,7 +233,7 @@ static void SelectPhrase(const char* lang, const char* phrase, unsigned index) {
 	SaveConfig(configDict);
 }
 static void DeselectPhrase(const char* lang, const char* phrase, unsigned index) {
-	const char* curPhrase = [[[[NSDictionary dictionaryWithContentsOfFile:IKX_LIB_PATH@"/Config.plist"]
+	const char* curPhrase = [[[[NSDictionary dictionaryWithContentsOfFile:IKX_CONFIG_PATH]
 							   objectForKey:[NSString stringWithUTF8String:lang]] objectAtIndex:index] UTF8String];
 	if (strcmp(curPhrase, phrase) == 0)
 		SelectPhrase(lang, "__Internal", index);

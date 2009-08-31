@@ -23,3 +23,4 @@ Tap = Pulsar;
 "Delete cache" = "Borrar caché";
 "Delete %u cache entry" = "Borrar %u artículo de caché";
 "Delete %u cache entries" = "Borrar %u artículos de caché";
+"Loading..." = "Cargando...";
