@@ -767,8 +767,8 @@ static void prepareLinks(iKeyExCustomizeController* self, NSString* suffix, NSMu
 -(NSNumber*)confirmWithSpace { return [configDict objectForKey:@"confirmWithSpace"] ?: (id)kCFBooleanTrue; }
 -(void)setConfirmWithSpace:(NSNumber*)val { [mutableConfigDict() setObject:val forKey:@"confirmWithSpace"]; }
 
--(NSNumber*)disallowCompletion { return (NSNumber*)([[configDict objectForKey:@"disallowCompletion"] boolValue] ? kCFBooleanFalse : kCFBooleanFalse); }
--(void)setDisallowCompletion:(NSNumber*)val { [mutableConfigDict() setObject:(NSNumber*)([val boolValue]?kCFBooleanFalse:kCFBooleanFalse) forKey:@"disallowCompletion"]; }
+-(NSNumber*)disallowCompletion { return (NSNumber*)([[configDict objectForKey:@"disallowCompletion"] boolValue] ? kCFBooleanFalse : kCFBooleanTrue); }
+-(void)setDisallowCompletion:(NSNumber*)val { [mutableConfigDict() setObject:(NSNumber*)([val boolValue]?kCFBooleanFalse:kCFBooleanTrue) forKey:@"disallowCompletion"]; }
 
 -(void)suspend {
 	saveConfig();
