@@ -23,3 +23,4 @@ Tap = Tap;
 "Delete cache" = "Delete cache";
 "Delete %u cache entry" = "Delete %u cache entry";
 "Delete %u cache entries" = "Delete %u cache entries";
+"Loading..." = "Loading...";

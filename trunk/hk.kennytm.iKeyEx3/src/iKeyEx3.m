@@ -41,6 +41,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #import "CMLSelection.h"
 #import <objc/message.h>
 #import <WebCore/wak/WebCoreThread.h>
+#include <pthread.h>
 
 extern NSString* UIKeyboardDynamicDictionaryFile(NSString* mode);
 
@@ -174,6 +175,13 @@ static NSString* standardizedKeyboardName (NSString* keyboardName) {
 		return [NSString stringWithFormat:@"iPhone-%@-QWERTY-%@", orientation, [keyboardName substringFromIndex:lastDash+1]];
 }
 
+struct createKeyboardLayoutArgs {
+	NSData* retData;
+	NSBundle* bundle;
+	NSString* keyboardName;
+	NSString* expectedPath;
+};
+
 DefineHiddenHook(NSData*, GetKeyboardDataFromBundle, NSString* keyboardName, NSBundle* bundle) {
 	if (!IKXIsiKeyExMode(keyboardName))
 		return Original(GetKeyboardDataFromBundle)(keyboardName, bundle);
@@ -186,14 +194,15 @@ DefineHiddenHook(NSData*, GetKeyboardDataFromBundle, NSString* keyboardName, NSB
 			NSString* orientation = nil;
 			if ([layoutClass isKindOfClass:[NSDictionary class]])
 				layoutClass = [(NSDictionary*)layoutClass objectForKey:(orientation = extractOrientation(keyboardName, lastDash))];
-			
 			if ([layoutClass hasSuffix:@".keyboards"]) {
 				NSString* keyboardPath = [NSString stringWithFormat:@"%@/%@/%@.keyboard", [bundle resourcePath], layoutClass, standardizedKeyboardName(keyboardName)];
 				NSFileManager* fman = [NSFileManager defaultManager];
 				if ([fman fileExistsAtPath:keyboardPath])
 					[fman linkItemAtPath:keyboardPath toPath:expectedPath error:NULL];
-				return [NSData dataWithContentsOfFile:keyboardPath];
+				retData = [NSData dataWithContentsOfFile:keyboardPath];
 			} else if ([layoutClass hasSuffix:@".plist"]) {
+//				UIProgressHUD* hud = IKXShowLoadingHUD();	
+				
 				NSString* layoutPath = [bundle pathForResource:layoutClass ofType:nil];
 				NSMutableDictionary* layoutDict = [NSMutableDictionary dictionaryWithContentsOfFile:layoutPath];
 				if (orientation == nil)
@@ -205,11 +214,12 @@ DefineHiddenHook(NSData*, GetKeyboardDataFromBundle, NSString* keyboardName, NSB
 				[archiver finishEncoding];
 				[dataToSave writeToFile:expectedPath atomically:NO];
 				[archiver release];
-				return dataToSave;
-			} else
-				return nil;
-		} else
-			return retData;
+				retData = dataToSave;
+				
+//				IKXHideLoadingHUD(hud);
+			}
+		}
+		return retData;
 	}
 }
 
@@ -641,7 +651,7 @@ SS3@"P", SS3@"Q", SS3@"R", SS3@"S", CSI@"15~", CSI@"17~", CSI@"18~", CSI@"19~", 
 CSI@"1~", CSI@"4~", CSI@"2~", CSI@"3~", CSI@"5~", CSI@"6~",
 SS3@"p", SS3@"q", SS3@"r", SS3@"s", SS3@"t", SS3@"u", SS3@"v", SS3@"w", SS3@"x", SS3@"y",
 @"+", SS3@"m", @"*", @"/", SS3@"n", SS3@"M",
-@"<ShiftL>", @"<ShiftR>", @"<CtrlL>", @"<CtrlR>", @"<AltL>", @"<AltR>", @"<MetaL>", @"<MetaR>",
+@"<ShiftL>", @"<ShiftR>", @"[CTRL]", @"[CTRL]", @"<AltL>", @"<AltR>", @"<MetaL>", @"<MetaR>",
 @"<WinL>", @"<WinR>", @"<App>",
 @"<SuperL>", @"<SuperR>", @"<HyperL>", @"<HyperR>", @"<CapsLock>", @"<PrintScreen>", @"<Pause>", @"<ScrollLock>",
 };

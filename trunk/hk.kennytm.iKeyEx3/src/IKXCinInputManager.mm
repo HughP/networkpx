@@ -39,14 +39,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using namespace IKX;
 
 #include "IKXCinInputManager.h"
-#import <UIKit/CandWord.h>
-#import <UIKit/UIKeyboardLayout.h>
-#import <UIKit/UIKeyboardImpl.h>
+#import <UIKit/UIKit2.h>
 #include "libiKeyEx.h"
 #include "cin2pat.h"
 #import <ActorKit/ActorKit.h>
 #include <pthread.h>
 #include <sys/time.h>
+
+
 
 @implementation CandWord (iKeyEx_Extensions)
 -(NSUInteger)length { return [[self word] length]; }
@@ -68,7 +68,7 @@ static IMEContent makeIMEContent(NSString* prefix) {
 }
 
 @protocol IKXCandidateComputerProtocol
--( void)computeWithInputString:(NSString*)inputString lastAcceptedCandidate:(NSString*)lastAcceptedCandidate;
+-(oneway void)computeWithInputString:(NSString*)inputString lastAcceptedCandidate:(NSString*)lastAcceptedCandidate;
 @end
 
 __attribute__((visibility("hidden")))
@@ -91,6 +91,8 @@ __attribute__((visibility("hidden")))
 		current_candidates = [NSMutableArray new];
 		pthread_mutex_init(&cclock, NULL);
 		pthread_cond_init(&cccond, NULL);
+		
+//		UIProgressHUD* hud = IKXShowLoadingHUD();
 		
 		NSString* mode = UIKeyboardGetCurrentInputMode();
 		NSString* imeRef;
@@ -136,6 +138,8 @@ __attribute__((visibility("hidden")))
 		
 		phrases = IKXPhraseCompletionTableCreate(imeLang);
 		chars = IKXCharacterTableCreate(imeLang);
+		
+//		IKXHideLoadingHUD(hud);
 	}
 	return self;
 }
@@ -151,11 +155,13 @@ __attribute__((visibility("hidden")))
 	[super dealloc];
 }
 
--(oneway void)computeWithInputString:(NSString*)inputString lastAcceptedCandidate:(NSString*)lastAcceptedCandidate {
+-(void)prepareCompute {
 	computing = YES;
 	pthread_mutex_lock(&cclock);
-	[current_candidates removeAllObjects];
-	
+	[current_candidates removeAllObjects];	
+}
+
+-(oneway void)computeWithInputString:(NSString*)inputString lastAcceptedCandidate:(NSString*)lastAcceptedCandidate {
 	if (lastAcceptedCandidate != nil) {
 		NSUInteger lac_len = [lastAcceptedCandidate length];
 		NSArray* resArr = IKXPhraseCompletionTableSearch(phrases, lastAcceptedCandidate);
@@ -225,6 +231,7 @@ __attribute__((visibility("hidden")))
 			NSLog(@"iKeyEx: Error: pthread_cond_timedwait returned %d, which should not happen. Close all windows and leave this building now.", err);
 	}
 	NSArray* cands = current_candidates;
+	
 	pthread_mutex_unlock(&cclock);
 	return cands;
 }
@@ -290,8 +297,10 @@ __attribute__((visibility("hidden")))
 				still_valid = false;
 		}
 		[impl setShift:NO];
-		if (still_valid)
+		if (still_valid) {
+			[candidate_computer prepareCompute];
 			[[candidate_computer send] computeWithInputString:[input_string substringToIndex:valid_input_string_length] lastAcceptedCandidate:nil];
+		}
 	}
 	
 	shown_completion = NO;
@@ -304,6 +313,7 @@ __attribute__((visibility("hidden")))
 		[input_string deleteCharactersInRange:NSMakeRange(input_string_length-1, 1)];
 		if (valid_input_string_length == input_string_length) {
 			-- valid_input_string_length;
+			[candidate_computer prepareCompute];
 			[[candidate_computer send] computeWithInputString:[input_string substringToIndex:valid_input_string_length] lastAcceptedCandidate:nil];
 		}
 	}
@@ -317,6 +327,7 @@ __attribute__((visibility("hidden")))
 -(void)setInput:(NSString*)input {
 	[input_string setString:@""];
 	valid_input_string_length = 0;
+	[candidate_computer prepareCompute];
 	[[candidate_computer send] computeWithInputString:nil lastAcceptedCandidate:nil];
 	wait_for_remaining_input = NO;
 	shown_completion = NO;
@@ -338,6 +349,8 @@ __attribute__((visibility("hidden")))
 	return [candidate_computer commit];
 }
 -(void)candidateAccepted:(CandWord*)candidate {
+	[candidate_computer prepareCompute];
+	
 	if (!shown_completion) {
 		[input_string deleteCharactersInRange:NSMakeRange(0, valid_input_string_length)];
 		NSUInteger final_input_length = valid_input_string_length = [input_string length];

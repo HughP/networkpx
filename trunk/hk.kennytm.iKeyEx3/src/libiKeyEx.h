@@ -33,16 +33,19 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #if TARGET_IPHONE_SIMULATOR
 #define IKX_SCRAP_PATH @"/Users/kennytm/Library/Application Support/iPhone Simulator/User/Library/Keyboard"
 #define IKX_LIB_PATH @"/Users/kennytm/XCodeProjects/iKeyEx/svn/trunk/hk.kennytm.iKeyEx3/deb/Library/iKeyEx"
+#define IKX_PREFS_PATH @"/Users/kennytm/XCodeProjects/iKeyEx/svn/trunk/hk.kennytm.iKeyEx3/deb/System/Library/PreferenceBundles/iKeyEx.bundle"
 #else
 #define IKX_SCRAP_PATH @"/var/mobile/Library/Keyboard"
 #define IKX_LIB_PATH @"/Library/iKeyEx"
+#define IKX_PREFS_PATH @"/System/Library/PreferenceBundles/iKeyEx.bundle"
 #endif
+#define IKX_CONFIG_PATH IKX_SCRAP_PATH@"/iKeyEx::config.plist"
 
 #if __cplusplus
 extern "C" {
 #endif
 
-@class NSString, NSDictionary, NSBundle;
+@class NSString, NSDictionary, NSBundle, UIProgressHUD;
 	
 #ifndef IKX_PATTRIE_HPP
 	typedef void* IKXPhraseCompletionTableRef;
@@ -80,6 +83,13 @@ void IKXPlaySound();
 
 /// Get name of input mode.
 NSString* IKXNameOfMode(NSString* modeString);
+	
+	/// Find the localized string of specified key.
+	NSString* IKXLocalizedString(NSString* key);
+	
+	/// 
+	UIProgressHUD* IKXShowLoadingHUD();
+	void IKXHideLoadingHUD(UIProgressHUD* hud);
 	
 	
 	IKXPhraseCompletionTableRef IKXPhraseCompletionTableCreate(NSString* language);	///< Create default phrase completion table for specific language.

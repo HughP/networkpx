@@ -34,6 +34,7 @@
 #import <UIKit/UIKit2.h>
 #import "libiKeyEx.h"
 #include <libkern/OSAtomic.h>
+#include <pthread.h>
 
 extern BOOL IKXIsiKeyExMode(NSString* modeString) {
 	return [modeString hasPrefix:@"iKeyEx:"];
@@ -47,7 +48,7 @@ static int _IKXKeyboardChooserPref = 3, _IKXConfirmWithSpacePref = 2;
 static IKXAppType _IKXCurrentAppType = IKXAppTypeError;
 extern NSDictionary* IKXConfigDictionary() {
 	if (_IKXConfigDictionary == nil) {
-		NSDictionary* temp_IKXConfigDictionary = [[NSDictionary alloc] initWithContentsOfFile:IKX_LIB_PATH@"/Config.plist"];
+		NSDictionary* temp_IKXConfigDictionary = [[NSDictionary alloc] initWithContentsOfFile:IKX_CONFIG_PATH];
 		if (!OSAtomicCompareAndSwapPtrBarrier(nil, temp_IKXConfigDictionary, (void*volatile*)&_IKXConfigDictionary))
 			[temp_IKXConfigDictionary release];
 	}
@@ -66,14 +67,14 @@ extern void IKXFlushConfigDictionary() {
 	}
 }
 extern int IKXKeyboardChooserPreference() { 
-	if (_IKXKeyboardChooserPref >= 3) {
+	while (_IKXKeyboardChooserPref >= 3) {
 		NSString* kbChooser = [IKXConfigDictionary() objectForKey:@"kbChooser"];
 		_IKXKeyboardChooserPref = kbChooser ? [kbChooser integerValue] : 1;
 	}
 	return _IKXKeyboardChooserPref;
 }
 extern BOOL IKXConfirmWithSpacePreference() {
-	if (_IKXConfirmWithSpacePref >= 2) {
+	while (_IKXConfirmWithSpacePref >= 2) {
 		NSNumber* confWithSpace = [IKXConfigDictionary() objectForKey:@"confirmWithSpace"];
 		_IKXConfirmWithSpacePref = confWithSpace ? [confWithSpace boolValue] : 1;
 	}
@@ -140,8 +141,9 @@ extern NSString* IKXNameOfMode(NSString* modeString) {
 
 //------------------------------------------------------------------------------
 
-IKXAppType IKXAppTypeOfCurrentApplication() {
-	if (_IKXCurrentAppType == IKXAppTypeError) {
+extern IKXAppType IKXAppTypeOfCurrentApplication() {
+	// Make sure Error is not returned if a flush happened during calculation.
+	while (_IKXCurrentAppType == IKXAppTypeError) {
 		NSString* appID = [[NSBundle mainBundle] bundleIdentifier];
 		NSDictionary* appTypes = [IKXConfigDictionary() objectForKey:@"appTypes"];
 		NSSet* ansiApps = [NSSet setWithArray:[appTypes objectForKey:@"ANSI"]];
@@ -172,3 +174,32 @@ IKXAppType IKXAppTypeOfCurrentApplication() {
 	}
 	return _IKXCurrentAppType;
 }
+
+//------------------------------------------------------------------------------
+
+extern NSString* IKXLocalizedString(NSString* key) {
+	static NSBundle* sysBundle = nil;
+	if (!sysBundle) {
+		NSBundle* temp_sysBundle = [[NSBundle alloc] initWithPath:IKX_PREFS_PATH];
+		if (!OSAtomicCompareAndSwapPtrBarrier(nil, temp_sysBundle, (void*volatile*)&sysBundle))
+			[temp_sysBundle release];
+	}
+	return [sysBundle localizedStringForKey:key value:nil table:@"iKeyEx"] ?: key;
+}
+
+//------------------------------------------------------------------------------
+
+extern UIProgressHUD* IKXShowLoadingHUD() {
+	UIProgressHUD* hud = [UIProgressHUD new];
+	[hud setText:IKXLocalizedString(@"Loading...")];	
+	[hud showInView:[UITextEffectsWindow sharedTextEffectsWindow]];
+	return hud;
+}
+
+extern void IKXHideLoadingHUD(UIProgressHUD* hud) {
+	[hud hide];
+	[hud release];
+}
+
+// 1 <hide>
+//       <show>

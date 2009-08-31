@@ -35,13 +35,15 @@
 #import <WebKit/WebKit.h>
 #import <WebCore/wak/WebCoreThread.h>
 
-@interface UITextViewLegacy : NSObject
+@interface DOMHTMLInputElement ()
+-(void)setSelectionRange:(int)start end:(int)end;
 @end
+
 
 
 // Note: setSelection won't verify if newRange is valid.
 void setSelection(id<UIKeyboardInput> del, NSRange newRange) {
-	if ([del isKindOfClass:[UIFieldEditor class]]) {
+	if ([del isKindOfClass:objc_getClass("UIFieldEditor")]) {
 		[(UIFieldEditor*)del setSelection:newRange];
 		return;
 	} else if ([del isKindOfClass:[UIWebDocumentView class]]) {
@@ -51,9 +53,9 @@ void setSelection(id<UIKeyboardInput> del, NSRange newRange) {
 			return;
 		}
 	} else if ([del isKindOfClass:[DOMElement class]]) {
-		if ([(NSObject*)del respondsToSelector:@selector(setSelectionRange:end:)]) {
+		if ([del respondsToSelector:@selector(setSelectionRange:end:)]) {
 			// <input type="text"/> and <textarea/> support this safer and faster method.
-			[del setSelectionRange:newRange.location end:newRange.location+newRange.length];
+			[(DOMHTMLInputElement*)del setSelectionRange:newRange.location end:newRange.location+newRange.length];
 		} else {
 			WebThreadLock();
 			DOMRange* range = [del selectedDOMRange];

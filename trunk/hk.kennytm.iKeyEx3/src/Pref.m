@@ -68,14 +68,19 @@ static NSUInteger setKeyboards(UIKeyboardImpl* impl, NSArray* keyboards) {
 
 static void saveConfig() {
 	if (configMutated) {
-		NSString* configPath = IKX_LIB_PATH@"/Config.plist";
-		if ([configDict writeToFile:configPath atomically:YES]) {
+		if ([configDict writeToFile:IKX_CONFIG_PATH atomically:YES]) {
 			configMutated = NO;
-			chmod([configPath UTF8String], 0666);
+			const char* configSysPath = [IKX_CONFIG_PATH fileSystemRepresentation];
+			chmod(configSysPath, 0666);
+			chown(configSysPath, 501, 501);
 			IKXFlushConfigDictionary();
 			notify_post("hk.kennytm.iKeyEx3.FlushConfigDictionary");
-		} else
-			NSLog(@"iKeyEx: Warning: Failed to save '%@'. All configs will be lost.", configPath);
+		} else {
+			NSString* errorMsg = @"iKeyEx: Warning: Failed to save '"IKX_CONFIG_PATH@"'. All configs will be lost.\n\nPlease make sure the file and the containing folder is owned by mobile:mobile and have permission ≥644.";
+			UIAlertView* errAlert = [[UIAlertView alloc] initWithTitle:nil message:errorMsg delegate:nil cancelButtonTitle:@"OK" otherButtonTitles:nil];
+			[errAlert show];
+			[errAlert release];
+		}
 	}
 }
 static NSMutableDictionary* mutableConfigDict() {
@@ -648,7 +653,7 @@ static void recomputeAllModes() {
 @implementation iKeyExPrefListController
 -(id)initForContentSize:(CGSize)size {
 	if ((self = [super initForContentSize:size])) {
-		configDict = [[NSMutableDictionary alloc] initWithContentsOfFile:IKX_LIB_PATH@"/Config.plist"];
+		configDict = [[NSMutableDictionary alloc] initWithContentsOfFile:IKX_CONFIG_PATH];
 		if (configDict == nil) {
 			// Generate an initial miminum structure.
 			configDict = [[NSMutableDictionary alloc] initWithObjectsAndKeys:
