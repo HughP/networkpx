@@ -1,9 +1,4 @@
 {
-	UIKeyboardLayoutClass = {
-		Landscape = FiveRowQWERTYLayoutLandscape;
-		Portrait  = FiveRowQWERTYLayout;
-	};
-	UIKeyboardInputManagerClass = "=en_US";
-	CFBundleDisplayName = "5-Row QWERTY";
+	UIKeyboardLayoutClass = layout.plist;
 	PSBundle = Preferences;
 }

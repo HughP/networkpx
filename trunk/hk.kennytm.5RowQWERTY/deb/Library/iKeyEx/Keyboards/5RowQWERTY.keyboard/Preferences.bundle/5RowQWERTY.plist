@@ -40,6 +40,7 @@
 			get = "valueForSpecifier:";
 			set = "setValue:forSpecifier:";
 		},
+/*
 		{ cell = PSGroupCell; },
 		{ cell = PSLinkListCell;
 			detail = PSListItemsController;
@@ -57,5 +58,6 @@
 			label = "Clear layout cache";
 			id = clearCache;
 		},
+*/
 	);
 }

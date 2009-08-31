@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [[ $1 == install ]]; then
-	iKeyEx-KBMan add 5RowQWERTY
+	iKeyEx-KBMan register "iKeyEx:5RowQWERTY" "5-Row QWERTY" 5RowQWERTY "=en_US"
 	exit 0
 elif [[ $1 == upgrade ]]; then
 	# Preserve the config.
