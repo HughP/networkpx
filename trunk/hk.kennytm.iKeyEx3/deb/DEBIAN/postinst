@@ -1,0 +1,11 @@
+#!/bin/sh
+
+if [[ $1 == configure ]]; then
+	if [[ -e /Library/iKeyEx/Config.plist ]]; then
+		mv /Library/iKeyEx/Config.plist /var/mobile/Library/Keyboard/iKeyEx\:\:config.plist;
+	fi;
+	touch /var/mobile/Library/Keyboard/iKeyEx\:\:config.plist;
+	chown mobile:mobile /var/mobile/Library/Keyboard/iKeyEx\:\:config.plist;
+	chmod a+rw /var/mobile/Library/Keyboard/iKeyEx\:\:config.plist;
+fi
+exit 0;

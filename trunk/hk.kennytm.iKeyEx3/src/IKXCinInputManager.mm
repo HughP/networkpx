@@ -261,6 +261,7 @@ __attribute__((visibility("hidden")))
 		input_string = [NSMutableString new];
 		candidate_computer = [IKXCandidateComputer new];
 		[candidate_computer startThreadDispatchQueue];
+		shown_completion = disallow_completion = [[IKXConfigDictionary() objectForKey:@"DisallowCompletion"] boolValue];
 	}
 	return self;
 }
@@ -370,7 +371,7 @@ __attribute__((visibility("hidden")))
 		[[candidate_computer send] computeWithInputString:[input_string substringToIndex:valid_input_string_length] lastAcceptedCandidate:last_accepted_candidate];
 
 	} else {
-		shown_completion = NO;
+		shown_completion = disallow_completion;
 		[[candidate_computer send] computeWithInputString:nil lastAcceptedCandidate:nil];
 	}
 }

@@ -24,3 +24,6 @@ Tap = "點一下";
 "Delete %u cache entry" = "移除 %u 個快取條目";
 "Delete %u cache entries" = "移除 %u 個快取條目";
 "Loading..." = "載入中⋯";
+"Associated phrases" = "相關字詞";
+Customize = "自訂";
+"Nothing to customize." = "沒有需自訂的東西。";

@@ -48,6 +48,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	NSMutableString* input_string;
 	BOOL wait_for_remaining_input;
 	BOOL shown_completion;
+	BOOL disallow_completion;
 	unsigned valid_input_string_length;
 }
 @end
