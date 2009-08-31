@@ -10,6 +10,6 @@ Section: Keyboards
 Depends: mobilesubstrate (>=0.9-0), preferenceloader (>=1.1)
 Pre-Depends: firmware (>=3.0)
 Conflicts: hk.kennytm.hclipboard (<< 0.1-99), hk.kennytm.5rowqwerty (<< 0.1-99), hk.kennytm.l33ttyper (<< 0.1-99)
-Installed-Size: 328
+Installed-Size: 336
 Support: http://code.google.com/p/networkpx/wiki/FAQ
 dev: kennytm

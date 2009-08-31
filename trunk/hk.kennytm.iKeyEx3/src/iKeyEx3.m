@@ -574,7 +574,7 @@ static NSString* caUp   (id<UIKeyboardInput> delegate, UIKeyboardImpl* impl, NSS
 	return nil;
 }
 static NSString* caDown (id<UIKeyboardInput> delegate, UIKeyboardImpl* impl, NSString* input) {
-	moveSelectionPointTo(delegate, impl, 0, 1);
+	moveSelectionPointTo(delegate, impl, 1, 1);
 	return nil;	
 }
 static NSString* caHome (id<UIKeyboardInput> delegate, UIKeyboardImpl* impl, NSString* input) {
