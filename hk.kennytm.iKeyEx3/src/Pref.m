@@ -443,6 +443,7 @@ static void prepareLinks(iKeyExCustomizeController* self, NSString* suffix, NSMu
 
 @interface ClearCachePane : PSEditingPane<UITableViewDataSource, UITableViewDelegate, UIActionSheetDelegate> {
 	NSMutableArray* displayNames[5];
+	CFMutableDictionaryRef fileSizes[5];	// display name -> total "4 KiB blocks" of the group of files.
 	NSMutableDictionary* filenames[5];	// display name --> all related filenames.
 	NSFileManager* fman;
 	NSMutableArray* selectedIndexPaths;
@@ -455,6 +456,7 @@ static void prepareLinks(iKeyExCustomizeController* self, NSString* suffix, NSMu
 	for (unsigned i = 0; i < sizeof(displayNames)/sizeof(NSMutableArray*); ++ i) {
 		[displayNames[i] release];
 		[filenames[i] release];
+		CFRelease(fileSizes[i]);
 	}
 	[fman release];
 	[selectedIndexPaths release];
@@ -468,12 +470,14 @@ static void prepareLinks(iKeyExCustomizeController* self, NSString* suffix, NSMu
 	for (unsigned i = 0; i < sizeof(displayNames)/sizeof(NSMutableArray*); ++ i) {
 		filenames[i] = [NSMutableDictionary new];
 		displayNames[i] = [NSMutableArray new];
+		fileSizes[i] = CFDictionaryCreateMutable(NULL, 0, &kCFTypeDictionaryKeyCallBacks, NULL);
 	}
 	
 	NSBundle* selfBundle = [self->_delegate bundle];
 	NSLocale* curLocale = [NSLocale currentLocale];
 	
-	for (NSString* fn in [fman contentsOfDirectoryAtPath:IKX_SCRAP_PATH error:NULL]) {
+	[fman changeCurrentDirectoryPath:IKX_SCRAP_PATH];
+	for (NSString* fn in [fman contentsOfDirectoryAtPath:@"." error:NULL]) {
 		if ([fn hasPrefix:@"iKeyEx::cache::"]) {
 			NSString* substring = [fn substringFromIndex:strlen("iKeyEx::cache::")];
 			unsigned index = 4;
@@ -537,6 +541,11 @@ static void prepareLinks(iKeyExCustomizeController* self, NSString* suffix, NSMu
 				[filenames[index] setObject:arr forKey:displayName];
 				[displayNames[index] addObject:displayName];
 			}
+			intptr_t size = (intptr_t)CFDictionaryGetValue(fileSizes[index], displayName);
+			unsigned long long actual_filesize = [[fman attributesOfItemAtPath:fn error:NULL] fileSize];
+			size += (actual_filesize + 4095) / 4096;
+			CFDictionarySetValue(fileSizes[index], displayName, (const void*)size);
+			
 			[arr addObject:fn];
 		}
 	}
@@ -567,9 +576,23 @@ static void prepareLinks(iKeyExCustomizeController* self, NSString* suffix, NSMu
 	} else {
 		UITableViewCell* cell = [tableView dequeueReusableCellWithIdentifier:@"."];
 		if (cell == nil)
-			cell = [[[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"."] autorelease];
+			cell = [[[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:@"."] autorelease];
 		
-		cell.textLabel.text = [displayNames[sect-1] objectAtIndex:indexPath.row];
+		NSString* dispName = [displayNames[sect-1] objectAtIndex:indexPath.row];
+		cell.textLabel.text = dispName;
+		intptr_t fsize = (intptr_t)CFDictionaryGetValue(fileSizes[sect-1], dispName);
+		NSString* size;
+		if (fsize < 1024/4)
+			size = [NSString stringWithFormat:@"%d KiB", fsize*4];
+		else if (fsize < 1048576/4) {
+			int mib = (fsize*5)/128;
+			size = [NSString stringWithFormat:@"%d.%d MiB", mib/10, mib%10];
+		} else {
+			int gib = (fsize*5)/131072;
+			size = [NSString stringWithFormat:@"%d.%d GiB", gib/10, gib%10];
+		}
+		
+		cell.detailTextLabel.text = size;
 		return cell;
 	}
 }
