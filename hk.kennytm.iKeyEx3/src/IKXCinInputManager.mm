@@ -261,7 +261,7 @@ __attribute__((visibility("hidden")))
 		input_string = [NSMutableString new];
 		candidate_computer = [IKXCandidateComputer new];
 		[candidate_computer startThreadDispatchQueue];
-		shown_completion = disallow_completion = [[IKXConfigDictionary() objectForKey:@"DisallowCompletion"] boolValue];
+		shown_completion = disallow_completion = [[IKXConfigDictionary() objectForKey:@"disallowCompletion"] boolValue];
 	}
 	return self;
 }
