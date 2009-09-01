@@ -37,6 +37,9 @@ extern UIKBKeyboard* (*UIKBGetKeyboardByName) (NSString* name);
 static inline BOOL sublayoutAutoshiftable(NSString* sublayoutKey) {
 	return ([@"URL" isEqualToString:sublayoutKey] || [@"Alphabet" isEqualToString:sublayoutKey] || [@"EmailAddress" isEqualToString:sublayoutKey]);
 }
+static inline BOOL sublayoutIsAlt(NSString* sublayoutKey) {
+	return [@"Numbers" isEqualToString:sublayoutKey] || [sublayoutKey hasSuffix:@"Alt"];
+}
 static inline BOOL sublayoutLooksLikeShiftAlternate(NSString* sublayoutKey) {
 	return !([@"Numbers" isEqualToString:sublayoutKey] || [@"PhonePad" isEqualToString:sublayoutKey] || [@"URLAlt" isEqualToString:sublayoutKey] || [@"EmailAddressAlt" isEqualToString:sublayoutKey]);
 }
@@ -223,6 +226,8 @@ static UIKBKeyplane* copyKeyplane(UIKBKeyplane* plane) {
 
 static UIKBKeyplane* constructUIKBKeyplaneFromSublayout(NSMutableDictionary* layoutPlist, NSString* sublayoutKey, BOOL shifted, BOOL isLandscape) {
 	NSMutableDictionary* sublayout = [layoutPlist objectForKey:sublayoutKey];
+	
+	BOOL alted = sublayoutIsAlt(sublayoutKey);
 	
 	NSString* shiftedName = [sublayoutKey stringByAppendingString:@"-shifted"];
 	NSString* moreAltName = sublayoutMoreAlternate(sublayoutKey);
@@ -445,7 +450,7 @@ static UIKBKeyplane* constructUIKBKeyplaneFromSublayout(NSMutableDictionary* lay
 					key.displayType = @"String";
 					key.interactionType = @"String-Popup";
 					key.name = str;
-					BOOL is_prime = [@"'" isEqualToString:str];
+					BOOL is_prime = alted && [@"'" isEqualToString:str];
 					if (is_prime || traits != nil) {
 						UIKBAttributeList* attribs = [[UIKBAttributeList alloc] init];
 						if (is_prime)
@@ -659,6 +664,14 @@ static UIKBKeyplane* constructUIKBKeyplaneFromSublayout(NSMutableDictionary* lay
 		key.displayString = key.displayType = key.interactionType = @"Space";
 		key.name = @"Space-Key";
 		[specialKeys addObject:key];
+		
+		// Fix issue 313.
+		if (alted) {
+			UIKBAttributeList* list = [[UIKBAttributeList alloc] init];
+			[list setValue:@"yes" forName:@"more-after"];
+			list.explicit = YES;
+			key.attributes = list;
+		}
 		
 		UIKBGeometry* keygeom = [UIKBGeometry geometry];
 		keygeom.x = UIKBLengthMakePercentage(isLandscape ? 20 : 25);
