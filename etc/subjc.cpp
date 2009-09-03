@@ -1,4 +1,4 @@
-#include <substrate.h>
+#include <substrate2.h>
 #include <cstdio>
 #include "objc_type.h"	// from class-dump-z
 #include <stack>
@@ -8,6 +8,12 @@
 
 namespace {
 #define USED __attribute__((used)) 
+#if __i386__
+#define FASTCALL __attribute__((regparm(3)))
+#else
+#define FASTCALL
+#endif
+	
 	static IMP original_objc_msgSend __asm__("_original_objc_msgSend") = NULL;
 	static void* original_objc_msgSend_stret __asm__("_original_objc_msgSend_stret") = NULL;
 	static int enabled __asm__("_enabled");
@@ -26,7 +32,7 @@ namespace {
 	static std::stack<ObjCTypeRecord::TypeIndex> ret_types;
 	static std::stack<id> selfs;
 	
-	extern "C" USED void push_lr (int lr) { lr_list.push(lr); }
+	extern "C" USED FASTCALL void push_lr (int lr) { lr_list.push(lr); }
 	extern "C" USED int pop_lr () { int retval = lr_list.top(); lr_list.pop(); return retval; }
 	
 	static int enabled_temporary;
@@ -203,7 +209,7 @@ namespace {
 		return ret;
 	}
 	
-	extern "C" USED void show_retval (const char* addr, int not_filtered) {
+	extern "C" USED FASTCALL void show_retval (const char* addr, int not_filtered) {
 		--cur_depth;
 		
 		if (not_filtered) {
@@ -235,127 +241,206 @@ namespace {
 		
 		restore_temporary();
 	}
+	
+	USED static void replaced_objc_msgSend() __asm__("_replaced_objc_msgSend");
+	USED static void replaced_objc_msgSend_stret() __asm__("_replaced_objc_msgSend_stret");
 
-	__attribute__((naked)) void replaced_objc_msgSend(id self, SEL _cmd, ...) {
 #if __arm__
-		__asm__(// 0. Check if the hook is enabled. If not, quit now.
-				"ldr r12, (LEna0)\n"
-"LoadEna0:"		"ldr r12, [pc, r12]\n"
-				"teq r12, #0\n"
-				"ldreq r12, (LOrig0)\n"
-"LoadOrig0:"	"ldreq pc, [pc, r12]\n"
+	__asm__(".text\n"
+			"_replaced_objc_msgSend:\n"
+			
+			// 0. Check if the hook is enabled. If not, quit now.	
+			"ldr r12, (LEna0)\n"
+"LoadEna0:"	"ldr r12, [pc, r12]\n"
+			"teq r12, #0\n"
+			"ldreq r12, (LOrig0)\n"
+"LoadOrig0:""ldreq pc, [pc, r12]\n"
+			
+			// 1. Save the registers.
+			"ldr r12, (LSR1)\n"
+"LoadSR1:"	"add r12, pc, r12\n"
+			"stmia r12, {r0-r3, lr}\n"
 				
-				// 1. Save the registers.
-				"ldr r12, (LSR1)\n"
-"LoadSR1:"		"add r12, pc, r12\n"
-				"stmia r12, {r0-r3, lr}\n"
+			// 2. Print the arguments.
+			"bl _print_args\n"
+			"ldr r1, (LSRX)\n"
+			"ldr r2, (LSR2)\n"
+"LoadSRX:"	"str r0, [pc, r1]\n"
 				
-				// 2. Print the arguments.
-				"bl _print_args\n"
-				"ldr r1, (LSRX)\n"
-				"ldr r2, (LSR2)\n"
-"LoadSRX:"		"str r0, [pc, r1]\n"
+			// 3. Push lr onto our custom stack.
+"LoadSR2:"	"ldr r0, [pc, r2]\n"
+			"bl _push_lr\n"
+			
+			// 4. Restore the registers.
+			"ldr r1, (LSR3)\n"
+"LoadSR3:"	"add r2, pc, r1\n"
+			"ldmia r2, {r0-r3}\n"
 				
-				// 3. Push lr onto our custom stack.
-"LoadSR2:"		"ldr r0, [pc, r2]\n"
-				"bl _push_lr\n"
+			// 5. Call original objc_msgSend
+			"ldr r12, (LOrig1)\n"
+"LoadOrig1:""ldr r12, [pc, r12]\n"
+			"blx r12\n"
+
+			// 6. Print return value.
+			"ldr r12, (LSRY)\n"
+			"push {r0-r3}\n"	// assume no intrinsic type takes >128 bits...
+"LoadSRY:"	"ldr r1, [pc, r12]\n"
+			"mov r0, sp\n"
+			"bl _show_retval\n"
+			"bl _pop_lr\n"
+			"mov lr, r0\n"
+			"pop {r0-r3}\n"
+			"bx lr\n"
 				
-				// 4. Restore the registers.
-				"ldr r1, (LSR3)\n"
-"LoadSR3:"		"add r2, pc, r1\n"
-				"ldmia r2, {r0-r3}\n"
-				
-				// 5. Call original objc_msgSend
-				"ldr r12, (LOrig1)\n"
-"LoadOrig1:"	"ldr r12, [pc, r12]\n"
-				"blx r12\n"
-							
-				// 6. Print return value.
-				"ldr r12, (LSRY)\n"
-				"push {r0-r3}\n"	// assume no intrinsic type takes >128 bits...
-"LoadSRY:"		"ldr r1, [pc, r12]\n"
-				"mov r0, sp\n"
-				"bl _show_retval\n"
-				"bl _pop_lr\n"
-				"mov lr, r0\n"
-				"pop {r0-r3}\n"
-				"bx lr\n"
-				
-	"LEna0:		.long _enabled - 8 - (LoadEna0)\n"
-	"LOrig0:	.long _original_objc_msgSend - 8 - (LoadOrig0)\n"
-	"LSR1:		.long _rx_reserve - 8 - (LoadSR1)\n"
-	"LSRX:		.long _rx_reserve - 8 - (LoadSRX) + 20\n"
-	"LSR2:		.long _rx_reserve - 8 - (LoadSR2) + 16\n"
-	"LSR3:		.long _rx_reserve - 8 - (LoadSR3)\n"
-	"LSRY:		.long _rx_reserve - 8 - (LoadSRY) + 20\n"
-	"LOrig1:	.long _original_objc_msgSend - 8 - (LoadOrig1)\n");
+"LEna0:		.long _enabled - 8 - (LoadEna0)\n"
+"LOrig0:	.long _original_objc_msgSend - 8 - (LoadOrig0)\n"
+"LSR1:		.long _rx_reserve - 8 - (LoadSR1)\n"
+"LSRX:		.long _rx_reserve - 8 - (LoadSRX) + 20\n"
+"LSR2:		.long _rx_reserve - 8 - (LoadSR2) + 16\n"
+"LSR3:		.long _rx_reserve - 8 - (LoadSR3)\n"
+"LSRY:		.long _rx_reserve - 8 - (LoadSRY) + 20\n"
+"LOrig1:	.long _original_objc_msgSend - 8 - (LoadOrig1)\n");
+	
+	__asm__(".text\n"
+			"_replaced_objc_msgSend_stret:"
+			
+			// 0. Check if the hook is enabled. If not, quit now.
+			"ldr r12, (LES0)\n"
+"LoadES0:"	"ldr r12, [pc, r12]\n"
+			"teq r12, #0\n"
+			"ldreq r12, (LOS0)\n"
+"LoadOS0:"	"ldreq pc, [pc, r12]\n"
+			
+			// 1. Save the registers.
+			"ldr r12, (LSS1)\n"
+"LoadSS1:"	"add r12, pc, r12\n"
+			"stmia r12, {r0-r3, lr}\n"
+			
+			// 2. Print the arguments.
+			"bl _print_args_stret\n"
+			"ldr r1, (LSSX)\n"
+			"ldr r2, (LSS2)\n"
+"LoadSSX:"	"str r0, [pc, r1]\n"
+			
+			// 3. Push lr onto our custom stack.
+"LoadSS2:"	"ldr r0, [pc, r2]\n"
+			"bl _push_lr\n"
+			
+			// 4. Restore the registers.
+			"ldr r1, (LSS3)\n"
+"LoadSS3:"	"add r2, pc, r1\n"
+			"ldmia r2, {r0-r3}\n"
+			
+			// 5. Call original objc_msgSend_stret
+			"ldr r12, (LOS1)\n"
+"LoadOS1:"	"ldr r12, [pc, r12]\n"
+			"blx r12\n"
+			
+			// 6. Print return value.
+			"ldr r2, (LSSY)\n"
+			"str r0, [sp, #-4]!\n"
+"LoadSSY:"	"ldr r1, [pc, r2]\n"
+			"bl _show_retval\n"
+			"bl _pop_lr\n"
+			"mov lr, r0\n"
+			"ldr r0, [sp], #4\n"
+			"bx lr\n"				
+			
+"LES0:		.long _enabled - 8 - (LoadES0)\n"
+"LOS0:		.long _original_objc_msgSend_stret - 8 - (LoadOS0)\n"
+"LSS1:		.long _rx_reserve - 8 - (LoadSS1)\n"
+"LSSX:		.long _rx_reserve - 8 - (LoadSSX) + 20\n"
+"LSS2:		.long _rx_reserve - 8 - (LoadSS2) + 16\n"
+"LSS3:		.long _rx_reserve - 8 - (LoadSS3)\n"
+"LSSY:		.long _rx_reserve - 8 - (LoadSSY) + 20\n"
+"LOS1:		.long _original_objc_msgSend_stret - 8 - (LoadOS1)\n");
+	
+
 
 #elif __i386__
-#error Not available in x86 yet.
+	
+	__asm__(".text\n"
+			"_replaced_objc_msgSend:\n"
+			
+			"call LR0\n"
+"LR0:"		"popl %ecx\n"
+			
+			// 0. Check if the hook is enabled. If not, quit now.	
+			"movl _enabled-LR0(%ecx), %eax\n"
+			"test %eax, %eax\n"
+			"jne LRCont\n"
+			"movl _original_objc_msgSend-LR0(%ecx), %eax\n"
+			"jmp *%eax\n"
+			
+			// 1. Push lr onto our custom stack.
+"LRCont:"	"popl %eax\n"
+			"call _push_lr\n"
+	
+			// 1. Print the arguments.
+			"call _print_args\n"
+			"call LR1\n"
+"LR1:"		"popl %ecx\n"
+			"movl %eax, _rx_reserve-LR1(%ecx)\n"
+			
+			// 2. Call original objc_msgSend.
+			"movl _original_objc_msgSend-LR1(%ecx), %eax\n"
+			"call *%eax\n"
+			
+			// 3. Print return value.
+			"call LR2\n"
+"LR2:"		"popl %ecx\n"
+			"movl %eax, _rx_reserve+4-LR2(%ecx)\n"
+			"movl %edx, _rx_reserve+8-LR2(%ecx)\n"
+			"leal _rx_reserve+4-LR2(%ecx), %eax\n"
+			"movl _rx_reserve-LR2(%ecx), %ecx\n"
+			"call _show_retval\n"
+			"call _pop_lr\n"
+			"pushl %eax\n"
+			"call LR3\n"
+"LR3:"		"popl %ecx\n"
+			"movl _rx_reserve+4-LR3(%ecx), %eax\n"
+			"movl _rx_reserve+8-LR3(%ecx), %edx\n"
+			"ret\n");
+	
+	__asm__(".text\n"
+			"_replaced_objc_msgSend_stret:\n"
+			
+			"call LS0\n"
+"LS0:"		"popl %ecx\n"
+			
+			// 0. Check if the hook is enabled. If not, quit now.	
+			"movl _enabled-LS0(%ecx), %eax\n"
+			"test %eax, %eax\n"
+			"jne LSCont\n"
+			"movl _original_objc_msgSend-LS0(%ecx), %eax\n"
+			"jmp *%eax\n"
+			
+			// 1. Push lr onto our custom stack.
+"LSCont:"	"popl %eax\n"
+			"call _push_lr\n"
+			
+			// 1. Print the arguments.
+			"call _print_args_stret\n"
+			"call LS1\n"
+"LS1:"		"popl %ecx\n"
+			"movl %eax, _rx_reserve-LS1(%ecx)\n"
+			
+			// 2. Call original objc_msgSend.
+			"movl _original_objc_msgSend_stret-LS1(%ecx), %eax\n"
+			"call *%eax\n"
+			
+			// 3. Print return value.
+			"call LS2\n"
+"LS2:"		"popl %ecx\n"
+			"movl _rx_reserve-LS2(%ecx), %edx\n"
+			"call _show_retval\n"
+			"call _pop_lr\n"
+			"pushl %eax\n"
+			"ret\n");
+		
 #else
 #error Not available in non-ARM or non-x86 platforms.
 #endif
-	}
-	
-	__attribute__((naked)) void replaced_objc_msgSend_stret(void* retval, id self, SEL _cmd, ...) {
-#if __arm__
-		__asm__(// 0. Check if the hook is enabled. If not, quit now.
-				"ldr r12, (LES0)\n"
-"LoadES0:"		"ldr r12, [pc, r12]\n"
-				"teq r12, #0\n"
-				"ldreq r12, (LOS0)\n"
-"LoadOS0:"		"ldreq pc, [pc, r12]\n"
-				
-				// 1. Save the registers.
-				"ldr r12, (LSS1)\n"
-"LoadSS1:"		"add r12, pc, r12\n"
-				"stmia r12, {r0-r3, lr}\n"
-				
-				// 2. Print the arguments.
-				"bl _print_args_stret\n"
-				"ldr r1, (LSSX)\n"
-				"ldr r2, (LSS2)\n"
-"LoadSSX:"		"str r0, [pc, r1]\n"
-				
-				// 3. Push lr onto our custom stack.
-"LoadSS2:"		"ldr r0, [pc, r2]\n"
-				"bl _push_lr\n"
-				
-				// 4. Restore the registers.
-				"ldr r1, (LSS3)\n"
-"LoadSS3:"		"add r2, pc, r1\n"
-				"ldmia r2, {r0-r3}\n"
-				
-				// 5. Call original objc_msgSend_stret
-				"ldr r12, (LOS1)\n"
-"LoadOS1:"		"ldr r12, [pc, r12]\n"
-				"blx r12\n"
-				
-				// 6. Print return value.
-				"ldr r2, (LSSY)\n"
-				"str r0, [sp, #-4]!\n"
-"LoadSSY:"		"ldr r1, [pc, r2]\n"
-				"bl _show_retval\n"
-				"bl _pop_lr\n"
-				"mov lr, r0\n"
-				"ldr r0, [sp], #4\n"
-				"bx lr\n"				
-				
-	"LES0:		.long _enabled - 8 - (LoadES0)\n"
-	"LOS0:		.long _original_objc_msgSend_stret - 8 - (LoadOS0)\n"
-	"LSS1:		.long _rx_reserve - 8 - (LoadSS1)\n"
-	"LSSX:		.long _rx_reserve - 8 - (LoadSSX) + 20\n"
-	"LSS2:		.long _rx_reserve - 8 - (LoadSS2) + 16\n"
-	"LSS3:		.long _rx_reserve - 8 - (LoadSS3)\n"
-	"LSSY:		.long _rx_reserve - 8 - (LoadSSY) + 20\n"
-	"LOS1:		.long _original_objc_msgSend_stret - 8 - (LoadOS1)\n");
-		
-#elif __i386__
-#error Not available in x86 yet.
-#else
-#error Not available in non-ARM or non-x86 platforms.
-#endif		
-	}
 	
 	template <typename T>
 	void clear_stl (T& x) {
@@ -376,7 +461,6 @@ extern "C" void SubjC_initialize () {
 	MSHookFunction(reinterpret_cast<void*>(objc_msgSend_stret),
 				   reinterpret_cast<void*>(replaced_objc_msgSend_stret),
 				   &original_objc_msgSend_stret);
-	
 }
 
 extern "C" void SubjC_clear_selector_filter() { filter_type = NoFilter; }

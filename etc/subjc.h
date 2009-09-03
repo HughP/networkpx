@@ -1,8 +1,8 @@
 #ifndef SUBJC_HOOK
 #define SUBJC_HOOK
 
-#if !__arm__
-#error Only available on ARM platforms!
+#if !__arm__ && !__i386__
+#error Only available on x86 and ARM platforms!
 #endif
 
 #if __cplusplus
