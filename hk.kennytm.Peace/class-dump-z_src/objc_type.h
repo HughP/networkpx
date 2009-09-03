@@ -141,6 +141,7 @@ public:
 	bool can_dereference_to_id_type(TypeIndex idx) const throw();
 	bool is_struct_type(TypeIndex idx) const throw() { const Type& type = ma_type_store[idx]; return type.type == '{' || type.type == '('; }
 	bool is_external_type(TypeIndex idx) const throw() { return ma_type_store[idx].external; }
+	bool can_reduce_to_type(TypeIndex from, TypeIndex to) const throw();
 	
 	bool are_types_compatible(TypeIndex a, TypeIndex b) const throw();
 	
