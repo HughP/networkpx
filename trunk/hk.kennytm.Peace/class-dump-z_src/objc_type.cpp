@@ -819,6 +819,33 @@ bool ObjCTypeRecord::can_dereference_to_id_type(TypeIndex idx) const throw() {
 	}
 }
 
+bool ObjCTypeRecord::can_reduce_to_type(TypeIndex from, TypeIndex to) const throw() {
+	if (from == to)
+		return true;
+	
+	const Type* type = &(ma_type_store[from]);
+	TypeIndex last_index = from;
+	
+	while (true) {
+		switch (type->type) {
+			default:
+				return are_types_compatible(last_index, to);
+				
+			case 'r':
+			case 'R':
+			case 'n':
+			case 'N':
+			case 'o':
+			case 'O':
+			case 'V':
+			case '!':
+				last_index = type->subtypes[0];
+				type = &(ma_type_store[last_index]);
+				break;
+		}
+	}
+}
+
 bool ObjCTypeRecord::are_types_compatible(TypeIndex a, TypeIndex b) const throw() {
 	if (a == b)
 		return true;
