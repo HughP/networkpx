@@ -829,7 +829,7 @@ bool ObjCTypeRecord::can_reduce_to_type(TypeIndex from, TypeIndex to) const thro
 	while (true) {
 		switch (type->type) {
 			default:
-				return are_types_compatible(last_index, to);
+				return last_index == to;
 				
 			case 'r':
 			case 'R':

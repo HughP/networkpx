@@ -8,7 +8,11 @@
 #elif __i386__ || __ppc__
 #import <objc/runtime.h>
 #import <objc/message.h>
-extern void* APEPatchCreate(const void* original, const void* replacement);
+extern
+#if __cplusplus
+"C"
+#endif
+void* APEPatchCreate(const void* original, const void* replacement);
 #define MSHookFunction(original, replacement, result) (*(result) = APEPatchCreate((original), (replacement)))
 IMP MSHookMessage(Class _class, SEL sel, IMP imp, const char* prefix);
 #define REGPARM3 __attribute__((regparm(3)))
