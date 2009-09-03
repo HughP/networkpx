@@ -15,9 +15,13 @@ extern "C" {
 
 	void SubjC_initialize ();
 	
-	void SubjC_clear_filter();
-	void SubjC_blacklist(size_t count, SEL selectors[]);
-	void SubjC_whitelist(size_t count, SEL selectors[]);
+	void SubjC_clear_selector_filter();
+	void SubjC_blacklist_selectors(size_t count, SEL selectors[]);
+	void SubjC_whitelist_selectors(size_t count, SEL selectors[]);
+	
+	void SubjC_clear_class_filter();
+	void SubjC_blacklist_classes(size_t count, Class classes[]);
+	void SubjC_whitelist_classes(size_t count, Class classes[]);
 	
 	void SubjC_start(FILE* f, size_t maximum_depth, bool print_arguments, bool print_return_value);
 	void SubjC_end();
