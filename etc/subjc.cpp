@@ -16,12 +16,14 @@ namespace {
 	
 	static IMP original_objc_msgSend __asm__("_original_objc_msgSend") = NULL;
 	static void* original_objc_msgSend_stret __asm__("_original_objc_msgSend_stret") = NULL;
+	static void* original_objc_msgSend_fpret __asm__("_original_objc_msgSend_fpret") = NULL;
+	
 	static int enabled __asm__("_enabled");
 	static USED int rx_reserve[6] __asm__("_rx_reserve");	// r0, r1, r2, r3, lr, saved.
 	
 	static ObjCTypeRecord record;
 	
-	void fprint_spaces (std::FILE* f, size_t n) {
+	static void fprint_spaces (std::FILE* f, size_t n) {
 		static char spaces[] = "                ";
 		for (size_t i = 0; i < n/16; ++ i)
 			std::fprintf(f, spaces);
@@ -44,7 +46,7 @@ namespace {
 	static std::tr1::unordered_set<SEL> filter_set;
 	static std::tr1::unordered_set<Class> class_filter_set;
 
-	void print_id(std::FILE* f, void* x) {
+	static void print_id(std::FILE* f, void* x) {
 		if (x == NULL) {
 			std::fprintf(f, "nil");
 		} else { 
@@ -120,7 +122,7 @@ namespace {
 	static SEL class_sel, alloc_sel, allocWithZone_sel;
 	static size_t cur_depth, max_depth;
 	static bool do_print_args, do_print_rv;
-	int print_args_v (id self, SEL _cmd, std::va_list va) {
+	static int print_args_v (id self, SEL _cmd, std::va_list va) {
 		disable_temporary();
 		
 		bool do_print_open_brace = last_action_is_push && do_print_rv;
@@ -244,7 +246,8 @@ namespace {
 	
 	USED static void replaced_objc_msgSend() __asm__("_replaced_objc_msgSend");
 	USED static void replaced_objc_msgSend_stret() __asm__("_replaced_objc_msgSend_stret");
-
+	USED static void replaced_objc_msgSend_fpret() __asm__("_replaced_objc_msgSend_fpret");
+	
 #if __arm__
 	__asm__(".text\n"
 			"_replaced_objc_msgSend:\n"
@@ -359,6 +362,27 @@ namespace {
 
 #elif __i386__
 	
+	extern "C" USED void show_float_retval (int not_filtered) {
+		--cur_depth;
+		
+		if (not_filtered) {
+			if (!do_print_rv || cur_depth > max_depth)
+				return;
+			
+			if (!last_action_is_push) {
+				std::fputc('\n', log_fh);
+				fprint_spaces(log_fh, cur_depth);
+				std::fputc('}', log_fh);
+			}
+			
+			double x;
+			__asm__ ("fstl %0" : "=m"(x));
+			std::fprintf(log_fh, " = %.15lg", x);
+			
+			last_action_is_push = false;
+		}
+	}
+	
 	__asm__(".text\n"
 			"_replaced_objc_msgSend:\n"
 			
@@ -437,7 +461,43 @@ namespace {
 			"call _pop_lr\n"
 			"pushl %eax\n"
 			"ret\n");
-		
+	
+	__asm__(".text\n"
+			"_replaced_objc_msgSend_fpret:\n"
+			
+			"call LF0\n"
+"LF0:"		"popl %ecx\n"
+			
+			// 0. Check if the hook is enabled. If not, quit now.	
+			"movl _enabled-LF0(%ecx), %eax\n"
+			"test %eax, %eax\n"
+			"jne LFCont\n"
+			"movl _original_objc_msgSend_fpret-LF0(%ecx), %eax\n"
+			"jmp *%eax\n"
+			
+			// 1. Push lr onto our custom stack.
+"LFCont:"	"popl %eax\n"
+			"call _push_lr\n"
+			
+			// 1. Print the arguments.
+			"call _print_args\n"
+			"call LF1\n"
+"LF1:"		"popl %ecx\n"
+			"movl %eax, _rx_reserve-LF1(%ecx)\n"
+			
+			// 2. Call original objc_msgSend.
+			"movl _original_objc_msgSend_fpret-LF1(%ecx), %eax\n"
+			"call *%eax\n"
+			
+			// 3. Print return value.
+			"call LF2\n"
+"LF2:"		"popl %ecx\n"
+			"movl _rx_reserve-LF2(%ecx), %eax\n"
+			"call _show_float_retval\n"
+			"call _pop_lr\n"
+			"pushl %eax\n"
+			"ret\n");
+	
 #else
 #error Not available in non-ARM or non-x86 platforms.
 #endif
@@ -461,6 +521,12 @@ extern "C" void SubjC_initialize () {
 	MSHookFunction(reinterpret_cast<void*>(objc_msgSend_stret),
 				   reinterpret_cast<void*>(replaced_objc_msgSend_stret),
 				   &original_objc_msgSend_stret);
+#if __i386__
+	MSHookFunction(reinterpret_cast<void*>(objc_msgSend_fpret),
+				   reinterpret_cast<void*>(replaced_objc_msgSend_fpret),
+				   &original_objc_msgSend_fpret);
+#endif
+	
 }
 
 extern "C" void SubjC_clear_selector_filter() { filter_type = NoFilter; }
