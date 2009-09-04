@@ -1,0 +1,30 @@
+CXX=g++-4.2
+CC=gcc-4.2
+
+CFLAGS=-Wall -O2 -fno-exceptions
+
+OPTIONS=-I../trunk/include -I../trunk/hk.kennytm.Peace/class-dump-z_src -I/opt/local/include -I../trunk/hk.kennytm.Peace/include -I../trunk/hk.kennytm.Peace/src -I../ 
+
+%.o::	%.c
+	$(CC) $(CFLAGS) $(OPTIONS) -c -o $@ $^
+
+%.o::	%.m
+	$(CC) $(CFLAGS) $(OPTIONS) -c -o $@ $^
+
+%.o::	%.cpp
+	$(CXX) $(CFLAGS) $(OPTIONS) -c -o $@ $^
+
+%.o::	%.mm
+	$(CXX) $(CFLAGS) $(OPTIONS) -c -o $@ $^
+
+all:	libsubjc.dylib
+
+libsubjc.dylib:	subjc.o ../trunk/hk.kennytm.Peace/class-dump-z_src/objc_type.o ../trunk/hk.kennytm.Peace/class-dump-z_src/balanced_substr.o ../trunk/hk.kennytm.Peace/class-dump-z_src/pseudo_base64.o ../trunk/hk.kennytm.Peace/src/string_util.o ../trunk/hk.kennytm.Peace/class-dump-z_src/crc32.o
+	$(CXX) $(CFLAGS) -framework Foundation -dynamiclib -o $@ $^ ~/Downloads/Untitled4/APELite.o
+
+clean:
+	-rm -f *.o
+	-rm -f ../trunk/hk.kennytm.Peace/class-dump-z_src/*.o
+	-rm -f ../trunk/hk.kennytm.Peace/src/*.o
+
+.PHONY:	all clean
