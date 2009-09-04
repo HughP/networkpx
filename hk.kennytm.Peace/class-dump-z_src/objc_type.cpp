@@ -1148,8 +1148,9 @@ void ObjCTypeRecord::print_args(TypeIndex ti, const char*& vacopy, void(*inline_
 		case '@':
 		case '#': {
 			void* v = READ<void*>(vacopy);
-			if (inline_id_printer == NULL)
-				fprintf(f, "%p", v);
+			intptr_t vi = reinterpret_cast<intptr_t>(v);
+			if (inline_id_printer == NULL || vi % __alignof__(void*) != 0)	// or should we use __alignof__ ?
+				fprintf(f, "(%s)%p", t.type == '@' ? "id" : "Class", v);
 			else
 				inline_id_printer(f, v);
 			break;
