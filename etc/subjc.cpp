@@ -30,27 +30,60 @@ namespace {
 		std::fprintf(f, spaces+(16-n%16));
 	}
 	
-	static std::stack<int> lr_list;
-	static std::stack<ObjCTypeRecord::TypeIndex> ret_types;
-	static std::stack<id> selfs;
+	struct lr_node {
+		intptr_t lr;
+		ObjCTypeRecord::TypeIndex ti;
+		id self;
+		bool should_filter;
+#if !NDEBUG
+		lr_node() { std::memset(this, 0x33, sizeof(*this)); }
+#endif
+	};
 	
-	extern "C" USED FASTCALL void push_lr (int lr) { lr_list.push(lr); }
-	extern "C" USED int pop_lr () { int retval = lr_list.top(); lr_list.pop(); return retval; }
+	static std::stack<lr_node> lr_list;
+	
+	extern "C" USED FASTCALL void push_lr (intptr_t lr) { 
+		lr_node node;
+		node.lr = lr;
+		node.should_filter = true;
+		lr_list.push(node);
+	}
+	extern "C" USED int pop_lr () { 
+		int retval = lr_list.top().lr;
+		lr_list.pop();
+		return retval;
+	}
 	
 	static int enabled_temporary;
 	inline void disable_temporary () { enabled_temporary = enabled; enabled = 0; }
 	inline void restore_temporary () { enabled = enabled_temporary; }
 	
 	enum FilterType { NoFilter, WhiteList, BlackList };
-	FilterType filter_type = NoFilter, class_filter_type = NoFilter;
+	static FilterType filter_type = NoFilter, class_filter_type = NoFilter;
 	static std::tr1::unordered_set<SEL> filter_set;
 	static std::tr1::unordered_set<Class> class_filter_set;
+	
+	static SEL doesNotRecognizeSelector_sel;
 
 	static void print_id(std::FILE* f, void* x) {
 		if (x == NULL) {
 			std::fprintf(f, "nil");
 		} else { 
-			CFTypeID type = CFGetTypeID(x);
+			CFTypeID type = 0;
+			Class c = object_getClass(reinterpret_cast<id>(x));
+			
+			if (reinterpret_cast<intptr_t>(c) % __alignof__(Class) != 0) {
+				std::fprintf(f, "(id)%p", x);
+				return;
+			}
+			
+			if (class_isMetaClass(c)) {
+				std::fprintf(f, "%s", class_getName(c));
+				return;
+			}
+			
+			if (class_respondsToSelector(c, doesNotRecognizeSelector_sel))
+				type = CFGetTypeID(x);
 			
 			if (type == CFStringGetTypeID()) {
 				CFStringEncoding enc = CFStringGetFastestEncoding( reinterpret_cast<CFStringRef>(x) );
@@ -120,21 +153,35 @@ namespace {
 	
 	static bool last_action_is_push;
 	static SEL class_sel, alloc_sel, allocWithZone_sel;
-	static size_t cur_depth, max_depth;
+	static size_t max_depth;
 	static bool do_print_args, do_print_rv;
-	static int print_args_v (id self, SEL _cmd, std::va_list va) {
+	
+	/*
+	static Class NSString_class;
+	static bool is_subclass_of(Class a, Class b) {
+		while (a != Nil) {
+			if (a == b)
+				return true;
+			a = class_getSuperclass(a);
+		}
+		return false;
+	}
+	 */
+	
+	static void print_args_v (id self, SEL _cmd, std::va_list va) {
 		disable_temporary();
-		
+						
+		size_t cur_depth = lr_list.size();
 		bool do_print_open_brace = last_action_is_push && do_print_rv;
 		last_action_is_push = true;
 		
-		if (cur_depth++ > max_depth)
-			return 0;
+		if (cur_depth > max_depth)
+			return;
 		
 		if (filter_type != NoFilter) {
 			bool found_in_set = filter_set.find(_cmd) != filter_set.end();
 			if ((filter_type == BlackList) == found_in_set)
-				return 0;
+				return;
 		}
 		
 		// We need to msgSend because if the class isn't initialized, those class_getXXXMethod will crash.
@@ -143,7 +190,7 @@ namespace {
 		if (class_filter_type != NoFilter) {
 			bool found_in_set = class_filter_set.find(c) != class_filter_set.end();
 			if ((class_filter_type == BlackList) == found_in_set)
-				return 0;
+				return;
 		}
 		
 		if (do_print_open_brace)
@@ -153,6 +200,7 @@ namespace {
 		fprint_spaces(log_fh, cur_depth-1);
 		
 		bool is_class_method = reinterpret_cast<id>(c) == self;
+		
 		std::fprintf(log_fh, "%c[%s %s]", is_class_method?'+':'-', class_getName(c), sel_getName(_cmd));
 		if (!is_class_method)
 			std::fprintf(log_fh, " <%p>", self);
@@ -177,46 +225,49 @@ namespace {
 			}
 		}
 		
+		lr_node& node = lr_list.top();
+		node.should_filter = false;
+		
 		if (do_print_rv) {
+			ObjCTypeRecord::TypeIndex ti;
+			
 			if (m == NULL || _cmd == alloc_sel || _cmd == allocWithZone_sel) {
-				ret_types.push(record.void_type());
+				ti = record.void_type();
 			} else {
 				char* ret_type = method_copyReturnType(m);
-				ObjCTypeRecord::TypeIndex ti = record.parse(ret_type, false);
-				ret_types.push(ti);
+				ti = record.parse(ret_type, false);
 				free(ret_type);
 			}
 			
-			selfs.push(self);
+			node.ti = ti;
+			node.self = self;
 		}
 		
 		restore_temporary();
-		
-		return 1;
 	}
 	
-	extern "C" USED int print_args(id self, SEL _cmd, ...) {
+	extern "C" USED void print_args(id self, SEL _cmd, ...) {
 		std::va_list va;
 		va_start(va, _cmd);
-		int ret = print_args_v(self, _cmd, va);
+		print_args_v(self, _cmd, va);
 		va_end(va);
-		return ret;
 	}
 	
-	extern "C" USED int print_args_stret(void* retval, id self, SEL _cmd, ...) {
+	extern "C" USED void print_args_stret(void* retval, id self, SEL _cmd, ...) {
 		std::va_list va;
 		va_start(va, _cmd);
-		int ret = print_args_v(self, _cmd, va);
+		print_args_v(self, _cmd, va);
 		va_end(va);
-		return ret;
 	}
 	
-	extern "C" USED FASTCALL void show_retval (const char* addr, int not_filtered) {
-		--cur_depth;
-		
-		if (not_filtered) {
-			if (!do_print_rv || cur_depth > max_depth)
+	extern "C" USED FASTCALL void show_retval (const char* addr) {
+		lr_node& node = lr_list.top();
+				
+		if (!node.should_filter) {
+			if (!do_print_rv)
 				return;
+
+			size_t cur_depth = lr_list.size()-1;
 			
 			disable_temporary();
 			if (!last_action_is_push) {
@@ -225,18 +276,19 @@ namespace {
 				std::fputc('}', log_fh);
 			}
 			
-			ObjCTypeRecord::TypeIndex ti = ret_types.top();
-			ret_types.pop();
-			id self = selfs.top();
-			selfs.pop();
+			
+			ObjCTypeRecord::TypeIndex ti = node.ti;
+			id self = node.self;
+			
+			assert(ti != 0x33333333);
+			
+			fflush(log_fh);
 			
 			if (!record.can_reduce_to_type(ti, record.void_type())) {
 				std::fprintf(log_fh, " = ");
 				if (record.is_id_type(ti) && *reinterpret_cast<const id*>(addr) == self)
-					std::fprintf(log_fh, "self");
-				else
-					record.print_args(ti, addr, print_id, log_fh);
-				std::fputc(';', log_fh);
+					std::fprintf(log_fh, "/*self*/ ");
+				record.print_args(ti, addr, print_id, log_fh);
 			}
 			last_action_is_push = false;
 		}
@@ -249,6 +301,7 @@ namespace {
 	USED static void replaced_objc_msgSend_fpret() __asm__("_replaced_objc_msgSend_fpret");
 	
 #if __arm__
+#pragma mark _replaced_objc_msgSend (ARM)
 	__asm__(".text\n"
 			"_replaced_objc_msgSend:\n"
 			
@@ -262,21 +315,21 @@ namespace {
 			// 1. Save the registers.
 			"ldr r12, (LSR1)\n"
 "LoadSR1:"	"add r12, pc, r12\n"
-			"stmia r12, {r0-r3, lr}\n"
-				
-			// 2. Print the arguments.
-			"bl _print_args\n"
-			"ldr r1, (LSRX)\n"
-			"ldr r2, (LSR2)\n"
-"LoadSRX:"	"str r0, [pc, r1]\n"
-				
-			// 3. Push lr onto our custom stack.
-"LoadSR2:"	"ldr r0, [pc, r2]\n"
+			"stmia r12, {r0-r3}\n"
+			
+			// 2 Push lr onto our custom stack.
+			"mov r0, lr\n"
 			"bl _push_lr\n"
 			
+			// 3. Print the arguments.
+			"ldr r2, (LSR3)\n"
+"LoadSR3:"	"add r12, pc, r2\n"
+			"ldmia r12, {r0-r3}\n"
+			"bl _print_args\n"
+			
 			// 4. Restore the registers.
-			"ldr r1, (LSR3)\n"
-"LoadSR3:"	"add r2, pc, r1\n"
+			"ldr r1, (LSR4)\n"
+"LoadSR4:"	"add r2, pc, r1\n"
 			"ldmia r2, {r0-r3}\n"
 				
 			// 5. Call original objc_msgSend
@@ -285,9 +338,7 @@ namespace {
 			"blx r12\n"
 
 			// 6. Print return value.
-			"ldr r12, (LSRY)\n"
 			"push {r0-r3}\n"	// assume no intrinsic type takes >128 bits...
-"LoadSRY:"	"ldr r1, [pc, r12]\n"
 			"mov r0, sp\n"
 			"bl _show_retval\n"
 			"bl _pop_lr\n"
@@ -298,12 +349,11 @@ namespace {
 "LEna0:		.long _enabled - 8 - (LoadEna0)\n"
 "LOrig0:	.long _original_objc_msgSend - 8 - (LoadOrig0)\n"
 "LSR1:		.long _rx_reserve - 8 - (LoadSR1)\n"
-"LSRX:		.long _rx_reserve - 8 - (LoadSRX) + 20\n"
-"LSR2:		.long _rx_reserve - 8 - (LoadSR2) + 16\n"
 "LSR3:		.long _rx_reserve - 8 - (LoadSR3)\n"
-"LSRY:		.long _rx_reserve - 8 - (LoadSRY) + 20\n"
+"LSR4:		.long _rx_reserve - 8 - (LoadSR4)\n"
 "LOrig1:	.long _original_objc_msgSend - 8 - (LoadOrig1)\n");
 	
+#pragma mark _replaced_objc_msgSend_stret (ARM)
 	__asm__(".text\n"
 			"_replaced_objc_msgSend_stret:"
 			
@@ -317,21 +367,21 @@ namespace {
 			// 1. Save the registers.
 			"ldr r12, (LSS1)\n"
 "LoadSS1:"	"add r12, pc, r12\n"
-			"stmia r12, {r0-r3, lr}\n"
+			"stmia r12, {r0-r3}\n"
 			
-			// 2. Print the arguments.
-			"bl _print_args_stret\n"
-			"ldr r1, (LSSX)\n"
-			"ldr r2, (LSS2)\n"
-"LoadSSX:"	"str r0, [pc, r1]\n"
-			
-			// 3. Push lr onto our custom stack.
-"LoadSS2:"	"ldr r0, [pc, r2]\n"
+			// 2 Push lr onto our custom stack.
+			"mov r0, lr\n"
 			"bl _push_lr\n"
 			
+			// 3. Print the arguments.
+			"ldr r2, (LSS3)\n"
+"LoadSS3:"	"add r12, pc, r2\n"
+			"ldmia r12, {r0-r3}\n"
+			"bl _print_args_stret\n"
+			
 			// 4. Restore the registers.
-			"ldr r1, (LSS3)\n"
-"LoadSS3:"	"add r2, pc, r1\n"
+			"ldr r1, (LSS4)\n"
+"LoadSS4:"	"add r2, pc, r1\n"
 			"ldmia r2, {r0-r3}\n"
 			
 			// 5. Call original objc_msgSend_stret
@@ -340,9 +390,7 @@ namespace {
 			"blx r12\n"
 			
 			// 6. Print return value.
-			"ldr r2, (LSSY)\n"
 			"str r0, [sp, #-4]!\n"
-"LoadSSY:"	"ldr r1, [pc, r2]\n"
 			"bl _show_retval\n"
 			"bl _pop_lr\n"
 			"mov lr, r0\n"
@@ -352,22 +400,20 @@ namespace {
 "LES0:		.long _enabled - 8 - (LoadES0)\n"
 "LOS0:		.long _original_objc_msgSend_stret - 8 - (LoadOS0)\n"
 "LSS1:		.long _rx_reserve - 8 - (LoadSS1)\n"
-"LSSX:		.long _rx_reserve - 8 - (LoadSSX) + 20\n"
-"LSS2:		.long _rx_reserve - 8 - (LoadSS2) + 16\n"
 "LSS3:		.long _rx_reserve - 8 - (LoadSS3)\n"
-"LSSY:		.long _rx_reserve - 8 - (LoadSSY) + 20\n"
+"LSS4:		.long _rx_reserve - 8 - (LoadSS4)\n"
 "LOS1:		.long _original_objc_msgSend_stret - 8 - (LoadOS1)\n");
-	
-
 
 #elif __i386__
 	
-	extern "C" USED void show_float_retval (int not_filtered) {
-		--cur_depth;
+	extern "C" USED void show_float_retval () {
+		lr_node& node = lr_list.top();
 		
-		if (not_filtered) {
-			if (!do_print_rv || cur_depth > max_depth)
+		if (!node.should_filter) {
+			if (!do_print_rv)
 				return;
+			
+			size_t cur_depth = lr_list.size()-1;
 			
 			if (!last_action_is_push) {
 				std::fputc('\n', log_fh);
@@ -378,11 +424,12 @@ namespace {
 			double x;
 			__asm__ ("fstl %0" : "=m"(x));
 			std::fprintf(log_fh, " = %.15lg", x);
-			
+						
 			last_action_is_push = false;
 		}
 	}
 	
+#pragma mark _replaced_objc_msgSend (x86)
 	__asm__(".text\n"
 			"_replaced_objc_msgSend:\n"
 			
@@ -400,32 +447,31 @@ namespace {
 "LRCont:"	"popl %eax\n"
 			"call _push_lr\n"
 	
-			// 1. Print the arguments.
+			// 2. Print the arguments.
 			"call _print_args\n"
+			
+			// 3. Call original objc_msgSend.
 			"call LR1\n"
 "LR1:"		"popl %ecx\n"
-			"movl %eax, _rx_reserve-LR1(%ecx)\n"
-			
-			// 2. Call original objc_msgSend.
 			"movl _original_objc_msgSend-LR1(%ecx), %eax\n"
 			"call *%eax\n"
 			
-			// 3. Print return value.
-			"call LR2\n"
-"LR2:"		"popl %ecx\n"
-			"movl %eax, _rx_reserve+4-LR2(%ecx)\n"
-			"movl %edx, _rx_reserve+8-LR2(%ecx)\n"
-			"leal _rx_reserve+4-LR2(%ecx), %eax\n"
-			"movl _rx_reserve-LR2(%ecx), %ecx\n"
+			// 4. Print return value.
+			"call LR3\n"
+"LR3:"		"popl %ecx\n"
+			"movl %eax, _rx_reserve-LR3(%ecx)\n"	// perhaps we could use stack here, but __dyld_misaligned_stack_error was thrown when I last tried.
+			"movl %edx, _rx_reserve+4-LR3(%ecx)\n"
+			"leal _rx_reserve-LR3(%ecx), %eax\n"
 			"call _show_retval\n"
 			"call _pop_lr\n"
 			"pushl %eax\n"
-			"call LR3\n"
-"LR3:"		"popl %ecx\n"
-			"movl _rx_reserve+4-LR3(%ecx), %eax\n"
-			"movl _rx_reserve+8-LR3(%ecx), %edx\n"
+			"call LR4\n"
+"LR4:"		"popl %ecx\n"
+			"movl _rx_reserve-LR4(%ecx), %eax\n"
+			"movl _rx_reserve+4-LR4(%ecx), %edx\n"
 			"ret\n");
 	
+#pragma mark _replaced_objc_msgSend_stret (x86)
 	__asm__(".text\n"
 			"_replaced_objc_msgSend_stret:\n"
 			
@@ -436,32 +482,30 @@ namespace {
 			"movl _enabled-LS0(%ecx), %eax\n"
 			"test %eax, %eax\n"
 			"jne LSCont\n"
-			"movl _original_objc_msgSend-LS0(%ecx), %eax\n"
+			"movl _original_objc_msgSend_stret-LS0(%ecx), %eax\n"
 			"jmp *%eax\n"
 			
 			// 1. Push lr onto our custom stack.
 "LSCont:"	"popl %eax\n"
 			"call _push_lr\n"
 			
-			// 1. Print the arguments.
+			// 2. Print the arguments.
 			"call _print_args_stret\n"
+			
+			// 3. Call original objc_msgSend_stret
 			"call LS1\n"
 "LS1:"		"popl %ecx\n"
-			"movl %eax, _rx_reserve-LS1(%ecx)\n"
-			
-			// 2. Call original objc_msgSend.
 			"movl _original_objc_msgSend_stret-LS1(%ecx), %eax\n"
 			"call *%eax\n"
 			
-			// 3. Print return value.
-			"call LS2\n"
-"LS2:"		"popl %ecx\n"
-			"movl _rx_reserve-LS2(%ecx), %edx\n"
+			// 4. Print return value.
+			"pushl %eax\n"
 			"call _show_retval\n"
 			"call _pop_lr\n"
-			"pushl %eax\n"
+			"xchg %eax, (%esp)\n"
 			"ret\n");
 	
+#pragma mark _replaced_objc_msgSend_fpret (x86)
 	__asm__(".text\n"
 			"_replaced_objc_msgSend_fpret:\n"
 			
@@ -479,20 +523,16 @@ namespace {
 "LFCont:"	"popl %eax\n"
 			"call _push_lr\n"
 			
-			// 1. Print the arguments.
+			// 2. Print the arguments.
 			"call _print_args\n"
+			
+			// 3. Call original objc_msgSend_fpret
 			"call LF1\n"
 "LF1:"		"popl %ecx\n"
-			"movl %eax, _rx_reserve-LF1(%ecx)\n"
-			
-			// 2. Call original objc_msgSend.
 			"movl _original_objc_msgSend_fpret-LF1(%ecx), %eax\n"
 			"call *%eax\n"
 			
-			// 3. Print return value.
-			"call LF2\n"
-"LF2:"		"popl %ecx\n"
-			"movl _rx_reserve-LF2(%ecx), %eax\n"
+			// 4. Print return value.
 			"call _show_float_retval\n"
 			"call _pop_lr\n"
 			"pushl %eax\n"
@@ -514,6 +554,8 @@ extern "C" void SubjC_initialize () {
 	class_sel = sel_registerName("class");
 	alloc_sel = sel_registerName("alloc");
 	allocWithZone_sel = sel_registerName("allocWithZone:");
+	doesNotRecognizeSelector_sel = sel_registerName("doesNotRecognizeSelector:");
+//	NSString_class = reinterpret_cast<Class>(objc_getClass("NSString"));
 	
 	MSHookFunction(reinterpret_cast<void*>(objc_msgSend),
 				   reinterpret_cast<void*>(replaced_objc_msgSend),
@@ -551,13 +593,10 @@ extern "C" void SubjC_start(std::FILE* f, size_t maximum_depth, bool print_argum
 		SubjC_initialize();
 	
 	last_action_is_push = false;
-	cur_depth = 0;
 	max_depth = maximum_depth;
 	do_print_args = print_arguments;
 	do_print_rv = print_return_value;
 	clear_stl(lr_list);
-	clear_stl(ret_types);
-	clear_stl(selfs);
 	log_fh = f;
 	enabled = 1;
 }
