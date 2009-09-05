@@ -15,14 +15,11 @@ extern "C" {
 
 	void SubjC_initialize ();
 	
-	void SubjC_clear_selector_filter();
-	void SubjC_blacklist_selectors(size_t count, SEL selectors[]);
-	void SubjC_whitelist_selectors(size_t count, SEL selectors[]);
-	
-	void SubjC_clear_class_filter();
-	void SubjC_blacklist_classes(size_t count, Class classes[]);
-	void SubjC_whitelist_classes(size_t count, Class classes[]);
-	
+	void SubjC_clear_filters();
+	void SubjC_filter_method(bool blacklist, Class class_, SEL selector);
+	void SubjC_filter_class(bool blacklist, Class class_);
+	void SubjC_filter_selector(bool blacklist, SEL selector);
+		
 	void SubjC_start(FILE* f, size_t maximum_depth, bool print_arguments, bool print_return_value);
 	void SubjC_end();
 

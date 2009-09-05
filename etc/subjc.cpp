@@ -4,7 +4,27 @@
 #include <stack>
 #include <CoreFoundation/CoreFoundation.h>
 #include <cstdarg>
-#include <tr1/unordered_set>
+#include <boost/unordered_set.hpp>
+
+namespace {
+	template<typename T>
+	struct FilterObject {
+		T obj;
+		bool is_blacklist;
+		
+		FilterObject(T obj_) : obj(obj_) {}
+		bool operator== (const FilterObject<T>& other) const { return obj == other.obj; }
+	};
+}
+
+namespace boost {	
+	template<typename T>
+	struct hash<FilterObject<T> > : public std::unary_function<FilterObject<T>, size_t> {
+		size_t operator() (const FilterObject<T>& x) const {
+			return hash<T>()(x.obj);
+		}
+	};
+}
 
 namespace {
 #define USED __attribute__((used)) 
@@ -58,13 +78,15 @@ namespace {
 	inline void disable_temporary () { enabled_temporary = enabled; enabled = 0; }
 	inline void restore_temporary () { enabled = enabled_temporary; }
 	
-	enum FilterType { NoFilter, WhiteList, BlackList };
-	static FilterType filter_type = NoFilter, class_filter_type = NoFilter;
-	static std::tr1::unordered_set<SEL> filter_set;
-	static std::tr1::unordered_set<Class> class_filter_set;
+	static boost::unordered_set<FilterObject<std::pair<Class, SEL> > > specific_filters_set;
+	static boost::unordered_set<FilterObject<Class> > class_filters_set;
+	static boost::unordered_set<FilterObject<SEL> > selector_filters_set;
+	static int balance_cf = 0, balance_sf = 0;
 	
 	static SEL doesNotRecognizeSelector_sel;
-
+	
+	enum FilterType { WhiteList, BlackList, NotFiltered };
+	
 	static void print_id(std::FILE* f, void* x) {
 		if (x == NULL) {
 			std::fprintf(f, "nil");
@@ -156,17 +178,33 @@ namespace {
 	static size_t max_depth;
 	static bool do_print_args, do_print_rv;
 	
-	/*
-	static Class NSString_class;
-	static bool is_subclass_of(Class a, Class b) {
-		while (a != Nil) {
-			if (a == b)
-				return true;
-			a = class_getSuperclass(a);
-		}
-		return false;
+	template<typename T>
+	static FilterType is_filtered_for(const boost::unordered_set<FilterObject<T> >& the_set, const T& the_target) {
+		typename boost::unordered_set<FilterObject<T> >::const_iterator cit = the_set.find(the_target);
+		if (cit == the_set.end())
+			return NotFiltered;
+		else
+			return cit->is_blacklist ? BlackList : WhiteList;
 	}
-	 */
+	
+	static bool is_filtered(Class cls, SEL sel) {
+		// 1. Check specific filters.
+		FilterType res = is_filtered_for(specific_filters_set, std::pair<Class, SEL>(cls, sel));
+		if (res != NotFiltered)
+			return res == BlackList;
+		
+		// 2. Check selectors & classes.
+		FilterType sf_res = is_filtered_for(selector_filters_set, sel);
+		if (sf_res == BlackList)
+			return true;
+		FilterType cf_res = is_filtered_for(class_filters_set, cls);
+		if (cf_res != NotFiltered)
+			return cf_res == BlackList;
+		else if (sf_res == WhiteList)
+			return false;
+		
+		return balance_cf < 0 || balance_sf < 0;
+	}	
 	
 	static void print_args_v (id self, SEL _cmd, std::va_list va) {
 		disable_temporary();
@@ -174,24 +212,9 @@ namespace {
 		size_t cur_depth = lr_list.size();
 		bool do_print_open_brace = last_action_is_push && do_print_rv;
 		last_action_is_push = true;
-		
-		if (cur_depth > max_depth)
-			return;
-		
-		if (filter_type != NoFilter) {
-			bool found_in_set = filter_set.find(_cmd) != filter_set.end();
-			if ((filter_type == BlackList) == found_in_set)
-				return;
-		}
-		
+				
 		// We need to msgSend because if the class isn't initialized, those class_getXXXMethod will crash.
 		Class c = reinterpret_cast<Class>(original_objc_msgSend(self, class_sel));
-		
-		if (class_filter_type != NoFilter) {
-			bool found_in_set = class_filter_set.find(c) != class_filter_set.end();
-			if ((class_filter_type == BlackList) == found_in_set)
-				return;
-		}
 		
 		if (do_print_open_brace)
 			std::fprintf(log_fh, " {");
@@ -226,7 +249,6 @@ namespace {
 		}
 		
 		lr_node& node = lr_list.top();
-		node.should_filter = false;
 		
 		if (do_print_rv) {
 			ObjCTypeRecord::TypeIndex ti;
@@ -243,7 +265,11 @@ namespace {
 			node.self = self;
 		}
 		
-		restore_temporary();
+		if (cur_depth > max_depth)
+			return;
+
+		if (!(node.should_filter = is_filtered(c, _cmd)))
+			restore_temporary();
 	}
 	
 	extern "C" USED void print_args(id self, SEL _cmd, ...) {
@@ -263,19 +289,19 @@ namespace {
 	extern "C" USED FASTCALL void show_retval (const char* addr) {
 		lr_node& node = lr_list.top();
 				
-		if (!node.should_filter) {
 			if (!do_print_rv)
 				return;
 
 			size_t cur_depth = lr_list.size()-1;
 			
-			disable_temporary();
+			if (!node.should_filter)
+				disable_temporary();
+			
 			if (!last_action_is_push) {
 				std::fputc('\n', log_fh);
 				fprint_spaces(log_fh, cur_depth);
 				std::fputc('}', log_fh);
 			}
-			
 			
 			ObjCTypeRecord::TypeIndex ti = node.ti;
 			id self = node.self;
@@ -291,7 +317,6 @@ namespace {
 				record.print_args(ti, addr, print_id, log_fh);
 			}
 			last_action_is_push = false;
-		}
 		
 		restore_temporary();
 	}
@@ -409,9 +434,11 @@ namespace {
 	extern "C" USED void show_float_retval () {
 		lr_node& node = lr_list.top();
 		
-		if (!node.should_filter) {
 			if (!do_print_rv)
 				return;
+			
+			if (!node.should_filter)
+				disable_temporary();
 			
 			size_t cur_depth = lr_list.size()-1;
 			
@@ -426,7 +453,6 @@ namespace {
 			std::fprintf(log_fh, " = %.15lg", x);
 						
 			last_action_is_push = false;
-		}
 	}
 	
 #pragma mark _replaced_objc_msgSend (x86)
@@ -571,22 +597,43 @@ extern "C" void SubjC_initialize () {
 	
 }
 
-extern "C" void SubjC_clear_selector_filter() { filter_type = NoFilter; }
-extern "C" void SubjC_clear_class_filter() { class_filter_type = NoFilter; }
-
-namespace {
-	template <typename T>
-	inline void xlist_what(FilterType& target_filter, FilterType filter, std::tr1::unordered_set<T>& target, size_t count, T objs[]) {
-		target_filter = filter;
-		std::tr1::unordered_set<T> xset (objs, objs+count);
-		std::swap(target, xset);
+extern "C" {
+	void SubjC_clear_filters() {
+		clear_stl(specific_filters_set);
+		clear_stl(class_filters_set);
+		clear_stl(selector_filters_set);
+		balance_cf = balance_sf = 0;
+	}
+	
+	void SubjC_filter_method(bool blacklist, Class class_, SEL selector) {
+		FilterObject<std::pair<Class, SEL> > fo (std::pair<Class, SEL>(class_, selector));
+		fo.is_blacklist = blacklist;
+		specific_filters_set.insert(fo);
+	}
+	
+	void SubjC_filter_class(bool blacklist, Class class_) {
+		FilterObject<Class> fo (class_);
+		fo.is_blacklist = blacklist;
+		class_filters_set.insert(fo);
+		
+		if (blacklist)
+			++ balance_cf;
+		else
+			-- balance_cf;
+	}
+	
+	void SubjC_filter_selector(bool blacklist, SEL selector) {
+		FilterObject<SEL> fo (selector);
+		fo.is_blacklist = blacklist;
+		selector_filters_set.insert(fo);
+		
+		if (blacklist)
+			++ balance_sf;
+		else
+			-- balance_sf;
 	}
 }
 
-extern "C" void SubjC_blacklist_selectors(size_t count, SEL selectors[]) { xlist_what(filter_type, BlackList, filter_set, count, selectors); }
-extern "C" void SubjC_blacklist_classes(size_t count, Class classes[]) { xlist_what(class_filter_type, BlackList, class_filter_set, count, classes); }
-extern "C" void SubjC_whitelist_selectors(size_t count, SEL selectors[]) { xlist_what(filter_type, WhiteList, filter_set, count, selectors); }
-extern "C" void SubjC_whitelist_classes(size_t count, Class classes[]) { xlist_what(class_filter_type, WhiteList, class_filter_set, count, classes); }
 
 extern "C" void SubjC_start(std::FILE* f, size_t maximum_depth, bool print_arguments, bool print_return_value) {
 	if (!original_objc_msgSend)
