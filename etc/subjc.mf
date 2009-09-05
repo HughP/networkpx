@@ -1,27 +1,32 @@
 CXX=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/g++-4.2
 CC=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/gcc-4.2
 
-CFLAGS=-arch armv6 -isysroot /Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS3.0.sdk -I/Developer/Platforms/iPhoneOS.platform/Developer/usr/include/gcc/darwin/default -I/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS3.0.sdk/usr/lib/gcc/arm-apple-darwin9/4.2.1/include -L/usr/local/lib -F/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS3.0.sdk/System/Library/PrivateFrameworks/ -Wall -mcpu=arm1176jzf-s -O2 -fno-exceptions
+CFLAGS=-arch armv6 -isysroot /Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS3.0.sdk -I/Developer/Platforms/iPhoneOS.platform/Developer/usr/include/gcc/darwin/default -I/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS3.0.sdk/usr/lib/gcc/arm-apple-darwin9/4.2.1/include -L/usr/local/lib -F/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS3.0.sdk/System/Library/PrivateFrameworks/ -Wall -mcpu=arm1176jzf-s -O2 -fno-exceptions -fno-rtti -fvisibility-inlines-hidden -fno-common -ffast-math -fno-threadsafe-statics -fvisibility=hidden -DNDEBUG=1
 
 OPTIONS=-I../trunk/include -I../trunk/hk.kennytm.Peace/class-dump-z_src -I/opt/local/include -I../trunk/hk.kennytm.Peace/include -I../trunk/hk.kennytm.Peace/src -I../ 
 
 %.o::	%.c
-	$(CC) $(CFLAGS) $(OPTIONS) -c -o $@ $^
+	@$(CC) -mthumb $(CFLAGS) $(OPTIONS) -c -o $@ $^
 
 %.o::	%.m
-	$(CC) $(CFLAGS) $(OPTIONS) -c -o $@ $^
+	@$(CC) -mthumb $(CFLAGS) $(OPTIONS) -c -o $@ $^
 
 %.o::	%.cpp
-	$(CXX) $(CFLAGS) $(OPTIONS) -c -o $@ $^
+	@if [[ $^ == subjc.cpp ]]; then \
+		$(CXX) $(CFLAGS) $(OPTIONS) -c -o $@ $^; \
+	else \
+		$(CXX) -mthumb $(CFLAGS) $(OPTIONS) -c -o $@ $^; \
+	fi
+	
 
 %.o::	%.mm
-	$(CXX) $(CFLAGS) $(OPTIONS) -c -o $@ $^
+	@$(CXX) -mthumb $(CFLAGS) $(OPTIONS) -c -o $@ $^
 
 all:	libsubjc.dylib
 
 libsubjc.dylib:	subjc.o ../trunk/hk.kennytm.Peace/class-dump-z_src/objc_type.o ../trunk/hk.kennytm.Peace/class-dump-z_src/balanced_substr.o ../trunk/hk.kennytm.Peace/class-dump-z_src/pseudo_base64.o ../trunk/hk.kennytm.Peace/src/string_util.o ../trunk/hk.kennytm.Peace/class-dump-z_src/crc32.o
 	$(CXX) $(CFLAGS) -lsubstrate -framework Foundation -dynamiclib -o $@ $^
-#	strip -u -r -s $@.exports $@
+	strip -u -r -s $@.exports $@
 	ldid -S $@
 
 clean:

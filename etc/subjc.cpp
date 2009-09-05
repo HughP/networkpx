@@ -46,8 +46,8 @@ namespace {
 	static void fprint_spaces (std::FILE* f, size_t n) {
 		static char spaces[] = "                ";
 		for (size_t i = 0; i < n/16; ++ i)
-			std::fprintf(f, spaces);
-		std::fprintf(f, spaces+(16-n%16));
+			std::fwrite(spaces, 1, 16, f);
+		std::fwrite(spaces, 1, n%16, f);
 	}
 	
 	struct lr_node {
@@ -575,7 +575,9 @@ namespace {
 	}
 }
 
-extern "C" void SubjC_initialize () {
+#define EXPORT extern "C" __attribute__((visibility("default")))
+
+EXPORT void SubjC_initialize () {
 	enabled = 0;
 	class_sel = sel_registerName("class");
 	alloc_sel = sel_registerName("alloc");
@@ -597,21 +599,20 @@ extern "C" void SubjC_initialize () {
 	
 }
 
-extern "C" {
-	void SubjC_clear_filters() {
+EXPORT void SubjC_clear_filters() {
 		clear_stl(specific_filters_set);
 		clear_stl(class_filters_set);
 		clear_stl(selector_filters_set);
 		balance_cf = balance_sf = 0;
 	}
 	
-	void SubjC_filter_method(bool blacklist, Class class_, SEL selector) {
+EXPORT void SubjC_filter_method(bool blacklist, Class class_, SEL selector) {
 		FilterObject<std::pair<Class, SEL> > fo (std::pair<Class, SEL>(class_, selector));
 		fo.is_blacklist = blacklist;
 		specific_filters_set.insert(fo);
 	}
 	
-	void SubjC_filter_class(bool blacklist, Class class_) {
+EXPORT void SubjC_filter_class(bool blacklist, Class class_) {
 		FilterObject<Class> fo (class_);
 		fo.is_blacklist = blacklist;
 		class_filters_set.insert(fo);
@@ -622,7 +623,7 @@ extern "C" {
 			-- balance_cf;
 	}
 	
-	void SubjC_filter_selector(bool blacklist, SEL selector) {
+EXPORT void SubjC_filter_selector(bool blacklist, SEL selector) {
 		FilterObject<SEL> fo (selector);
 		fo.is_blacklist = blacklist;
 		selector_filters_set.insert(fo);
@@ -632,10 +633,9 @@ extern "C" {
 		else
 			-- balance_sf;
 	}
-}
 
 
-extern "C" void SubjC_start(std::FILE* f, size_t maximum_depth, bool print_arguments, bool print_return_value) {
+EXPORT void SubjC_start(std::FILE* f, size_t maximum_depth, bool print_arguments, bool print_return_value) {
 	if (!original_objc_msgSend)
 		SubjC_initialize();
 	
@@ -648,7 +648,7 @@ extern "C" void SubjC_start(std::FILE* f, size_t maximum_depth, bool print_argum
 	enabled = 1;
 }
 
-extern "C" void SubjC_end() {
+EXPORT void SubjC_end() {
 	enabled = 0;
 	std::fputc('\n', log_fh);
 }
