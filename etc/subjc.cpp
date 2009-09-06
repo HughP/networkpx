@@ -27,6 +27,7 @@
 #include <cstdarg>
 #include <boost/unordered_set.hpp>
 #include "subjc.h"
+#include <pthread.h>
 
 namespace {
 	template<typename T>
@@ -63,6 +64,8 @@ namespace {
 	static int enabled __asm__("_enabled");
 	static USED int rx_reserve[6] __asm__("_rx_reserve");	// r0, r1, r2, r3, lr, saved.
 	
+	static pthread_key_t thr_key;
+	
 	static ObjCTypeRecord record;
 	
 	static void fprint_spaces (std::FILE* f, size_t n) {
@@ -82,15 +85,29 @@ namespace {
 #endif
 	};
 	
-	static std::stack<lr_node> lr_list;
+	__attribute__((pure))
+	static std::stack<lr_node>& get_lr_list() {
+		std::stack<lr_node>* stack = reinterpret_cast<std::stack<lr_node>*>(pthread_getspecific(thr_key));
+		if (stack == NULL) {
+			stack = new std::stack<lr_node>;
+			pthread_setspecific(thr_key, stack);
+		}
+		return *stack;
+	}
+	
+	static void lr_list_destructor(void* value) {
+		delete reinterpret_cast<std::stack<lr_node>*>(value);
+	}
 	
 	extern "C" USED FASTCALL void push_lr (intptr_t lr) { 
 		lr_node node;
 		node.lr = lr;
 		node.should_filter = true;
-		lr_list.push(node);
+		get_lr_list().push(node);
 	}
 	extern "C" USED int pop_lr () { 
+		std::stack<lr_node>& lr_list = get_lr_list();
+		
 		int retval = lr_list.top().lr;
 		lr_list.pop();
 		return retval;
@@ -230,7 +247,9 @@ namespace {
 	
 	static void print_args_v (id self, SEL _cmd, std::va_list va) {
 		disable_temporary();
-						
+		
+		std::stack<lr_node>& lr_list = get_lr_list();
+		
 		size_t cur_depth = lr_list.size();
 		bool do_print_open_brace = last_action_is_push && do_print_rv;
 		last_action_is_push = true;
@@ -309,6 +328,8 @@ namespace {
 	}
 	
 	extern "C" USED FASTCALL void show_retval (const char* addr) {
+		std::stack<lr_node>& lr_list = get_lr_list();
+		
 		lr_node& node = lr_list.top();
 				
 			if (!do_print_rv)
@@ -454,6 +475,8 @@ namespace {
 #elif __i386__
 	
 	extern "C" USED void show_float_retval () {
+		std::stack<lr_node>& lr_list = get_lr_list();
+		
 		lr_node& node = lr_list.top();
 		
 			if (!do_print_rv)
@@ -656,11 +679,13 @@ EXPORT void SubjC_start(std::FILE* f, size_t maximum_depth, bool print_arguments
 	if (!original_objc_msgSend)
 		SubjC_initialize();
 	
+	pthread_key_create(&thr_key, lr_list_destructor);
+	pthread_setspecific(thr_key, NULL);
+	
 	last_action_is_push = false;
 	max_depth = maximum_depth;
 	do_print_args = print_arguments;
 	do_print_rv = print_return_value;
-	clear_stl(lr_list);
 	log_fh = f;
 	enabled = 1;
 }
@@ -668,4 +693,5 @@ EXPORT void SubjC_start(std::FILE* f, size_t maximum_depth, bool print_arguments
 EXPORT void SubjC_end() {
 	enabled = 0;
 	std::fputc('\n', log_fh);
+	pthread_key_delete(thr_key);
 }
