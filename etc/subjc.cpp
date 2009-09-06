@@ -5,6 +5,7 @@
 #include <CoreFoundation/CoreFoundation.h>
 #include <cstdarg>
 #include <boost/unordered_set.hpp>
+#include "subjc.h"
 
 namespace {
 	template<typename T>
@@ -81,7 +82,7 @@ namespace {
 	static boost::unordered_set<FilterObject<std::pair<Class, SEL> > > specific_filters_set;
 	static boost::unordered_set<FilterObject<Class> > class_filters_set;
 	static boost::unordered_set<FilterObject<SEL> > selector_filters_set;
-	static int balance_cf = 0, balance_sf = 0;
+	static bool default_black;
 	
 	static SEL doesNotRecognizeSelector_sel;
 	
@@ -203,7 +204,7 @@ namespace {
 		else if (sf_res == WhiteList)
 			return false;
 		
-		return balance_cf < 0 || balance_sf < 0;
+		return default_black;
 	}	
 	
 	static void print_args_v (id self, SEL _cmd, std::va_list va) {
@@ -584,6 +585,7 @@ EXPORT void SubjC_initialize () {
 	allocWithZone_sel = sel_registerName("allocWithZone:");
 	doesNotRecognizeSelector_sel = sel_registerName("doesNotRecognizeSelector:");
 //	NSString_class = reinterpret_cast<Class>(objc_getClass("NSString"));
+	default_black = false;
 	
 	MSHookFunction(reinterpret_cast<void*>(objc_msgSend),
 				   reinterpret_cast<void*>(replaced_objc_msgSend),
@@ -603,36 +605,30 @@ EXPORT void SubjC_clear_filters() {
 		clear_stl(specific_filters_set);
 		clear_stl(class_filters_set);
 		clear_stl(selector_filters_set);
-		balance_cf = balance_sf = 0;
+		default_black = false;
 	}
 	
-EXPORT void SubjC_filter_method(bool blacklist, Class class_, SEL selector) {
+EXPORT void SubjC_filter_method(enum SubjC_FilterType blacklist, Class class_, SEL selector) {
 		FilterObject<std::pair<Class, SEL> > fo (std::pair<Class, SEL>(class_, selector));
-		fo.is_blacklist = blacklist;
+		fo.is_blacklist = blacklist == SubjC_Deny;
 		specific_filters_set.insert(fo);
 	}
 	
-EXPORT void SubjC_filter_class(bool blacklist, Class class_) {
+EXPORT void SubjC_filter_class(enum SubjC_FilterType blacklist, Class class_) {
 		FilterObject<Class> fo (class_);
-		fo.is_blacklist = blacklist;
+		fo.is_blacklist = blacklist == SubjC_Deny;
 		class_filters_set.insert(fo);
-		
-		if (blacklist)
-			++ balance_cf;
-		else
-			-- balance_cf;
 	}
 	
-EXPORT void SubjC_filter_selector(bool blacklist, SEL selector) {
+EXPORT void SubjC_filter_selector(enum SubjC_FilterType blacklist, SEL selector) {
 		FilterObject<SEL> fo (selector);
-		fo.is_blacklist = blacklist;
+		fo.is_blacklist = blacklist == SubjC_Deny;
 		selector_filters_set.insert(fo);
-		
-		if (blacklist)
-			++ balance_sf;
-		else
-			-- balance_sf;
 	}
+
+EXPORT void SubjC_default_filter_type(enum SubjC_FilterType blacklist) {
+	default_black == blacklist == SubjC_Deny;
+}
 
 
 EXPORT void SubjC_start(std::FILE* f, size_t maximum_depth, bool print_arguments, bool print_return_value) {

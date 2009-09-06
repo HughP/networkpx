@@ -15,10 +15,16 @@ extern "C" {
 
 	void SubjC_initialize ();
 	
+	enum SubjC_FilterType {
+		SubjC_Deny,
+		SubjC_Allow
+	};
+	
 	void SubjC_clear_filters();
-	void SubjC_filter_method(bool blacklist, Class class_, SEL selector);
-	void SubjC_filter_class(bool blacklist, Class class_);
-	void SubjC_filter_selector(bool blacklist, SEL selector);
+	void SubjC_filter_method(enum SubjC_FilterType blacklist, Class class_, SEL selector);
+	void SubjC_filter_class(enum SubjC_FilterType blacklist, Class class_);
+	void SubjC_filter_selector(enum SubjC_FilterType blacklist, SEL selector);
+	void SubjC_default_filter_type(enum SubjC_FilterType blacklist);
 		
 	void SubjC_start(FILE* f, size_t maximum_depth, bool print_arguments, bool print_return_value);
 	void SubjC_end();

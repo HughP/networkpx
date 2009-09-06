@@ -165,9 +165,9 @@ void GPMessageLogAddMessage(CFMutableDictionaryRef message) {
 	CFMutableDictionaryRef logDict = GPOpenMessageLog(logFileURL);
 	if (logDict != NULL) {
 		CFDictionarySetValue(logDict, completeMessageUID, messageCopy);
-		CFRelease(messageCopy);
 		doLog = true;
 	}
+	CFRelease(messageCopy);
 	GPSaveMessageLog(logFileURL, logDict);
 	CFRelease(logFileURL);
 	
