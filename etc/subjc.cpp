@@ -627,7 +627,7 @@ EXPORT void SubjC_filter_selector(enum SubjC_FilterType blacklist, SEL selector)
 	}
 
 EXPORT void SubjC_default_filter_type(enum SubjC_FilterType blacklist) {
-	default_black == blacklist == SubjC_Deny;
+	default_black = blacklist == SubjC_Deny;
 }
 
 
