@@ -793,7 +793,7 @@ DefineObjCHook(void, UIKeyboardLayoutStar_longPressAction, UIKeyboardLayoutStar*
 
 //------------------------------------------------------------------------------
 
-#if TARGET_IPHONE_SIMULATOR
+#ifndef N_ARM_THUMB_DEF
 #define N_ARM_THUMB_DEF 0
 #endif
 
