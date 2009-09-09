@@ -41,6 +41,7 @@
 #include <vector>
 #include <cstdio>
 #include <syslog.h>
+#include <queue>
 
 namespace IKX {
 
@@ -297,20 +298,20 @@ namespace IKX {
 				const T* _content_list = IKX_THIS->content_list();
 				
 				if (_content_list[_node_list[p].data()].has_prefix(prefix, *IKX_THIS)) {
-					std::vector<const Node*> node_stack;
-					node_stack.push_back(_node_list + top);
+					std::queue<const Node*> node_stack;
+					node_stack.push(_node_list + top);
 					
 					while (!node_stack.empty()) {
-						const Node* node = node_stack.back();
-						node_stack.pop_back();
+						const Node* node = node_stack.front();
+						node_stack.pop();
 						
 						if (node->is_data()) {
 							retval.push_back(_content_list[node->data()]);
 							if (content_indices != NULL)
 								content_indices->push_back(node->data());
 						} else {
-							node_stack.push_back(_node_list + node->left);
-							node_stack.push_back(_node_list + node->right);
+							node_stack.push(_node_list + node->left);
+							node_stack.push(_node_list + node->right);
 						}
 					}
 				}
