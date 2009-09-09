@@ -65,7 +65,7 @@ extern "C" void IKXConvertCinToPat(const char* cin_path, const char* pat_path, c
 			
 			size_t first_space_character = s.find_first_of(" \t");
 			size_t first_nonspace_character = s.find_first_not_of(" \t", first_space_character+1);
-			
+						
 			utf16_small_buffer.resize(s.length()*2);
 			uint16_t* small_buffer_begin = &(utf16_small_buffer.front());
 			uint16_t* small_buffer_abs_begin = small_buffer_begin;
@@ -76,8 +76,6 @@ extern "C" void IKXConvertCinToPat(const char* cin_path, const char* pat_path, c
 			
 			if (mode == CharDef) {
 				IKX::IMEContent cont (keystr, first_space_character, small_buffer_abs_begin, small_buffer_begin - small_buffer_abs_begin);
-				cont.localize(pat);
-				
 				pat.insert(cont);
 			} else if (mode == KeyDef) {
 				std::vector<uint16_t> bufcpy(small_buffer_abs_begin, small_buffer_begin);
@@ -132,8 +130,6 @@ extern "C" void IKXConvertPhraseToPat(const char* txt_path, const char* pat_path
 		
 		cont.phrase.pointer = &(utf16_small_buffer.front());
 		cont.len = small_buffer_begin - cont.phrase.pointer;
-		cont.localize(pat);
-				
 		pat.insert(cont);
 	}
 	

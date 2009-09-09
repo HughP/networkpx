@@ -72,7 +72,7 @@ KeyboardChooser_Options=-framework Foundation -framework UIKit -framework CoreGr
 
 UIHook_Sources=iKeyEx3.o UIKBKeyboardFromLayoutPlist.o IKXCinInputManager.o CMLSelection.o
 UIHook_Target=$(MobileSubstratePath)/UIHook-iKeyEx3.dylib
-UIHook_Options=-framework Foundation -framework UIKit -framework TextInput -framework ActorKit -framework CoreGraphics -framework WebCore -dynamiclib -liKeyEx -lsubstrate -lstdc++ -init _initialize
+UIHook_Options=-framework Foundation -framework UIKit -framework TextInput -framework CoreGraphics -framework WebCore -dynamiclib -liKeyEx -lsubstrate -lstdc++ -init _initialize
 
 PrefBundle_Sources=Pref.o
 PrefBundle_Target=$(PrefBundlePath)/iKeyEx.bundle/iKeyEx

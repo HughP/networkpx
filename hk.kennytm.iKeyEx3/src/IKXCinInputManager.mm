@@ -165,19 +165,22 @@ __attribute__((visibility("hidden")))
 		NSArray* resArr = IKXPhraseCompletionTableSearch(phrases, lastAcceptedCandidate);
 		
 		for (NSString* res in resArr) {
-			CandWord* cw = [[CandWord alloc] initWithWord:[res substringFromIndex:lac_len]];
-			[current_candidates addObject:cw];
-			[cw release];
+			NSString* word = [res substringFromIndex:lac_len];
+			if ([word length] > 0) {
+				CandWord* cw = [[CandWord alloc] initWithWord:word];
+				[current_candidates addObject:cw];
+				[cw release];
+			}
 		}
 	} else if ([inputString length] > 0) {
 		IMEContent curContent = makeIMEContent(inputString);
-		std::vector<IMEContent> res = pat->prefix_search(curContent);
+		std::vector<IMEContent> res = pat->prefix_search(curContent, NULL, 64);
 		
 		NSMutableArray* resArr = [NSMutableArray arrayWithCapacity:res.size()];
 		
-		unsigned resCount = 0;
-		for (std::vector<IMEContent>::const_iterator cit = res.begin(); cit != res.end(); ++ cit) {		
+		for (std::vector<IMEContent>::const_iterator cit = res.begin(); cit != res.end(); ++ cit) {
 			const uint16_t* cands = cit->candidates_array(*pat);
+			
 			size_t cand_len = cit->candidate_string_length;
 			size_t prev_i = 0;
 			
@@ -185,23 +188,22 @@ __attribute__((visibility("hidden")))
 			
 			for (size_t i = 0; i < cand_len; ++ i)
 				if (cands[i] == 0) {
-					CandWord* cw = [[CandWord alloc] initWithWord:[NSString stringWithCharacters:cands+prev_i length:i-prev_i]];
-					[whichArr addObject:cw];
-					[cw release];
+					if (i != prev_i) {
+						CandWord* cw = [[CandWord alloc] initWithWord:[NSString stringWithCharacters:cands+prev_i length:i-prev_i]];
+						[whichArr addObject:cw];
+						[cw release];
+					}
 					prev_i = i+1;
-					++ resCount;
 				}
-			CandWord* cw = [[CandWord alloc] initWithWord:[NSString stringWithCharacters:cands+prev_i length:cand_len-prev_i]];
-			[whichArr addObject:cw];
-			[cw release];
-			++ resCount;
-			
-			if (resCount > 64)
-				break;
+			if (prev_i != cand_len) {
+				CandWord* cw = [[CandWord alloc] initWithWord:[NSString stringWithCharacters:cands+prev_i length:cand_len-prev_i]];
+				[whichArr addObject:cw];
+				[cw release];
+			}
 		}
 		IKXCharacterTableSort(chars, current_candidates);
 		IKXCharacterTableSort(chars, resArr);
-		[current_candidates addObjectsFromArray:resArr];		
+		[current_candidates addObjectsFromArray:resArr];
 	}
 	
 	computing = NO;
@@ -213,7 +215,7 @@ __attribute__((visibility("hidden")))
 }
 -(BOOL)isValidDisplayString:(NSString*)str {
 	for (size_t i = 0; i < sizeof(valid_keys)/sizeof(valid_keys[0]); ++ i)
-		if ([valid_keys[i] isEqualToString:str])
+		if (valid_keys[i] != nil && [str hasPrefix:valid_keys[i]])
 			return YES;
 	return NO;
 }
@@ -283,7 +285,7 @@ __attribute__((visibility("hidden")))
 	*charsToDelete = 0;
 	NSString* input = [rawInput lowercaseString];
 	unsigned input_length = [input length];
-		
+	
 	if (wait_for_remaining_input)
 		wait_for_remaining_input = NO;
 	else if (input_length > 0 && ![impl shouldSkipCandidateSelection]) {
