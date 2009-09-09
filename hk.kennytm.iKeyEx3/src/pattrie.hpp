@@ -154,7 +154,6 @@ namespace IKX {
 				candidate_is_pointer = 0;
 				if (candidate_string_length <= kLocalCandidateStringLength) {
 					std::memcpy(candidates.local, candidates.pointer, candidate_string_length * sizeof(uint16_t));
-					fprintf(stderr, "%d", candidate_string_length);
 				} else
 					candidates.external = trie.append_extra_content(candidates.pointer, candidate_string_length);
 			}

@@ -90,7 +90,7 @@ NSString* IKXNameOfMode(NSString* modeString);
 	/// 
 	UIProgressHUD* IKXShowLoadingHUD();
 	void IKXHideLoadingHUD(UIProgressHUD* hud);
-	
+	void IKXRefreshLoadingHUDWithPercentage(int percentage, UIProgressHUD* hud);
 	
 	IKXPhraseCompletionTableRef IKXPhraseCompletionTableCreate(NSString* language);	///< Create default phrase completion table for specific language.
 	NSArray* IKXPhraseCompletionTableSearch(IKXPhraseCompletionTableRef completionTable, NSString* prefix);	///< Retrieve a list of completions, sorted by frequency, of a Chinese phrase prefix.
