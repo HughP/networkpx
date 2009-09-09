@@ -98,7 +98,7 @@ NSString* _IKXCharacterTable_extension = @"chrs";
 NSString* _IKXCharacterTable_cacheExt = @"hash";
 NSString* _IKXCharacterTable_pinyinOrSinglechars = @"singleChar";
 
-extern "C" IKXPhraseCompletionTableRef IKXPhraseCompletionTableCreate(NSString* language) {
+extern "C" __attribute__((visibility("default"))) IKXPhraseCompletionTableRef IKXPhraseCompletionTableCreate(NSString* language) {
 	return PhraseTableCreate<
 		IKX::ReadonlyPatTrie<IKX::PhraseContent>, 0,
 		_IKXPhraseCompletionTable_extension,
@@ -107,7 +107,7 @@ extern "C" IKXPhraseCompletionTableRef IKXPhraseCompletionTableCreate(NSString* 
 		&IKXConvertPhraseToPat>(language);
 }
 
-extern "C" void IKXPhraseCompletionTableDealloc(IKXPhraseCompletionTableRef completionTable) {
+extern "C" __attribute__((visibility("default"))) void IKXPhraseCompletionTableDealloc(IKXPhraseCompletionTableRef completionTable) {
 	delete completionTable;
 }
 
@@ -129,7 +129,7 @@ namespace {
 	};
 }
 
-extern "C" NSArray* IKXPhraseCompletionTableSearch(IKXPhraseCompletionTableRef completionTable, NSString* prefix) {
+extern "C" __attribute__((visibility("default"))) NSArray* IKXPhraseCompletionTableSearch(IKXPhraseCompletionTableRef completionTable, NSString* prefix) {
 	if (completionTable == NULL || !completionTable->valid())
 		return nil;
 	
@@ -140,7 +140,7 @@ extern "C" NSArray* IKXPhraseCompletionTableSearch(IKXPhraseCompletionTableRef c
 	[prefix getCharacters:prefix_str];
 	IKX::PhraseContent prefix_cont (prefix_str, prefix_len);
 	
-	std::vector<IKX::PhraseContent> res = completionTable->prefix_search(prefix_cont, &pos);
+	std::vector<IKX::PhraseContent> res = completionTable->prefix_search(prefix_cont, &pos, 64);
 	
 	std::vector<unsigned> iota (res.size());
 	for (unsigned i = 0; i < res.size(); ++ i)

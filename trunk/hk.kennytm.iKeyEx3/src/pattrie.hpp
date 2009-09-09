@@ -46,9 +46,10 @@
 namespace IKX {
 
 	#define IKX_THIS static_cast<const Self*>(this)
+#define HIDDEN __attribute__((visibility("hidden")))
 
 	template <typename Self, size_t T_bits>
-	struct CommonContent {
+	struct HIDDEN CommonContent {
 		template <typename U>
 		bool bit (unsigned n, const U& trie) const {
 			unsigned the_byte = n / T_bits;
@@ -97,7 +98,7 @@ namespace IKX {
 		}
 	};
 
-	struct IMEContent : public CommonContent<IMEContent, 8> {
+	struct HIDDEN IMEContent : public CommonContent<IMEContent, 8> {
 		static const size_t kLocalCandidateStringLength = sizeof(const uint16_t*)/sizeof(uint16_t);
 		
 		char key_content[9];
@@ -120,6 +121,7 @@ namespace IKX {
 		template<typename U>
 		void append(const IMEContent& other, U& trie) {
 			const uint16_t* other_cands = other.candidates_array(trie);
+
 			if (candidate_string_length + other.candidate_string_length < kLocalCandidateStringLength) {
 				candidates.local[candidate_string_length] = 0;
 				for (unsigned i = 0; i < other.candidate_string_length; ++ i)
@@ -129,16 +131,9 @@ namespace IKX {
 				trie.append_separator_to_extra_content();
 				trie.append_extra_content(other_cands, other.candidate_string_length);
 			} else {
-				uint16_t* tmp = candidate_string_length < 128 ? reinterpret_cast<uint16_t*>(alloca(candidate_string_length*sizeof(uint16_t))) : new uint16_t[candidate_string_length];
-				
-				std::memcpy(tmp, trie.extra_content() + candidates.external, candidate_string_length*sizeof(uint16_t));
-				trie.delete_extra_content(candidates.external, candidate_string_length);
-				candidates.external = trie.append_extra_content(tmp, candidate_string_length);
+				candidates.external = trie.poke_extra_content(candidates.external, candidate_string_length);
 				trie.append_separator_to_extra_content();
 				trie.append_extra_content(other_cands, other.candidate_string_length);
-				
-				if (candidate_string_length >= 128)
-					delete[] tmp;
 			}
 			candidate_string_length += 1 + other.candidate_string_length;
 		}
@@ -152,14 +147,15 @@ namespace IKX {
 			else
 				return trie.extra_content() + candidates.external;
 		}
-		
+				
 		template<typename U>
 		void localize(U& trie) {
 			if (candidate_is_pointer) {
 				candidate_is_pointer = 0;
-				if (candidate_string_length <= kLocalCandidateStringLength)
+				if (candidate_string_length <= kLocalCandidateStringLength) {
 					std::memcpy(candidates.local, candidates.pointer, candidate_string_length * sizeof(uint16_t));
-				else
+					fprintf(stderr, "%d", candidate_string_length);
+				} else
 					candidates.external = trie.append_extra_content(candidates.pointer, candidate_string_length);
 			}
 		}
@@ -182,7 +178,7 @@ namespace IKX {
 		size_t extra_content_length() const { return candidate_string_length; }
 	};
 
-	struct PhraseContent : public CommonContent<PhraseContent, 16> {
+	struct HIDDEN PhraseContent : public CommonContent<PhraseContent, 16> {
 		static const size_t kLocalCandidateStringLength = sizeof(const uint16_t*)/sizeof(uint16_t);
 		
 		uint8_t len;
@@ -233,7 +229,7 @@ namespace IKX {
 
 	typedef size_t Content_ID;
 
-	struct Node {
+	struct HIDDEN Node {
 		typedef unsigned ID;
 		static const ID InvalidID = 0xFFFFFF;
 		
@@ -250,7 +246,7 @@ namespace IKX {
 	};
 
 	template<typename Self, typename T>
-	class CommonPatTrie {
+	class HIDDEN CommonPatTrie {
 	protected:
 		bool calculate_direction(const Node& node, const T& element) const {
 			if (node.position < element.bit_length())
@@ -288,7 +284,7 @@ namespace IKX {
 		
 	public:
 		/// Return a vector of elements that matches the specified prefix.
-		std::vector<T> prefix_search(const T& prefix, std::vector<unsigned>* content_indices = NULL) const {
+		std::vector<T> prefix_search(const T& prefix, std::vector<unsigned>* content_indices = NULL, size_t limit = ~0u) const {
 			std::vector<T> retval;
 			if (IKX_THIS->node_list_length() != 0) {
 				Node::ID top;
@@ -309,6 +305,8 @@ namespace IKX {
 							retval.push_back(_content_list[node->data()]);
 							if (content_indices != NULL)
 								content_indices->push_back(node->data());
+							if (retval.size() > limit)
+								break;
 						} else {
 							node_stack.push(_node_list + node->left);
 							node_stack.push(_node_list + node->right);
@@ -345,7 +343,7 @@ namespace IKX {
 	};
 
 	template<typename T>
-	class WritablePatTrie : public CommonPatTrie<WritablePatTrie<T>, T> {
+	class HIDDEN WritablePatTrie : public CommonPatTrie<WritablePatTrie<T>, T> {
 		std::vector<uint16_t> extra_content_list;
 		std::vector<Node> nodes;
 		std::vector<T> content;
@@ -373,9 +371,14 @@ namespace IKX {
 			if (extra_content_list.size() == index + length)
 				extra_content_list.resize(index);
 		}
+		unsigned poke_extra_content(unsigned index, size_t length) {
+			if (extra_content_list.size() != index + length)
+				index = append_extra_content(&(extra_content_list[index]), length);
+			return index;
+		}
 		void compact_extra_content() {
-			std::vector<uint16_t> old_extra_content = extra_content_list;
-			extra_content_list.clear();
+			std::vector<uint16_t> old_extra_content;
+			std::swap(old_extra_content, extra_content_list);
 			for (typename std::vector<T>::iterator it = content.begin(); it != content.end(); ++ it) {
 				unsigned old_index = it->extra_content_index();
 				if (old_index != ~0u)
@@ -386,7 +389,9 @@ namespace IKX {
 		
 		void insert(const T& element) {
 			if (node_list_length() == 0) {
-				content.push_back(element);
+				T e2 = element;
+				e2.localize(*this);
+				content.push_back(e2);
 				nodes.push_back(Node(0));
 			} else {
 				Node::ID best = walk(element);
@@ -401,8 +406,9 @@ namespace IKX {
 				bool elem_bit = element.bit(crit_bit_pos, *this);
 				
 				nodes.push_back(Node(content.size()));
-				content.push_back(element);
-//				content.back().localize(*this);
+				T e2 = element;
+				e2.localize(*this);
+				content.push_back(e2);
 				
 				Node::ID p = 0;
 				while (true) {
@@ -479,7 +485,7 @@ namespace IKX {
 	};
 
 	template <typename T>
-	class ReadonlyPatTrie : public CommonPatTrie<ReadonlyPatTrie<T>, T> {
+	class HIDDEN ReadonlyPatTrie : public CommonPatTrie<ReadonlyPatTrie<T>, T> {
 		const uint16_t* _extra_content;
 		size_t _nodes_size;
 		const Node* _nodes;
@@ -547,6 +553,8 @@ namespace IKX {
 		}
 		
 	};
+	
+#undef HIDDEN
 }
 
 #endif
