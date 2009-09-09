@@ -42,7 +42,6 @@ using namespace IKX;
 #import <UIKit/UIKit2.h>
 #include "libiKeyEx.h"
 #include "cin2pat.h"
-#import <ActorKit/ActorKit.h>
 #include <pthread.h>
 #include <sys/time.h>
 
@@ -67,30 +66,29 @@ static IMEContent makeIMEContent(NSString* prefix) {
 	return retval;
 }
 
-@protocol IKXCandidateComputerProtocol
--(oneway void)computeWithInputString:(NSString*)inputString lastAcceptedCandidate:(NSString*)lastAcceptedCandidate;
-@end
-
 __attribute__((visibility("hidden")))
-@interface IKXCandidateComputer : AKActor<IKXCandidateComputerProtocol> {
+@interface IKXCandidateComputer : NSObject {
 @private
 	NSMutableArray* current_candidates;
 	NSString* valid_keys[256];
 	ReadonlyPatTrie<IMEContent>* pat;
 	IKXPhraseCompletionTableRef phrases;
 	IKXCharacterTableRef chars;
-	pthread_mutex_t cclock;
-	pthread_cond_t cccond;
+//	pthread_mutex_t cclock;
+//	pthread_cond_t cccond;
 	BOOL computing;
 }
 @end
 
 @implementation IKXCandidateComputer
+-(IKXCandidateComputer*)send { return self; }
+-(void)startThreadDispatchQueue {}
+
 -(id)init {
 	if ((self = [super init])) {
 		current_candidates = [NSMutableArray new];
-		pthread_mutex_init(&cclock, NULL);
-		pthread_cond_init(&cccond, NULL);
+//		pthread_mutex_init(&cclock, NULL);
+//		pthread_cond_init(&cccond, NULL);
 		
 //		UIProgressHUD* hud = IKXShowLoadingHUD();
 		
@@ -150,14 +148,14 @@ __attribute__((visibility("hidden")))
 	delete pat;
 	IKXPhraseCompletionTableDealloc(phrases);
 	IKXCharacterTableDealloc(chars);
-	pthread_mutex_destroy(&cclock);
-	pthread_cond_destroy(&cccond);
+//	pthread_mutex_destroy(&cclock);
+//	pthread_cond_destroy(&cccond);
 	[super dealloc];
 }
 
 -(void)prepareCompute {
 	computing = YES;
-	pthread_mutex_lock(&cclock);
+//	pthread_mutex_lock(&cclock);
 	[current_candidates removeAllObjects];	
 }
 
@@ -207,16 +205,23 @@ __attribute__((visibility("hidden")))
 	}
 	
 	computing = NO;
-	pthread_cond_signal(&cccond);
-	pthread_mutex_unlock(&cclock);
+//	pthread_cond_signal(&cccond);
+//	pthread_mutex_unlock(&cclock);
 }
 -(BOOL)isValidKey:(unichar)c {
 	return c <= 0xFF && valid_keys[c] != nil;
+}
+-(BOOL)isValidDisplayString:(NSString*)str {
+	for (size_t i = 0; i < sizeof(valid_keys)/sizeof(valid_keys[0]); ++ i)
+		if ([valid_keys[i] isEqualToString:str])
+			return YES;
+	return NO;
 }
 -(BOOL)containsPrefix:(NSString*)prefix {
 	return pat->contains_prefix(makeIMEContent(prefix));
 }
 -(NSArray*)commit {
+	/*
 	pthread_mutex_lock(&cclock);
 	if (computing) {
 		struct timeval now;
@@ -230,9 +235,10 @@ __attribute__((visibility("hidden")))
 		else if (err != 0)
 			NSLog(@"iKeyEx: Error: pthread_cond_timedwait returned %d, which should not happen. Close all windows and leave this building now.", err);
 	}
+	 */
 	NSArray* cands = current_candidates;
 	
-	pthread_mutex_unlock(&cclock);
+//	pthread_mutex_unlock(&cclock);
 	return cands;
 }
 -(NSString*)displayedInputStringOf:(NSString*)s {
@@ -277,7 +283,7 @@ __attribute__((visibility("hidden")))
 	*charsToDelete = 0;
 	NSString* input = [rawInput lowercaseString];
 	unsigned input_length = [input length];
-	
+		
 	if (wait_for_remaining_input)
 		wait_for_remaining_input = NO;
 	else if (input_length > 0 && ![impl shouldSkipCandidateSelection]) {
@@ -353,7 +359,7 @@ __attribute__((visibility("hidden")))
 -(void)candidateAccepted:(CandWord*)candidate {
 	[candidate_computer prepareCompute];
 	
-	if (!disallow_completion && !shown_completion) {
+	if (!shown_completion) {
 		[input_string deleteCharactersInRange:NSMakeRange(0, valid_input_string_length)];
 		NSUInteger final_input_length = valid_input_string_length = [input_string length];
 		while (valid_input_string_length > 0) {
@@ -364,7 +370,7 @@ __attribute__((visibility("hidden")))
 		}
 		NSString* last_accepted_candidate = nil;
 		
-		if (final_input_length == 0) {
+		if (final_input_length == 0 && !disallow_completion) {
 			shown_completion = YES;
 			last_accepted_candidate = [candidate word];
 		}
@@ -427,7 +433,11 @@ __attribute__((visibility("hidden")))
 -(BOOL)stringEndsWord:(NSString*)str {
 	if ([str length] == 0)
 		return YES;
-	return ![candidate_computer isValidKey:[str characterAtIndex:0]];
+	unichar c = [str characterAtIndex:0];
+	if (c <= 0xFF)
+		return ![candidate_computer isValidKey:c];
+	else 
+		return ![candidate_computer isValidDisplayString:str];
 }
 @end
 
