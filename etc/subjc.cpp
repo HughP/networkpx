@@ -28,6 +28,7 @@
 #include <boost/unordered_set.hpp>
 #include "subjc.h"
 #include <pthread.h>
+#include <sys/time.h>
 
 namespace {
 	template<typename T>
@@ -68,7 +69,15 @@ namespace {
 	
 	static ObjCTypeRecord record;
 	
+	static bool do_print_time = false;
+	
 	static void fprint_spaces (std::FILE* f, size_t n) {
+		if (do_print_time) {
+			timeval tp;
+			gettimeofday(&tp, NULL);
+			std::fprintf(f, "%02ld.%06d ", tp.tv_sec % 100, tp.tv_usec);
+		}
+		
 		static char spaces[] = "                ";
 		for (size_t i = 0; i < n/16; ++ i)
 			std::fwrite(spaces, 1, 16, f);
@@ -90,7 +99,12 @@ namespace {
 		std::stack<lr_node>* stack = reinterpret_cast<std::stack<lr_node>*>(pthread_getspecific(thr_key));
 		if (stack == NULL) {
 			stack = new std::stack<lr_node>;
-			pthread_setspecific(thr_key, stack);
+			int err = pthread_setspecific(thr_key, stack);
+			if (err) {
+				fprintf(stderr, "Subjective-C: Error: pthread_setspecific() returned %d. Committing suicide.", err);
+				delete stack;
+				stack = NULL;
+			}
 		}
 		return *stack;
 	}
@@ -210,12 +224,12 @@ namespace {
 		}
 	}
 	
-	static std::FILE* log_fh;
+	static std::FILE* log_fh = stderr;
 	
 	static bool last_action_is_push;
 	static SEL class_sel, alloc_sel, allocWithZone_sel;
-	static size_t max_depth;
-	static bool do_print_args, do_print_rv;
+	static size_t max_depth = ~0u;
+	static bool do_print_args = true, do_print_rv = true;
 	
 	template<typename T>
 	static FilterType is_filtered_for(const boost::unordered_set<FilterObject<T> >& the_set, const T& the_target) {
@@ -674,8 +688,46 @@ EXPORT void SubjC_default_filter_type(enum SubjC_FilterType blacklist) {
 	default_black = blacklist == SubjC_Deny;
 }
 
+EXPORT void SubjC_filter_class_prefixes(enum SubjC_FilterType blacklist, unsigned prefixes_count, const char* const prefixes[]) {
+	int num_classes = objc_getClassList(NULL, 0);
+	
+	size_t prefixes_len[prefixes_count];
+	for (unsigned j = 0; j < prefixes_count; ++ j)
+		prefixes_len[j] = std::strlen(prefixes[j]);
+		
+	if (num_classes > 0) {
+		std::vector<FilterObject<Class> > buffer;
+		Class* classes = new Class[num_classes];
+		
+		objc_getClassList(classes, num_classes);
+		for (int i = 0; i < num_classes; ++ i) {
+			const char* cls_name = class_getName(classes[i]);
+			for (unsigned j = 0; j < prefixes_count; ++ j) {
+				if (std::strncmp(prefixes[j], cls_name, prefixes_len[j]) == 0) {
+					FilterObject<Class> fo (classes[i]);
+					fo.is_blacklist = blacklist == SubjC_Deny;
+					buffer.push_back(fo);
+					break;
+				}
+			}
+		}
+		
+		class_filters_set.insert(buffer.begin(), buffer.end());
+	}
+}
 
-EXPORT void SubjC_start(std::FILE* f, size_t maximum_depth, bool print_arguments, bool print_return_value) {
+EXPORT void SubjC_filter_class_prefix(enum SubjC_FilterType blacklist, const char* prefix) {
+	SubjC_filter_class_prefixes(blacklist, 1, &prefix);
+}
+
+EXPORT void SubjC_set_file(FILE* f) { log_fh = f; }
+EXPORT void SubjC_set_maximum_depth(size_t maximum_depth) { max_depth = maximum_depth; }
+EXPORT void SubjC_set_print_arguments(bool print_arguments) { do_print_args = print_arguments; }
+EXPORT void SubjC_set_print_return_value(bool print_return_value) { do_print_rv = print_return_value; }
+EXPORT void SubjC_set_print_timestamp(bool print_timestamp) { do_print_time = print_timestamp; }
+
+
+EXPORT void SubjC_start() {
 	if (!original_objc_msgSend)
 		SubjC_initialize();
 	
@@ -683,15 +735,12 @@ EXPORT void SubjC_start(std::FILE* f, size_t maximum_depth, bool print_arguments
 	pthread_setspecific(thr_key, NULL);
 	
 	last_action_is_push = false;
-	max_depth = maximum_depth;
-	do_print_args = print_arguments;
-	do_print_rv = print_return_value;
-	log_fh = f;
 	enabled = 1;
 }
 
 EXPORT void SubjC_end() {
 	enabled = 0;
 	std::fputc('\n', log_fh);
+	std::fflush(log_fh);
 	pthread_key_delete(thr_key);
 }

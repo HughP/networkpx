@@ -294,7 +294,7 @@ static UIKBKeyplane* constructUIKBKeyplaneFromSublayout(NSMutableDictionary* lay
 	
 	UIKBAttributeList* attribs = [UIKBAttributeList new];
 	
-	BOOL autoshiftable = !shifted && sublayoutAutoshiftable(sublayoutKey);
+	BOOL autoshiftable = sublayoutAutoshiftable(sublayoutKey);
 	
 	NSNumber* adoptiveNumber = [sublayout objectForKey:@"usesKeyCharges"];
 	BOOL adoptive;

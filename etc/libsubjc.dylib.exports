@@ -2,8 +2,15 @@ _SubjC_initialize
 _SubjC_clear_filters
 _SubjC_filter_method
 _SubjC_filter_class
+_SubjC_filter_class_prefixes
+_SubjC_filter_class_prefix
 _SubjC_filter_selector
 _SubjC_default_filter_type
 _SubjC_start
 _SubjC_end
+_SubjC_set_file
+_SubjC_set_maximum_depth
+_SubjC_set_print_arguments
+_SubjC_set_print_return_value
+_SubjC_set_print_timestamp
 

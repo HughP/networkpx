@@ -46,8 +46,16 @@ extern "C" {
 	void SubjC_filter_class(enum SubjC_FilterType blacklist, Class class_);
 	void SubjC_filter_selector(enum SubjC_FilterType blacklist, SEL selector);
 	void SubjC_default_filter_type(enum SubjC_FilterType blacklist);
-		
-	void SubjC_start(FILE* f, size_t maximum_depth, bool print_arguments, bool print_return_value);
+	void SubjC_filter_class_prefixes(enum SubjC_FilterType blacklist, unsigned prefixes_count, const char* const prefixes[]);
+	void SubjC_filter_class_prefix(enum SubjC_FilterType blacklist, const char* prefix);
+	
+	void SubjC_set_file(FILE* f);
+	void SubjC_set_maximum_depth(size_t maximum_depth);
+	void SubjC_set_print_arguments(bool print_arguments);
+	void SubjC_set_print_return_value(bool print_return_value);
+	void SubjC_set_print_timestamp(bool print_timestamp);
+	
+	void SubjC_start();
 	void SubjC_end();
 
 #if __cplusplus
