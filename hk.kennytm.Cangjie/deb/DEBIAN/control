@@ -1,6 +1,6 @@
 Package: hk.kennytm.chinese-phrase
 Name: iKeyEx 倉頡輸入法
-Version: 0.2-0
+Version: 0.2-1
 Architecture: iphoneos-arm
 Description: 倉頡輸入法（三代及五代）
 Homepage: http://code.google.com/p/networkpx/

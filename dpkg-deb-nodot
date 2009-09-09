@@ -50,7 +50,7 @@ else
 	cd $SrcDir/DEBIAN;
 		FirstLine=`head -1 control`;
 		if expr "$FirstLine" : "[^:]*:.*"; then
-			tar --exclude=".*" -czf $TmpDir/control.tar.gz *;
+			gnutar --exclude=".*" -czf $TmpDir/control.tar.gz *;
 			# extract version from control.
 			DebVersion=`sed -n -E 's/^Version: *([-.[:alnum:]]+)/\1/p' control`;
 		else
@@ -63,7 +63,7 @@ else
 	cd $OLDPWD;
 
 	cd $SrcDir;
-		tar --exclude=".*" --exclude=DEBIAN -czf $TmpDir/data.tar.gz *;
+		gnutar --exclude=".*" --exclude=DEBIAN -czf $TmpDir/data.tar.gz *;
 	cd $OLDPWD;
 
 	cd $TmpDir;
