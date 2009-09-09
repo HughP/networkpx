@@ -37,7 +37,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 extern "C" {
 #endif
 
-	void IKXConvertCinToPat(const char* cin_path, const char* pat_path, const char* keys_path);
+	typedef void (*IKXProgressReporter) (int progress, void* context);
+	
+	void IKXConvertCinToPat(const char* cin_path, const char* pat_path, const char* keys_path, IKXProgressReporter progress_reporter, void* context);
 	void IKXConvertPhraseToPat(const char* txt_path, const char* pat_path);
 	void IKXConvertPhraseToHash(const char* txt_path, const char* hash_path);
 	

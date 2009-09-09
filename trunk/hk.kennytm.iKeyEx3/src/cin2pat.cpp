@@ -40,13 +40,18 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "hash.hpp"
 
 
-extern "C" void IKXConvertCinToPat(const char* cin_path, const char* pat_path, const char* keys_path) {
+extern "C" void IKXConvertCinToPat(const char* cin_path, const char* pat_path, const char* keys_path, IKXProgressReporter progress_reporter, void* context) {
 	std::ifstream fin (cin_path);
 	std::string s;
 	IKX::WritablePatTrie<IKX::IMEContent> pat;
 	
 	std::vector<uint16_t> utf16_small_buffer;
 	std::vector<std::pair<uint8_t, std::vector<uint16_t> > > keynames;
+	
+	fin.seekg(0, std::ios_base::end);
+	int fsize100 = (fin.tellg()/100) ?: 1;
+	fin.seekg(0, std::ios_base::beg);
+	int passing_mark = 0;
 	
 	enum { Default, KeyDef, CharDef } mode = Default;
 	while (fin) {
@@ -82,6 +87,12 @@ extern "C" void IKXConvertCinToPat(const char* cin_path, const char* pat_path, c
 				keynames.push_back(std::pair<uint8_t, std::vector<uint16_t> >(keystr[0], bufcpy));
 			}
 			
+			if (progress_reporter != NULL) {
+				if (fin.tellg() >= passing_mark) {
+					progress_reporter(passing_mark/fsize100, context);
+					passing_mark += fsize100;
+				}
+			}
 			
 		} else {
 			if (s[0] == '%') {

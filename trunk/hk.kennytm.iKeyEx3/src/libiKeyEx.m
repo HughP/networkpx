@@ -201,5 +201,10 @@ extern void IKXHideLoadingHUD(UIProgressHUD* hud) {
 	[hud release];
 }
 
+extern void IKXRefreshLoadingHUDWithPercentage(int percentage, UIProgressHUD* hud) {
+	[hud setText:[NSString stringWithFormat:@"%@ %d%%", IKXLocalizedString(@"Loading..."), percentage]];
+	CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.01, YES);
+}
+
 // 1 <hide>
 //       <show>

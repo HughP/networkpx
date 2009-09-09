@@ -30,6 +30,8 @@ Options=-arch armv6 \
 	-DNDEBUG \
 	-DUSE_SYSTEM_MALLOC=1 \
 	-fno-exceptions \
+	-fno-rtti \
+	-fno-common -ffast-math -fno-threadsafe-statics \
 	-O2
 
 SimOptions=-arch i686 \
@@ -47,7 +49,9 @@ SimOptions=-arch i686 \
 	-D__IPHONE_OS_VERSION_MIN_REQUIRED=30000 \
 	-DNDEBUG \
 	-fno-exceptions \
+	-fno-rtti \
 	-DUSE_SYSTEM_MALLOC=1 \
+	-fno-common -ffast-math -fno-threadsafe-statics \
 	-O2
 
 DontThumbSources=UIKBKeyboardFromLayoutPlist.m

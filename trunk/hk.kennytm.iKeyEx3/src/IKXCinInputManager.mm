@@ -90,8 +90,6 @@ __attribute__((visibility("hidden")))
 //		pthread_mutex_init(&cclock, NULL);
 //		pthread_cond_init(&cccond, NULL);
 		
-//		UIProgressHUD* hud = IKXShowLoadingHUD();
-		
 		NSString* mode = UIKeyboardGetCurrentInputMode();
 		NSString* imeRef;
 		while (true) {
@@ -109,7 +107,11 @@ __attribute__((visibility("hidden")))
 		if (![[NSFileManager defaultManager] fileExistsAtPath:expectedPath]) {
 			NSString* cinName = [imeBundle objectForInfoDictionaryKey:@"UIKeyboardInputManagerClass"];
 			NSString* cinPath = [imeBundle pathForResource:cinName ofType:nil];
-			IKXConvertCinToPat([cinPath UTF8String], [expectedPath UTF8String], [expectedKeysPath UTF8String]);
+			
+			UIProgressHUD* hud = IKXShowLoadingHUD();			
+			IKXConvertCinToPat([cinPath UTF8String], [expectedPath UTF8String], [expectedKeysPath UTF8String],
+							   reinterpret_cast<IKXProgressReporter>(IKXRefreshLoadingHUDWithPercentage), hud);
+			IKXHideLoadingHUD(hud);
 		}
 		
 		pat = new ReadonlyPatTrie<IMEContent>([expectedPath UTF8String]);
@@ -136,8 +138,6 @@ __attribute__((visibility("hidden")))
 		
 		phrases = IKXPhraseCompletionTableCreate(imeLang);
 		chars = IKXCharacterTableCreate(imeLang);
-		
-//		IKXHideLoadingHUD(hud);
 	}
 	return self;
 }
