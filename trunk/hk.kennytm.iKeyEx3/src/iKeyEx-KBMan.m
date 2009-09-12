@@ -233,9 +233,9 @@ static void SelectPhrase(const char* lang, const char* phrase, unsigned index) {
 	SaveConfig(configDict);
 }
 static void DeselectPhrase(const char* lang, const char* phrase, unsigned index) {
-	const char* curPhrase = [[[[NSDictionary dictionaryWithContentsOfFile:IKX_CONFIG_PATH]
+	const char* curPhrase = [[[[[NSDictionary dictionaryWithContentsOfFile:IKX_CONFIG_PATH] objectForKey:@"phrase"]
 							   objectForKey:[NSString stringWithUTF8String:lang]] objectAtIndex:index] UTF8String];
-	if (strcmp(curPhrase, phrase) == 0)
+	if (curPhrase != NULL && strcmp(curPhrase, phrase) == 0)
 		SelectPhrase(lang, "__Internal", index);
 }
 
