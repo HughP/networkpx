@@ -203,7 +203,7 @@ static void CacheIME(const char* mode) {
 	NSString* knsPath = [[patPath stringByDeletingPathExtension] stringByAppendingPathExtension:@"kns"];
 	
 	printf("Info: Converting .cin IME '%s' to Patricia trie dump. Please wait a few seconds... ", mode);
-	IKXConvertCinToPat([cinPath UTF8String], [patPath UTF8String], [knsPath UTF8String]);
+	IKXConvertCinToPat([cinPath UTF8String], [patPath UTF8String], [knsPath UTF8String], NULL, NULL);
 	printf("Done.\n");
 }
 
