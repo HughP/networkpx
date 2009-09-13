@@ -101,6 +101,20 @@ static CGRect CGRectRound(CGRect r) {
 	return r;
 }
 
+static void limitPoint(CGPoint* p, CGSize sz, CGSize sz2) {
+	CGSize upl = CGSizeMake(MAX(sz.width-sz2.width,0), MAX(sz.height-sz2.height,0));
+	
+	if (p->x < 0)
+		p->x = 0;
+	else if (p->x > upl.width)
+		p->x = upl.width;
+	
+	if (p->y < 0)
+		p->y = 0;
+	else if (p->y > upl.height)
+		p->y = upl.height;
+}
+
 #pragma mark -
 
 @interface WebPDFView : UIView
@@ -258,13 +272,7 @@ static CGSize absoluteSizeWithInsets(UIEdgeInsets insets, UIScrollView* sv) {
 	newPt.x = pt.x * absSize.width / scale.width;
 	newPt.y = pt.y * absSize.height / scale.height;
 	
-	CGSize uplim = _scrollView.bounds.size;
-	uplim = CGSizeMake(MAX(absSize.width-uplim.width, 0), MAX(absSize.height-uplim.height, 0));
-	
-	if (newPt.x < 0) newPt.x = 0;
-	else if (newPt.x > uplim.width) newPt.x = uplim.width;
-	if (newPt.y < 0) newPt.y = 0;
-	else if (newPt.y > uplim.height) newPt.y = uplim.height;
+	limitPoint(&newPt, absSize, _scrollView.bounds.size);
 	
 	newPt.x -= insets.left;
 	newPt.y -= insets.top;
@@ -572,7 +580,7 @@ static CGPoint visualToActualPoint(CGPoint visPt, CGSize actSize, CGSize maxSize
 		
 	CGRect r = CGRectRound(visualRelFrame);
 	r.origin.y += _close_height + SPACING;
-	
+		
 	[imagesObj[QSI_sel] drawInRect:r];
 }
 -(void)setRelativeFrame:(CGRect)rf {
@@ -584,6 +592,8 @@ static CGPoint visualToActualPoint(CGPoint visPt, CGSize actSize, CGSize maxSize
 	visualRelFrame.origin.x += shift.width;
 	visualRelFrame.origin.y += shift.height;
 	
+	limitPoint(&visualRelFrame.origin, scale, visualRelFrame.size);
+	
 	relativeFrame.origin = visualToActualPoint(visualRelFrame.origin, relativeFrame.size, scale, MINSIZE);
 	[_abstractScroller setRelativePoint:relativeFrame.origin withScale:scale animated:NO];
 }
@@ -592,7 +602,7 @@ static CGPoint visualToActualPoint(CGPoint visPt, CGSize actSize, CGSize maxSize
 	UITouch* anyTouch = [touches anyObject];
 	CGPoint p = [anyTouch locationInView:self];
 	
-	movingMode = p.y <= _close_height + SPACING + YMARGIN;
+	movingMode = p.y < _close_height + SPACING + YMARGIN;
 	
 	if (movingMode) {
 		closing = (p.x <= _close_height + SPACING + MARGIN);
@@ -610,19 +620,16 @@ static CGPoint visualToActualPoint(CGPoint visPt, CGSize actSize, CGSize maxSize
 		CGFloat actual_y = p.y - SPACING - YMARGIN - _close_height;
 		
 		if (!CGRectContainsPoint(visualRelFrame, CGPointMake(p.x, actual_y))) {
-			CGPoint oldOrig = visualRelFrame.origin;
+			savedVisualRelFrame = visualRelFrame;
 			
 			visualRelFrame.origin.x = p.x - visualRelFrame.size.width/2;
 			visualRelFrame.origin.y = actual_y - visualRelFrame.size.height/2;
-			if (visualRelFrame.origin.x < 0) visualRelFrame.origin.x = 0;
-			else if (visualRelFrame.origin.x > scale.width-visualRelFrame.size.width) visualRelFrame.origin.x = scale.width-visualRelFrame.size.width;
-			if (visualRelFrame.origin.y < 0) visualRelFrame.origin.y = 0;
-			else if (visualRelFrame.origin.y > scale.height-visualRelFrame.size.height) visualRelFrame.origin.y = scale.height-visualRelFrame.size.height;
 			
-			[self shiftRelativeFrameVisuallyBy:CGSizeMake(visualRelFrame.origin.x - oldOrig.x, visualRelFrame.origin.y - oldOrig.y)];
+			[self shiftRelativeFrameVisuallyBy:CGSizeMake(visualRelFrame.origin.x - savedVisualRelFrame.origin.x,
+														  visualRelFrame.origin.y - savedVisualRelFrame.origin.y)];
 		}
-		
 		savedVisualRelFrame = visualRelFrame;
+
 		initTouch = p;
 	}
 }
