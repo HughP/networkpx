@@ -1,6 +1,6 @@
 Package: hk.kennytm.ikeyex
 Name: iKeyEx 3
-Version: 0.1-99i
+Version: 0.1-99j
 Architecture: iphoneos-arm
 Description: iKeyEx is a MobileSubstrate-based keyboard extension framework for the iPhoneOS 3.x.
 Homepage: http://code.google.com/p/networkpx/
