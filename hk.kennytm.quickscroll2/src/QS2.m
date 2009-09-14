@@ -22,7 +22,7 @@
 #include <substrate2.h>
 #import <UIKit/UIKit2.h>
 
-static BOOL activate_by_single_tap, activate_by_triple_tap, activate_by_two_finger_tap, use_scrollbar;
+static BOOL activate_by_single_tap, activate_by_triple_tap, activate_by_two_finger_tap, use_scrollbar, scrollbar_jump_by_pages_not;
 static pthread_mutex_t prefs_lock = PTHREAD_MUTEX_INITIALIZER;
 static NSTimeInterval autodismiss_timer;
 static int dummy;
@@ -55,15 +55,17 @@ void reload_prefs() {
 		activate_by_two_finger_tap = NO;
 		use_scrollbar = YES;
 		autodismiss_timer = 2;
+		scrollbar_jump_by_pages_not = NO;
 		
 		static NSString* const prefs_keys[] = {
 			@"activate_by_single_tap", 
 			@"activate_by_triple_tap", 
 			@"activate_by_two_finger_tap", 
 			@"use_scrollbar",
-			@"autodismiss_timer"
+			@"autodismiss_timer",
+			@"scrollbar_jump_by_pages_not"
 		};		
-		CFTypeRef default_values[] = {kCFBooleanTrue, kCFBooleanFalse, kCFBooleanFalse, kCFBooleanTrue, [NSNumber numberWithDouble:1]};
+		CFTypeRef default_values[] = {kCFBooleanTrue, kCFBooleanFalse, kCFBooleanFalse, kCFBooleanTrue, [NSNumber numberWithDouble:2], kCFBooleanFalse};
 		
 		dict2 = [NSDictionary dictionaryWithObjects:(id*)default_values forKeys:prefs_keys count:sizeof(prefs_keys)/sizeof(prefs_keys[0])];
 		[dict2 writeToFile:PREFPATH atomically:YES];
@@ -73,6 +75,7 @@ void reload_prefs() {
 		activate_by_two_finger_tap = [[dict2 objectForKey:@"activate_by_two_finger_tap"] boolValue];
 		use_scrollbar = [[dict2 objectForKey:@"use_scrollbar"] boolValue];
 		autodismiss_timer = [[dict2 objectForKey:@"autodismiss_timer"] doubleValue] ?: 2;
+		scrollbar_jump_by_pages_not = [[dict2 objectForKey:@"scrollbar_jump_by_pages_not"] boolValue];
 	}
 	
 	pthread_mutex_unlock(&prefs_lock);
@@ -154,8 +157,11 @@ static inline CGRect* pageRects(WebPDFView* view) {
 -(void)togglePager;
 -(unsigned)setPDFPage:(unsigned)page;
 -(unsigned)currentPage;
+@property(assign,nonatomic) BOOL gestureEnabled;
 @end
 @implementation QSAbstractScroller
+-(BOOL)gestureEnabled { return _scrollView.gesturesEnabled; }
+-(void)setGestureEnabled:(BOOL)val { _scrollView.gesturesEnabled = val; }
 -(id)initWithScrollView:(UIScrollView*)scrollView webView:(UIWebDocumentView*)webView pdfView:(WebPDFView*)pdfView {
 	if ((self = [super initWithFrame:scrollView.bounds])) {
 		_scrollView = scrollView;
@@ -278,9 +284,6 @@ static CGSize absoluteSizeWithInsets(UIEdgeInsets insets, UIScrollView* sv) {
 	newPt.y -= insets.top;
 	[self scrollTo:newPt animated:anim];
 }
--(void)cancelPanning {
-	[[UIApplication sharedApplication] _cancelGestureRecognizersForView:_scrollView];
-}
 -(void)togglePager {}
 -(unsigned)currentPage {
 	if (_pdfView != nil) {
@@ -306,12 +309,14 @@ static CGSize absoluteSizeWithInsets(UIEdgeInsets insets, UIScrollView* sv) {
 		} else
 			[_webView updatePDFPageNumberLabel];
 	} else if ([_scrollView isKindOfClass:[UIScrollView class]] && ((UIScrollView*)_scrollView).pagingEnabled) {
-		-- page;
 		CGRect curBounds = _scrollView.bounds;
 		unsigned h_pages = roundf(_scrollView.contentSize.width / curBounds.size.width);
 		unsigned v_pages = roundf(_scrollView.contentSize.height / curBounds.size.height);
+		-- page;
+		if (page >= h_pages * v_pages)
+			page = h_pages*v_pages - 1;
 		CGPoint res;
-		unsigned x_mul = (page % h_pages), y_mul = MIN(page / h_pages, v_pages-1);
+		unsigned x_mul = (page % h_pages), y_mul = (page / h_pages);
 		res.x = x_mul * curBounds.size.width;
 		res.y = y_mul * curBounds.size.height;
 		[self scrollTo:res animated:YES];
@@ -460,6 +465,7 @@ static void drawInCenter(NSString* d, UIFont* fnt, CGRect r) {
 
 -(void)touchesBegan:(NSSet*)touches withEvent:(UIEvent*)event {
 	UITouch* anyTouch = [touches anyObject];
+	_abstractScroller.gestureEnabled = NO;
 	
 	if (_movingMode == 1) {
 		CGPoint pt = [anyTouch locationInView:_whoToMove.superview];
@@ -530,6 +536,7 @@ static void drawInCenter(NSString* d, UIFont* fnt, CGRect r) {
 		[self setNeedsDisplay];
 	} 
 	
+	_abstractScroller.gestureEnabled = YES;
 	[_abstractScroller enableFading];
 	
 	_movingMode = 0;
@@ -599,6 +606,8 @@ static CGPoint visualToActualPoint(CGPoint visPt, CGSize actSize, CGSize maxSize
 }
 -(void)touchesBegan:(NSSet*)touches withEvent:(UIEvent*)event {
 	[_abstractScroller disableFading];
+	_abstractScroller.gestureEnabled = NO;
+	//self.exclusiveTouch = YES;
 	UITouch* anyTouch = [touches anyObject];
 	CGPoint p = [anyTouch locationInView:self];
 	
@@ -635,7 +644,6 @@ static CGPoint visualToActualPoint(CGPoint visPt, CGSize actSize, CGSize maxSize
 }
 -(void)touchesMoved:(NSSet*)touches withEvent:(UIEvent*)event {
 	UITouch* anyTouch = [touches anyObject];
-	[_abstractScroller cancelPanning];
 	if (movingMode) {
 		UIView* _whoToMove = self.superview;
 		
@@ -658,6 +666,8 @@ static CGPoint visualToActualPoint(CGPoint visPt, CGSize actSize, CGSize maxSize
 		[self setNeedsDisplay];
 	}
 	[_abstractScroller enableFading];
+	_abstractScroller.gestureEnabled = YES;
+	//self.exclusiveTouch = NO;
 }
 -(void)touchesCancelled:(NSSet *)touches withEvent:(UIEvent *)event {
 	[self touchesEnded:touches withEvent:event];
@@ -851,18 +861,19 @@ static CGPoint visualToActualPoint(CGPoint visPt, CGSize actSize, CGSize maxSize
 -(void)fireAutoShift {
 	CGPoint o = relativeFrame.origin;
 	firedOnce = YES;
+	static const float jump_reducer = 0.9375f;
 	switch (location) {
 		case -2:
-			o.x -= relativeFrame.size.width * 0.875f;
+			o.x -= relativeFrame.size.width * jump_reducer;
 			break;
 		case -1:
-			o.y -= relativeFrame.size.height * 0.875f;
+			o.y -= relativeFrame.size.height * jump_reducer;
 			break;
 		case 1:
-			o.y += relativeFrame.size.height * 0.875f;
+			o.y += relativeFrame.size.height * jump_reducer;
 			break;
 		case 2:
-			o.x += relativeFrame.size.width * 0.875f;
+			o.x += relativeFrame.size.width * jump_reducer;
 			break;
 		default:
 			break;
@@ -873,23 +884,34 @@ static CGPoint visualToActualPoint(CGPoint visPt, CGSize actSize, CGSize maxSize
 
 -(void)touchesBegan:(NSSet*)touches withEvent:(UIEvent*)event {
 	[abstractScroller disableFading];
+	abstractScroller.gestureEnabled = NO;
+	//self.exclusiveTouch = YES;
 	
 	isTouchDown = YES;
 	savedVisualRelFrame = visualRelFrame;
 	[self getLocation:[touches anyObject]];
 	if (location != 0) {
-		firedOnce = NO;
-		[autoShiftTimer invalidate];
-		[autoShiftTimer release];
-		autoShiftTimer = [[NSTimer scheduledTimerWithTimeInterval:1 target:self selector:@selector(fireAutoShift) userInfo:nil repeats:YES] retain];
+		if (!scrollbar_jump_by_pages_not) {
+			firedOnce = NO;
+			[autoShiftTimer invalidate];
+			[autoShiftTimer release];
+			autoShiftTimer = [[NSTimer scheduledTimerWithTimeInterval:1 target:self selector:@selector(fireAutoShift) userInfo:nil repeats:YES] retain];
+		} else {
+			CGSize delta = CGSizeZero;
+			if (isVertical)
+				delta.height = initTouch.y - visualRelFrame.size.height/2 - visualRelFrame.origin.y;
+			else
+				delta.width = initTouch.x - visualRelFrame.size.width/2 - visualRelFrame.origin.x;
+			location = 0;
+			[self shiftRelativeFrameVisuallyBy:delta];
+			savedVisualRelFrame = visualRelFrame;
+//			initTouch = visualRelFrame.origin;
+		}
 	}
 	[self setNeedsDisplay];
 }
 -(void)touchesMoved:(NSSet *)touches withEvent:(UIEvent *)event {
 	if (location == 0) {
-		// This avoids the Pan gesture taking over the scroll bar.
-		[abstractScroller cancelPanning];
-		
 		CGPoint newTouch = [[touches anyObject] locationInView:self];
 		CGSize delta = CGSizeZero;
 		if (isVertical)
@@ -911,6 +933,8 @@ static CGPoint visualToActualPoint(CGPoint visPt, CGSize actSize, CGSize maxSize
 	}
 	[abstractScroller enableFading];
 	[abstractScroller _didScroll];
+	abstractScroller.gestureEnabled = YES;
+	//self.exclusiveTouch = NO;
 	[self setNeedsDisplay];
 }
 
