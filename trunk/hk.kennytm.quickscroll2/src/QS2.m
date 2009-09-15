@@ -22,7 +22,7 @@
 #include <substrate2.h>
 #import <UIKit/UIKit2.h>
 
-static BOOL activate_by_single_tap, activate_by_triple_tap, activate_by_two_finger_tap, use_scrollbar, scrollbar_jump_by_pages_not;
+static BOOL activate_by_single_tap, activate_by_triple_tap, activate_by_two_finger_tap, use_scrollbar, scrollbar_jump_by_pages_not, activate_by_scrolling;
 static pthread_mutex_t prefs_lock = PTHREAD_MUTEX_INITIALIZER;
 static NSTimeInterval autodismiss_timer;
 static int dummy;
@@ -35,10 +35,10 @@ static CGSize handleSize, emptySize;
 static CGFloat _close_height, _key_height;
 
 #if TARGET_IPHONE_SIMULATOR
-#define RSRC @"/Users/kennytm/XCodeProjects/iKeyEx/svn/trunk/hk.kennytm.quickscroll2/deb/Library/QuickScroll"
+#define RSRC @"/Users/kennytm/XCodeProjects/iKeyEx/svn/trunk/hk.kennytm.quickscroll2/deb/System/Library/PreferenceBundles/QuickScroll.bundle"
 #define PREFPATH @"/Users/kennytm/Library/Application Support/iPhone Simulator/User/Library/Preferences/hk.kennytm.quickscroll2.plist"
 #else
-#define RSRC @"/Library/QuickScroll"
+#define RSRC @"/System/Library/PreferenceBundles/QuickScroll.bundle"
 #define PREFPATH @"/var/mobile/Library/Preferences/hk.kennytm.quickscroll2.plist"
 #endif
 
@@ -47,7 +47,7 @@ extern CFStringRef CPCopySharedResourcesPreferencesDomainForDomain(CFStringRef d
 
 void reload_prefs() {
 	pthread_mutex_lock(&prefs_lock);
-		
+	
 	NSDictionary* dict2 = [NSDictionary dictionaryWithContentsOfFile:PREFPATH];
 	if (dict2 == nil) {
 		activate_by_single_tap = YES;
@@ -56,6 +56,7 @@ void reload_prefs() {
 		use_scrollbar = YES;
 		autodismiss_timer = 2;
 		scrollbar_jump_by_pages_not = NO;
+		activate_by_scrolling = NO;
 		
 		static NSString* const prefs_keys[] = {
 			@"activate_by_single_tap", 
@@ -63,19 +64,26 @@ void reload_prefs() {
 			@"activate_by_two_finger_tap", 
 			@"use_scrollbar",
 			@"autodismiss_timer",
-			@"scrollbar_jump_by_pages_not"
+			@"scrollbar_jump_by_pages_not",
+			@"activate_by_scrolling",
 		};		
-		CFTypeRef default_values[] = {kCFBooleanTrue, kCFBooleanFalse, kCFBooleanFalse, kCFBooleanTrue, [NSNumber numberWithDouble:2], kCFBooleanFalse};
+		CFTypeRef default_values[] = {kCFBooleanTrue, kCFBooleanFalse, kCFBooleanFalse, kCFBooleanTrue, [NSNumber numberWithDouble:2], kCFBooleanFalse, kCFBooleanFalse};
 		
 		dict2 = [NSDictionary dictionaryWithObjects:(id*)default_values forKeys:prefs_keys count:sizeof(prefs_keys)/sizeof(prefs_keys[0])];
 		[dict2 writeToFile:PREFPATH atomically:YES];
 	} else {
-		activate_by_single_tap = [[dict2 objectForKey:@"activate_by_single_tap"] boolValue];
-		activate_by_triple_tap = [[dict2 objectForKey:@"activate_by_triple_tap"] boolValue];
-		activate_by_two_finger_tap = [[dict2 objectForKey:@"activate_by_two_finger_tap"] boolValue];
-		use_scrollbar = [[dict2 objectForKey:@"use_scrollbar"] boolValue];
-		autodismiss_timer = [[dict2 objectForKey:@"autodismiss_timer"] doubleValue] ?: 2;
-		scrollbar_jump_by_pages_not = [[dict2 objectForKey:@"scrollbar_jump_by_pages_not"] boolValue];
+		NSArray* disabled_apps = [dict2 objectForKey:@"disabled_apps"];
+		if ([disabled_apps containsObject:[[NSBundle mainBundle] bundleIdentifier]]) {
+			activate_by_single_tap = activate_by_triple_tap = activate_by_two_finger_tap = activate_by_scrolling = NO;
+		} else {
+			activate_by_single_tap = [[dict2 objectForKey:@"activate_by_single_tap"] boolValue];
+			activate_by_triple_tap = [[dict2 objectForKey:@"activate_by_triple_tap"] boolValue];
+			activate_by_two_finger_tap = [[dict2 objectForKey:@"activate_by_two_finger_tap"] boolValue];
+			use_scrollbar = [[dict2 objectForKey:@"use_scrollbar"] boolValue];
+			autodismiss_timer = [[dict2 objectForKey:@"autodismiss_timer"] doubleValue] ?: 2;
+			scrollbar_jump_by_pages_not = [[dict2 objectForKey:@"scrollbar_jump_by_pages_not"] boolValue];
+			activate_by_scrolling = [[dict2 objectForKey:@"activate_by_scrolling"] boolValue];
+		}
 	}
 	
 	pthread_mutex_unlock(&prefs_lock);
@@ -1094,6 +1102,43 @@ DefineObjCHook(void, UIWindow__sendTouchesForEvent_, UIWindow* self, SEL _cmd, U
 	Original(UIWindow__sendTouchesForEvent_)(self, _cmd, event);
 }
 
+DefineObjCHook(void, UIScrollView__notifyDidScroll, UIScrollView* self, SEL _cmd) {
+	if (activate_by_scrolling) {
+		if (findAbstractScroller(self) == nil) {
+			QSAbstractScroller* scroller = use_scrollbar ? [QSScrollbarView alloc] : [QSDragScroller alloc];
+			[[scroller initWithScrollView:self webView:nil pdfView:nil] release];
+		}
+	}
+	Original(UIScrollView__notifyDidScroll)(self, _cmd);
+}
+DefineObjCHook(void, UIScroller__notifyDidScroll, UIScroller* self, SEL _cmd) {
+	if (activate_by_scrolling) {
+		Class UIWebDocumentView_class = [UIWebDocumentView class], QSAbstractScroller_class = [QSAbstractScroller class];
+		UIWebDocumentView* webDoc = nil;
+		WebPDFView* pdf = nil;
+
+		for (UIWebDocumentView* v in self.subviews) {
+			if ([v isKindOfClass:QSAbstractScroller_class])
+				goto ignore;
+			else if ([v isKindOfClass:UIWebDocumentView_class])
+				webDoc = v;
+		}
+		
+		if (webDoc) {
+			pdf = WebPDF(webDoc);
+			if (pdf == nil)
+				webDoc = nil;
+		}
+		
+		QSAbstractScroller* scroller = use_scrollbar ? [QSScrollbarView alloc] : [QSDragScroller alloc];
+		[[scroller initWithScrollView:(UIScrollView*)self webView:webDoc pdfView:pdf] release];
+	}
+	
+ignore:
+	Original(UIScroller__notifyDidScroll)(self, _cmd);
+}
+
+
 static UIImage* QSCreateStretchableImage(UIImage* img, int stfl) {
 	if (stfl != 0) {
 		CGSize sz = img.size;
@@ -1127,14 +1172,9 @@ __attribute__((constructor)) void QS2_initialize() {
 	
 	CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), &dummy, (CFNotificationCallback)reload_prefs, CFSTR("hk.kennytm.quickscroll2.reload"), NULL, 0);
 	
-	/*
-	NSLog(@"QuickScroll: Loaded. 3=%d, 2=%d, 1=%d, Bar=%d, Delay=%lg", 
-		  activate_by_triple_tap, activate_by_two_finger_tap, activate_by_single_tap, use_scrollbar, autodismiss_timer);
-	if (imagesObj[0] == nil)
-		NSLog(@"QuickScroll: Warning: Can't see shit.");
-	*/
-	
 	InstallObjCInstanceHook([UIWindow class], @selector(_sendTouchesForEvent:), UIWindow__sendTouchesForEvent_);
+	InstallObjCInstanceHook([UIScrollView class], @selector(_notifyDidScroll), UIScrollView__notifyDidScroll);
+	InstallObjCInstanceHook([UIScroller class], @selector(_notifyDidScroll), UIScroller__notifyDidScroll);
 	
 	[pool drain];
 }
