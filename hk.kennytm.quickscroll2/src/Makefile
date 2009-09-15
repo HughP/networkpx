@@ -3,7 +3,6 @@ iPhoneSDKPath=$(iPhoneDevPath)/SDKs/iPhoneOS3.0.sdk
 iPhoneSimDevPath=/Developer/Platforms/iPhoneSimulator.platform/Developer
 iPhoneSimSDKPath=$(iPhoneSimDevPath)/SDKs/iPhoneSimulator3.0.sdk
 MobileSubstratePath=../deb/Library/MobileSubstrate/DynamicLibraries
-ThemesPath=../deb/Library/GriP/Themes
 SharedSrcPath=../../src
 PrefsBundlePath=../deb/System/Library/PreferenceBundles
 
@@ -27,11 +26,15 @@ Options=-arch armv6 \
 
 DontThumbSources=QS2.o
 
-AllTargets=QuickScroll
+AllTargets=QuickScroll Prefs
 
 QuickScroll_Sources=QS2.o
 QuickScroll_Target=$(MobileSubstratePath)/QuickScroll.dylib
 QuickScroll_Options=-dynamiclib -framework CoreFoundation -framework Foundation -framework UIKit -framework CoreGraphics
+
+Prefs_Sources=Pref.o ../../hk.kennytm.grip/src/GPGetSmallAppIcon.o
+Prefs_Target=$(PrefsBundlePath)/QuickScroll.bundle/QuickScroll
+Prefs_Options=-bundle -framework CoreFoundation -framework Foundation -framework UIKit -framework CoreGraphics -framework SpringBoardServices -framework Preferences
 
 #-----------------------------------------------------------------------------------------------------------------
 #-----------------------------------------------------------------------------------------------------------------
