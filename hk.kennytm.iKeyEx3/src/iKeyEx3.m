@@ -42,6 +42,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #import <objc/message.h>
 #import <WebCore/wak/WebCoreThread.h>
 #include <pthread.h>
+#import <GraphicsServices/GSEvent.h>
 
 extern NSString* UIKeyboardDynamicDictionaryFile(NSString* mode);
 
@@ -769,7 +770,9 @@ DefineObjCHook(void, UIKeyboardLayoutStar_longPressAction, UIKeyboardLayoutStar*
 	UIKBKey* activeKey = [self activeKey];
 	if (activeKey != nil && [@"International" isEqualToString:activeKey.interactionType]) {
 		longPressedInternationalKey = 1;
-		[self cancelTouchTracking];
+		// Fix for crash on 3.1.
+		UIPathInfo whatever;
+		[self touchUp:NULL withPathInfo:&whatever];
 	} else {
 		NSString* input = activeKey.representedString;
 		if ([input hasPrefix:@"<"] && [input hasSuffix:@">"]) {
