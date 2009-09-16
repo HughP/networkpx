@@ -55,7 +55,17 @@ namespace IKX {
 			return *reinterpret_cast<const uint32_t*>(chars);
 		}
 		int compare(const CharactersBucket& other) const {
-			return std::memcmp(chars, other.chars, sizeof(chars));
+			// cannot use memcmp due to little-endianness.
+			if (chars[0] < other.chars[0])
+				return -1;
+			else if (chars[0] > other.chars[0])
+				return 1;
+			else if (chars[1] < other.chars[1])
+				return -1;
+			else if (chars[1] > other.chars[1])
+				return 1;
+			else
+				return 0;
 		}
 		bool operator!= (const CharactersBucket& other) const { return this->compare(other) != 0; }
 		bool operator== (const CharactersBucket& other) const { return this->compare(other) == 0; }
