@@ -399,7 +399,8 @@ DefineObjCHook(void, UIKeyboardLayoutRoman_longPressAction, UIKeyboardLayoutRoma
 	void* activeKey = [self activeKey];
 	if (activeKey != NULL && [self typeForKey:activeKey] == 7) {
 		longPressedInternationalKey = 1;
-		[self cancelTouchTracking];
+		UIPathInfo whatever;
+		[self touchUp:NULL withPathInfo:&whatever];
 	} else
 		Original(UIKeyboardLayoutRoman_longPressAction)(self, _cmd);
 }
@@ -810,6 +811,13 @@ static void fixInputMode () {
 void initialize () {
 	NSAutoreleasePool* pool = [NSAutoreleasePool new];
 	
+#if TARGET_IPHONE_SIMULATOR && defined(__IPHONE_3_1)
+	intptr_t ref = (intptr_t)UIGraphicsBeginImageContext;
+	
+	GetKeyboardDataFromBundle = (void*)(ref + 0x21162c);
+	UIKBGetKeyboardByName = (void*)(ref + 0x264106);
+	LookupLocalizedObject = (void*)(ref + 0x1492f3);
+#else
 	struct nlist nl[4];
 	memset(nl, 0, sizeof(nl));
 	nl[0].n_un.n_name = "_GetKeyboardDataFromBundle";
@@ -819,6 +827,7 @@ void initialize () {
 	GetKeyboardDataFromBundle = (void*)(nl[0].n_value + (nl[0].n_desc & N_ARM_THUMB_DEF ? 1 : 0));
 	UIKBGetKeyboardByName = (void*)(nl[1].n_value + (nl[0].n_desc & N_ARM_THUMB_DEF ? 1 : 0));
 	LookupLocalizedObject = (void*)(nl[2].n_value + (nl[0].n_desc & N_ARM_THUMB_DEF ? 1 : 0));
+#endif
 	
 	cachedColors = CFDictionaryCreateMutable(NULL, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
 	
