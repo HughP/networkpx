@@ -387,26 +387,24 @@ namespace IKX {
 		const uint16_t* extra_content() const { return &(extra_content_list.front()); }
 		
 		void insert(const T& element) {
+			T e2 = element;
+			e2.localize(*this);
 			if (node_list_length() == 0) {
-				T e2 = element;
-				e2.localize(*this);
 				content.push_back(e2);
 				nodes.push_back(Node(0));
 			} else {
-				Node::ID best = walk(element);
+				Node::ID best = walk(e2);
 				T& k = content[nodes[best].data()];
-				size_t crit_bit_pos = element.first_different_bit(k, *this);
+				size_t crit_bit_pos = e2.first_different_bit(k, *this);
 				
-				if (crit_bit_pos >= std::max(element.bit_length(), k.bit_length())) {
-					k.append(element, *this);
+				if (crit_bit_pos >= std::max(e2.bit_length(), k.bit_length())) {
+					k.append(e2, *this);
 					return;
 				}
 				
-				bool elem_bit = element.bit(crit_bit_pos, *this);
+				bool elem_bit = e2.bit(crit_bit_pos, *this);
 				
 				nodes.push_back(Node(content.size()));
-				T e2 = element;
-				e2.localize(*this);
 				content.push_back(e2);
 				
 				Node::ID p = 0;
@@ -416,7 +414,7 @@ namespace IKX {
 						break;
 					if (q.position > crit_bit_pos)
 						break;
-					p = element.bit(q.position, *this) ? q.left : q.right;
+					p = e2.bit(q.position, *this) ? q.left : q.right;
 				}
 				
 				nodes.push_back(nodes[p]);
