@@ -2,15 +2,19 @@
 
 !QuickScroll lets you scroll through anywhere quickly.
 
- # In a long page, triple tap on anywhere (hold one finger and triple tap the other to avoid resizing).
- # A dialog will appear. Drag the green box to scroll around.
+ # In a long page, tap with two fingers, or triple tap on anywhere.
+ # A scrollbar will appear. Drag to scroll around.
 
-http://xb0.xanga.com/38cf9b0046536251796686/w199954674.png  http://xe1.xanga.com/efff640a09634251796690/w199954677.png  http://x39.xanga.com/1f5f960056437251796692/w199954679.png  http://x9c.xanga.com/facf970409037251796695/w199954680.png
+http://x28.xanga.com/ad2f737a06632254588213/w202389898.png
 
-!QuickScroll also supports PDF paging.
+!QuickScroll also supports paging.
 
- # In a PDF file, triple tap on anywhere (hold one finger and triple tap the other to avoid resizing).
- # A dialog will appear. Enter the page number and press "Go" to jump to that page.
- # Press "Scroller" to scroll around.
+ # Activate the scrollbar like above.
+ # Press the "123" button in the lower-right corner.
+ # Enter the page number in the new dialog.
 
-http://x07.xanga.com/f94f700727d35251797650/w199955452.png
+http://xcd.xanga.com/3b9f564343133254591514/w202392728.png
+
+You can change the scroller type (scrollbar vs. 2D scroll pane a.k.a. !QuickScroll 1), activation method (single tap, two-finger tap, triple tap or simply scrolling), duration and disabled apps in Settings → !QuickScroll.
+
+To theme !QuickScroll, edit the images in `/System/Library/PreferenceBundles/QuickScroll.bundle/`.
