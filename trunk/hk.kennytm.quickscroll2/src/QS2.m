@@ -182,7 +182,7 @@ static inline CGRect* pageRects(WebPDFView* view) {
 }
 -(id)initWithScrollView:(UIScrollView*)scrollView webView:(UIWebDocumentView*)webView pdfView:(WebPDFView*)pdfView {
 	if ((self = [super initWithFrame:scrollView.bounds])) {
-		_scrollView = scrollView;
+		_scrollView = [scrollView retain];
 		_webView = webView;
 		_pdfView = pdfView;
 				
@@ -231,6 +231,7 @@ static inline CGRect* pageRects(WebPDFView* view) {
 }
 -(void)dealloc {
 	QSDestroyTimer(&_autodismisser);
+	[_scrollView release];
 	[super dealloc];
 }
 -(void)_didScroll {
