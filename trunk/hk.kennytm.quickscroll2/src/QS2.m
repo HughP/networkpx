@@ -159,7 +159,7 @@ static inline CGRect* pageRects(WebPDFView* view) {
 	UIWebDocumentView* _webView;
 	WebPDFView* _pdfView;
 	NSTimer* _autodismisser;
-	BOOL _isFadingAway, _isFadingDisabled;
+	BOOL _isFadingAway, _isFadingDisabled, _canCancel;
 }
 @property(readonly,nonatomic) CGSize absoluteSize;
 -(void)togglePager;
@@ -169,7 +169,17 @@ static inline CGRect* pageRects(WebPDFView* view) {
 @end
 @implementation QSAbstractScroller
 -(BOOL)gestureEnabled { return _scrollView.gesturesEnabled; }
--(void)setGestureEnabled:(BOOL)val { _scrollView.gesturesEnabled = val; }
+-(void)setGestureEnabled:(BOOL)val { 
+	if ([_scrollView isKindOfClass:[UIScrollView class]]) {
+		if (!val) {
+			_canCancel = _scrollView.canCancelContentTouches;
+			_scrollView.canCancelContentTouches = NO;
+		} else {
+			_scrollView.canCancelContentTouches = _canCancel;
+		}
+	}
+	_scrollView.gesturesEnabled = val; 
+}
 -(id)initWithScrollView:(UIScrollView*)scrollView webView:(UIWebDocumentView*)webView pdfView:(WebPDFView*)pdfView {
 	if ((self = [super initWithFrame:scrollView.bounds])) {
 		_scrollView = scrollView;
@@ -872,7 +882,7 @@ static CGPoint visualToActualPoint(CGPoint visPt, CGSize actSize, CGSize maxSize
 	static const float jump_reducer = 0.9375f;
 	switch (location) {
 		case -2:
-			o.x -= relativeFrame.size.width * jump_reducer;
+			o.x -= relativeFrame.size.width;
 			break;
 		case -1:
 			o.y -= relativeFrame.size.height * jump_reducer;
@@ -881,7 +891,7 @@ static CGPoint visualToActualPoint(CGPoint visPt, CGSize actSize, CGSize maxSize
 			o.y += relativeFrame.size.height * jump_reducer;
 			break;
 		case 2:
-			o.x += relativeFrame.size.width * jump_reducer;
+			o.x += relativeFrame.size.width;
 			break;
 		default:
 			break;
@@ -961,13 +971,35 @@ static CGPoint visualToActualPoint(CGPoint visPt, CGSize actSize, CGSize maxSize
 	QSScrollbar* vertBar, *horBar;
 	QSPagerView* _pager;
 	BOOL _inPagerView;
+	BOOL _sih, _siv;
 }
 @end
 @implementation QSScrollbarView
+-(void)removeScrollIndicators {
+	if ([_scrollView isKindOfClass:[UIScrollView class]]) {
+		_sih = _scrollView.showsHorizontalScrollIndicator;
+		_siv = _scrollView.showsVerticalScrollIndicator;
+		_scrollView.showsHorizontalScrollIndicator = NO;
+		_scrollView.showsVerticalScrollIndicator = NO;
+	} else {
+		_sih = ((UIScroller*)_scrollView).showScrollerIndicators;
+		((UIScroller*)_scrollView).showScrollerIndicators = NO;
+	}
+}
+-(void)restoreScrollIndicators {
+	if ([_scrollView isKindOfClass:[UIScrollView class]]) {
+		_scrollView.showsHorizontalScrollIndicator = _sih;
+		_scrollView.showsVerticalScrollIndicator = _siv;
+	} else {
+		((UIScroller*)_scrollView).showScrollerIndicators = _sih;
+	}
+
+}
 -(id)initWithScrollView:(UIScrollView*)scrollView webView:(UIWebDocumentView*)webView pdfView:(WebPDFView*)pdfView {
 	if ((self = [super initWithScrollView:scrollView webView:webView pdfView:pdfView])) {
 		CGRect myFr = self.bounds;
 		
+		[self removeScrollIndicators];
 		
 		vertBar = [[QSScrollbar alloc] initWithFrame:CGRectMake(myFr.size.width-handleSize.width, 0, handleSize.width, myFr.size.height-handleSize.height)
 									abstractScroller:self vertical:YES button:imagesObj[QSI_2] buttonDown:imagesObj[QSI_3]];
@@ -1027,6 +1059,10 @@ static CGPoint visualToActualPoint(CGPoint visPt, CGSize actSize, CGSize maxSize
 	if (_inPagerView && [_pager canUpdatePage])
 		_pager.currentPage = [self currentPage];
 }
+-(void)dealloc {
+	[self restoreScrollIndicators];
+	[super dealloc];
+}
 -(void)togglePager {
 	
 	if (!_inPagerView) {
@@ -1034,7 +1070,11 @@ static CGPoint visualToActualPoint(CGPoint visPt, CGSize actSize, CGSize maxSize
 		_pager.frame = CGRectMake(sz.width - 84, sz.height - 137, 84, 137);;
 		[_pager sizeToFit];
 		[_pager setNeedsDisplay];
+		[self restoreScrollIndicators];
+	} else {
+		[self removeScrollIndicators];
 	}
+
 	
 	[UIView beginAnimations:@"y"];
 	[UIView setAnimationTransition:(_inPagerView?UIViewAnimationTransitionFlipFromLeft:UIViewAnimationTransitionFlipFromRight) forView:_pager cache:YES];
