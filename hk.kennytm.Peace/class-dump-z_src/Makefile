@@ -3,7 +3,7 @@ CFLAGS_COMMON=-O2 -I../include -I../src -I/opt/local/include -Wall -W -Wpointer-
 CC=gcc-4.2
 CPP=g++-4.2
 DMD=dmd
-CFLAGS=-msse3 -mtune=core2 $(CFLAGS_COMMON)
+CFLAGS=-msse3 -mtune=core2 $(CFLAGS_COMMON) -m32
 DFLAGS=-inline -release -O
 
 CPP_ARMV6=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/g++-4.2
