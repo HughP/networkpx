@@ -41,6 +41,7 @@ public:
 		const char* class_name;
 		const char* sel_name;
 		const char* types;
+		bool is_class_method;
 	};
 	
 protected:
@@ -122,6 +123,13 @@ private:
 	std::tr1::unordered_set<unsigned> ma_is_external_symbol;
 	std::tr1::unordered_map<unsigned,unsigned> ma_library_ordinals;
 	
+	std::vector<std::string> ma_string_store;
+	
+	// 10.6 compressed mach-o formats.
+	void bind(uint32_t size) throw();
+	void process_export_trie_node(off_t start, off_t cur, off_t end, const std::string& prefix);
+	void process_export_trie(off_t start, off_t end) throw();
+	
 public:
 	enum StringType {
 		MOST_Symbol,
@@ -130,7 +138,8 @@ public:
 		MOST_ObjCSelector,
 		MOST_ObjCClass,
 		MOST_ObjCProtocol,
-		MOST_ObjCIvar
+		MOST_ObjCIvar,
+		MOST_ObjCMethod
 	};
 	
 	MachO_File(const char* path, const char* arch = "any");
@@ -152,6 +161,8 @@ public:
 	const ObjCMethod* objc_method_at_vm_address(unsigned vm_address) const throw();
 	
 	const char* library_of_relocated_symbol(unsigned vm_address) const throw();
+	
+	void for_each_symbol (void(*p_func)(unsigned addr, const char* symbol, StringType type, void* context), void* context) const;
 };
 
 #endif

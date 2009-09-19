@@ -75,7 +75,7 @@ const char* DataFile::read_string(size_t* p_string_length) throw() {
 	size_t string_length = strlen(retval);
 	if (p_string_length != NULL)
 		*p_string_length = string_length;
-	m_location += string_length;
+	m_location += string_length + 1;
 	return retval;
 }
 const char* DataFile::read_ASCII_string(size_t* p_string_length) throw() {
@@ -132,7 +132,7 @@ const char* DataFile::read_raw_data(size_t data_size) throw() {
 	m_location += data_size;
 	return retval;
 }
-	
+
 DataFile::~DataFile() throw() {
 	munmap(m_data, static_cast<size_t>(m_filesize));
 	close(m_fd);

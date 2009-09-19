@@ -56,6 +56,7 @@ public:
 	inline void rewind() throw() { m_location = 0; }
 	
 	unsigned read_integer() throw();
+	char read_char() throw() { return m_data[m_location++]; }
 	const char* read_string(std::size_t* p_string_length = NULL) throw();
 	const char* read_ASCII_string(std::size_t* p_string_length = NULL) throw();
 	const char* read_raw_data(std::size_t data_size) throw();
@@ -108,6 +109,38 @@ public:
 			return res.as_T_pointer;
 		} else
 			return NULL;
+	}
+	
+	template<typename T>
+	T read_uleb128() throw() {
+		T res = 0;
+		int bit = 0;
+		unsigned char c;
+		do {
+			c = static_cast<unsigned char>(read_char());
+			T s = c & 0x7F;
+			res |= s << bit;
+			bit += 7;
+		} while (c & 0x80);
+		return res;		
+	}
+	
+	template<typename T>
+	T read_sleb128() throw() {
+		T res = 0;
+		int bit = 0;
+		signed char c;
+		do {
+			c = read_char();
+			T s = c & 0x7F;
+			res |= s << bit;
+			bit += 7;
+		} while (c & 0x80);
+		if (c & 0x40) {
+			T n1 = -1;
+			res |= n1 << bit;
+		}
+		return res;		
 	}
 	
 	~DataFile() throw();

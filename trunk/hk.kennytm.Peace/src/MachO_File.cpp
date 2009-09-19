@@ -254,10 +254,163 @@ static void fprint_with_escape (FILE* stream, const char* s) {
 static const char* print_string_representation_format_strings_prefix[] = {"", "CFSTR(\"", "\"", "@selector(", "(Class)", "@protocol(", "/*ivar*/"};
 static const char* print_string_representation_format_strings_suffix[] = {"", "\")", "\"", ")", "", ")", ""};
 
+#define PRINT_BIND_OPCODE(...) //printf(__VA_ARGS__)
+
+void MachO_File::bind(uint32_t size) throw() {
+	unsigned libord = 0;
+	const char* sym = NULL;
+	unsigned addr = 0;
+	
+	off_t end = this->tell() + size;
+	
+	while (this->tell() < end) {
+		unsigned char c = static_cast<unsigned char>(this->read_char());
+		
+		uint8_t imm = c & BIND_IMMEDIATE_MASK, opcode = c & BIND_OPCODE_MASK;
+		
+		switch (opcode) {
+			case BIND_OPCODE_DONE:	// 0x
+				PRINT_BIND_OPCODE("Done.\n");
+				break;
+				
+			case BIND_OPCODE_SET_DYLIB_ORDINAL_IMM:	// 1x
+				PRINT_BIND_OPCODE("SetDylibOrdinalIMM(%d).\n", imm);
+				libord = imm;
+				break;
+				
+			case BIND_OPCODE_SET_DYLIB_ORDINAL_ULEB:	// 2x
+				libord = this->read_uleb128<unsigned>();
+				PRINT_BIND_OPCODE("SetDylibOrdinalULEB(%d).\n", libord);
+				break;
+				
+			case BIND_OPCODE_SET_DYLIB_SPECIAL_IMM: {	// 3x
+				int8_t immx = BIND_OPCODE_MASK|imm;
+				libord = imm ? immx : 0;
+				PRINT_BIND_OPCODE("SetDylibSpecialIMM(%d).\n", libord);
+				break;
+			}
+				
+			case BIND_OPCODE_SET_SYMBOL_TRAILING_FLAGS_IMM:	// 4x
+				sym = this->read_string();
+				PRINT_BIND_OPCODE("SetSymbolTrailingFlagsIMM(%s).\n", sym);
+				break;
+				
+			case BIND_OPCODE_SET_TYPE_IMM:	// 5x.
+				PRINT_BIND_OPCODE("SetTypeIMM(%d).\n", imm);
+				break;
+				
+				// seems to do nothing?
+			case BIND_OPCODE_SET_ADDEND_SLEB:	// 6x.
+				this->read_uleb128<unsigned>();
+				PRINT_BIND_OPCODE("SetAddend(...).\n");
+				break;
+				
+			case BIND_OPCODE_SET_SEGMENT_AND_OFFSET_ULEB:	// 7x
+				addr = ma_segments[imm]->vmaddr + this->read_uleb128<unsigned>();
+				PRINT_BIND_OPCODE("SetSegmentAndOffsetULEB(%d -> %x).\n", imm, addr);
+				break;
+			
+			case BIND_OPCODE_ADD_ADDR_ULEB:	// 8x
+				addr += this->read_uleb128<unsigned>();
+				PRINT_BIND_OPCODE("AddAddrULEB(-> %x).\n", addr);
+				break;
+				
+			case BIND_OPCODE_DO_BIND:	// 9x
+				ma_symbol_references.insert(std::pair<unsigned, const char*>(addr, sym));
+				ma_library_ordinals.insert(std::pair<unsigned, unsigned>(addr, libord));
+				addr += sizeof(void*);
+				PRINT_BIND_OPCODE("DoBind(-> %x).\n", addr);
+				break;
+				
+			case BIND_OPCODE_DO_BIND_ADD_ADDR_ULEB:	// Ax
+				ma_symbol_references.insert(std::pair<unsigned, const char*>(addr, sym));
+				ma_library_ordinals.insert(std::pair<unsigned, unsigned>(addr, libord));
+				addr += sizeof(void*) + this->read_uleb128<unsigned>();
+				PRINT_BIND_OPCODE("DoBindAddAddrULEB(-> %x).\n", addr);
+				break;
+				
+			case BIND_OPCODE_DO_BIND_ADD_ADDR_IMM_SCALED:	// Bx
+				ma_symbol_references.insert(std::pair<unsigned, const char*>(addr, sym));
+				ma_library_ordinals.insert(std::pair<unsigned, unsigned>(addr, libord));
+				addr += (imm+1)*sizeof(void*);
+				PRINT_BIND_OPCODE("DoBindAddAddrIMMScaled(%d -> %x).\n", imm, addr);
+				break;
+				
+			case BIND_OPCODE_DO_BIND_ULEB_TIMES_SKIPPING_ULEB: {	// Cx
+				unsigned count = this->read_uleb128<unsigned>();
+				unsigned skip = this->read_uleb128<unsigned>();
+				for (unsigned i = 0; i < count; ++ i) {
+					ma_symbol_references.insert(std::pair<unsigned, const char*>(addr, sym));
+					ma_library_ordinals.insert(std::pair<unsigned, unsigned>(addr, libord));
+					addr += skip + sizeof(void*);
+				}
+				PRINT_BIND_OPCODE("DoBindULEBTimesSkippingULEB(%d, %d -> %x).\n", count, skip, addr);
+				break;
+			}
+				
+			default:
+				// throw???
+				break;
+		}
+	}
+}
+
+void MachO_File::process_export_trie_node(off_t start, off_t cur, off_t end, const std::string& prefix) {
+	if (cur < end) {
+		this->seek(cur);
+		unsigned char term_size = static_cast<unsigned char>(this->read_char());
+		if (term_size != 0) {
+			ma_string_store.push_back(prefix);
+			const char* sym = ma_string_store.back().c_str();
+			/*unsigned flags =*/ this->read_uleb128<unsigned>();
+			unsigned addr = this->read_uleb128<unsigned>();
+			ma_symbol_references.insert(std::pair<unsigned, const char*>(addr, sym));
+			ma_is_external_symbol.insert(addr);
+		}
+		this->seek(cur + term_size);
+		unsigned char child_count = static_cast<unsigned char>(this->read_char());
+		off_t last_pos;
+		for (unsigned char i = 0; i < child_count; ++ i) {
+			const char* suffix = this->read_string();
+			unsigned offset = this->read_uleb128<unsigned>();
+			last_pos = this->tell();
+			process_export_trie_node(start, start + offset, end, prefix + suffix);
+			this->seek(last_pos);
+		}
+	}
+}
 
 MachO_File::MachO_File(const char* path, const char* arch) : MachO_File_Simple(path, arch), ma_symbols(NULL), m_symbols_length(0), ma_indirect_symbols(NULL), m_indirect_symbols_length(0), ma_strings(NULL), ma_cstrings(NULL), m_cstring_vmaddr(0) {
+	bool ignore_dysymtab = false;
 	for (vector<const load_command*>::const_iterator cit = ma_load_commands.begin(); cit != ma_load_commands.end(); ++ cit) {
-		switch ((*cit)->cmd) {				
+		switch ((*cit)->cmd) {
+			case LC_DYLD_INFO:
+			case LC_DYLD_INFO_ONLY: {
+				const dyld_info_command* p_cur_dyld_info = reinterpret_cast<const dyld_info_command*>(*cit);
+				
+				if (p_cur_dyld_info->bind_size != 0) {
+					this->seek(m_origin + p_cur_dyld_info->bind_off);
+					bind(p_cur_dyld_info->bind_size);
+				}
+				
+				if (p_cur_dyld_info->weak_bind_size != 0) {
+					this->seek(m_origin + p_cur_dyld_info->weak_bind_off);
+					bind(p_cur_dyld_info->weak_bind_size);
+				}
+				
+				if (p_cur_dyld_info->lazy_bind_size != 0) {
+					this->seek(m_origin + p_cur_dyld_info->lazy_bind_off);
+					bind(p_cur_dyld_info->lazy_bind_size);
+				}
+				
+				if (p_cur_dyld_info->export_size != 0) {
+					off_t start = m_origin + p_cur_dyld_info->export_off;
+					process_export_trie_node(start, start, start + p_cur_dyld_info->export_size, "");
+				}
+				
+				ignore_dysymtab = true;
+			}
+				
 			case LC_SYMTAB: {
 				const symtab_command* p_cur_symtab = reinterpret_cast<const symtab_command*>(*cit);
 				
@@ -272,6 +425,9 @@ MachO_File::MachO_File(const char* path, const char* arch) : MachO_File_Simple(p
 			}
 				
 			case LC_DYSYMTAB: {
+				if (ignore_dysymtab)
+					break;
+				
 				const dysymtab_command* p_cur_dysymtab = reinterpret_cast<const dysymtab_command*>(*cit);
 				
 				this->seek(m_origin + p_cur_dysymtab->indirectsymoff);
@@ -298,9 +454,11 @@ MachO_File::MachO_File(const char* path, const char* arch) : MachO_File_Simple(p
 		}
 	}
 	
-	for (unsigned i = 0; i < m_relocations_length; ++ i) {
-		ma_symbol_references[ma_relocations[i].r_address & ~1] = ma_strings + ma_symbols[ma_relocations[i].r_symbolnum].n_un.n_strx;
-		ma_library_ordinals.insert(pair<unsigned,unsigned>(ma_relocations[i].r_address & ~1, GET_LIBRARY_ORDINAL(ma_symbols[ma_relocations[i].r_symbolnum].n_desc)));
+	if (ma_symbols) {
+		for (unsigned i = 0; i < m_relocations_length; ++ i) {
+			ma_symbol_references[ma_relocations[i].r_address & ~1] = ma_strings + ma_symbols[ma_relocations[i].r_symbolnum].n_un.n_strx;
+			ma_library_ordinals.insert(pair<unsigned,unsigned>(ma_relocations[i].r_address & ~1, GET_LIBRARY_ORDINAL(ma_symbols[ma_relocations[i].r_symbolnum].n_desc)));
+		}
 	}
 	
 	// analyze the sections (to short-cut the indirect symbols)
@@ -317,8 +475,9 @@ MachO_File::MachO_File(const char* path, const char* arch) : MachO_File_Simple(p
 				unsigned stride = s->reserved2 ? s->reserved2 : 4;
 				unsigned end_index = s->reserved1 + s->size/stride;
 				
-				for (unsigned i = s->reserved1, vm_address = s->addr; i < end_index; ++ i, vm_address += stride)
-					ma_symbol_references[vm_address & ~1] = ma_strings + ma_symbols[ma_indirect_symbols[i]].n_un.n_strx;
+				if (ma_symbols && ma_indirect_symbols)
+					for (unsigned i = s->reserved1, vm_address = s->addr; i < end_index; ++ i, vm_address += stride)
+						ma_symbol_references[vm_address & ~1] = ma_strings + ma_symbols[ma_indirect_symbols[i]].n_un.n_strx;
 				
 				break;
 			}
@@ -349,10 +508,13 @@ MachO_File::MachO_File(const char* path, const char* arch) : MachO_File_Simple(p
 						this->seek_vm_address(vm_address + 16, &sid_data);		// get to the data field class.
 						unsigned data_loc = this->read_integer();
 
-						this->seek_vm_address(data_loc + 16, &sid_data);		// get to the name field of the data.
+						this->seek_vm_address(data_loc, &sid_data);		// get to the name field of the data.
+						unsigned flag = this->read_integer();
+						this->advance(12);
 						this->seek_vm_address(this->read_integer(), &sid_text);	// resolve the location of the string.
 						
 						ObjCMethod m;
+						m.is_class_method = flag & 1;
 						m.class_name = this->peek_data<char>();
 						ma_objc_classes[vm_address] = m.class_name;
 						
@@ -500,4 +662,30 @@ const char* MachO_File::library_of_relocated_symbol(unsigned vm_address) const t
 		}
 	
 	return NULL;
+}
+
+void MachO_File::for_each_symbol (void(*p_func)(unsigned addr, const char* symbol, StringType type, void* context), void* context) const {
+	std::tr1::unordered_map<unsigned,const char*>::const_iterator cit;
+	
+	for (cit = ma_symbol_references.begin(); cit != ma_symbol_references.end(); ++ cit)
+		p_func(cit->first, cit->second, MOST_Symbol, context);
+	
+	for (cit = ma_cfstrings.begin(); cit != ma_cfstrings.end(); ++ cit)
+		p_func(cit->first, cit->second, MOST_CFString, context);
+	
+	for (cit = ma_objc_classes.begin(); cit != ma_objc_classes.end(); ++ cit)
+		p_func(cit->first, cit->second, MOST_ObjCClass, context);
+	
+	for (cit = ma_objc_selectors.begin(); cit != ma_objc_selectors.end(); ++ cit)
+		p_func(cit->first, cit->second, MOST_ObjCSelector, context);
+	
+	std::string str;
+	for (std::tr1::unordered_map<unsigned, ObjCMethod>::const_iterator cit2 = ma_objc_methods.begin(); cit2 != ma_objc_methods.end(); ++ cit2) {
+		str = cit2->second.is_class_method ? "+[" : "-[";
+		str += cit2->second.class_name;
+		str += ' ';
+		str += cit2->second.sel_name;
+		str += ']';
+		p_func(cit->first, str.c_str(), MOST_ObjCMethod, context);
+	}
 }
