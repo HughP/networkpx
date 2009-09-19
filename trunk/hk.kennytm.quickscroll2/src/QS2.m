@@ -187,6 +187,9 @@ static inline CGRect* pageRects(WebPDFView* view) {
 		_pdfView = pdfView;
 				
 		QSCreateOrUpdateTimer(&_autodismisser, autodismiss_timer, self, @selector(fadeAway));
+
+		self.opaque = NO;
+		self.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
 		
 		[scrollView addSubview:self];
 	}
@@ -851,6 +854,7 @@ static CGPoint visualToActualPoint(CGPoint visPt, CGSize actSize, CGSize maxSize
 		button = btn;
 		button_down = btnDown;
 		self.autoresizingMask = vert ? (UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleHeight) : (UIViewAutoresizingFlexibleTopMargin | UIViewAutoresizingFlexibleWidth);
+		self.contentMode = UIViewContentModeRedraw;
 		self.backgroundColor = [UIColor clearColor];
 	}
 	return self;
