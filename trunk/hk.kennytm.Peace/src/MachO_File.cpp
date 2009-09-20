@@ -380,7 +380,7 @@ void MachO_File::process_export_trie_node(off_t start, off_t cur, off_t end, con
 	}
 }
 
-MachO_File::MachO_File(const char* path, const char* arch) : MachO_File_Simple(path, arch), ma_symbols(NULL), m_symbols_length(0), ma_indirect_symbols(NULL), m_indirect_symbols_length(0), ma_strings(NULL), ma_cstrings(NULL), m_cstring_vmaddr(0) {
+MachO_File::MachO_File(const char* path, const char* arch) : MachO_File_Simple(path, arch), ma_symbols(NULL), m_symbols_length(0), ma_indirect_symbols(NULL), m_indirect_symbols_length(0), ma_strings(NULL), ma_cstrings(NULL), m_cstring_vmaddr(0), m_relocations_length(0) {
 	bool ignore_dysymtab = false;
 	for (vector<const load_command*>::const_iterator cit = ma_load_commands.begin(); cit != ma_load_commands.end(); ++ cit) {
 		switch ((*cit)->cmd) {

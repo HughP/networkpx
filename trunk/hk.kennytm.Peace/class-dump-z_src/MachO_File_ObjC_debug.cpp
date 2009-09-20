@@ -37,7 +37,8 @@ void MachO_File_ObjC::print_extern_symbols() const throw() {
 	printf("// Found %lu external symbols.\n\n", ma_include_paths.size());
 	
 	for (tr1::unordered_map<ObjCTypeRecord::TypeIndex, string>::const_iterator cit = ma_include_paths.begin(); cit != ma_include_paths.end(); ++ cit) {
-		printf("%s:\t%s\n", cit->second.c_str(), m_record.name_of_type(cit->first).c_str());
+		std::tr1::unordered_map<ObjCTypeRecord::TypeIndex, const char*>::const_iterator lit = ma_lib_path.find(cit->first);
+		printf("%s:\t%s\t(%s)\n", cit->second.c_str(), m_record.name_of_type(cit->first).c_str(), lit == ma_lib_path.end() ? "-" : lit->second);
 	}
 	printf("\n");
 }
