@@ -1,7 +1,7 @@
 #summary class-dump-z — Extracting class interface for Objective-C version 2 ABI.
 #labels Phase-Support
 
-Download: http://code.google.com/p/networkpx/downloads/detail?name=class-dump-z_0.1-11r.tar.gz .
+Download: http://networkpx.googlecode.com/files/class-dump-z_0.2-0.tar.gz .
 
 <wiki:toc />
 
@@ -15,13 +15,19 @@ I, using class-dump-x a lot for reverse engineering, finds that the ivar offset 
 
 (While I was creating class-dump-z, the original class-dump development suddenly reactivated at July 1st. The newest version 3.2 does support 2.0 ABI now, but the ivar offset info is even worse than class-dump-x.)
 
+== Why you don't want to use class-dump-z ==
+Instead of a generic-purpose class dumper, class-dump-z was written with iPhoneOS development in mind. Therefore, the following features will probably never be implemented:
+ * 64-bit support. (Unless there is a 4 GiB RAM iPhone.)
+ * Objective-C 1.0 ABI.
+In general, if you want to dump Mac OS X, you should use the original class-dump. But if you're dumping iPhoneOS binaries, class-dump-z is definitely the better choice.
+
 = Features =
 
 == 10x the speed ==
 
-|| *Time to dump...* || class-dump-x 3.1.2 || class-dump 3.2 || class-dump-z 0.1-11q ||
-|| *UIKit 2.0* (run in Mac OS X) || 2.0s || 1.8s || *0.14s* ||
-|| *UIKit 3.0* (run in Mac OS X) || 2.9s || 2.6s || *0.19s* ||
+|| *Time to dump...* || class-dump-x 3.1.2 || class-dump 3.3.1 || class-dump-z 0.2-0 ||
+|| *UIKit 2.0* (run in Mac OS X) || 2.2s || 1.8s || *0.13s* ||
+|| *UIKit 3.1* (run in Mac OS X) || 2.9s || 2.1s || *0.19s* ||
 || *!CoreData 3.0* (run in iPhoneOS) || 21s || - || *2.6s* ||
 
  * <font size="1">`time class-dump-? -a -A UIKit > /dev/null`</font>
@@ -30,18 +36,18 @@ class-dump-z is written from scratch using C++ avoiding using dynamic calls, unl
 
 == Portable ==
 
-|| *Platforms* || class-dump-x 3.1.2 || class-dump 3.2 || class-dump-z 0.1-11r ||
-|| Mac OS X 10.5 || ✓ || ✓ || ✓ ||
-|| iPhoneOS 3.0 || ✓ || ✗ || ✓ ||
+|| *Platforms* || class-dump-x 3.1.2 || class-dump 3.3.1 || class-dump-z 0.2-0 ||
+|| Mac OS X 10.6 || ✓ || ✓ || ✓ ||
+|| iPhoneOS 3.1 || ✓ || ✗ || ✓ ||
 || Linux || ✗ || ✗ || ✓ ||
 || Windows || ✗ || ✗ || ✓ ||
 
-Since class-dump-z is written in C++, it is very easy to port to other platforms. Currently Mac OS X 10.5, iPhoneOS (≤)3.0, Linux (x86 and amd64) and Windows (≥XP) are officially supported.
+Since class-dump-z is written in C++, it is very easy to port to other platforms. Currently Mac OS X 10.6, iPhoneOS 3.1, Linux (x86 and amd64) and Windows (≥XP) are officially supported.
 
 == Correct ivar offsets ==
 
 <table border="1" cellspacing="2">
-<tr><td>`UIRemoveControlMultiSelectButton ` 3.0</td><td>`UIMoreListController` 3.0</td></tr>
+<tr><td>`UIRemoveControlMultiSelectButton ` 3.1</td><td>`UIMoreListController` 3.1</td></tr>
 <tr><td colspan="2">*class-dump-x 3.1.2*</td></tr><tr><td>
 {{{
 unsigned int _isHighlighted:1; // 68 = 0x44
@@ -55,20 +61,21 @@ NSArray *_moreViewControllers;               // 97 = 0x61
 UIMoreListCellLayoutManager *_layoutManager; // 101 = 0x65
 }}}
 </td></tr>
-<tr><td colspan="2">*class-dump 3.2*</td></tr><tr><td>
+<tr><td colspan="2">*class-dump 3.3.1*</td></tr><tr><td>
 {{{
-unsigned int _isHighlighted:1; // 949272880 = 0x3894c130
-unsigned int _isSelected:1;    // 949272884 = 0x3894c134
+unsigned int _isHighlighted:1;
+unsigned int _isSelected:1;
 }}}
+(No offsets shown. Don't know why.)
 </td><td>
 {{{
-UITableView *_table;                         // 949253868 = 0x389476ec
-BOOL _allowsCustomizing;                     // 949253872 = 0x389476f0
-NSArray *_moreViewControllers;               // 949253876 = 0x389476f4
-UIMoreListCellLayoutManager *_layoutManager; // 949253880 = 0x389476f8
+UITableView *_table;
+BOOL _allowsCustomizing;
+NSArray *_moreViewControllers;
+UIMoreListCellLayoutManager *_layoutManager;
 }}}
 </td></tr>
-<tr><td colspan="2">*class-dump-z 0.1-11o*</td></tr><tr><td>
+<tr><td colspan="2">*class-dump-z 0.2-0*</td></tr><tr><td>
 {{{
 unsigned _isHighlighted : 1; // 68 = 0x44
 unsigned _isSelected : 1;    // 68 = 0x44
@@ -91,8 +98,8 @@ Generating ivar offsets by accumulation is a tricky business, due to alignments 
 
 || || `UIScrollView` 3.0 ||
 || class-dump-x 3.1.2 || `-(id)hitTest:(struct CGPoint)fp8 forEvent:(struct __GSEvent *)fp16;` ||
-|| class-dump 3.2 || `-(id)hitTest:(struct CGPoint)arg1 forEvent:(struct __GSEvent *)arg2;` ||
-|| class-dump-z 0.1-11o || `-(id)hitTest:(CGPoint)test forEvent:(GSEventRef)event;` ||
+|| class-dump 3.3.1 || `-(id)hitTest:(struct CGPoint)arg1 forEvent:(struct __GSEvent *)arg2;` ||
+|| class-dump-z 0.2-0 || `-(id)hitTest:(CGPoint)test forEvent:(GSEventRef)event;` ||
 
  * <font size="1">`class-dump-? -C UIScrollView -f hitTest UIKit`</font>
 
@@ -104,8 +111,8 @@ class-dump-z will `typedef` structs and unions to the most presentable name with
 
 || || `UIThreePartImageView` 2.0 || `UIThreePartImageView` 3.0 ||
 || class-dump-x 3.1.2 || `-(void)setSlices:(CDAnonymousStruct8)fp8;` || `-(void)setSlices:(CDAnonymousStruct10)fp8;` ||
-|| class-dump 3.2 || `-(void)setSlices:(CDAnonymousStruct15)arg1;` || `-(void)setSlices:(CDAnonymousStruct17)arg1;` ||
-|| class-dump-z 0.1-11o || `-(void)setSlices:(XXStruct_UUz0SD)slices;` || `-(void)setSlices:(XXStruct_UUz0SD)slices;` ||
+|| class-dump 3.3.1 || `-(void)setSlices:(CDStruct_75b8db5d)arg1;` || `-(void)setSlices:(CDStruct_75b8db5d)arg1;` ||
+|| class-dump-z 0.2-0 || `-(void)setSlices:(XXStruct_UUz0SD)slices;` || `-(void)setSlices:(XXStruct_UUz0SD)slices;` ||
 
  * <font size="1">`class-dump-? -C UIThreePartImageView UIKit`</font>
 
@@ -117,7 +124,7 @@ Ever tried to diff a library between two versions? You'll be frustrated by so ma
 
 || || `UIScrollView` 3.0 ||
 || class-dump-x 3.1.2 || N/A ||
-|| class-dump 3.2 || `@property struct CGPoint contentOffset;`<br />`// Preceeding property had unknown attributes: N`<br />`// Original attribute string: T{CGPoint="x"f"y"f},N`<br />...<br />`-(void)setContentOffset:(struct CGPoint)arg1;`<br />`-(struct CGPoint)contentOffset;` ||
+|| class-dump 3.3.1 || `@property(nonatomic) struct CGPoint contentOffset;` ||
 || class-dump-z 0.1-11o || `@property(assign, nonatomic) CGPoint contentOffset;` ||
 
  * <font size="1">`class-dump-? -C UIScrollView UIKit`</font>
@@ -166,33 +173,28 @@ I found it pretty annoying. In class-dump-z you can supply the `-p` switch to au
 // in a protocol: -(void)tableView:(id)view didEndEditingRowAtIndexPath:(id)indexPath;
 @end
 }}}
-Method overloading in subclass is very common in OO design, but such information is useless when generating headers. Yet, by default a class dumper wouldn't know if an implementation is overloaded or a new method. If it's not useful, why not hide them? class-dump-z 0.1-11q does that. 
+Method overloading in subclass is very common in OO design, but such information is useless when generating headers. Yet, by default a class dumper wouldn't know if an implementation is overloaded or a new method. If it's not useful, why not hide them? class-dump-z does that. 
 
 Another class of useless information are those being implemented to adopt a protocol. class-dump-z can also filter them out.
 
-  _If you are running class-dump-z outside of the iPhoneOS, or you haven't installed the SDK, you have to tell class-dump-z where can the libraries be found by the -y switch._
+  _If you are running class-dump-z outside of the iPhoneOS, or you haven't installed the SDK, you have to tell class-dump-z where can the libraries be found by the -y switch. If you using using firmware 3.1, because all framework binaries are removed, hiding inherited methods from external frameworks won't work properly._
 
 == Readable argument names ==
 || || `UIImage(UIImageDeprecated)` 3.0 ||
 || class-dump-x 3.1.2 || `-(void)draw9PartImageWithSliceRects:(CDAnonymousStruct13)fp8 inRect:(struct CGRect)fp152;` ||
-|| class-dump 3.2 || `-(void)draw9PartImageWithSliceRects:(CDAnonymousStruct14)arg1 inRect:(struct CGRect)arg2;` ||
-|| class-dump-z 0.1-11o || `-(void)draw9PartImageWithSliceRects:(XXStruct_4cr1oD)sliceRects inRect:(CGRect)rect;` ||
+|| class-dump 3.3.1 || `-(void)draw9PartImageWithSliceRects:(CDStruct_c8cd2c5d)arg1 inRect:(struct CGRect)arg2;` ||
+|| class-dump-z 0.2-0 || `-(void)draw9PartImageWithSliceRects:(XXStruct_4cr1oD)sliceRects inRect:(CGRect)rect;` ||
 
  * <font size="1">`class-dump-? -C UIImageDeprecated UIKit`</font>
 
 No more meaningless fpXX. class-dump-z will give a suitable name to each argument using Apple's coding style guide.
 
-== Optional methods and properties in protocols ==
-class-dump-z supports optional methods in protocols. The newest class-dump supports optional methods too.
-
-class-dump-z also supports optional properties, which no one else supported.
-
 == Correct header generation ==
 
-|| || `WebThreadSafeUndoManager` 3.0 ||
+|| || `WebThreadSafeUndoManager` 3.1 ||
 || class-dump-x 3.1.2 || `#import "NSUndoManager.h"` ||
-|| class-dump 3.2 || `#import "NSUndoManager.h"` ||
-|| class-dump-z 0.1-11o || `#import <Foundation/NSUndoManager.h>` ||
+|| class-dump 3.3.1 || `#import "NSUndoManager.h"` ||
+|| class-dump-z 0.2-0 || `#import <Foundation/NSUndoManager.h>` ||
 
 The headers generated by `-H` are not immediately usable because the imports usually points to non-existing .h files. There is [http://iphonesdkdev.blogspot.com/2009/05/how-to-classdump-springboard-header.html even a page] dedicated to fixing this problem. 
 
@@ -204,15 +206,10 @@ class-dump-z now will see which library the external class comes from, and tries
  * *Class attributes*, e.g. `__attribute__((visibility("hidden")))`.
  * *Supports obscure type encodings*, e.g. the C99 `_Complex` types, Objective-C class ivars with ≥2 protocols, GC-invisible pointers, etc.
  * *Put that star on the left or right*, I like `int* x` more, some people like `int *x` more. With the `-R` switch one can switch between the two styles easily.
+ * *Put a space or not after the +/-*. With the `-b` switch one can choose to use `- (void)hello` or `-(void)hello`. 
  
 = What's missing =
 There are some features I don't find them immediately useful, so they are not supported yet.
-
-== Objective-C 1.0 ABI ==
-class-dump-z does not support the 1.0 ABI (the `__OBJC` segment). For them you must use class-dump instead.
-
-== Universal binaries ==
-Support for universal binaries is minimal — class-dump-z will only check the first architecture in the binary. To analyze the rest you must separate the file with [http://developer.apple.com/documentation/Darwin/Reference/ManPages/man1/lipo.1.html lipo].
 
 == Sort by inheritance (-I flag), Recursive dumping (-r) ==
 These are not easy to implement and I find them not so useful so I left them out.
