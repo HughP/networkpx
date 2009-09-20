@@ -244,7 +244,7 @@ public:
 	unsigned categories_count() const throw() { return m_category_count; }
 	unsigned protocols_count() const throw() { return m_protocol_count; }
 	
-	void print_class_type(SortBy sort_by, bool print_method_addresses, int print_comments, bool print_ivar_offsets, SortBy sort_by, bool show_only_exported_classes) const throw();
+	void print_class_type(SortBy sort_by, bool print_method_addresses, int print_comments, bool print_ivar_offsets, SortBy sort_methods_by, bool show_only_exported_classes) const throw();
 	
 	void set_pointers_right_aligned(bool right_aligned = true) throw() { m_record.pointers_right_aligned = right_aligned; }
 	void set_prettify_struct_names(bool prettify_struct_names = true) throw() { m_record.prettify_struct_names = prettify_struct_names; }
