@@ -46,6 +46,14 @@ private:
 	};
 	
 public:
+	enum SortBy {
+		SB_None,
+		SB_Inherit,
+		SB_Alphabetic,
+		SB_AlphabeticAlt,
+	};	
+	
+public:
 	// These 2 are public *only* because I knew no way to refer to these structs in std::tr1::hash<T>.
 	struct ReducedProperty {
 		std::string name;
@@ -156,13 +164,14 @@ private:
 				
 		std::vector<unsigned> adopted_protocols;
 		
-		std::string format(const ObjCTypeRecord& record, const MachO_File_ObjC& self, bool print_method_addresses, int print_comments, bool print_ivar_offsets, bool sort_methods_alphabetically, bool show_only_exported_classes) const throw();
+		std::string format(const ObjCTypeRecord& record, const MachO_File_ObjC& self, bool print_method_addresses, int print_comments, bool print_ivar_offsets, MachO_File_ObjC::SortBy sort_by, bool show_only_exported_classes) const throw();
 	};
 	
 	struct OverlapperType;
 	
 	friend struct Method_AlphabeticSorter;
 	friend struct Property_AlphabeticSorter;
+	friend struct Method_AlphabeticAltSorter;
 	friend struct ClassType;
 	
 //-------------------------------------------------------------------------------------------------------------------------------------------
@@ -214,16 +223,13 @@ private:
 	std::vector<Method> ma_method_store;
 	std::vector<Property> ma_property_store;
 	
+	const char* m_arch;
+	bool m_has_whitespace, m_hide_cats, m_hide_dogs;
+	
 //-------------------------------------------------------------------------------------------------------------------------------------------
 	
-public:
-	enum SortBy {
-		SB_None,
-		SB_Inherit,
-		SB_Alphabetic
-	};
-	
-	MachO_File_ObjC(const char* path, bool perform_reduced_analysis = false);
+public:	
+	MachO_File_ObjC(const char* path, bool perform_reduced_analysis = false, const char* arch = "any");
 	~MachO_File_ObjC() throw() {
 		if (m_class_filter != NULL) pcre_free(m_class_filter);
 		if (m_method_filter != NULL) pcre_free(m_method_filter);
@@ -238,13 +244,15 @@ public:
 	unsigned categories_count() const throw() { return m_category_count; }
 	unsigned protocols_count() const throw() { return m_protocol_count; }
 	
-	void print_class_type(SortBy sort_by, bool print_method_addresses, int print_comments, bool print_ivar_offsets, bool sort_methods_alphabetically, bool show_only_exported_classes) const throw();
+	void print_class_type(SortBy sort_by, bool print_method_addresses, int print_comments, bool print_ivar_offsets, SortBy sort_by, bool show_only_exported_classes) const throw();
 	
 	void set_pointers_right_aligned(bool right_aligned = true) throw() { m_record.pointers_right_aligned = right_aligned; }
 	void set_prettify_struct_names(bool prettify_struct_names = true) throw() { m_record.prettify_struct_names = prettify_struct_names; }
 	void set_class_filter(const char* regexp);
 	void set_method_filter(const char* regexp);
 	void set_kill_prefix(const std::vector<std::string>& kill_prefix) { m_kill_prefix = kill_prefix; }
+	void set_method_has_whitespace(bool has_whitespace = true) throw() { m_has_whitespace = has_whitespace; }
+	void set_hide_cats_and_dogs(bool hide_cats, bool hide_dogs) throw() { m_hide_cats = hide_cats; m_hide_dogs = hide_dogs; }
 	
 	void propertize() throw() {
 		for (std::vector<ClassType>::iterator it = ma_classes.begin(); it != ma_classes.end(); ++ it)
@@ -254,7 +262,7 @@ public:
 	
 	void print_struct_declaration(SortBy sort_by) const throw();
 	
-	void write_header_files(const char* filename, bool print_method_addresses, int print_comments, bool print_ivar_offsets, bool sort_methods_alphabetically, bool show_only_exported_classes) const throw();
+	void write_header_files(const char* filename, bool print_method_addresses, int print_comments, bool print_ivar_offsets, SortBy sort_by, bool show_only_exported_classes) const throw();
 	
 //-------------------------------------------------------------------------------------------------------------------------------------------
 	
