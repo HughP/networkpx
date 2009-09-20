@@ -554,6 +554,7 @@ void MachO_File_ObjC::retrieve_reduced_class_info() throw() {
 	for (unsigned i = 0; i < m_class_count; ++ i) {
 		ClassType cls;
 		
+		cls.vm_address = this->read_integer();
 		cls.type = ClassType::CT_Class;
 		
 		const class_t* class_ptr = this->peek_data_at_vm_address<class_t>(cls.vm_address, &m_guess_data_segment);

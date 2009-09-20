@@ -208,7 +208,10 @@ int main (int argc, char* argv[]) {
 				switch (diagnosis_option) {
 					case 't': mf.print_all_types(); break;
 					case 'n': mf.print_network(); break;
-					case 'e': mf.print_extern_symbols(); break;
+					case 'e': 
+						printf("// Sysroot: %s; arch: %s\n", sysroot, arch);
+						mf.print_extern_symbols(); 
+						break;
 						
 					default:
 						printf("// Unrecognized diagnosis option: -D %c\n", diagnosis_option);
