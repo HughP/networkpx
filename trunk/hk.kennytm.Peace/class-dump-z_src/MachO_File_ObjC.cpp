@@ -323,7 +323,7 @@ void MachO_File_ObjC::recursive_union_with_superclasses(ObjCTypeRecord::TypeInde
 					strcpy(the_path+sysroot_len, libpath+(libpath[0]=='/'&&sysroot_ends_with_slash));
 					MachO_File_ObjC* mf = NULL;
 					try {
-						mf = new MachO_File_ObjC(the_path, m_arch);
+						mf = new MachO_File_ObjC(the_path, true, m_arch);
 					} catch (...) {
 						mf = NULL;
 					}
