@@ -50,6 +50,8 @@ UIKBKeyboard* (*UIKBGetKeyboardByName)(NSString* name);
 
 //------------------------------------------------------------------------------
 
+static BOOL layoutUsesStar(NSString* layoutClass);
+
 DefineHook(BOOL, UIKeyboardInputModeUsesKBStar, NSString* modeString) {
 	if (!IKXIsiKeyExMode(modeString))
 		return Original(UIKeyboardInputModeUsesKBStar)(modeString);
@@ -59,16 +61,23 @@ DefineHook(BOOL, UIKeyboardInputModeUsesKBStar, NSString* modeString) {
 			return Original(UIKeyboardInputModeUsesKBStar)([layoutRef substringFromIndex:1]);
 		else {
 			NSString* layoutClass = [IKXLayoutBundle(layoutRef) objectForInfoDictionaryKey:@"UIKeyboardLayoutClass"];
-			if (![layoutClass isKindOfClass:[NSString class]])	// Portrait & Landscape are different. 
-				return NO;
-			else if ([layoutClass characterAtIndex:0] == '=')	// Refered layout.
-				return Original(UIKeyboardInputModeUsesKBStar)([layoutClass substringFromIndex:1]);
-			else	// layout.plist & star.keyboards both use KBStar. otherwise it is custom code.
-				return [layoutClass rangeOfString:@"."].location != NSNotFound;
+			return layoutUsesStar(layoutClass);
 		}
 	}
 }
 
+static BOOL layoutUsesStar(NSString* layoutClass) {
+	if ([layoutClass isKindOfClass:[NSDictionary class]]) {	// Portrait & Landscape are different. 
+		NSString* portrait_layout = [(NSDictionary*)layoutClass objectForKey:@"Portrait"];
+		NSString* landscape_layout = [(NSDictionary*)layoutClass objectForKey:@"Landscape"];
+		return layoutUsesStar(portrait_layout) && layoutUsesStar(landscape_layout);
+	} else if ([layoutClass characterAtIndex:0] == '=')	// Refered layout.
+		return Original(UIKeyboardInputModeUsesKBStar)([layoutClass substringFromIndex:1]);
+	else	// layout.plist & star.keyboards both use KBStar. otherwise it is custom code.
+		return [layoutClass rangeOfString:@"."].location != NSNotFound;	
+}
+
+					
 //------------------------------------------------------------------------------
 
 DefineHook(Class, UIKeyboardLayoutClassForInputModeInOrientation, NSString* modeString, NSString* orientation) {
