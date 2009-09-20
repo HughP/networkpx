@@ -92,7 +92,7 @@ struct MachO_File_ObjC::OverlapperType {
 
 #pragma mark -
 
-MachO_File_ObjC::MachO_File_ObjC(const char* path, bool perform_reduced_analysis) : MachO_File(path), m_guess_data_segment(1), m_guess_text_segment(0), m_class_filter(NULL), m_method_filter(NULL), m_class_filter_extra(NULL), m_method_filter_extra(NULL) {
+MachO_File_ObjC::MachO_File_ObjC(const char* path, bool perform_reduced_analysis, const char* arch) : MachO_File(path, arch), m_guess_data_segment(1), m_guess_text_segment(0), m_class_filter(NULL), m_method_filter(NULL), m_class_filter_extra(NULL), m_method_filter_extra(NULL), m_arch(arch), m_has_whitespace(false), m_hide_cats(false), m_hide_dogs(false) {
 	if (perform_reduced_analysis) {
 		retrieve_reduced_class_info();
 	} else {
@@ -323,7 +323,7 @@ void MachO_File_ObjC::recursive_union_with_superclasses(ObjCTypeRecord::TypeInde
 					strcpy(the_path+sysroot_len, libpath+(libpath[0]=='/'&&sysroot_ends_with_slash));
 					MachO_File_ObjC* mf = NULL;
 					try {
-						mf = new MachO_File_ObjC(the_path);
+						mf = new MachO_File_ObjC(the_path, m_arch);
 					} catch (...) {
 						mf = NULL;
 					}

@@ -40,7 +40,8 @@ void print_usage () {
 			"    -p         Convert undeclared getters and setters into properties (propertize).\n"
 			"    -h proto   Hide methods which already appears in an adopted protocol.\n"
 			"    -h super   Hide inherited methods.\n"
-			"    -y <root>  Choose the sysroot. Default to /.\n"
+			"    -y <root>  Choose the sysroot. Default to the path of latest iPhoneOS SDK, or /.\n"
+			"    -u <arch>  Choose a specific architecture in a fat binary (e.g. armv6, armv7, etc.)\n"
 			"\n  Formatting:\n"
 			"    -a         Print ivar offsets\n"
 			"    -A         Print implementation VM addresses.\n"
@@ -48,17 +49,21 @@ void print_usage () {
 			"    -k -k      Show even more comments.\n"
 			"    -R         Show pointer declarations as int *a instead of int* a.\n"
 			"    -N         Keep the raw struct names (e.g. do no replace __CFArray* with CFArrayRef).\n"
+			"    -b         Put a space after the +/- sign (i.e. + (void)... instead of +(void)...).\n"
 			"\n  Filtering:\n"
 			"    -C <regex> Only display types with (original) name matching the RegExp (in PCRE syntax).\n"
 			"    -f <regex> Only display methods with (original) name matching the RegExp.\n"
 			"    -g         Display exported classes only.\n"
 			"    -X <list>  Ignore all types (except categories) with a prefix in the comma-separated list.\n"
+			"    -h cats    Hide categories.\n"
+			"    -h dogs    Hide protocols.\n"
 			"\n  Sorting:\n"
 			"    -S         Sort types in alphabetical order.\n" 
 			"    -s         Sort methods in alphabetical order.\n"
+			"    -z         Sort methods alphabetically but put class methods and -init... first.\n"
 			"\n  Output:\n"
 			"    -H         Separate into header files\n"
-			"    -o <dir>   Put header files into this directory instead of current directory."
+			"    -o <dir>   Put header files into this directory instead of current directory.\n"
 			"\n"
 			);
 }
@@ -68,11 +73,12 @@ int main (int argc, char* argv[]) {
 		print_usage();
 	} else {
 		int c;
-		bool print_ivar_offsets = false, print_method_addresses = false, sort_methods_alphabetically = false;
+		bool print_ivar_offsets = false, print_method_addresses = false;
 		bool pointers_right_align = false, show_only_exported_classes = false, propertize = false, generate_headers = false, prettify_struct_names = true;
-		bool hide_protocols = false, hide_super = false, hide_underscore = true;
-		bool delete_sysroot_on_quit = false;
-		MachO_File_ObjC::SortBy sort_by = MachO_File_ObjC::SB_None;
+		bool hide_protocols = false, hide_super = false; //, hide_underscore = true;
+		bool delete_sysroot_on_quit = false, has_blank = false;
+		bool hide_cats = false, hide_dogs = false;
+		MachO_File_ObjC::SortBy sort_by = MachO_File_ObjC::SB_None, sort_methods_by = MachO_File_ObjC::SB_None;
 		int print_comments = 0;
 		char diagnosis_option = '\0';
 		char* sysroot = const_cast<char*>("/");
@@ -81,6 +87,7 @@ int main (int argc, char* argv[]) {
 		const char* output_directory = NULL;
 		vector<const char*> filenames;
 		vector<string> kill_prefix;
+		const char* arch = "any";
 		
 		// search for a suitable sysroot.
 #if !_MSC_VER
@@ -112,11 +119,12 @@ int main (int argc, char* argv[]) {
 		
 		// const char* regexp_string = NULL;
 		while (argc > 1) {
-			switch (c = getopt(argc, argv, "aAkC:ISsD:Rf:gpHo:X:Nh:y:")) {
+			switch (c = getopt(argc, argv, "aAkC:ISsD:Rf:gpHo:X:Nh:y:u:bz")) {
 				case 'a': print_ivar_offsets = true; break;
 				case 'A': print_method_addresses = true; break;
 				case 'k': ++ print_comments; break;
-				case 's': sort_methods_alphabetically = true; break;
+				case 's': sort_methods_by = MachO_File_ObjC::SB_Alphabetic; break;
+				case 'z': sort_methods_by = MachO_File_ObjC::SB_AlphabeticAlt; break;
 				case 'D': diagnosis_option = *optarg; break;	// diagnosis options, not to be used publicly.
 				case 'C': type_regexp = optarg; break;
 				case 'f': method_regexp = optarg; break;
@@ -151,8 +159,12 @@ int main (int argc, char* argv[]) {
 						hide_protocols = true;
 					else if (strncmp(optarg, "super", 5) == 0)
 						hide_super = true;
-					else if (strncmp(optarg, "under", 5) == 0)
-						hide_underscore = true;
+//					else if (strncmp(optarg, "under", 5) == 0)
+//						hide_underscore = true;
+					else if (strncmp(optarg, "cat", 3) == 0)
+						hide_cats = true;
+					else if (strncmp(optarg, "dog", 3) == 0)
+						hide_dogs = true;
 					break;
 				case 'y': 
 					if (delete_sysroot_on_quit) {
@@ -160,6 +172,12 @@ int main (int argc, char* argv[]) {
 						delete_sysroot_on_quit = false;
 					}
 					sysroot = optarg;
+					break;
+				case 'u':
+					arch = optarg;
+					break;
+				case 'b':
+					has_blank = true;
 					break;
 #if EOF != -1
 				case EOF:
@@ -184,7 +202,7 @@ int main (int argc, char* argv[]) {
 			
 		try {
 			
-			MachO_File_ObjC mf = MachO_File_ObjC(*fit);
+			MachO_File_ObjC mf = MachO_File_ObjC(*fit, false, arch);
 		
 			if (diagnosis_option != '\0') {
 				switch (diagnosis_option) {
@@ -199,6 +217,9 @@ int main (int argc, char* argv[]) {
 			} else {
 				mf.set_prettify_struct_names(prettify_struct_names);
 				mf.set_pointers_right_aligned(pointers_right_align);
+				mf.set_method_has_whitespace(has_blank);
+				mf.set_hide_cats_and_dogs(hide_cats, hide_dogs);
+				
 				if (type_regexp != NULL)
 					mf.set_class_filter(type_regexp);
 				if (method_regexp != NULL)
@@ -221,10 +242,10 @@ int main (int argc, char* argv[]) {
 						}
 					}
 					
-					mf.write_header_files(*fit, print_method_addresses, print_comments, print_ivar_offsets, sort_methods_alphabetically, show_only_exported_classes);
+					mf.write_header_files(*fit, print_method_addresses, print_comments, print_ivar_offsets, sort_methods_by, show_only_exported_classes);
 				} else {
 					mf.print_struct_declaration(sort_by);
-					mf.print_class_type(sort_by, print_method_addresses, print_comments, print_ivar_offsets, sort_methods_alphabetically, show_only_exported_classes);
+					mf.print_class_type(sort_by, print_method_addresses, print_comments, print_ivar_offsets, sort_methods_by, show_only_exported_classes);
 				}
 				
 			}

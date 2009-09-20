@@ -86,7 +86,27 @@ struct Method_AlphabeticSorter {
 	const vector<MachO_File_ObjC::Method>& v;
 	Method_AlphabeticSorter(const vector<MachO_File_ObjC::Method>& v_) : v(v_) {}
 	
-	bool operator() (unsigned a, unsigned b) { return strcmp(v[a].raw_name, v[b].raw_name) < 0; }
+	bool operator() (unsigned a, unsigned b) const { return strcmp(v[a].raw_name, v[b].raw_name) < 0; }
+};
+
+struct Method_AlphabeticAltSorter {
+	const vector<MachO_File_ObjC::Method>& v;
+	Method_AlphabeticAltSorter(const vector<MachO_File_ObjC::Method>& v_) : v(v_) {}
+	
+	bool operator() (unsigned a, unsigned b) const {
+		const MachO_File_ObjC::Method& ma = v[a], &mb = v[b];
+		
+		if (ma.is_class_method != mb.is_class_method)
+			return ma.is_class_method;
+		else {
+			bool is_a_init = strncmp(ma.raw_name, "init", 4) == 0 && !(ma.raw_name[4] >= 'a' && ma.raw_name[4] <= 'z');
+			bool is_b_init = strncmp(mb.raw_name, "init", 4) == 0 && !(mb.raw_name[4] >= 'a' && mb.raw_name[4] <= 'z');
+			if (is_a_init != is_b_init)
+				return is_a_init;
+			else
+				return strcmp(v[a].raw_name, v[b].raw_name) < 0;
+		}
+	}
 };
 
 struct Property_AlphabeticSorter {
@@ -198,9 +218,12 @@ string MachO_File_ObjC::Method::format(const ObjCTypeRecord& record, const MachO
 	}
 	
 	if (is_class_method)
-		res += "+(";
+		res.push_back('+');
 	else
-		res += "-(";
+		res.push_back('-');
+	if (self.m_has_whitespace)
+		res.push_back(' ');
+	res.push_back('(');
 	
 	res += record.format(types[0], "");
 	res.push_back(')');
@@ -230,12 +253,14 @@ string MachO_File_ObjC::Method::format(const ObjCTypeRecord& record, const MachO
 	return res;
 }
 
-string MachO_File_ObjC::ClassType::format(const ObjCTypeRecord& record, const MachO_File_ObjC& self, bool print_method_addresses, int print_comments, bool print_ivar_offsets, bool sort_methods_alphabetically, bool show_only_exported_classes) const throw() {
+string MachO_File_ObjC::ClassType::format(const ObjCTypeRecord& record, const MachO_File_ObjC& self, bool print_method_addresses, int print_comments, bool print_ivar_offsets, MachO_File_ObjC::SortBy sort_by, bool show_only_exported_classes) const throw() {
+	if ((self.m_hide_cats && type == CT_Category) || (self.m_hide_dogs && type == CT_Protocol))
+		return "";
+	
 	if (self.name_killable(name, strlen(name), type != CT_Category)) {
 		if (type != CT_Category || self.name_killable(superclass_name, strlen(superclass_name), false))
 			return "";
 	}
-		
 	
 	bool all_methods_filtered = true;
 	
@@ -260,9 +285,12 @@ string MachO_File_ObjC::ClassType::format(const ObjCTypeRecord& record, const Ma
 	for (unsigned i = 0; i < method_index_remap.size(); ++ i)
 		method_index_remap[i] = i;
 	
-	if (sort_methods_alphabetically) {
+	if (sort_by != SB_None) {
 		sort(property_index_remap.begin(), property_index_remap.end(), Property_AlphabeticSorter(properties));
-		sort(method_index_remap.begin(), method_index_remap.end(), Method_AlphabeticSorter(methods));
+		if (sort_by == SB_Alphabetic)
+			sort(method_index_remap.begin(), method_index_remap.end(), Method_AlphabeticSorter(methods));
+		else if (sort_by == SB_AlphabeticAlt)
+			sort(method_index_remap.begin(), method_index_remap.end(), Method_AlphabeticAltSorter(methods));
 	}
 	
 	switch (type) {
@@ -398,11 +426,11 @@ bool mfoc_AlphabeticSorter(const MachO_File_ObjC::ClassType* a, const MachO_File
 		return false;
 }
 
-void MachO_File_ObjC::print_class_type(SortBy sort_by, bool print_method_addresses, int print_comments, bool print_ivar_offsets, bool sort_methods_alphabetically, bool show_only_exported_classes) const throw() {	
+void MachO_File_ObjC::print_class_type(SortBy sort_by, bool print_method_addresses, int print_comments, bool print_ivar_offsets, SortBy sort_methods_by, bool show_only_exported_classes) const throw() {	
 	switch (sort_by) {
 		default:
 			for (vector<ClassType>::const_iterator cit = ma_classes.begin(); cit != ma_classes.end(); ++ cit)
-				printf("%s", cit->format(m_record, *this, print_method_addresses, print_comments, print_ivar_offsets, sort_methods_alphabetically, show_only_exported_classes).c_str());
+				printf("%s", cit->format(m_record, *this, print_method_addresses, print_comments, print_ivar_offsets, sort_methods_by, show_only_exported_classes).c_str());
 			break;
 		case SB_Alphabetic: {
 			vector<const ClassType*> remap;
@@ -412,7 +440,7 @@ void MachO_File_ObjC::print_class_type(SortBy sort_by, bool print_method_address
 			sort(remap.begin(), remap.end(), mfoc_AlphabeticSorter);
 			
 			for (vector<const ClassType*>::const_iterator cit = remap.begin(); cit != remap.end(); ++ cit)
-				printf("%s", (*cit)->format(m_record, *this, print_method_addresses, print_comments, print_ivar_offsets, sort_methods_alphabetically, show_only_exported_classes).c_str());
+				printf("%s", (*cit)->format(m_record, *this, print_method_addresses, print_comments, print_ivar_offsets, sort_methods_by, show_only_exported_classes).c_str());
 			break;
 		}
 	}
@@ -441,7 +469,7 @@ namespace {
 	};
 }
 
-void MachO_File_ObjC::write_header_files(const char* filename, bool print_method_addresses, int print_comments, bool print_ivar_offsets, bool sort_methods_alphabetically, bool show_only_exported_classes) const throw() {
+void MachO_File_ObjC::write_header_files(const char* filename, bool print_method_addresses, int print_comments, bool print_ivar_offsets, SortBy sort_by, bool show_only_exported_classes) const throw() {
 	vector<ObjCTypeRecord::TypeIndex> public_struct_types = m_record.all_public_struct_types();
 	tr1::unordered_map<string, Header> headers;
 	
@@ -459,7 +487,7 @@ void MachO_File_ObjC::write_header_files(const char* filename, bool print_method
 	// Distribute each class into files. 
 	for (vector<ClassType>::const_iterator cit = ma_classes.begin(); cit != ma_classes.end(); ++ cit) {
 		Header h;
-		h.declaration = cit->format(m_record, *this, print_method_addresses, print_comments, print_ivar_offsets, sort_methods_alphabetically, show_only_exported_classes);
+		h.declaration = cit->format(m_record, *this, print_method_addresses, print_comments, print_ivar_offsets, sort_by, show_only_exported_classes);
 		// we still need to pay lip service to create an empty file for the filtered types if someone else it going to include us.
 		if (!h.declaration.empty() || m_record.link_count(cit->type_index, true) > 0) {
 			const tr1::unordered_map<ObjCTypeRecord::TypeIndex, ObjCTypeRecord::EdgeStrength>* dep = m_record.dependencies(cit->type_index);
