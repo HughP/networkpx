@@ -591,8 +591,14 @@ ObjCTypeRecord::Type::Type(ObjCTypeRecord& record, const string& type_to_parse, 
 			}
 			
 			if (!name.empty()) {
-				size_t first_non_underscore_position = name.find('<') == string::npos ? name.find_first_not_of('_') : 0;
-				pretty_name = name.substr( first_non_underscore_position == string::npos ? 0 : first_non_underscore_position );
+				if (name == "__siginfo")
+					pretty_name = "siginfo_t";
+				else if (name == "__sFILE") {
+					pretty_name = "FILE";
+				} else {
+					size_t first_non_underscore_position = name.find('<') == string::npos ? name.find_first_not_of('_') : 0;
+					pretty_name = name.substr( first_non_underscore_position == string::npos ? 0 : first_non_underscore_position );
+				}
 			} else {
 				// synthesize a stable name for an anonymous struct.
 				char synthesized_name[12];
