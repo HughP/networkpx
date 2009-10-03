@@ -20,11 +20,23 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <stdio.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 // Usage: move_as_root temp_file expected_place file_to_remove
+// Usage: move_as_root file_name
 int main(int argc, const char* argv[]) {
 	setuid(geteuid());
-	rename(argv[1], argv[2]);
-	unlink(argv[3]);
+	if (argc == 4) {
+		rename(argv[1], argv[2]);
+		unlink(argv[3]);
+	} else if (argc == 2) {
+		int fd = open(argv[1], O_RDONLY);
+		char buf[1024];
+		size_t actual_size;
+		while ((actual_size = read(fd, buf, 1024)) > 0) {
+			fwrite(buf, 1, actual_size, stdout);
+		}
+		close(fd);
+	}
 	return 0;
 }
