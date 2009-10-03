@@ -90,8 +90,34 @@ static NSString* escapeHTML(NSString* x, NSCharacterSet* escSet) {
 NSString* symbolicate(NSString* file, UIProgressHUD* hudReply) {
 	NSAutoreleasePool* localPool = [[NSAutoreleasePool alloc] init];
 	NSBundle* mainBundle = [NSBundle mainBundle];	// 0
+	const char* move_as_root = [[mainBundle pathForResource:@"move_as_root" ofType:nil] UTF8String];
 	
 	NSString* file_content = [[NSString alloc] initWithContentsOfFile:file encoding:NSUTF8StringEncoding error:NULL];	// 1
+	if (file_content == nil) {
+		const char* file_cstr = [file UTF8String];
+		int fds[2];
+		pipe(fds);
+		pid_t pid = fork();
+		if (pid == 0) {
+			if (fds[1] != 1) {
+				dup2(fds[1], 1);
+				close(fds[1]);
+			}
+			close(fds[0]);
+			execl(move_as_root, move_as_root, file_cstr, NULL);
+			_exit(0);
+		} else if (pid != -1) {
+			close(fds[1]);
+			char buf[1024];
+			size_t actual_size;
+			NSMutableData* data = [[NSMutableData alloc] init];
+			while ((actual_size = read(fds[0], buf, 1024)) > 0)
+				[data appendBytes:buf length:actual_size];
+			close(fds[0]);
+			file_content = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+			[data release];
+		}		
+	}
 	NSMutableArray* file_lines = [[file_content componentsSeparatedByString:@"\n"] mutableCopy];	// 1
 	[file_content release];
 	NSString* symbolicating = [mainBundle localizedStringForKey:@"Symbolicating (%d%%)" value:nil table:nil];	// 0
@@ -357,7 +383,6 @@ finish:
 		memcpy(temp_name, "/tmp/crash_reporter.XXXXXX", sizeof(temp_name));
 		mktemp(temp_name);
 		[lines_to_write writeToFile:[NSString stringWithUTF8String:temp_name] atomically:NO encoding:NSUTF8StringEncoding error:NULL];
-		const char* move_as_root = [[mainBundle pathForResource:@"move_as_root" ofType:nil] UTF8String];
 		NSString* curPath = [[NSFileManager defaultManager] currentDirectoryPath];
 		const char* actual_sym_file_path = [[curPath stringByAppendingPathComponent:symbolicatedFile] UTF8String];
 		const char* actual_file_path = [[curPath stringByAppendingPathComponent:file] UTF8String];
