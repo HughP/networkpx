@@ -59,10 +59,15 @@ typedef enum {
 @end
 
 
+enum IncludeReporterLineCommandType {
+	IncludeReporterLineCommandType_File,
+	IncludeReporterLineCommandType_Plist,
+	IncludeReporterLineCommandType_Command,
+};
 
 @interface IncludeReporterLine : ReporterLine {
 @package
-	BOOL isCommand;
+	enum IncludeReporterLineCommandType commandType;
 	NSString* rest;
 	NSString* cachedParseResult;
 }
