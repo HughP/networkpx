@@ -38,7 +38,8 @@ enum SymbolicationMode {
 
 @interface BacktraceInfo : NSObject {
 @package
-	NSString* binary;
+//	NSString* binary;
+	NSString* start_address;
 	unsigned long long address;
 }
 @end
@@ -152,14 +153,15 @@ NSString* symbolicate(NSString* file, UIProgressHUD* hudReply) {
 					else if ([line hasSuffix:@":"])
 						extraInfo = (id)kCFBooleanFalse;
 					else {
-						NSArray* res = [line captureComponentsMatchedByRegex:@"^\\d+ +(.*\\S)\\s+0x([0-9a-f]+) 0x[0-9a-f]+ \\+ \\d+$"];
+						NSArray* res = [line captureComponentsMatchedByRegex:@"^\\d+ +.*\\S\\s+0x([0-9a-f]+) 0x([0-9a-f]+) \\+ \\d+$"];
 						if ([res count] == 3) {
 							NSString* matches[2];
 							[res getObjects:matches range:NSMakeRange(1, 2)];
 							
 							BacktraceInfo* bti = [[[BacktraceInfo alloc] init] autorelease];
-							bti->binary = matches[0];
-							bti->address = convertHexStringToLongLong([matches[1] UTF8String], [matches[1] length]);
+//							bti->binary = matches[0];
+							bti->start_address = matches[1];
+							bti->address = convertHexStringToLongLong([matches[0] UTF8String], [matches[0] length]);
 							extraInfo = bti;
 						}
 					}
@@ -171,7 +173,7 @@ NSString* symbolicate(NSString* file, UIProgressHUD* hudReply) {
 				if ([res count] != 4)
 					goto finish;
 				
-				[binaryImages setObject:res forKey:[res objectAtIndex:2]];
+				[binaryImages setObject:res forKey:[res objectAtIndex:1]];
 				break;
 			}
 		}
@@ -206,7 +208,7 @@ finish:
 		else if (bti == (id)kCFBooleanFalse)
 			isCrashing = NO;
 		else if (bti != (id)kCFNull) {
-			BinaryInfo* bi = [binaryImages objectForKey:bti->binary];
+			BinaryInfo* bi = [binaryImages objectForKey:bti->start_address];
 			if (bi != nil) {					
 				if (![bi isKindOfClass:bicls]) {
 					NSString* matches[3];
@@ -276,7 +278,7 @@ finish:
 						if (bi->objcArray == nil) {
 							NSMutableArray* objcArr = [NSMutableArray array];
 							
-							id<VMUMemoryView> mem = [[bi->header memory] view];
+							id<VMUMemoryView> mem = [[bi->header memory] view];							
 							VMUSegmentLoadCommand* dataSeg = [bi->header segmentNamed:@"__DATA"];
 							long long vmdiff_data = [dataSeg fileoff] - [dataSeg vmaddr];
 							VMUSegmentLoadCommand* textSeg = [bi->header segmentNamed:@"__TEXT"];

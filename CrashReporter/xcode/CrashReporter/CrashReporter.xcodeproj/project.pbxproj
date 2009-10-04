@@ -273,7 +273,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# rm -f $CODESIGNING_FOLDER_PATH/CR\n# ln -s /var/mobile/Library/Keyboard/CR/ $CODESIGNING_FOLDER_PATH/CR\nldid -S $CODESIGNING_FOLDER_PATH/move_as_root\nsudo chown root $CODESIGNING_FOLDER_PATH/move_as_root\nsudo chmod +s $CODESIGNING_FOLDER_PATH/move_as_root\n";
+			shellScript = "# rm -f $CODESIGNING_FOLDER_PATH/CR\n# ln -s /var/mobile/Library/Keyboard/CR/ $CODESIGNING_FOLDER_PATH/CR\n# ldid -S $CODESIGNING_FOLDER_PATH/move_as_root\n# sudo chown root $CODESIGNING_FOLDER_PATH/move_as_root\n# sudo chmod +s $CODESIGNING_FOLDER_PATH/move_as_root\n";
 			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
