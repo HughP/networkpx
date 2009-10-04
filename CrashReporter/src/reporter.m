@@ -81,7 +81,13 @@ static void parseIncludeLine(NSArray* tk, IncludeReporterLine* irl) {
 		command = [tk objectAtIndex:3];
 		rest_index = 4;
 	}
-	irl->isCommand = [@"command" isEqualToString:command];
+	
+	if ([@"command" isEqualToString:command])
+		irl->commandType = IncludeReporterLineCommandType_Command;
+	else if ([@"plist" isEqualToString:command])
+		irl->commandType = IncludeReporterLineCommandType_Plist;
+	else
+		irl->commandType = IncludeReporterLineCommandType_File;
 	
 	irl->rest = [stripQuotes([[tk subarrayWithRange:NSMakeRange(rest_index, count-rest_index)] componentsJoinedByString:@" "]) retain];
 	if (irl->title == nil)
@@ -161,8 +167,13 @@ static void parseLinkLine(LinkReporterLine* lrl, NSArray* tokenized) {
 -(NSString*)content {
 	if (cachedParseResult == nil) {
 		NSMutableString* res = nil;
-		if (!isCommand) {
+		if (commandType == IncludeReporterLineCommandType_File) {
 			res = [[NSMutableString alloc] initWithContentsOfFile:rest usedEncoding:NULL error:NULL];
+		} else if (commandType == IncludeReporterLineCommandType_Plist) {
+			id prop = [NSPropertyListSerialization propertyListFromData:[NSData dataWithContentsOfFile:rest]
+													   mutabilityOption:NSPropertyListImmutable
+																 format:NULL errorDescription:NULL];
+			res = [[prop description] mutableCopy];
 		} else {
 			fflush(stdout);
 			FILE* f = popen([rest UTF8String], "r");
