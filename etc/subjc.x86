@@ -1,7 +1,7 @@
-CXX=g++-4.2
-CC=gcc-4.2
+CXX=/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/bin/g++-4.2
+CC=/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/bin/gcc-4.2
 
-CFLAGS=-Wall -O2 -fno-exceptions
+CFLAGS=-Wall -O2 -fno-exceptions -fno-rtti -DNDEBUG=1 -arch i686 -isysroot /Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator3.0.sdk
 
 OPTIONS=-I../trunk/include -I../trunk/hk.kennytm.Peace/class-dump-z_src -I/opt/local/include -I../trunk/hk.kennytm.Peace/include -I../trunk/hk.kennytm.Peace/src -I../ 
 

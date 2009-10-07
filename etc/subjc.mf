@@ -26,7 +26,7 @@ all:	libsubjc.dylib
 
 libsubjc.dylib:	subjc.o ../trunk/hk.kennytm.Peace/class-dump-z_src/objc_type.o ../trunk/hk.kennytm.Peace/class-dump-z_src/balanced_substr.o ../trunk/hk.kennytm.Peace/class-dump-z_src/pseudo_base64.o ../trunk/hk.kennytm.Peace/src/string_util.o ../trunk/hk.kennytm.Peace/class-dump-z_src/crc32.o
 	$(CXX) $(CFLAGS) -lsubstrate -framework Foundation -dynamiclib -o $@ $^
-	strip -u -r -s $@.exports $@
+#	strip -u -r -s $@.exports $@
 	ldid -S $@
 
 clean:

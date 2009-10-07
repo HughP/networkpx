@@ -136,7 +136,7 @@ namespace {
 	static boost::unordered_set<FilterObject<SEL> > selector_filters_set;
 	static bool default_black;
 	
-	static SEL doesNotRecognizeSelector_sel;
+	static SEL _cfTypeID_sel;
 	
 	enum FilterType { WhiteList, BlackList, NotFiltered };
 	
@@ -157,7 +157,7 @@ namespace {
 				return;
 			}
 			
-			if (class_respondsToSelector(c, doesNotRecognizeSelector_sel))
+			if (class_respondsToSelector(c, _cfTypeID_sel))
 				type = CFGetTypeID(x);
 			
 			if (type == CFStringGetTypeID()) {
@@ -629,8 +629,8 @@ namespace {
 	
 	template <typename T>
 	void clear_stl (T& x) {
-		T c;
-		std::swap(x, c);
+		T c (0);
+		x.swap(c);
 	}
 }
 
@@ -641,7 +641,7 @@ EXPORT void SubjC_initialize () {
 	class_sel = sel_registerName("class");
 	alloc_sel = sel_registerName("alloc");
 	allocWithZone_sel = sel_registerName("allocWithZone:");
-	doesNotRecognizeSelector_sel = sel_registerName("doesNotRecognizeSelector:");
+	_cfTypeID_sel = sel_registerName("_cfTypeID");
 //	NSString_class = reinterpret_cast<Class>(objc_getClass("NSString"));
 	default_black = false;
 	
@@ -696,7 +696,6 @@ EXPORT void SubjC_filter_class_prefixes(enum SubjC_FilterType blacklist, unsigne
 		prefixes_len[j] = std::strlen(prefixes[j]);
 		
 	if (num_classes > 0) {
-		std::vector<FilterObject<Class> > buffer;
 		Class* classes = new Class[num_classes];
 		
 		objc_getClassList(classes, num_classes);
@@ -706,13 +705,11 @@ EXPORT void SubjC_filter_class_prefixes(enum SubjC_FilterType blacklist, unsigne
 				if (std::strncmp(prefixes[j], cls_name, prefixes_len[j]) == 0) {
 					FilterObject<Class> fo (classes[i]);
 					fo.is_blacklist = blacklist == SubjC_Deny;
-					buffer.push_back(fo);
+					class_filters_set.insert(fo);
 					break;
 				}
 			}
 		}
-		
-		class_filters_set.insert(buffer.begin(), buffer.end());
 	}
 }
 
@@ -732,7 +729,6 @@ EXPORT void SubjC_start() {
 		SubjC_initialize();
 	
 	pthread_key_create(&thr_key, lr_list_destructor);
-	pthread_setspecific(thr_key, NULL);
 	
 	last_action_is_push = false;
 	enabled = 1;
