@@ -231,8 +231,11 @@ finish:
 						bi->path = matches[2];
 						bi->line = 0;
 						
-						[binaryImages setObject:bi forKey:matches[1]];
+						[binaryImages setObject:bi forKey:bti->start_address];
 						[bi release];
+					} else {
+						[binaryImages removeObjectForKey:bti->start_address];
+						goto found_nothing;
 					}
 				}
 				
@@ -360,6 +363,8 @@ finish:
 				}
 			}
 		}
+	found_nothing:
+		
 		++ i;
 	}
 	[filters release];

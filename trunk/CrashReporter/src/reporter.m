@@ -190,6 +190,7 @@ static void parseLinkLine(LinkReporterLine* lrl, NSArray* tokenized) {
 		}
 		
 		[res insertString:[NSString stringWithFormat:@"## %@\n", title] atIndex:0];
+		[res appendString:@"\n"];
 		cachedParseResult = res;
 	}
 	return cachedParseResult;
