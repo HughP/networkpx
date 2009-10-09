@@ -188,9 +188,10 @@ NSArray* pastie(NSArray* strings, UIProgressHUD* hud) {
 	SCNetworkReachabilityRef reachability = SCNetworkReachabilityCreateWithName(NULL, "pastie.org");
 	if (SCNetworkReachabilityGetFlags(reachability, &flags)) {
 		if (flags & (kSCNetworkReachabilityFlagsReachable|kSCNetworkReachabilityFlagsConnectionOnTraffic|kSCNetworkReachabilityFlagsIsWWAN)) {
-#endif
 			UIApplication* app = [UIApplication sharedApplication];
 			app.networkActivityIndicatorVisible = YES;
+#endif
+
 			// pastie.org is reachable. now send the files.
 			NSArray* packed = pack(strings, 102400);
 			NSMutableArray* urls = [NSMutableArray array];
@@ -199,7 +200,9 @@ NSArray* pastie(NSArray* strings, UIProgressHUD* hud) {
 				if (url != nil)
 					[urls addObject:url];
 			}
+#if !DEBUG_PASTIE
 			app.networkActivityIndicatorVisible = NO;
+#endif
 			if ([urls count] != 0)
 				return urls;
 #if !DEBUG_PASTIE
@@ -220,7 +223,7 @@ int main (int argc, const char* argv[]) {
 		NSMutableArray* res = [[NSMutableArray alloc] initWithCapacity:argc-1];
 		for (int i = 1; i < argc; ++ i) {
 			NSString* fileContent = [[NSString alloc] initWithContentsOfFile:[NSString stringWithUTF8String:argv[i]] usedEncoding:NULL error:NULL];
-			NSString* data = [[NSString alloc] initWithFormat:@"## %s\n%@", argv[i], fileContent];
+			NSString* data = [[NSString alloc] initWithFormat:@"## %s\n%@\n", argv[i], fileContent];
 			[fileContent release];
 			[res addObject:data];
 			[data release];
