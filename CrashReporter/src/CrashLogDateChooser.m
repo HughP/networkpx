@@ -108,25 +108,14 @@ static inline NSUInteger index_of(NSUInteger sect, NSUInteger row, BOOL deleted_
 			deleted_row_0 = YES;
 		[group->files removeObjectAtIndex:idx];
 		[group->dates removeObjectAtIndex:idx];
-		[tableView deleteRowsAtIndexPaths:[NSArray arrayWithObject:indexPath] withRowAnimation:UITableViewRowAnimationLeft];
 	} else {
 		// Try to delete as root.
 		exec_move_as_root("!", "!", [filename UTF8String]);
-		
-		/*
-		NSBundle* mainBundle = [NSBundle mainBundle];
-		UIAlertView* alert = [[UIAlertView alloc] initWithTitle:[mainBundle localizedStringForKey:@"Cannot delete" value:nil table:nil]
-														message:[NSString stringWithFormat:
-																 [mainBundle localizedStringForKey:@"CANNOT_DELETE_2"
-																							 value:@"Failed to delete %@.\nError: %@"
-																							 table:nil], file, [error localizedDescription]]
-													   delegate:nil
-											  cancelButtonTitle:[mainBundle localizedStringForKey:@"OK" value:nil table:nil]
-											  otherButtonTitles:nil];
-		[alert show];
-		[alert release];
-		 */
 	}
+
+	[tableView deleteRowsAtIndexPaths:[NSArray arrayWithObject:indexPath] withRowAnimation:UITableViewRowAnimationLeft];
+		
+		
 }
 
 -(void)viewWillAppear:(BOOL)animated {
