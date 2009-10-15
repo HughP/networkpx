@@ -103,19 +103,16 @@ static inline NSUInteger index_of(NSUInteger sect, NSUInteger row, BOOL deleted_
 	NSString* file = [group->files objectAtIndex:idx];
 	NSError* error = nil;
 	NSString* filename = [group->folder stringByAppendingPathComponent:file];
-	if ([[NSFileManager defaultManager] removeItemAtPath:filename error:&error]) {
-		if (sect == 0)
-			deleted_row_0 = YES;
-		[group->files removeObjectAtIndex:idx];
-		[group->dates removeObjectAtIndex:idx];
-	} else {
+	if (![[NSFileManager defaultManager] removeItemAtPath:filename error:&error]) {
 		// Try to delete as root.
 		exec_move_as_root("!", "!", [filename UTF8String]);
 	}
+	if (sect == 0)
+		deleted_row_0 = YES;
 
-	[tableView deleteRowsAtIndexPaths:[NSArray arrayWithObject:indexPath] withRowAnimation:UITableViewRowAnimationLeft];
-		
-		
+	[group->files removeObjectAtIndex:idx];
+	[group->dates removeObjectAtIndex:idx];
+	[tableView deleteRowsAtIndexPaths:[NSArray arrayWithObject:indexPath] withRowAnimation:UITableViewRowAnimationLeft];	
 }
 
 -(void)viewWillAppear:(BOOL)animated {
