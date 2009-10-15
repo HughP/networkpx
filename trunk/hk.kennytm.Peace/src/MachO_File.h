@@ -158,6 +158,8 @@ public:
 		return ma_symbol_references.find(vm_address) != ma_symbol_references.end();
 	}
 	
+	unsigned address_of_symbol(const char* sym) const throw();
+	
 	const ObjCMethod* objc_method_at_vm_address(unsigned vm_address) const throw();
 	
 	const char* library_of_relocated_symbol(unsigned vm_address) const throw();

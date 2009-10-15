@@ -21,3 +21,4 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 @class NSString, UIProgressHUD;
 
 NSString* symbolicate(NSString* file, UIProgressHUD* hud);
+void exec_move_as_root(const char* from, const char* to, const char* remove);

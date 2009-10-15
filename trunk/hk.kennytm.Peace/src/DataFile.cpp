@@ -137,3 +137,28 @@ DataFile::~DataFile() throw() {
 	munmap(m_data, static_cast<size_t>(m_filesize));
 	close(m_fd);
 }
+
+bool DataFile::search_forward(const char* data, size_t length) throw() {
+	if (length > 0) {
+		while (true) {
+			if (length + m_location > m_filesize) goto eof;
+			
+			const char* loc = reinterpret_cast<const char*>(std::memchr(m_data + m_location, data[0], m_filesize - m_location - length));
+			if (loc == NULL) goto eof;
+			
+			m_location = loc - m_data;
+			if (length + m_location > m_filesize) goto eof;
+			
+			if (std::memcmp(m_data + m_location, data, length) == 0)
+				return true;
+			
+			++ m_location;
+		}
+	} else
+		return true;
+
+	
+eof:
+	m_location = m_filesize;
+	return false;
+}

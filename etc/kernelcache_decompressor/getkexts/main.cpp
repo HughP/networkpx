@@ -18,7 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
 
-// g++ main.cpp -I../../hk.kennytm.Peace/include -I../../hk.kennytm.Peace/src -I/opt/local/include -m32 ../../hk.kennytm.Peace/src/DataFile.cpp ../../hk.kennytm.Peace/src/MachO_File.cpp ../../hk.kennytm.Peace/src/get_arch_from_flag.c -O2 -o getkexts
+// g++ main.cpp -I../../../trunk/hk.kennytm.Peace/include -I../../../trunk/hk.kennytm.Peace/src -I/opt/local/include -m32 ../../../trunk/hk.kennytm.Peace/src/DataFile.cpp ../../../trunk/hk.kennytm.Peace/src/MachO_File.cpp ../../../trunk/hk.kennytm.Peace/src/get_arch_from_flag.c -O2 -o getkexts
 
 #include "MachO_File.h"
 #include <cstdio>
@@ -35,14 +35,19 @@ int main (int argc, const char* argv[]) {
 			printf("Not a Mach-O file.\n");
 		else {
 			const section* prelink_section = f.section_having_name("__PRELINK_TEXT", "__text");
+			const char* magic = "\xCE\xFA\xED\xFE\x0C\x00\x00\x00\x06\x00\x00\x00\x0B\x00\x00\x00";
+			if (prelink_section == NULL) {
+				prelink_section = f.section_having_name("__PRELINK", "__text");
+				magic = "\xCE\xFA\xED\xFE\x0C\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00";
+			}
 			if (prelink_section == NULL)
-				printf("Section __PRELINK_TEXT,__text not found.\n");
+				printf("Section __PRELINK_TEXT,__text or __PRELINK,__text not found.\n");
 			else {
 				f.seek(prelink_section->offset);
 				
 				off_t loc = f.tell();
 				
-				while (!f.is_eof() && f.search_forward("\xCE\xFA\xED\xFE\x0C\x00\x00\x00\x06\x00\x00\x00\x0B\x00\x00\x00", 16)) {
+				while (!f.is_eof() && f.search_forward(magic, 16)) {
 					off_t new_loc = f.tell();
 					
 					printf(".");
