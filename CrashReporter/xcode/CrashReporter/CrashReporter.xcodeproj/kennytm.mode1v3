@@ -236,12 +236,6 @@
 						<array>
 							<string>1C37FBAC04509CD000000102</string>
 							<string>1C37FAAC04509CD000000102</string>
-							<string>1C37FABC05509CD000000102</string>
-							<string>1C37FABC05539CD112110102</string>
-							<string>E2644B35053B69B200211256</string>
-							<string>1C37FABC04509CD000100104</string>
-							<string>1CC0EA4004350EF90044410B</string>
-							<string>1CC0EA4004350EF90041110B</string>
 						</array>
 						<key>PBXProjectModuleGUID</key>
 						<string>1CE0B1FE06471DED0097A5F4</string>
@@ -277,7 +271,7 @@
 							<key>PBXSmartGroupTreeModuleOutlineStateSelectionKey</key>
 							<array>
 								<array>
-									<integer>18</integer>
+									<integer>16</integer>
 									<integer>0</integer>
 								</array>
 							</array>
@@ -319,7 +313,7 @@
 								<key>PBXProjectModuleGUID</key>
 								<string>1CE0B20306471E060097A5F4</string>
 								<key>PBXProjectModuleLabel</key>
-								<string>CrashLogDateChooser.m</string>
+								<string>symbolicate.m</string>
 								<key>PBXSplitModuleInNavigatorKey</key>
 								<dict>
 									<key>Split0</key>
@@ -327,11 +321,11 @@
 										<key>PBXProjectModuleGUID</key>
 										<string>1CE0B20406471E060097A5F4</string>
 										<key>PBXProjectModuleLabel</key>
-										<string>CrashLogDateChooser.m</string>
+										<string>symbolicate.m</string>
 										<key>_historyCapacity</key>
 										<integer>0</integer>
 										<key>bookmark</key>
-										<string>9C6B6C7B108791B4000D6981</string>
+										<string>9C6B6CB610879C9F000D6981</string>
 										<key>history</key>
 										<array>
 											<string>9CBB4E17106D188400022387</string>
@@ -398,15 +392,15 @@
 											<string>9CEF2A59107F663100485BD7</string>
 											<string>9CEF2A62107F6B2600485BD7</string>
 											<string>9CEF2A64107F6B2600485BD7</string>
-											<string>9C6B6C5C10878A58000D6981</string>
 											<string>9C6B6C5D10878A58000D6981</string>
 											<string>9C6B6C5F10878A58000D6981</string>
 											<string>9C6B6C6010878A58000D6981</string>
 											<string>9C6B6C6110878A58000D6981</string>
-											<string>9C6B6C75108790A4000D6981</string>
 											<string>9C6B6C76108790A4000D6981</string>
-											<string>9C6B6C77108790A4000D6981</string>
-											<string>9C6B6C6F10878F59000D6981</string>
+											<string>9C6B6CA31087984C000D6981</string>
+											<string>9C6B6CA9108798B5000D6981</string>
+											<string>9C6B6CB110879B6B000D6981</string>
+											<string>9C6B6CAC1087996C000D6981</string>
 										</array>
 									</dict>
 									<key>SplitCount</key>
