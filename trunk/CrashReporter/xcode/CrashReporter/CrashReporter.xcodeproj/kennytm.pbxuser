@@ -141,6 +141,7 @@
 			9C6B6C76108790A4000D6981 /* PBXTextBookmark */ = 9C6B6C76108790A4000D6981 /* PBXTextBookmark */;
 			9C6B6C77108790A4000D6981 /* PBXTextBookmark */ = 9C6B6C77108790A4000D6981 /* PBXTextBookmark */;
 			9C6B6C78108790A4000D6981 /* PBXTextBookmark */ = 9C6B6C78108790A4000D6981 /* PBXTextBookmark */;
+			9C6B6C7B108791B4000D6981 /* PBXTextBookmark */ = 9C6B6C7B108791B4000D6981 /* PBXTextBookmark */;
 			9C7C9D191073CC4A00B0671D = 9C7C9D191073CC4A00B0671D /* PBXTextBookmark */;
 			9C7C9E471073EBA100B0671D = 9C7C9E471073EBA100B0671D /* PBXTextBookmark */;
 			9C7C9E811073F1EA00B0671D = 9C7C9E811073F1EA00B0671D /* PBXTextBookmark */;
@@ -521,9 +522,9 @@
 	};
 	9C4B6231106DF5D9006560F3 /* CrashLogDateChooser.m */ = {
 		uiCtxt = {
-			sepNavIntBoundsRect = "{{0, 0}, {1181, 1784}}";
-			sepNavSelRange = "{4440, 0}";
-			sepNavVisRange = "{3211, 1436}";
+			sepNavIntBoundsRect = "{{0, 0}, {1181, 1742}}";
+			sepNavSelRange = "{4548, 0}";
+			sepNavVisRange = "{3091, 1538}";
 		};
 	};
 	9C4B6246106E0E2B006560F3 /* CrashLogViewController.h */ = {
@@ -653,7 +654,7 @@
 		fRef = 9C4B6231106DF5D9006560F3 /* CrashLogDateChooser.m */;
 		name = "CrashLogDateChooser.m: 128";
 		rLen = 0;
-		rLoc = 4568;
+		rLoc = 4550;
 		rType = 0;
 		vrLen = 1858;
 		vrLoc = 3418;
@@ -710,7 +711,7 @@
 		isa = PBXTextBookmark;
 		fRef = 9C4B6231106DF5D9006560F3 /* CrashLogDateChooser.m */;
 		rLen = 0;
-		rLoc = 4564;
+		rLoc = 4548;
 		rType = 0;
 	};
 	9C6B6C7010878F59000D6981 /* PBXTextBookmark */ = {
@@ -718,7 +719,7 @@
 		fRef = 9C4B6231106DF5D9006560F3 /* CrashLogDateChooser.m */;
 		name = "CrashLogDateChooser.m: 114";
 		rLen = 0;
-		rLoc = 4564;
+		rLoc = 4548;
 		rType = 0;
 		vrLen = 1285;
 		vrLoc = 3993;
@@ -758,10 +759,20 @@
 		fRef = 9C4B6231106DF5D9006560F3 /* CrashLogDateChooser.m */;
 		name = "CrashLogDateChooser.m: 114";
 		rLen = 0;
-		rLoc = 4440;
+		rLoc = 4349;
 		rType = 0;
 		vrLen = 1436;
 		vrLoc = 3211;
+	};
+	9C6B6C7B108791B4000D6981 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 9C4B6231106DF5D9006560F3 /* CrashLogDateChooser.m */;
+		name = "CrashLogDateChooser.m: 115";
+		rLen = 0;
+		rLoc = 4548;
+		rType = 0;
+		vrLen = 1538;
+		vrLoc = 3091;
 	};
 	9C7C9BFC10736BB100B0671D /* English */ = {
 		uiCtxt = {
