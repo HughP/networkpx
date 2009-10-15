@@ -102,13 +102,18 @@ static inline NSUInteger index_of(NSUInteger sect, NSUInteger row, BOOL deleted_
 	NSUInteger idx = index_of(sect, indexPath.row, deleted_row_0);
 	NSString* file = [group->files objectAtIndex:idx];
 	NSError* error = nil;
-	if ([[NSFileManager defaultManager] removeItemAtPath:[group->folder stringByAppendingPathComponent:file] error:&error]) {
+	NSString* filename = [group->folder stringByAppendingPathComponent:file];
+	if ([[NSFileManager defaultManager] removeItemAtPath:filename error:&error]) {
 		if (sect == 0)
 			deleted_row_0 = YES;
 		[group->files removeObjectAtIndex:idx];
 		[group->dates removeObjectAtIndex:idx];
 		[tableView deleteRowsAtIndexPaths:[NSArray arrayWithObject:indexPath] withRowAnimation:UITableViewRowAnimationLeft];
 	} else {
+		// Try to delete as root.
+		exec_move_as_root("!", "!", [filename UTF8String]);
+		
+		/*
 		NSBundle* mainBundle = [NSBundle mainBundle];
 		UIAlertView* alert = [[UIAlertView alloc] initWithTitle:[mainBundle localizedStringForKey:@"Cannot delete" value:nil table:nil]
 														message:[NSString stringWithFormat:
@@ -120,6 +125,7 @@ static inline NSUInteger index_of(NSUInteger sect, NSUInteger row, BOOL deleted_
 											  otherButtonTitles:nil];
 		[alert show];
 		[alert release];
+		 */
 	}
 }
 

@@ -87,11 +87,20 @@ static NSString* escapeHTML(NSString* x, NSCharacterSet* escSet) {
 	}
 }
 
+static char move_as_root_path_[64] = "";
+static const char* move_as_root_path() {
+	if (move_as_root_path_[0] == '\0') {
+		[[[NSBundle mainBundle] pathForResource:@"move_as_root" ofType:nil] getCString:move_as_root_path_
+																			 maxLength:sizeof(move_as_root_path_)
+																			  encoding:NSUTF8StringEncoding];
+	}
+	return move_as_root_path_;
+}
+
 
 NSString* symbolicate(NSString* file, UIProgressHUD* hudReply) {
 	NSAutoreleasePool* localPool = [[NSAutoreleasePool alloc] init];
 	NSBundle* mainBundle = [NSBundle mainBundle];	// 0
-	const char* move_as_root = [[mainBundle pathForResource:@"move_as_root" ofType:nil] UTF8String];
 	
 	NSString* file_content = [[NSString alloc] initWithContentsOfFile:file encoding:NSUTF8StringEncoding error:NULL];	// 1
 	if (file_content == nil) {
@@ -105,7 +114,8 @@ NSString* symbolicate(NSString* file, UIProgressHUD* hudReply) {
 				close(fds[1]);
 			}
 			close(fds[0]);
-			execl(move_as_root, move_as_root, file_cstr, NULL);
+			const char* marp = move_as_root_path();
+			execl(marp, marp, file_cstr, NULL);
 			_exit(0);
 		} else if (pid != -1) {
 			close(fds[1]);
@@ -394,14 +404,7 @@ finish:
 		const char* actual_sym_file_path = [[curPath stringByAppendingPathComponent:symbolicatedFile] UTF8String];
 		const char* actual_file_path = [[curPath stringByAppendingPathComponent:file] UTF8String];
 		
-		pid_t pid = fork();
-		if (pid == 0) {
-			execl(move_as_root, move_as_root, temp_name, actual_sym_file_path, actual_file_path, NULL);
-			_exit(0);
-		} else if (pid != -1) {
-			int stat_loc;
-			waitpid(pid, &stat_loc, 0);
-		}
+		exec_move_as_root(temp_name, actual_sym_file_path, actual_file_path);
 	}
 	
 	[extraInfoArr release];
@@ -410,6 +413,18 @@ finish:
 	[localPool drain];
 	
 	return [symbolicatedFile autorelease];
+}
+
+void exec_move_as_root(const char* from, const char* to, const char* rem) {
+	pid_t pid = fork();
+	const char* path = move_as_root_path();
+	if (pid == 0) {
+		execl(path, path, from, to, rem, NULL);
+		_exit(0);
+	} else if (pid != -1) {
+		int stat_loc;
+		waitpid(pid, &stat_loc, 0);
+	}
 }
 
 #if TEST_SYMBOLICATION

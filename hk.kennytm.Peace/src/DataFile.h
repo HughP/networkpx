@@ -54,6 +54,7 @@ public:
 	inline void advance(off_t delta) throw() { m_location += delta; }
 	inline void retreat(off_t neg_delta) throw() { m_location -= neg_delta; }
 	inline void rewind() throw() { m_location = 0; }
+	inline bool is_eof() const throw() { return m_location == m_filesize; }
 	
 	unsigned read_integer() throw();
 	char read_char() throw() { return m_data[m_location++]; }
@@ -142,6 +143,8 @@ public:
 		}
 		return res;		
 	}
+	
+	bool search_forward(const char* data, size_t length) throw();
 	
 	~DataFile() throw();
 };

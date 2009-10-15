@@ -689,3 +689,11 @@ void MachO_File::for_each_symbol (void(*p_func)(unsigned addr, const char* symbo
 		p_func(cit->first, str.c_str(), MOST_ObjCMethod, context);
 	}
 }
+
+unsigned MachO_File::address_of_symbol(const char* sym) const throw() {
+	for (std::tr1::unordered_map<unsigned,const char*>::const_iterator cit = ma_symbol_references.begin(); cit != ma_symbol_references.end(); ++ cit) {
+		if (strcmp(sym, cit->second) == 0)
+			return cit->first;
+	}
+	return 0;
+}
