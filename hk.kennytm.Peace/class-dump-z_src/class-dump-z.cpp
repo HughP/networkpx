@@ -213,8 +213,14 @@ int main (int argc, char* argv[]) {
 						mf.print_extern_symbols(); 
 						break;
 						
+					case 's': mf.print_class_inheritance(); break;
 					default:
 						printf("// Unrecognized diagnosis option: -D %c\n", diagnosis_option);
+						printf("// Available options:\n"
+							   "//   -D t = Print all types\n"
+							   "//   -D n = Print network\n"
+							   "//   -D e = Print extern symbols\n"
+							   "//   -D s = Print class inheritance tree (in MediaWiki format).\n");
 						break;
 				}
 			} else {

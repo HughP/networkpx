@@ -42,3 +42,63 @@ void MachO_File_ObjC::print_extern_symbols() const throw() {
 	}
 	printf("\n");
 }
+
+namespace {
+	struct PCITreeNode {
+		PCITreeNode* nextSibling;
+		PCITreeNode* firstChild;
+		PCITreeNode* lastChild;
+		
+		const char* name;
+		bool isChild;
+		
+		PCITreeNode(const char* name_) : nextSibling(NULL), firstChild(NULL), lastChild(NULL), name(name_), isChild(false) {}
+		
+		void print(int level = 1) const throw() {
+			for (int i = 0; i < level; ++ i)
+				printf("*");
+			printf(" [[%s]]\n", name);
+			for (const PCITreeNode* child = firstChild; child != NULL; child = child->nextSibling)
+				child->print(level + 1);
+		}
+	};
+}
+
+void MachO_File_ObjC::print_class_inheritance() const throw() {
+	typedef tr1::unordered_map<ObjCTypeRecord::TypeIndex, PCITreeNode> Tree;
+	
+	Tree tree;
+	
+	for (vector<ClassType>::const_iterator cit = ma_classes.begin(); cit != ma_classes.end(); ++ cit) {
+		if (cit->type != ClassType::CT_Class)
+			continue;
+		
+		Tree::iterator curnode_iter = tree.insert(Tree::value_type(cit->type_index, PCITreeNode(cit->name))).first;
+		
+		if (cit->superclass_name != NULL) {
+			// The superclass is not yet in the tree. So create an element.
+			Tree::iterator super_iter = tree.insert(Tree::value_type(cit->superclass_index, PCITreeNode(cit->superclass_name))).first;
+			
+			// Append myself to the end of the superclass's list.
+			PCITreeNode& n = curnode_iter->second;
+			PCITreeNode& s = super_iter->second;
+			
+			n.isChild = true;
+			
+			if (s.firstChild == NULL) {
+				s.firstChild = &n;
+				s.lastChild = &n;
+			} else {
+				s.lastChild->nextSibling = &n;
+				s.lastChild = &n;
+			}
+		}
+	}
+	
+	// Find all root nodes and print the result.
+	for (Tree::iterator tit = tree.begin(); tit != tree.end(); ++ tit) {
+		PCITreeNode& r = tit->second;
+		if (!r.isChild)
+			r.print();
+	}
+}

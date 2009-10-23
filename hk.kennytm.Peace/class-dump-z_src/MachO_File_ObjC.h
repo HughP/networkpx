@@ -269,6 +269,7 @@ public:
 	void print_all_types() const throw();
 	void print_network() const throw() { m_record.print_network(); }
 	void print_extern_symbols() const throw();
+	void print_class_inheritance() const throw();
 };
 
 #endif
