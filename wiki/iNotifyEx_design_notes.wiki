@@ -1,0 +1,27 @@
+iNotifyEx is the successor of GriP that will replace the CFMessagePort-based backend with MIG subsystem for higher performance and robustness. 
+
+(The Objective-C based GriP front-end will still be kept.)
+
+As a redesign, iNotifyEx shall have characteristics of following APIs:
+ * Growl-like notifications
+ * Android-like notifications
+ * Some GriP-specific addition
+ * Some iNotifyEx-specific addition
+
+[http://growl.info/documentation/developer/implementing-growl.php?lang=cocoa Growl-like notification API] has the following characteristics:
+ * The user has the ultimate decision how the notifications be presented.
+ * _Tickets_ (per-app settings) and _priority_ (per-message-group settings).
+ * Target-action pattern for server reply.
+ * How the notification should be shown is abstracted out as a _theme_.
+
+[http://developer.android.com/reference/android/app/Notification.html Android-like notification API] has the following characteristics:
+ * Actions are sent together with the notification as a _PendingIntent_.
+ * Ticker text.
+ * The view is customizable via `contentView`, although `setLatestEventInfo` seems more common.
+
+GriP-specific additions are:
+ * Suspension behavior, i.e. lock screen mode and game mode.
+ * GriP Modal Table View.
+
+iNotify-specific additions currently include:
+ * Multiple buttons.
