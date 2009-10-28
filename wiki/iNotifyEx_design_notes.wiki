@@ -11,17 +11,57 @@ As a redesign, iNotifyEx shall have characteristics of following APIs:
 [http://growl.info/documentation/developer/implementing-growl.php?lang=cocoa Growl-like notification API] has the following characteristics:
  * The user has the ultimate decision how the notifications be presented.
  * _Tickets_ (per-app settings) and _priority_ (per-message-group settings).
+ * Coalition.
  * Target-action pattern for server reply.
  * How the notification should be shown is abstracted out as a _theme_.
 
 [http://developer.android.com/reference/android/app/Notification.html Android-like notification API] has the following characteristics:
- * Actions are sent together with the notification as a _PendingIntent_.
+ * Actions are sent together with the notification as a _!PendingIntent_.
  * Ticker text.
- * The view is customizable via `contentView`, although `setLatestEventInfo` seems more common.
+ * The view is customizable via `contentView`.
 
 GriP-specific additions are:
  * Suspension behavior, i.e. lock screen mode and game mode.
  * GriP Modal Table View.
 
-iNotify-specific additions currently include:
- * Multiple buttons.
+iNotifyEx-specific additions currently include:
+ * Multiple buttons (actions) in a notification
+
+
+
+There are some contradictions between the APIs. In particular, the developer-oriented `contentView` is mutually exclusive with the user-oriented theme capability. However, as `setLatestEventInfo` seems more common, `contentView` is a less important feature. As a result, iNotifyEx will send the following in notification packet:
+ * Ticket (Growl).
+ * Message name (Growl).
+ * Title (Growl; Android — 1st line of `tickerText` and `contentTitle`)
+ * Subtitle (Android — 2nd line of `tickerText` and `contentText` in `setLatestEventInfo `).
+ * Icon (Growl 29x29; Android 59x59.)
+ * Table
+ * Priority (Growl), Sticky (Growl).
+ * Coalescent ID (Growl) 
+ * Confirm action (Android ~ contentIntent)
+ * Ignore action (Android ~ deleteIntent)
+ * Coalescent action
+ * Multi-buttons (as arrays of Button title / Remote action pairs)
+
+In the above, _detail_ can be a _static_ table instead of a simple string. Unlike GriP Modal Table View, which requires a persistent connection between the server and the client, the table layout must be completely determined. This avoids the slowness in You've Got Mail. 
+
+== Remote Actions ==
+
+The actions will be executed remotely. These remote actions will be represented as strings  in the form
+ * *module::action* arg1 arg2 arg3 ...
+If the `module::` part is missing, iNotifyEx will assume the module is `std`. These modules, called _Action Providers_ shall reside in `/Library/Application Support/iNotifyEx/Action Providers/module.dylib`. The remote action should be implemented as a C function with prototype
+ * extern void _action_(CFArrayRef argv);
+Each argument of _argv_ must be a CFString, and the 0th element is that _module::action_.
+
+Arguments are space separated but parenthesis-balanced. That means
+ * *foo* `bar (baz [blah 42] hello) world "abc def"`
+will be considered having 5 arguments (foo, `bar`, `(baz [blah 42] hello)`, `world`, `abc def`).
+
+  _Note: _argv_ will be autoreleased after the function ends. Retain it if you want to use it later._
+
+Standard remote actions include:
+ * *open_url* _url_
+ * *launch* _displayID_ `[`_remoteNotificationUserInfo_`]`
+ * *darwin`_`notification* _notificationName_
+ * *distributed`_`message* _centerName_ _messageName_ `[`_userInfo_`]`
+ * *notification* _messageName_ `[`_userInfo_`]` `[`_objectPointer_`]`
