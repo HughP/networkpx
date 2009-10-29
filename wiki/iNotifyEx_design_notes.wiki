@@ -33,8 +33,8 @@ There are some contradictions between the APIs. In particular, the developer-ori
  * Ticket (Growl).
  * Message name (Growl).
  * Title (Growl; Android — 1st line of `tickerText` and `contentTitle`)
- * Subtitle (Android — 2nd line of `tickerText` and `contentText` in `setLatestEventInfo `).
- * Icon (Growl 29x29; Android 59x59.)
+ * Subtitle (Android — `contentText` in `setLatestEventInfo `).
+ * Icon (≥29x29.)
  * Table
  * Priority (Growl), Sticky (Growl).
  * Coalescent ID (Growl) 
@@ -65,3 +65,49 @@ Standard remote actions include:
  * *darwin`_`notification* _notificationName_
  * *distributed`_`message* _centerName_ _messageName_ `[`_userInfo_`]`
  * *notification* _messageName_ `[`_userInfo_`]` `[`_objectPointer_`]`
+ * *sequence* _action1_ _action2_ _action3_ ...
+
+== Theming ==
+http://twitpic.com/ne1vq
+
+=== Raw Theme API ===
+Currently only 1 function is needed.
+
+ * extern void *INXShowNotification*(CFBundleRef thisBundle, CFStringRef title, CFStringRef subtitle, CFStringRef coal_id, CFDataRef detail, CFTypeRef icon, int priority, bool sticky);
+
+Should be a bundle as $INXROOT/Themes/myTheme.theme.
+
+=== Simple theme ===
+
+Theming using only images.
+
+Also a bundle as $INXROOT/Themes/myTheme.theme. But Info.plist should contain the `INXSimpleTheme` dictionary key.
+
+(INXRect t -> {t.x = ?, t.y = ?, t.w = ?, t.h = ?}. ? can be like 240 or 50%.)
+(INXFont t -> {t.name = ?, t.size = ?}.)
+(INXColor t -> "#AABBCC")
+
+(INXLabel t -> {INXRect t.frame; INXFont t.font; INXColor t.color; })
+(INXImage t -> {filename t.up; filename t.down; })
+(INXStretchableImage t -> {INXImage t; INXPoint t.stretch; INXColor t.color; })
+
+Keys of INXSimpleTheme:
+ * bool *minimized.enabled*;
+ * INXRect *minimized.frame*;
+ * INXRect *minimized.icon.frame*;
+ * INXLabel *minimized.title.frame*;
+ * string *minimized.transition.style*;
+ * real *minimized.transition.duration*;
+ * string *minimized.normalization.gesture*;
+ * INXRect *content.frame*; // x, y ignored here.
+ * INXRect *content.icon.frame*;
+ * INXLabel *content.title*;
+ * INXLabel *content.subtitle*;
+ * INXLabel *content.timestamp*;
+ * INXStretchableImage *content.background*;
+ * INXImage *content.disclosure.image*;
+ * INXRect *content.disclosure.frame*;
+ * INXStretchableImage *button.background*;
+ * INXFont *button.font*;
+ * INXColor *button.color*;
+ * INXStretchableImage *selection.background*;
