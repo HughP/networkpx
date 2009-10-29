@@ -1,0 +1,81 @@
+/*
+ 
+INXInterface.def ... MIG interface for iNotifyEx
+
+Copyright (c) 2009  KennyTM~ <kennytm@gmail.com>
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
+
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice, 
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+* Neither the name of the KennyTM~ nor the names of its contributors may be
+  used to endorse or promote products derived from this software without
+  specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+*/
+
+subsystem iNotifyExIPC 35000;
+
+#include <mach/std_types.defs>
+
+import <INXTypes.h>;
+
+type INXLongString = ^array[] of char;
+type INXShortString = c_string[*:256];
+type INXLocalizedShortString = c_string[*:256];
+type INXTicket = int;
+type INXData = array[] of int8_t;
+type INXIconType = int32_t;
+
+ServerPrefix _INXXX;
+UserPrefix _INX;
+
+// Acquire ticket from iNotifyEx server.
+// Each ticket can only be acquired once.
+routine AcquireTicket(
+		server        : mach_port_t;
+		name          : INXShortString;				// Machine readable name of the ticket.
+		pretty_name   : INXLocalizedShortString;	// User readable of the ticket.
+		notifications : INXData;					// List of notifications as an CFDictionary from CFStrings to CFBooleans (enabled or not).
+	out	ticket        : INXTicket					// Handle of ticket.
+);
+
+// Release the ticket back to the iNotifyEx server,
+// so that others can use it.
+simpleroutine ReleaseTicket(
+		server : mach_port_t;
+		ticket : INXTicket);
+
+// Display a notification.
+simpleroutine Notify(
+		server      : mach_port_t;
+		ticket      : INXTicket;				// The ticket it bases on.
+		name        : INXShortString;			// The notification name.
+		title       : INXLocalizedShortString;	// title is shown in the brief and detail view (equivalent to title in Growl and Android).
+		subtitle    : INXLocalizedShortString;	// subtitle is shown only in the brief view (equivalent to the other tickerText on Android, but only support 1 element.) 
+		coal_id     : INXShortString;			// coalescent ID.
+		detail      : INXData;					// GPMTV.R
+		icon_type   : int32_t;					// icon type, 0 = bundle ID, 1 = file name, 2 = PNG data.
+		icon        : INXData;					// icon data (w.r.t the specified icon type).
+		priority    : int32_t;					// expected priority, -2 ~ +2
+		sticky      : boolean_t;				// sticky bit.
+		confirm_action : INXLongString;			// action on confirm.
+		ignore_action  : INXLongString;			// action on ignore.
+		coal_action    : INXLongString			// action on coalescent.
+);

@@ -22,7 +22,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef BALANCED_SUBSTRING_H
 #define BALANCED_SUBSTRING_H
 
+#if __cplusplus
 extern "C" {
+#endif
 	
 	/* Skip a substring with balanced brackets and quotation marks.
 	 
@@ -34,6 +36,18 @@ extern "C" {
 	 */
 	const char* skip_balanced_substring(const char* input);
 	
+	/* Skip a space-separated argument with balanced brackets and quotation marks.
+	 
+	 e.g. abc def ghi  --> returns def ghi
+	 e.g. {xx}d efg --> returns d efg
+	 e.g. [df)c --> undefined, may crash
+	 e.g. "sdfc)df"abc ef -> returns abc
+	 
+	 */
+	const char* skip_balanced_argument(const char* input);
+
+#if __cplusplus
 }
+#endif
 
 #endif
