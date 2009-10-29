@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #if __cplusplus
-extern "C"
+extern "C" {
 #elif _MSC_VER
 typedef int bool;
 const bool false = 0, true = 1;
@@ -28,11 +28,10 @@ const bool false = 0, true = 1;
 #include <stdbool.h>
 #endif
 
-#if __cplusplus
-extern "C"
-#endif
-
 const char* skip_balanced_substring(const char* input) {
+	if (!input)
+		return input;
+	
 	int balance = 0;
 	bool in_double_quote_mode = false, in_single_quote_mode = false, in_escape_mode = false;
 	do {
@@ -86,6 +85,9 @@ const char* skip_balanced_substring(const char* input) {
 					in_escape_mode = !in_escape_mode;
 				break;
 				
+			case '\0':
+				return input;
+				
 			default:
 				if (in_single_quote_mode || in_double_quote_mode)
 					in_escape_mode = false;
@@ -96,3 +98,23 @@ const char* skip_balanced_substring(const char* input) {
 	
 	return input;
 }
+
+const char* skip_balanced_argument(const char* input) {
+	if (!input)
+		return input;
+	
+	while (*input != '\0') {
+		const char* last_input = input;
+		input = skip_balanced_substring(input);
+		if (input - last_input > 1 || isspace(*input)) {
+			break;
+		}
+	}
+	
+	return input;
+}
+
+#if __cplusplus
+}
+#endif
+
