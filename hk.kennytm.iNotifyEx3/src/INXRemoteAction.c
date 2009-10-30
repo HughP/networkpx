@@ -88,7 +88,7 @@ if (res##_b) free((char*)res##_s)
 
 #define INXSTR(res) (res##_s)
 
-void INXPerformRemoteAction(const char* actionString) {
+extern void INXPerformRemoteAction(const char* actionString) {
 	CFArrayRef argv = parseActionStringIntoArgv(actionString);
 	if (CFArrayGetCount(argv) > 0) {
 		CFStringRef command = CFArrayGetValueAtIndex(argv, 0);

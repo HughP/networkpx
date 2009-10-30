@@ -38,6 +38,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #import <AppSupport/AppSupport.h>
 #include "INXRemoteAction.h"
 #include "INXCommon.h"
+#include <objc/runtime.h>
 
 // std::open_url <URL>
 extern void open_url(NSArray* argv) {
@@ -52,12 +53,15 @@ extern void launch(NSArray* argv) {
 	NSUInteger count = [argv count];
 	if (count > 1) {
 		NSString* displayID = [argv objectAtIndex:1];
-		NSArray* parentalControl = [(SpringBoard*)[SpringBoard sharedApplication] parentalControlsDisabledApplications];
+#if TARGET_IPHONE_SIMULATOR
+		[[UIApplication sharedApplication] launchApplicationWithIdentifier:displayID suspended:NO];
+#else
+		NSArray* parentalControl = [(SpringBoard*)[UIApplication sharedApplication] parentalControlsDisabledApplications];
 		if (![parentalControl containsObject:displayID]) {
-			SBApplication* app = [[SBApplicationController sharedInstance] applicationWithDisplayIdentifier:displayID];
+			SBApplication* app = [[objc_getClass("SBApplicationController") sharedInstance] applicationWithDisplayIdentifier:displayID];
 			if (count > 2) {
 				[app setActivationSetting:8 flag:YES];	// 8 = remoteNotification.
-				SBRemoteNotificationServer* server = [SBRemoteNotificationServer sharedInstance];
+				SBRemoteNotificationServer* server = [objc_getClass("SBRemoteNotificationServer") sharedInstance];
 				NSDictionary* clientDict = [server valueForKey:@"bundleIdentifiersToClients"];
 				SBRemoteNotificationClient* client = [clientDict objectForKey:displayID];
 				CFPropertyListRef userInfo = INXCreateDictionaryWithString((CFStringRef)[argv objectAtIndex:2]);
@@ -65,8 +69,9 @@ extern void launch(NSArray* argv) {
 				if (userInfo != NULL)
 					CFRelease(userInfo);
 			}
-			[[SBUIController sharedInstance] activateApplicationAnimated:app];
+			[[objc_getClass("SBUIController") sharedInstance] activateApplicationAnimated:app];
 		}
+#endif
 	}
 }
 

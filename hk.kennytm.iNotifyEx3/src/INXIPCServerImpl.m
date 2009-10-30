@@ -30,50 +30,33 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#include "INXCommon.h"
-#include <servers/bootstrap.h>
-#include <mach/mach.h>
-#include <sys/syslog.h>
-#include <stdarg.h>
+#include "INXIPC.h"
 
-static int _INXIsSpringBoard = -1;
-static mach_port_t _port = MACH_PORT_NULL;
-
-extern bool INXIsSpringBoard() {
-	if (_INXIsSpringBoard == -1) {
-		CFStringRef thisBundleID = CFBundleGetIdentifier(CFBundleGetMainBundle());
-		_INXIsSpringBoard = CFEqual(thisBundleID, CFSTR("com.apple.springboard"));
-	}
-	return _INXIsSpringBoard != 0;
+kern_return_t _INXXXAcquireTicket(mach_port_t server, INXShortString name,
+								  INXLocalizedShortString pretty_name,
+								  INXData notifications,
+								  mach_msg_type_number_t notificationsCnt,
+								  INXTicket* ticket) {
+	return 0;
 }
 
-extern mach_port_t INXPort() {
-	if (_port == MACH_PORT_DEAD) {
-		if (!INXIsSpringBoard()) {
-			mach_port_t xport = MACH_PORT_DEAD;
-			kern_return_t err = bootstrap_look_up(bootstrap_port, "hk.kennytm.iNotifyEx.server", &xport);
-			if (err)
-				syslog(LOG_ERR, "Fail to look up service \"hk.kennytm.iNotifyEx.server\": %s", mach_error_string(err));
-			_port = xport;
-		}
-	}
-	return _port;
+kern_return_t _INXXXReleaseTicket(mach_port_t server, INXTicket ticket) {
+	return 0;
 }
 
-void INXLog(const char* format, ...) {
-	va_list va;
-	va_start(va, format);
-	vsyslog(LOG_WARNING, format, va);
-	va_end(va);
+kern_return_t _INXXXNotify(mach_port_t server, INXTicket ticket,
+						   INXShortString name, INXLocalizedShortString title,
+						   INXLocalizedShortString subtitle, 
+						   INXShortString coal_id, INXData detail,
+						   mach_msg_type_number_t detailCnt, int32_t icon_type,
+						   INXData icon, mach_msg_type_number_t iconCnt,
+						   int32_t priority, boolean_t sticky,
+						   INXLongString confirm_action,
+						   mach_msg_type_number_t confirm_actionCnt,
+						   INXLongString ignore_action,
+						   mach_msg_type_number_t ignore_actionCnt,
+						   INXLongString coal_action,
+						   mach_msg_type_number_t coal_actionCnt) {
+	return 0;
 }
 
-extern CFPropertyListRef INXCreateDictionaryWithString(CFStringRef s) {
-	if (s == NULL)
-		return NULL;
-	CFDataRef data = CFStringCreateExternalRepresentation(NULL, s, kCFStringEncodingUTF8, 0);
-	if (data == NULL)
-		return NULL;
-	CFPropertyListRef retval = CFPropertyListCreateFromXMLData(NULL, data, kCFPropertyListImmutable, NULL);
-	CFRelease(data);
-	return retval;
-}
