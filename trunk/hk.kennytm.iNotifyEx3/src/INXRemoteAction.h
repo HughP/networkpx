@@ -39,7 +39,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 extern "C" {
 #endif
 
-	extern void INXPerformRemoteAction(const char* actionString);
+	void INXPerformRemoteAction(const char* actionString);
 	
 #if __cplusplus
 }

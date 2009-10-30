@@ -30,7 +30,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-subsystem iNotifyExIPC 35000;
+subsystem INXIPC 35000;
 
 #include <mach/std_types.defs>
 
