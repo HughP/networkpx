@@ -34,8 +34,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "INXRemoteAction.h"
 #include <dlfcn.h>
 #include <CoreFoundation/CoreFoundation.h>
+#include <CoreFoundation/CFLogUtilities.h>
 #include <ctype.h>
 #include "balanced_substr.h"
+#include <libkern/OSAtomic.h>
 
 static CFArrayRef parseActionStringIntoArgv(const char* actionString) {
 	CFMutableArrayRef res = CFArrayCreateMutable(NULL, 0, &kCFTypeArrayCallBacks);
@@ -51,9 +53,11 @@ static CFArrayRef parseActionStringIntoArgv(const char* actionString) {
 			argLen -= 2;
 		}
 		
-		CFStringRef s = CFStringCreateWithFormat(NULL, NULL, CFSTR("%.*s"), argLen, lastActionString);
-		CFArrayAppendValue(res, s);
-		CFRelease(s);
+		CFStringRef s = CFStringCreateWithBytes(NULL, (const UInt8*)lastActionString, argLen, kCFStringEncodingUTF8, false);
+		if (s != NULL) {
+			CFArrayAppendValue(res, s);
+			CFRelease(s);
+		}
 		
 		while (isspace(*actionString))
 			++ actionString;
@@ -88,50 +92,95 @@ if (res##_b) free((char*)res##_s)
 
 #define INXSTR(res) (res##_s)
 
+static CFMutableDictionaryRef _loadedLibs = NULL;
+
 extern void INXPerformRemoteAction(const char* actionString) {
+	static CFMutableDictionaryRef _loadedSyms = NULL;
+	
 	CFArrayRef argv = parseActionStringIntoArgv(actionString);
 	if (CFArrayGetCount(argv) > 0) {
-		CFStringRef command = CFArrayGetValueAtIndex(argv, 0);
-		CFRange namespaceSep = CFStringFind(command, CFSTR("::"), 0);
-		CFStringRef namespace;
-		if (namespaceSep.location == kCFNotFound)
-			namespace = CFRetain(CFSTR("std"));
-		else {
-			namespace = CFStringCreateWithSubstring(NULL, command, CFRangeMake(0, namespaceSep.location));
-			CFStringRef newCmd = CFStringCreateWithSubstring(NULL, command, CFRangeMake(namespaceSep.location+namespaceSep.length, CFStringGetLength(command)-(namespaceSep.location+namespaceSep.length)));
-			CFRelease(command);
-			command = newCmd;
+		// sanitize the command first...
+		CFStringRef rawcommand = CFArrayGetValueAtIndex(argv, 0);
+		CFRange namespaceSep = CFStringFind(rawcommand, CFSTR("."), kCFCompareBackwards);
+		
+		CFMutableStringRef namespace, command;
+		if (namespaceSep.location == kCFNotFound) {
+			namespace = CFStringCreateMutableCopy(NULL, 0, CFSTR("std"));
+			command = CFStringCreateMutableCopy(NULL, 0, rawcommand);
+		} else {
+			CFStringRef ns = CFStringCreateWithSubstring(NULL, rawcommand, CFRangeMake(0, namespaceSep.location));
+			namespace = CFStringCreateMutableCopy(NULL, 0, ns);
+			CFRelease(ns);
+			ns = CFStringCreateWithSubstring(NULL, rawcommand,
+											 CFRangeMake(namespaceSep.location+namespaceSep.length,
+														 CFStringGetLength(rawcommand)-(namespaceSep.location+namespaceSep.length)));
+			command = CFStringCreateMutableCopy(NULL, 0, ns);
+			CFRelease(ns);
+		}
+		
+		// Replace all "/" with ".".
+		CFStringFindAndReplace(namespace, CFSTR("/"), CFSTR("."), CFRangeMake(0, CFStringGetLength(namespace)), 0);
+		// Replace all non-alphabetic characters with _.
+		CFCharacterSetRef nonalphaset = CFCharacterSetCreateInvertedSet(NULL, CFCharacterSetGetPredefined(kCFCharacterSetAlphaNumeric));
+		CFRange curRange = CFRangeMake(0, CFStringGetLength(command));
+		CFRange foundRange;
+		while (CFStringFindCharacterFromSet(command, nonalphaset, curRange, 0, &foundRange)) {
+			CFStringReplace(command, foundRange, CFSTR("_"));
+			curRange.length = curRange.length + curRange.location - foundRange.location - foundRange.length + 1;
+			curRange.location = foundRange.location + 1;
+		}
+		CFRelease(nonalphaset);
+		
+		// Try to find cached funcptr.
+		if (_loadedSyms == NULL) {
+			CFMutableDictionaryRef _tmpLoadedSyms = CFDictionaryCreateMutable(NULL, 0, &kCFTypeDictionaryKeyCallBacks, NULL);
+			if (!OSAtomicCompareAndSwapPtrBarrier(NULL, _tmpLoadedSyms, (void*volatile*)&_loadedSyms))
+				CFRelease(_tmpLoadedSyms);
+		}
+		void(*actionFunc)(CFArrayRef);
+		
+		CFStringRef commandcopy = CFStringCreateCopy(NULL, command);
+		CFStringAppend(command, CFSTR("`"));
+		CFStringAppend(command, namespace);
+		
+		// Funcptr not cached yet. Try to load the dylib.
+		if (!CFDictionaryGetValueIfPresent(_loadedSyms, command, (const void**)&actionFunc)) {
+			if (_loadedLibs == NULL) {
+				CFMutableDictionaryRef _tmpLoadedLibs = CFDictionaryCreateMutable(NULL, 0, &kCFTypeDictionaryKeyCallBacks, NULL);
+				if (!OSAtomicCompareAndSwapPtrBarrier(NULL, _tmpLoadedLibs, (void*volatile*)&_loadedLibs))
+					CFRelease(_tmpLoadedLibs);
+			}
 			
-			if (CFStringFind(namespace, CFSTR("/"), 0).location != kCFNotFound) {
-				CFRelease(namespace);
-				namespace = CFRetain(CFSTR("std"));
+			// Dylib not cached yet. Try to load it.
+			void* handle;
+			if (!CFDictionaryGetValueIfPresent(_loadedLibs, namespace, (const void**)&handle)) {
+				CFStringRef path = CFStringCreateWithFormat(NULL, 0, CFSTR(INXRoot"/Action Providers/%@.dylib"), namespace);
+				INXCopyCString(ns, path);
+				handle = dlopen(INXSTR(ns), RTLD_LAZY|RTLD_LOCAL|RTLD_FIRST);
+				INXFreeCString(ns);
+				CFDictionaryAddValue(_loadedLibs, namespace, handle);
+			}
+			
+			if (handle == NULL)
+				CFLog(kCFLogLevelWarning, CFSTR("iNotifyEx: Action provider module '%@' cannot be loaded."), namespace);
+			else {
+				INXCopyCString(cmd, commandcopy);
+				actionFunc = (void(*)(CFArrayRef))dlsym(handle, INXSTR(cmd));
+				INXFreeCString(cmd);
+				
+				CFDictionaryAddValue(_loadedSyms, command, actionFunc);
 			}
 		}
 		
-		CFStringRef path = CFStringCreateWithFormat(NULL, 0, CFSTR(INXRoot"/ActionProviders/%@.dylib"), namespace);
-		INXCopyCString(ns, path);
-		
-		void* handle = dlopen(INXSTR(ns), RTLD_LAZY|RTLD_LOCAL|RTLD_FIRST);
-		
-		if (handle == NULL)
-			INXLog("iNotifyEx: Action provider module '%s' cannot be loaded.", INXSTR(ns));
-		else {
-			INXCopyCString(cmd, command);
-			
-			void(*actionFunc)(CFArrayRef) = (void(*)(CFArrayRef))dlsym(handle, INXSTR(cmd));
-			if (actionFunc == NULL)
-				INXLog("iNotifyEx: Action '%s' not found in module '%s'.", INXSTR(cmd), INXSTR(ns));
-			else
-				actionFunc(argv);
-			INXFreeCString(cmd);
-			
-			dlclose(handle);
+		if (actionFunc == NULL) {
+			CFLog(kCFLogLevelWarning, CFSTR("iNotifyEx: Action '%@.%@' not found."), namespace, command);
+		} else {
+			actionFunc(argv);
 		}
 		
-		INXFreeCString(ns);
-		CFRelease(path);
-		CFRelease(namespace);
+		CFRelease(commandcopy);
 		CFRelease(command);
+		CFRelease(namespace);
 	}
 	CFRelease(argv);
 }

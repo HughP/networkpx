@@ -44,7 +44,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 extern void open_url(NSArray* argv) {
 	if ([argv count] > 1) {
 		NSURL* url = [NSURL URLWithString:[argv objectAtIndex:1]];
+#if TARGET_IPHONE_SIMULATOR
+		[[UIApplication sharedApplication] openURL:url];
+#else
 		[[UIApplication sharedApplication] applicationOpenURL:url];
+#endif
 	}
 }
 
