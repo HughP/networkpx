@@ -33,8 +33,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "INXCommon.h"
 #include <servers/bootstrap.h>
 #include <mach/mach.h>
-#include <sys/syslog.h>
 #include <stdarg.h>
+#include <CoreFoundation/CFLogUtilities.h>
 
 static int _INXIsSpringBoard = -1;
 static mach_port_t _port = MACH_PORT_NULL;
@@ -53,18 +53,11 @@ extern mach_port_t INXPort() {
 			mach_port_t xport = MACH_PORT_DEAD;
 			kern_return_t err = bootstrap_look_up(bootstrap_port, "hk.kennytm.iNotifyEx.server", &xport);
 			if (err)
-				syslog(LOG_ERR, "Fail to look up service \"hk.kennytm.iNotifyEx.server\": %s", mach_error_string(err));
+				CFLog(kCFLogLevelError, CFSTR("iNotifyEx: Fail to look up service \"hk.kennytm.iNotifyEx.server\": %s"), mach_error_string(err));
 			_port = xport;
 		}
 	}
 	return _port;
-}
-
-void INXLog(const char* format, ...) {
-	va_list va;
-	va_start(va, format);
-	vsyslog(LOG_WARNING, format, va);
-	va_end(va);
 }
 
 extern CFPropertyListRef INXCreateDictionaryWithString(CFStringRef s) {

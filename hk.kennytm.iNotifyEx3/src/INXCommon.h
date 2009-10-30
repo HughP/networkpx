@@ -44,9 +44,12 @@ extern "C" {
 	bool INXIsSpringBoard();
 	mach_port_t INXPort();
 	
+#if TARGET_IPHONE_SIMULATOR
+#define INXRoot "/Users/kennytm/XCodeProjects/iKeyEx/svn/trunk/hk.kennytm.iNotifyEx3/xcode/iNotifyEx"
+#else
 #define INXRoot "/Library/iNotifyEx"
-	
-	void INXLog(const char* format, ...);
+#endif
+
 	CFPropertyListRef INXCreateDictionaryWithString(CFStringRef s);
 	
 #if __cplusplus
