@@ -66,6 +66,7 @@ Standard remote actions include:
  * *distributed`_`message* _centerName_ _messageName_ `[`_userInfo_`]`
  * *notification* _messageName_ `[`_userInfo_`]` `[`_objectPointer_`]`
  * *sequence* _action1_ _action2_ _action3_ ...
+ * *confirm* _action_ _confirmTitle_ `[`_message_`]` `[` normal | destructive `]`
 
 == Theming ==
 http://twitpic.com/ne1vq
