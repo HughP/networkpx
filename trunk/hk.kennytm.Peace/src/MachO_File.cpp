@@ -686,7 +686,7 @@ void MachO_File::for_each_symbol (void(*p_func)(unsigned addr, const char* symbo
 		str += ' ';
 		str += cit2->second.sel_name;
 		str += ']';
-		p_func(cit->first, str.c_str(), MOST_ObjCMethod, context);
+		p_func(cit2->first, str.c_str(), MOST_ObjCMethod, context);
 	}
 }
 
