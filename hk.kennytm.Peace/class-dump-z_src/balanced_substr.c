@@ -27,6 +27,7 @@ const bool false = 0, true = 1;
 #else
 #include <stdbool.h>
 #endif
+#include <ctype.h>
 
 const char* skip_balanced_substring(const char* input) {
 	if (!input)
