@@ -123,10 +123,13 @@ extern void sequence(NSArray* argv) {
 	BOOL firstPassed = NO;
 	for (NSString* arg in argv) {
 		if (firstPassed) {
-			INXPerformRemoteAction([arg UTF8String]);
+			INXPerformRemoteActionWithCFString((CFStringRef)arg);
 		} else {
 			firstPassed = YES;
 		}
-
 	}
+}
+
+extern void confirm(NSArray* argv) {
+	
 }
