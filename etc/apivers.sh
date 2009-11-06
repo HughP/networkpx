@@ -38,9 +38,15 @@ else
 	for ROOT in $SDKSROOT/*; do
 		if [[ -z $BINARY || ! -f $ROOT/$BINARY ]]; then
 			if [[ -n $FRAMEWORK ]]; then
-				BINARY=/System/Library/Frameworks/$FRAMEWORK.framework/$FRAMEWORK;
-				if [[ ! -f $ROOT/$BINARY ]]; then
-					BINARY=/System/Library/PrivateFrameworks/$FRAMEWORK.framework/$FRAMEWORK;
+				if [[ $FRAMEWORK == "SpringBoard" ]]; then
+					BINARY=/System/Library/CoreServices/SpringBoard.app/SpringBoard;
+				elif [[ $FRAMEWORK == "lib*" ]]; then
+					BINARY=/usr/lib/$FRAMEWORK;
+				else
+					BINARY=/System/Library/Frameworks/$FRAMEWORK.framework/$FRAMEWORK;
+					if [[ ! -f $ROOT/$BINARY ]]; then
+						BINARY=/System/Library/PrivateFrameworks/$FRAMEWORK.framework/$FRAMEWORK;
+					fi;
 				fi;
 			fi;
 		fi;
