@@ -58,16 +58,21 @@ static INXWindow* _INXWindow = nil;
 }
 -(void)setOrientation:(int)newOrientation {
 	if (_orientation != newOrientation) {
-		
+		[UIView beginAnimations:@"INXWindowRotate" context:NULL];
+		self.transform = CGAffineTransformMakeRotation(newOrientation*M_PI/180);
+		if (newOrientation == 90 || newOrientation == -90)
+			self.bounds = CGRectMake(_fullScreenRect.origin.y, _fullScreenRect.origin.x, _fullScreenRect.size.height, _fullScreenRect.size.width);
+		else
+			self.bounds = _fullScreenRect;
+		[UIView commitAnimations];
 		_orientation = newOrientation;
 	}
 }
-
 -(BOOL)acceptsGlobalPoint:(CGPoint)point {
-	NSLog(@"%@", NSStringFromCGPoint(point));
+	CGPoint localPoint = [self convertPoint:point fromWindow:nil];
 	for (UIView* subview in self.subviews) {
-		CGPoint localPoint = [subview convertPoint:point fromView:nil];
-		if ([subview pointInside:localPoint withEvent:nil])
+		CGPoint viewPoint = [subview convertPoint:localPoint fromView:nil];
+		if ([subview pointInside:viewPoint withEvent:nil])
 			return YES;
 	}
 	return NO;
@@ -87,6 +92,8 @@ static void _INXWindowInitializer () {
 	_INXWindow.backgroundColor = [UIColor colorWithRed:0 green:1 blue:0 alpha:0.5];
 	UIButton* testButton = [UIButton buttonWithType:UIButtonTypeRoundedRect];
 	testButton.frame = CGRectMake(40, 100, 200, 200);
+	[testButton setTitle:@"12345" forState:UIControlStateNormal];
+	testButton.autoresizingMask = UIViewAutoresizingFlexibleRightMargin | UIViewAutoresizingFlexibleWidth;
 	[_INXWindow addSubview:testButton];
 #endif
 	_INXWindow.windowLevel = UIWindowLevelStatusBar + 1;
