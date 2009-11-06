@@ -1,6 +1,6 @@
 /*
  
-FILE_NAME ... FILE_DESCRIPTION
+INXWindow.h ... iNotifyEx Exclusive Window.
 
 Copyright (c) 2009  KennyTM~ <kennytm@gmail.com>
 All rights reserved.
@@ -30,32 +30,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#ifndef INXCOMMON_H
-#define INXCOMMON_H
+#import <UIKit/UIKit.h>
 
-#include <stdbool.h>
-#include <mach/message.h>
-#include <CoreFoundation/CoreFoundation.h>
-
-#if __cplusplus
-extern "C" {
-#endif
-
-	bool INXIsSpringBoard();
-	mach_port_t INXPort();
-	
-#if TARGET_IPHONE_SIMULATOR
-#define INXRoot "/Users/kennytm/XCodeProjects/iKeyEx/svn/trunk/hk.kennytm.iNotifyEx3/xcode/iNotifyEx"
-#else
-#define INXRoot "/Library/iNotifyEx"
-#endif
-
-	CFPropertyListRef INXCreateDictionaryWithString(CFStringRef s);
-	void INXEscape(CFMutableStringRef s);
-	void INXUnescape(CFMutableStringRef s);
-	
-#if __cplusplus
-}
-#endif
-
-#endif
+UIWindow* INXGetWindow();

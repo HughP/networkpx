@@ -30,32 +30,30 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#ifndef INXCOMMON_H
-#define INXCOMMON_H
+#import <Message/Message.h>
 
-#include <stdbool.h>
-#include <mach/message.h>
-#include <CoreFoundation/CoreFoundation.h>
 
-#if __cplusplus
-extern "C" {
-#endif
-
-	bool INXIsSpringBoard();
-	mach_port_t INXPort();
-	
-#if TARGET_IPHONE_SIMULATOR
-#define INXRoot "/Users/kennytm/XCodeProjects/iKeyEx/svn/trunk/hk.kennytm.iNotifyEx3/xcode/iNotifyEx"
-#else
-#define INXRoot "/Library/iNotifyEx"
-#endif
-
-	CFPropertyListRef INXCreateDictionaryWithString(CFStringRef s);
-	void INXEscape(CFMutableStringRef s);
-	void INXUnescape(CFMutableStringRef s);
-	
-#if __cplusplus
+static LibraryMessage* lookupMailMessage(NSString* messageID) {
+	return [[MailMessageLibrary defaultInstance] messageWithMessageID:messageID];
 }
-#endif
 
-#endif
+void mark(NSArray* argv) {
+	if ([argv count] >= 3) {
+		NSString* args[2];
+		[argv getObjects:args range:NSMakeRange(1, 2)];
+		LibraryMessage* msg = lookupMailMessage(args[1]);
+		if (msg) {
+			if ([args[0] isEqualToString:@"viewed"])
+				[msg markAsViewed];
+			else if ([args[0] isEqualToString:@"not-viewed"])
+				[msg markAsNotViewed];
+			else if ([args[0] isEqualToString:@"replied"])
+				[msg markAsReplied];
+			else if ([args[0] isEqualToString:@"forwarded"])
+				[msg markAsForwarded];
+		}
+	}
+}
+
+void reply(NSArray* argv) {
+}

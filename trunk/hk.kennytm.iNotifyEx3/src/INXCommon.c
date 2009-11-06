@@ -70,3 +70,13 @@ extern CFPropertyListRef INXCreateDictionaryWithString(CFStringRef s) {
 	CFRelease(data);
 	return retval;
 }
+
+extern void INXEscape(CFMutableStringRef s) {
+	CFStringFindAndReplace(s, CFSTR("\\"), CFSTR("\\\\"), CFRangeMake(0, CFStringGetLength(s)), 0);
+	CFStringFindAndReplace(s, CFSTR("\""), CFSTR("\\\""), CFRangeMake(0, CFStringGetLength(s)), 0);
+}
+
+extern void INXUnescape(CFMutableStringRef s) {
+	CFStringFindAndReplace(s, CFSTR("\\\""), CFSTR("\""), CFRangeMake(0, CFStringGetLength(s)), 0);
+	CFStringFindAndReplace(s, CFSTR("\\\\"), CFSTR("\\"), CFRangeMake(0, CFStringGetLength(s)), 0);
+}

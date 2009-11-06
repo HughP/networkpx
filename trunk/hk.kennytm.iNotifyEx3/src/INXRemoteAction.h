@@ -34,12 +34,15 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define INXREMOTEACTION_H
 
 #include <mach/port.h>
+#include <CoreFoundation/CoreFoundation.h>
 
 #if __cplusplus
 extern "C" {
 #endif
 
 	void INXPerformRemoteAction(const char* actionString);
+	
+	void INXPerformRemoteActionWithCFString(CFStringRef actionString);
 	
 #if __cplusplus
 }

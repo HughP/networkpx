@@ -37,7 +37,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <CoreFoundation/CFLogUtilities.h>
 #include <ctype.h>
 #include "balanced_substr.h"
-#include <libkern/OSAtomic.h>
+#include <pthread.h>
 
 static CFArrayRef parseActionStringIntoArgv(const char* actionString) {
 	CFMutableArrayRef res = CFArrayCreateMutable(NULL, 0, &kCFTypeArrayCallBacks);
@@ -93,10 +93,33 @@ if (res##_b) free((char*)res##_s)
 #define INXSTR(res) (res##_s)
 
 static CFMutableDictionaryRef _loadedLibs = NULL;
+static CFMutableDictionaryRef _loadedSyms = NULL;
+
+static void _unloadLibsIter(const void* key, const void* value, void* context) {
+	if (value)
+		dlclose((void*)value);
+}
+
+__attribute__((destructor))
+static void unloadLibs() {
+	if (_loadedSyms) {
+		CFRelease(_loadedSyms);
+		_loadedSyms = NULL;
+	}
+	
+	if (_loadedLibs) {
+		CFDictionaryApplyFunction(_loadedLibs, _unloadLibsIter, NULL);
+		CFRelease(_loadedLibs);
+		_loadedLibs = NULL;
+	}
+}
+
+static pthread_once_t _loadedSymsOnce = PTHREAD_ONCE_INIT;
+static pthread_once_t _loadedLibsOnce = PTHREAD_ONCE_INIT;
+static void initializeSyms() { _loadedSyms = CFDictionaryCreateMutable(NULL, 0, &kCFTypeDictionaryKeyCallBacks, NULL); }
+static void initializeLibs() { _loadedLibs = CFDictionaryCreateMutable(NULL, 0, &kCFTypeDictionaryKeyCallBacks, NULL); }
 
 extern void INXPerformRemoteAction(const char* actionString) {
-	static CFMutableDictionaryRef _loadedSyms = NULL;
-	
 	CFArrayRef argv = parseActionStringIntoArgv(actionString);
 	if (CFArrayGetCount(argv) > 0) {
 		// sanitize the command first...
@@ -132,11 +155,7 @@ extern void INXPerformRemoteAction(const char* actionString) {
 		CFRelease(nonalphaset);
 		
 		// Try to find cached funcptr.
-		if (_loadedSyms == NULL) {
-			CFMutableDictionaryRef _tmpLoadedSyms = CFDictionaryCreateMutable(NULL, 0, &kCFTypeDictionaryKeyCallBacks, NULL);
-			if (!OSAtomicCompareAndSwapPtrBarrier(NULL, _tmpLoadedSyms, (void*volatile*)&_loadedSyms))
-				CFRelease(_tmpLoadedSyms);
-		}
+		pthread_once(&_loadedSymsOnce, &initializeSyms);
 		void(*actionFunc)(CFArrayRef);
 		
 		CFStringRef commandcopy = CFStringCreateCopy(NULL, command);
@@ -145,12 +164,11 @@ extern void INXPerformRemoteAction(const char* actionString) {
 		
 		// Funcptr not cached yet. Try to load the dylib.
 		if (!CFDictionaryGetValueIfPresent(_loadedSyms, command, (const void**)&actionFunc)) {
-			if (_loadedLibs == NULL) {
-				CFMutableDictionaryRef _tmpLoadedLibs = CFDictionaryCreateMutable(NULL, 0, &kCFTypeDictionaryKeyCallBacks, NULL);
-				if (!OSAtomicCompareAndSwapPtrBarrier(NULL, _tmpLoadedLibs, (void*volatile*)&_loadedLibs))
-					CFRelease(_tmpLoadedLibs);
-			}
+			pthread_once(&_loadedLibsOnce, &initializeLibs);
 			
+#if TARGET_IPHONE_SIMULATOR
+			void* handle = RTLD_SELF;
+#else
 			// Dylib not cached yet. Try to load it.
 			void* handle;
 			if (!CFDictionaryGetValueIfPresent(_loadedLibs, namespace, (const void**)&handle)) {
@@ -160,6 +178,7 @@ extern void INXPerformRemoteAction(const char* actionString) {
 				INXFreeCString(ns);
 				CFDictionaryAddValue(_loadedLibs, namespace, handle);
 			}
+#endif
 			
 			if (handle == NULL)
 				CFLog(kCFLogLevelWarning, CFSTR("iNotifyEx: Action provider module '%@' cannot be loaded."), namespace);
@@ -173,7 +192,7 @@ extern void INXPerformRemoteAction(const char* actionString) {
 		}
 		
 		if (actionFunc == NULL) {
-			CFLog(kCFLogLevelWarning, CFSTR("iNotifyEx: Action '%@.%@' not found."), namespace, command);
+			CFLog(kCFLogLevelWarning, CFSTR("iNotifyEx: Action '%@.%@' not found."), namespace, commandcopy);
 		} else {
 			actionFunc(argv);
 		}
@@ -184,5 +203,37 @@ extern void INXPerformRemoteAction(const char* actionString) {
 	}
 	CFRelease(argv);
 }
+
+extern void INXPerformRemoteActionWithCFString(CFStringRef actionString) {
+	CFIndex len = CFStringGetLength(actionString);
+	if (len > 0) {
+		bool shouldFreeUTF8 = false;
+		bool freeSubstring = false;
+		
+		if (len > 1) {
+			UniChar firstChar = CFStringGetCharacterAtIndex(actionString, 0);
+			UniChar lastChar = CFStringGetCharacterAtIndex(actionString, len-1);
+			
+			freeSubstring = (firstChar == '(' && lastChar == ')') || (firstChar == '[' && lastChar == ']') || (firstChar == '{' && lastChar == '}');
+			if (freeSubstring)
+				actionString = CFStringCreateWithSubstring(NULL, actionString, CFRangeMake(1, len-2));
+		}
+		
+		char* utf8String = (char*)CFStringGetCStringPtr(actionString, kCFStringEncodingUTF8);
+		if (utf8String == NULL) {
+			shouldFreeUTF8 = true;
+			utf8String = malloc(len*3+1);
+			CFStringGetCString(actionString, utf8String, len*3+1, kCFStringEncodingUTF8);
+		}
+				
+		INXPerformRemoteAction(utf8String);
+		
+		if (shouldFreeUTF8)
+			free(utf8String);
+		if (freeSubstring)
+			CFRelease(actionString);
+	}
+}
+
 
 #endif
