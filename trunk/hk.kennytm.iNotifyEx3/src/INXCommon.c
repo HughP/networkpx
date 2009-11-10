@@ -35,28 +35,31 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <mach/mach.h>
 #include <stdarg.h>
 #include <CoreFoundation/CFLogUtilities.h>
+#include <pthread.h>
 
-static int _INXIsSpringBoard = -1;
-static mach_port_t _port = MACH_PORT_NULL;
+static bool _INXIsSpringBoard;
+static mach_port_t _port;
+static pthread_once_t _INXIsSpringBoard_Once = PTHREAD_ONCE_INIT, _port_Once = PTHREAD_ONCE_INIT;
 
+static void _INXIsSpringBoardInit() {
+	CFStringRef thisBundleID = CFBundleGetIdentifier(CFBundleGetMainBundle());
+	_INXIsSpringBoard = CFEqual(thisBundleID, CFSTR("com.apple.springboard"));
+}
 extern bool INXIsSpringBoard() {
-	if (_INXIsSpringBoard == -1) {
-		CFStringRef thisBundleID = CFBundleGetIdentifier(CFBundleGetMainBundle());
-		_INXIsSpringBoard = CFEqual(thisBundleID, CFSTR("com.apple.springboard"));
+	pthread_once(&_INXIsSpringBoard_Once, &_INXIsSpringBoardInit);
+	return _INXIsSpringBoard;
+}
+
+static void _INXPortInit() {
+	if (!INXIsSpringBoard()) {
+		kern_return_t err = bootstrap_look_up(bootstrap_port, "hk.kennytm.iNotifyEx.server", &_port);
+		if (err)
+			CFLog(kCFLogLevelError, CFSTR("iNotifyEx: Fail to look up service \"hk.kennytm.iNotifyEx.server\": %s"), mach_error_string(err));
 	}
-	return _INXIsSpringBoard != 0;
 }
 
 extern mach_port_t INXPort() {
-	if (_port == MACH_PORT_DEAD) {
-		if (!INXIsSpringBoard()) {
-			mach_port_t xport = MACH_PORT_DEAD;
-			kern_return_t err = bootstrap_look_up(bootstrap_port, "hk.kennytm.iNotifyEx.server", &xport);
-			if (err)
-				CFLog(kCFLogLevelError, CFSTR("iNotifyEx: Fail to look up service \"hk.kennytm.iNotifyEx.server\": %s"), mach_error_string(err));
-			_port = xport;
-		}
-	}
+	pthread_once(&_port_Once, &_INXPortInit);
 	return _port;
 }
 
@@ -79,4 +82,18 @@ extern void INXEscape(CFMutableStringRef s) {
 extern void INXUnescape(CFMutableStringRef s) {
 	CFStringFindAndReplace(s, CFSTR("\\\""), CFSTR("\""), CFRangeMake(0, CFStringGetLength(s)), 0);
 	CFStringFindAndReplace(s, CFSTR("\\\\"), CFSTR("\\"), CFRangeMake(0, CFStringGetLength(s)), 0);
+}
+
+
+static CFStringRef _INXCancelString = CFSTR("Cancel");
+static pthread_once_t _INXCancelString_Once = PTHREAD_ONCE_INIT;
+static void _INXCancelStringInit() {
+	CFBundleRef UIKitBundle = CFBundleGetBundleWithIdentifier(CFSTR("com.apple.UIKit"));
+	if (UIKitBundle != NULL)
+		_INXCancelString = CFBundleCopyLocalizedString(UIKitBundle, CFSTR("Cancel"), NULL, NULL);
+}
+
+extern CFStringRef INXLocalizedCancel() {
+	pthread_once(&_INXCancelString_Once, &_INXCancelStringInit);
+	return _INXCancelString;
 }

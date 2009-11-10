@@ -32,4 +32,33 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #import <UIKit/UIKit.h>
 
-UIWindow* INXGetWindow();
+@class UIKeyboard, UIView, UITextInputTraits;
+
+@interface INXWindow : UIWindow {
+	int _orientation;
+	CGRect _fullScreenRect;
+}
+@property(assign,nonatomic) int orientation;
++(INXWindow*)sharedWindow;
+@end
+
+@interface INXSuperiorWindow : INXWindow {
+@private
+	CGRect _kbRectPortrait, _kbRectLandscape;
+	UIKeyboard* _sharedKeyboard;
+	UIView* _attachedToKeyboardView;
+	BOOL _showsKeyboard, _interacting;
+	id _kbMsgTarget;
+	SEL _kbMsgSel;
+	UIWindow* _originalKeyWindow;
+}
+@property(assign,nonatomic) BOOL showsKeyboard, interacting;
++(INXSuperiorWindow*)sharedSuperiorWindow;
+@end
+
+@interface INXSuperiorWindow ()
+-(void)showsKeyboardWithPromptMessage:(NSString*)message
+							  subject:(NSString*)subject
+							   target:(id)target selector:(SEL)selector;
+@end
+

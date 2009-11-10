@@ -31,7 +31,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #import <SpringBoard/SpringBoard.h>
-#import <UIKit/UIApplication2.h>
+#import <UIKit/UIKit2.h>
 #include <notify.h>
 #include <mach/mach.h>
 #include <mach/message.h>
@@ -39,6 +39,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "INXRemoteAction.h"
 #include "INXCommon.h"
 #include <objc/runtime.h>
+#import "INXWindow.h"
 
 // std::open_url <URL>
 extern void open_url(NSArray* argv) {
@@ -47,7 +48,9 @@ extern void open_url(NSArray* argv) {
 #if TARGET_IPHONE_SIMULATOR
 		[[UIApplication sharedApplication] openURL:url];
 #else
-		[[UIApplication sharedApplication] applicationOpenURL:url];
+		SBAlertDisplay* disp = [[objc_getClass("SBAlertDisplay") alloc] init];
+		[disp launchURL:url];
+		[disp release];
 #endif
 	}
 }
@@ -68,10 +71,8 @@ extern void launch(NSArray* argv) {
 				SBRemoteNotificationServer* server = [objc_getClass("SBRemoteNotificationServer") sharedInstance];
 				NSDictionary* clientDict = [server valueForKey:@"bundleIdentifiersToClients"];
 				SBRemoteNotificationClient* client = [clientDict objectForKey:displayID];
-				CFPropertyListRef userInfo = INXCreateDictionaryWithString((CFStringRef)[argv objectAtIndex:2]);
-				[client setLastUserInfo:(NSDictionary*)userInfo];
-				if (userInfo != NULL)
-					CFRelease(userInfo);
+				id userInfo = [[argv objectAtIndex:2] propertyList];
+				[client setLastUserInfo:userInfo];
 			}
 			[[objc_getClass("SBUIController") sharedInstance] activateApplicationAnimated:app];
 		}
@@ -95,30 +96,25 @@ extern void distributed_message(NSArray* argv) {
 		
 		CPDistributedMessagingCenter* center = [CPDistributedMessagingCenter centerNamed:s[0]];
 		if (center != nil) {
-			CFPropertyListRef userInfo = INXCreateDictionaryWithString((CFStringRef)s[2]);
-			[center sendMessageName:s[1] userInfo:(NSDictionary*)userInfo];
-			if (userInfo != NULL)
-				CFRelease(userInfo);
+			[center sendMessageName:s[1] userInfo:[s[2] propertyList]];
 		}
 	}
 }
 
 // std::notification <MessageName> [<UserInfo>] [<ObjectPointer>]
 extern void notification(NSArray* argv) {
-	size_t len = [argv count];
+	NSUInteger len = [argv count];
 	if (len >= 2) {
 		NSString* s[3];
 		s[1] = s[2] = nil;
 		[argv getObjects:s range:NSMakeRange(1, len>=4?3:len-1)];
 		
 		id objPtr = (id)(void*)(intptr_t)[s[2] intValue];
-		CFPropertyListRef userInfo = INXCreateDictionaryWithString((CFStringRef)s[1]);
-		[[NSNotificationCenter defaultCenter] postNotificationName:s[0] object:objPtr userInfo:(NSDictionary*)userInfo];
-		if (userInfo != NULL)
-			CFRelease(userInfo);
+		[[NSNotificationCenter defaultCenter] postNotificationName:s[0] object:objPtr userInfo:[s[1] propertyList]];
 	}
 }
 
+// std.sequence (action1) (action2) (action3) ...
 extern void sequence(NSArray* argv) {
 	BOOL firstPassed = NO;
 	for (NSString* arg in argv) {
@@ -130,6 +126,83 @@ extern void sequence(NSArray* argv) {
 	}
 }
 
-extern void confirm(NSArray* argv) {
-	
+
+__attribute__((visibility("hidden")))
+@interface OMGWTFBBQDelegate : NSObject<UIActionSheetDelegate> {
+	NSString* _action;
 }
+-(id)initWithAction:(NSString*)action;
+@end
+@implementation OMGWTFBBQDelegate
+-(id)initWithAction:(NSString*)action {
+	if ((self = [super init])) {
+		_action = [action retain];
+	}
+	return self;
+}
+-(void)dealloc {
+	[_action release];
+	[super dealloc];
+}
+-(void)actionSheet:(UIActionSheet*)actionSheet clickedButtonAtIndex:(NSInteger)buttonIndex {
+	if (buttonIndex != actionSheet.cancelButtonIndex) {
+		INXPerformRemoteActionWithCFString((CFStringRef)_action);
+	}
+	[self release];
+}
+-(void)omg:(NSString*)resp {
+	NSMutableString* mr;
+	if (resp) {
+		mr = [resp mutableCopy];
+		INXEscape((CFMutableStringRef)mr);
+		[mr insertString:@"\"" atIndex:0];
+		[mr appendString:@"\""];
+	} else
+		mr = @"\"\"";
+	NSString* actual = [_action stringByReplacingOccurrencesOfString:@"%@" withString:mr];
+	if (resp)
+		[mr release];
+	INXPerformRemoteActionWithCFString((CFStringRef)actual);
+	[self release];
+}
+@end
+
+
+
+
+
+// std.confirm (action) confirmTitle [message] [normal|destructive]
+extern void confirm(NSArray* argv) {
+	NSUInteger len = [argv count];
+	if (len >= 3) {
+		NSString* s[4];
+		s[2] = s[3] = nil;
+		[argv getObjects:s range:NSMakeRange(1, len>=5?4:len-1)];
+		BOOL notDestructive = [s[3] isEqualToString:@"normal"];
+		
+		OMGWTFBBQDelegate* del = [[OMGWTFBBQDelegate alloc] initWithAction:s[0]];
+		UIActionSheet* sheet = [[UIActionSheet alloc] initWithTitle:s[2]
+														   delegate:del
+												  cancelButtonTitle:(NSString*)INXLocalizedCancel()
+											 destructiveButtonTitle:(notDestructive?nil:s[1])
+												  otherButtonTitles:(notDestructive?s[1]:nil), nil];
+		[sheet showInView:[INXSuperiorWindow sharedSuperiorWindow]];
+		[sheet release];
+	}
+}
+
+// 1 line prompt
+// std.prompt (action with %@ as placeholder) [message] [subject]
+extern void prompt(NSArray* argv) {
+	NSUInteger len = [argv count];
+	if (len >= 2) {
+		NSString* s[3];
+		s[1] = s[2] = nil;
+		[argv getObjects:s range:NSMakeRange(1, len>=4?3:len-1)];
+				
+		OMGWTFBBQDelegate* del = [[OMGWTFBBQDelegate alloc] initWithAction:s[0]];
+		[[INXSuperiorWindow sharedSuperiorWindow] showsKeyboardWithPromptMessage:s[1] subject:s[2] target:del selector:@selector(omg:)];
+	}
+}
+
+extern void nop(NSArray* argv) {}
