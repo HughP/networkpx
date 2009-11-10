@@ -50,9 +50,10 @@ extern "C" {
 #define INXRoot "/Library/iNotifyEx"
 #endif
 
-	CFPropertyListRef INXCreateDictionaryWithString(CFStringRef s);
+	CFPropertyListRef INXCreateDictionaryWithString(CFStringRef s) __attribute__((deprecated));
 	void INXEscape(CFMutableStringRef s);
 	void INXUnescape(CFMutableStringRef s);
+	CFStringRef INXLocalizedCancel();
 	
 #if __cplusplus
 }

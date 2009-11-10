@@ -8,4 +8,4 @@ OPTS=-arch i386 -isysroot /Developer/Platforms/iPhoneSimulator.platform/Develope
 OPTS_std=-framework Foundation -framework CoreFoundation -framework UIKit -framework AppSupport -weak-liNotifyEx
 
 %: %.m
-	gcc $(OPTS) $(OPTS_$@) $< -o $@.dylib
+	gcc $(OPTS) $(OPTS_$@) $< -o $@.x86.dylib
