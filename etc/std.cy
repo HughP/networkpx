@@ -30,45 +30,65 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-// Workaround bug in cycript-0.9.259-1
-this.objc_msgSend = Cycript.all.objc_msgSend;
- 
 // include other .cy files
-function include(fn) {
-  var t = [new NSTask init]; [t setLaunchPath:@"/usr/bin/cycript"]; [t setArguments:["-c", fn]];
-  var p = [NSPipe pipe]; [t setStandardOutput:p]; [t launch]; [t waitUntilExit];  [t release];
-  var s = [new NSString initWithData:[[p fileHandleForReading] readDataToEndOfFile] encoding:4];
-  var r = this.eval(s.toString()); [s release]; return r;
+if (!this.include) {
+  function include(fn) {
+    var t = [new NSTask init]; [t setLaunchPath:@"/usr/bin/cycript"]; [t setArguments:["-c", fn]];
+    var p = [NSPipe pipe]; [t setStandardOutput:p]; [t launch]; [t waitUntilExit];  [t release];
+    var s = [new NSString initWithData:[[p fileHandleForReading] readDataToEndOfFile] encoding:4];
+    var r = this.eval(s.toString()); [s release]; return r;
+  }
 }
- 
+
+// Usage: dlfun("notify_post", "I*")
+function dlfun(fn, encoding, altname) { var f = new Functor(dlsym(RTLD_DEFAULT, fn), encoding); if (f) this[altname || fn] = f; return f; }
+
+dlfun("nlist", "i*^{nlist=^cCCsI}");
+dlfun("memset", "^v^viI");
+
+function FW(name, notbin) {
+	var px = "/System/Library/", sx = "Frameworks/" + name + ".framework";
+	var mid = [[NSFileManager defaultManager] fileExistsAtPath:px + sx] ? "" : "Private";
+	return px + mid + sx + (notbin ? "" : "/" + name);
+}
+
+// Usage:
+//   var f = nlsym(FW("UIKit"), "_UpdateSystemSoundActiveStatus");
+//   UpdateSystemSoundActiveStatus = new Functor(f, "v");
+function nlsym(path, symname) {
+	var nl = new new Type("[2{nlist=^cCCsI}]"); memset(nl, 0, 24); var l = symname.length; var k = new char[l+1];
+	for (var i = 0; i < l; ++ i) k[i] = symname.charCodeAt(i); k[l] = 0; nl[0][0] = k; nlist(path, nl);
+	var rv = nl[0][4] + (nl[0][3] & 8 ? 1 : 0); free(nl); free(k); return rv;
+}
+
+// Usage: nlfun(FW("AudioToolbox"), "__ZL9PlaySoundmbb", "vLBB", "PlaySound")
+function nlfun(path, symname, encoding, altname) { var f = new Functor(nlsym(path, symname), encoding); if (f) this[altname || symname] = f; return f; }
+
 // Standard C functions
 function CGPointMake(x, y) { return {x:x, y:y}; }
 function CGSizeMake(w, h) { return {width:w, height:h}; }
 function CGRectMake(x, y, w, h) { return {origin:CGPointMake(x,y), size:CGSizeMake(w, h)}; }
 function NSMakeRange(loc, len) { return {location:loc, length:len}; }
-var CFRangeMake = NSMakeRange;
+CFRangeMake = NSMakeRange;
  
 // Standard C types
-var IMP = new Type("^?"), SEL = new Type(":"), unsigned = new Type("I");
-var int8_t = char, int16_t = short, int32_t = long, int64_t = new Type("q");
-var uint8_t = new Type("C"), uint16_t = new Type("S"), uint32_t = new Type("L"), uint64_t = new Type("Q");
-var SInt8 = int8_t, SInt16 = int16_t, SInt32 = int32_t, SInt64 = int64_t;
-var UInt8 = uint8_t, UInt16 = uint16_t, UInt32 = uint32_t, UInt64 = uint64_t;
-var unichar = int16_t, UniChar = int16_t, wchar_t = int32_t;
-var size_t = NSUInteger, intptr_t = NSInteger;
-var BOOL = char, bool = new Type("B");
-var mach_port_t = int, pid_t = int32_t;
-var CGRect = new Type("{CGRect}"), CGSize = new Type("{CGSize}"), CGPoint = new Type("{CGPoint}");
-var NSRange = new Type("{NSRange}"), CFRange = new Type("{CFRange}");
-var CGAffineTransform = new Type("{CGAffineTransform}"), UIEdgeInsets = new Type("{UIEdgeInsets}");
+IMP = new Type("^?"), SEL = new Type(":"), unsigned = new Type("I");
+int8_t = char, int16_t = short, int32_t = long, int64_t = new Type("q");
+uint8_t = new Type("C"), uint16_t = new Type("S"), uint32_t = new Type("L"), uint64_t = new Type("Q");
+SInt8 = int8_t, SInt16 = int16_t, SInt32 = int32_t, SInt64 = int64_t;
+UInt8 = uint8_t, UInt16 = uint16_t, UInt32 = uint32_t, UInt64 = uint64_t;
+unichar = int16_t, UniChar = int16_t, wchar_t = int32_t;
+size_t = NSUInteger, intptr_t = NSInteger;
+BOOL = char, bool = new Type("B");
+mach_port_t = int, pid_t = int32_t;
+CGRect = new Type("{CGRect}"), CGSize = new Type("{CGSize}"), CGPoint = new Type("{CGPoint}");
+NSRange = new Type("{NSRange}"), CFRange = new Type("{CFRange}");
+CGAffineTransform = new Type("{CGAffineTransform}"), UIEdgeInsets = new Type("{UIEdgeInsets}");
  
 // Standard enum values
-var UIControlStateNormal = 0, UIControlStateHighlighted = 1 << 0, UIControlStateDisabled = 1 << 1,
-    UIControlStateSelected = 1 << 2, UIControlStateApplication = 0x00FF0000, UIControlStateReserved = 0xFF000000;
- 
-// Usage: dlfun("notify_post", "I*")
-function dlfun(fn, encoding, altname) { var f = new Functor(dlsym(RTLD_DEFAULT, fn), encoding); if (f) this[altname || fn] = f; return f; }
- 
+UIControlStateNormal = 0, UIControlStateHighlighted = 1 << 0, UIControlStateDisabled = 1 << 1,
+UIControlStateSelected = 1 << 2, UIControlStateApplication = 0x00FF0000, UIControlStateReserved = 0xFF000000;
+  
 // MobileSubstrate
 dlfun("MSHookMessageEx", "v#:^?^^?");
 dlfun("MSHookMessage", "^?#:^?*");
