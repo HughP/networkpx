@@ -97,3 +97,15 @@ extern CFStringRef INXLocalizedCancel() {
 	pthread_once(&_INXCancelString_Once, &_INXCancelStringInit);
 	return _INXCancelString;
 }
+
+extern CFIndex INXRetrieveStrings(CFArrayRef argv, CFIndex maxArguments, CFStringRef* storage) {
+	memset(storage, 0, maxArguments*sizeof(*storage));
+	CFIndex count = CFArrayGetCount(argv);
+	if (count <= 1)
+		return 0;
+	CFIndex argsGot = count-1;
+	if (argsGot > maxArguments)
+		argsGot = maxArguments;
+	CFArrayGetValues(argv, CFRangeMake(1, argsGot), (const void**)storage);
+	return argsGot;
+}

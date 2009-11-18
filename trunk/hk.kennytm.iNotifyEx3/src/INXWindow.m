@@ -32,17 +32,25 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #import "INXWindow.h"
 #include <pthread.h>
+#include <CoreFoundation/CoreFoundation.h>
+#include <notify.h>
 #import <substrate2.h>
 #import <SpringBoard/SpringBoard.h>
 #import <QuartzCore/QuartzCore.h>
 #import <UIKit/UIKit2.h>
 #import <ChatKit/ChatKit.h>
 #import <objc/message.h>
+#include "INXCommon.h"
 
 static pthread_once_t _INXWindow_once = PTHREAD_ONCE_INIT;
 static INXWindow* _INXWindow = nil;
 static INXSuperiorWindow* _INXSuperiorWindow = nil;
+static int oToken, rToken;
+static mach_port_t oPort;
+static CFMachPortRef oPort2;
+static CFRunLoopSourceRef oSource;
 
+/*
 static UIInterfaceOrientation convertAngleToInterfaceOrientation(int angular) {
 	switch (angular) {
 		default: return UIInterfaceOrientationPortrait;
@@ -54,7 +62,22 @@ static UIInterfaceOrientation convertAngleToInterfaceOrientation(int angular) {
 
 DefineObjCHook(void, SpringBoard_noteUIOrientationChanged_display_, SpringBoard* self, SEL _cmd, int changed, id display) {
 	Original(SpringBoard_noteUIOrientationChanged_display_)(self, _cmd, changed, display);
-	_INXWindow.orientation = _INXSuperiorWindow.orientation = [self UIOrientation];
+	 = _INXSuperiorWindow.orientation = [self UIOrientation];
+}
+ */
+
+static void oChanged(CFMachPortRef port, void* msg, CFIndex size, void* info) {
+	int token = ((mach_msg_header_t*)msg)->msgh_id;
+	uint64_t state;
+	notify_get_state(token, &state);
+	UIDeviceOrientation orientation = state;
+	
+	if (orientation != UIDeviceOrientationUnknown && orientation != UIDeviceOrientationFaceDown && orientation != UIDeviceOrientationFaceUp) {
+		if (token == oToken)
+			_INXWindow.orientation = orientation;
+		else
+			_INXSuperiorWindow.orientation = orientation;
+	}
 }
 
 static void _INXWindowInitializer() {
@@ -63,10 +86,20 @@ static void _INXWindowInitializer() {
 	
 	[UITextEffectsWindow sharedTextEffectsWindowAboveStatusBar].windowLevel = 3*UIWindowLevelStatusBar;
 	
+	/*
 #if !TARGET_IPHONE_SIMULATOR
 	_INXWindow.orientation = _INXSuperiorWindow.orientation = [(SpringBoard*)[UIApplication sharedApplication] UIOrientation];
 	InstallObjCInstanceHook(objc_getClass("SpringBoard"), @selector(noteUIOrientationChanged:display:), SpringBoard_noteUIOrientationChanged_display_);
 #endif
+	 */
+	
+	notify_register_mach_port("com.apple.springboard.orientation", &oPort, 0, &oToken);
+	notify_register_mach_port("com.apple.springboard.rawOrientation", &oPort, NOTIFY_REUSE, &rToken);
+	
+	oPort2 = CFMachPortCreateWithPort(NULL, oPort, oChanged, NULL, NULL);
+	oSource = CFMachPortCreateRunLoopSource(NULL, oPort2, 0);
+	CFRunLoopAddSource(CFRunLoopGetMain(), oSource, kCFRunLoopDefaultMode);
+	CFRelease(oSource);
 }
 
 __attribute__((destructor))
@@ -77,55 +110,104 @@ static void _INXWindowDestructor() {
 	[_INXSuperiorWindow release];
 	_INXWindow = nil;
 	_INXSuperiorWindow = nil;
+	
+	if (oToken != 0) {
+		CFRunLoopSourceInvalidate(oSource);
+		CFRelease(oPort2);
+		notify_cancel(oToken);
+		notify_cancel(rToken);
+		oToken = rToken = 0;
+	}
 }
 
 __attribute__((visibility("hidden")))
 @interface INXBalloonView : UIView {
-	NSString* _str;
+//	NSString* _str;
 }
 @end
 @implementation INXBalloonView
 static UIImage* _balloon = nil;
-static UIFont* _defaultFont = nil;
+static UIFont* _defaultFont = nil, *_italicFont = nil;
 static pthread_once_t _balloon_once = PTHREAD_ONCE_INIT;
-static const CGFloat BALLOON_LCW = 18, BALLOON_TCH = 16, BALLOON_MAXWIDTH = 320;
+static const CGFloat BALLOON_LCW = 21, BALLOON_TCH = 16, BALLOON_MAXWIDTH = 320;
 static const CGFloat BALLOON_RPAD = 11, BALLOON_LPAD = 18, BALLOON_TPAD = 5, BALLOON_BPAD = 7;
 
 static void _INXBalloonViewGetBalloon() {
-	_balloon = [[[UIImage _balloonImage:YES color:YES] stretchableImageWithLeftCapWidth:BALLOON_LCW topCapHeight:BALLOON_TCH] retain];
+	UIImage* balloon_inverted = [UIImage _balloonImage:YES color:YES];
+	CGSize balloon_size = balloon_inverted.size;
+	UIGraphicsBeginImageContext(balloon_size);
+	CGContextScaleCTM(UIGraphicsGetCurrentContext(), -1, 1);
+	[balloon_inverted drawAtPoint:CGPointMake(-balloon_size.width, 0)];
+	_balloon = [[UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:BALLOON_LCW topCapHeight:BALLOON_TCH] retain];
+	UIGraphicsEndImageContext();
 	_defaultFont = [[UIFont systemFontOfSize:[UIFont systemFontSize]] retain];
+	_italicFont = [[UIFont italicSystemFontOfSize:[UIFont labelFontSize]] retain];
 }
 __attribute__((destructor))
 static void _INXBalloonViewDestroyBalloons() {
 	[_balloon release];
 	[_defaultFont release];
+	[_italicFont release];
 	_balloon = nil;
 	_defaultFont = nil;
+	_italicFont = nil;
 }
 
--(id)initWithString:(NSString*)str atCorner:(CGPoint)llcon {
-	pthread_once(&_balloon_once, &_INXBalloonViewGetBalloon);
-	CGSize size = [str sizeWithFont:_defaultFont forWidth:BALLOON_MAXWIDTH-BALLOON_LPAD-BALLOON_RPAD lineBreakMode:UILineBreakModeWordWrap];
-	CGRect frame = CGRectMake(llcon.x, llcon.y, size.width+BALLOON_LPAD+BALLOON_RPAD, size.height+BALLOON_TPAD+BALLOON_BPAD);
-	if ((self = [super initWithFrame:frame])) {
-		_str = [str retain];
+/*
+ [subject]
+ [pic] <[str.....]
+ */
+
+-(id)initWithString:(NSString*)str subject:(NSString*)subject pic:(UIImage*)pic {
+	if ((self = [super initWithFrame:CGRectZero])) {
+		pthread_once(&_balloon_once, &_INXBalloonViewGetBalloon);
+		
+		CGSize picSize = pic ? pic.size : CGSizeZero;
+		CGFloat balloonTextWidth = BALLOON_MAXWIDTH-BALLOON_LPAD-BALLOON_RPAD-picSize.width;
+		CGSize balloonTextSize = str ? [str sizeWithFont:_defaultFont forWidth:balloonTextWidth lineBreakMode:UILineBreakModeWordWrap] : CGSizeZero;
+		CGSize subjectSize = subject ? [subject sizeWithFont:_italicFont forWidth:BALLOON_MAXWIDTH lineBreakMode:UILineBreakModeWordWrap] : CGSizeZero;
+		CGFloat totalHeight = subjectSize.height + MAX(picSize.height, str ? balloonTextSize.height+BALLOON_TPAD+BALLOON_BPAD : 0);
+		
+		UIGraphicsBeginImageContext(CGSizeMake(BALLOON_MAXWIDTH, totalHeight));
+		CGContextRef c = UIGraphicsGetCurrentContext();
+		CGContextSetGrayFillColor(c, 1, 1);
+		[subject drawInRect:CGRectMake(0, 0, BALLOON_MAXWIDTH, subjectSize.height) withFont:_italicFont lineBreakMode:UILineBreakModeWordWrap];
+		[pic drawAtPoint:CGPointMake(0, totalHeight - picSize.width)];
+		if (str) {
+			CGContextSetGrayFillColor(c, 0, 1);
+			[_balloon drawInRect:CGRectMake(picSize.width, subjectSize.height, balloonTextSize.width+BALLOON_LPAD+BALLOON_RPAD, balloonTextSize.height+BALLOON_TPAD+BALLOON_BPAD)];
+			[str drawInRect:CGRectMake(picSize.width+BALLOON_LPAD, subjectSize.height+BALLOON_TPAD, balloonTextSize.width, balloonTextSize.height) withFont:_defaultFont lineBreakMode:UILineBreakModeWordWrap];
+		}
+		UIImage* image = UIGraphicsGetImageFromCurrentImageContext();
+		UIGraphicsEndImageContext();
+		
+		self.frame = CGRectMake(0, 0, BALLOON_MAXWIDTH, totalHeight);
+		UIImageView* v = [[UIImageView alloc] initWithImage:image];
+		[self addSubview:v];
+		[v release];
+		
+//		_str = [str retain];
 		self.backgroundColor = [UIColor clearColor];
-		[self setAccessibilityLabel:_str];
+		[self setAccessibilityLabel:[[subject stringByAppendingString:@"\n"] stringByAppendingString:str]];
 		[self setAccessibilityTraits:UIAccessibilityTraitStaticText];
 		[self setIsAccessibilityElement:YES];
+		
 		/*
-		UITapGestureRecognizer* recognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(singleTap)];
-		recognizer.numberOfFingers = recognizer.numberOfTaps = 1;
-		[self addGestureRecognizer:recognizer];
-		[recognizer release];
+		UITapGestureRecognizer* gr = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(singleTap)];
+		gr.numberOfTaps = gr.numberOfFingers = 1;
+		[self addGestureRecognizer:gr];
+		[gr release];
 		 */
 	}
 	return self;
 }
+/*
 -(void)dealloc {
 	[_str release];
 	[super dealloc];
 }
+*/
+/*
 -(void)drawRect:(CGRect)rect {
 	CGContextRef ctx = UIGraphicsGetCurrentContext();
 	CGContextScaleCTM(ctx, -1, 1);
@@ -134,6 +216,7 @@ static void _INXBalloonViewDestroyBalloons() {
 	[_str drawAtPoint:CGPointMake(BALLOON_LPAD, BALLOON_TPAD)
 			 forWidth:320-BALLOON_LPAD-BALLOON_RPAD withFont:_defaultFont lineBreakMode:UILineBreakModeWordWrap];
 }
+ */
 /*
 -(void)copy:(id)sender {
 	[UIPasteboard generalPasteboard].string = _str;
@@ -141,14 +224,15 @@ static void _INXBalloonViewDestroyBalloons() {
 -(BOOL)canPerformAction:(SEL)action withSender:(id)sender { return action == @selector(copy:); }
 -(BOOL)canBecomeFirstResponder { return YES; }
 -(void)singleTap {
-		UIMenuController* menu = [UIMenuController sharedMenuController];
-		[menu setTargetRect:self.bounds inView:self];
-		[menu setMenuVisible:YES animated:YES];
-	NSLog(@"%d", [UICalloutBar sharedCalloutBar].hidden);
+	[self becomeFirstResponder];
 	
-	[UICalloutBar sharedCalloutBar].window.windowLevel = UIWindowLevelStatusBar + 3;
+	UIMenuController* menu = [UIMenuController sharedMenuController];
+	[menu setTargetRect:self.bounds inView:self];
+	[menu setMenuVisible:YES animated:YES];
+	
+	[UICalloutBar sharedCalloutBar].window.windowLevel = UIWindowLevelStatusBar * 3;
 }
- */
+*/
 @end
 
 
@@ -191,10 +275,10 @@ static void _INXBalloonViewDestroyBalloons() {
 		[UIView commitAnimations];
 	}
 }
--(void)setOrientation:(int)newOrientation {
+-(void)setOrientation:(UIInterfaceOrientation)newOrientation {
 	if (_orientation != newOrientation) {
 		_orientation = newOrientation;
-		[self _updateToInterfaceOrientation:convertAngleToInterfaceOrientation(newOrientation) animated:YES];
+		[self _updateToInterfaceOrientation:newOrientation animated:YES];
 	}
 }
 -(BOOL)acceptsGlobalPoint:(CGPoint)point {
@@ -218,6 +302,14 @@ static void _INXBalloonViewDestroyBalloons() {
 
 
 @implementation INXSuperiorWindow
+static Class _SBAccelerometerInterface;
+static Ivar SBAccelerometerInterface_clients, UIControl_targetActions;
++(void)load {
+	_SBAccelerometerInterface = objc_getClass("SBAccelerometerInterface");
+	SBAccelerometerInterface_clients = class_getInstanceVariable(_SBAccelerometerInterface, "_clients");
+	UIControl_targetActions = class_getInstanceVariable([UIControl class], "_targetActions");
+}
+
 @synthesize showsKeyboard = _showsKeyboard, interacting = _interacting;
 -(id)init {
 	if ((self = [super init])) {
@@ -307,11 +399,11 @@ static void _INXBalloonViewDestroyBalloons() {
 
 -(void)showsKeyboardWithPromptMessage:(NSString*)message
 							  subject:(NSString*)subject
+								  pic:(UIImage*)pic
 							   target:(id)target selector:(SEL)selector {
 	_originalKeyWindow = UIApp.keyWindow;
 	[[_originalKeyWindow firstResponder] resignFirstResponder];
 	[self makeKeyWindow];
-	
 	self.showsKeyboard = YES;
 	
 	_kbMsgTarget = target;
@@ -319,11 +411,12 @@ static void _INXBalloonViewDestroyBalloons() {
 	
 	CGRect curRect = (self->_orientation == 90 || self->_orientation == -90) ? self->_kbRectLandscape : self->_kbRectPortrait;
 	
+	// Make the message balloon.
 	CGFloat h = 0;
 	INXBalloonView* balloon = nil;
 	if (message != nil) {
-		balloon = [[INXBalloonView alloc] initWithString:message atCorner:CGPointZero];
-		h = balloon.frame.size.height;
+		balloon = [[INXBalloonView alloc] initWithString:message subject:subject pic:pic];
+		h += balloon.frame.size.height;
 	}
 	
 	CKMessageMediaEntryView* entryView = [[CKMessageMediaEntryView alloc] initWithFrame:CGRectMake(0, h, curRect.size.width, 64)];
@@ -331,9 +424,12 @@ static void _INXBalloonViewDestroyBalloons() {
 	[[entryView entryField] setEntryFieldDelegate:self];
 	entryView.delegate = self;
 	UIButton* photoButton = [entryView photoButton];
+	[photoButton setAccessibilityLabel:(NSString*)INXLocalizedCancel()];
 	[photoButton accessibilitySetIdentification:@"Cancel"];
 	[photoButton setImage:[UIImage imageWithContentsOfFile:@"/Applications/MobileSafari.app/closebox.png"] forState:UIControlStateNormal];
 	[photoButton setImage:[UIImage imageWithContentsOfFile:@"/Applications/MobileSafari.app/closebox_pressed.png"] forState:UIControlStateHighlighted];	
+	[photoButton _cancelDelayedActions];
+	[object_getIvar(photoButton, UIControl_targetActions) removeAllObjects];
 	[photoButton addTarget:self action:@selector(keyboardPromptCanceled) forControlEvents:UIControlEventTouchUpInside];;
 	
 	[self->_attachedToKeyboardView removeFromSuperview];
@@ -358,5 +454,12 @@ static void _INXBalloonViewDestroyBalloons() {
 	[UIView commitAnimations];
 	
 	[[entryView entryField] tapGesture:nil];
+}
+
++(void)setAccelerometerState:(BOOL)on {
+	SBAccelerometerInterface* interface = [_SBAccelerometerInterface sharedInstance];
+	SBAccelerometerClient* client = [object_getIvar(interface, SBAccelerometerInterface_clients) lastObject];
+	client.updateInterval = on ? 0.1 : 0;
+	[interface updateSettings];
 }
 @end

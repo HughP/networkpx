@@ -1,6 +1,6 @@
 /*
  
-FILE_NAME ... FILE_DESCRIPTION
+INXIcon.h ... Get icon from string.
 
 Copyright (c) 2009  KennyTM~ <kennytm@gmail.com>
 All rights reserved.
@@ -30,36 +30,27 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#ifndef INXCOMMON_H
-#define INXCOMMON_H
+@class UIImage, NSString;
 
-#include <stdbool.h>
-#include <mach/message.h>
-#include <CoreFoundation/CoreFoundation.h>
+typedef enum {
+	INXIconOption_Raw,
+	INXIconOption_RawSmall,
+	INXIconOption_ApplicationIcon,	// 59x59, apply lightings
+	INXIconOption_ApplicationIconPrecomposed,	// 59x59, don't apply lightings
+	INXIconOption_SmallApplicationIcon,	// 29x29, apply lightings
+	INXIconOption_SmallApplicationIconPrecomposed,	// 29x29, don't apply lightings
+	INXIconOption_Balloon,
+	INXIconOption_Balloon59x59,
+} INXIconOption;
 
-#if __cplusplus
-extern "C" {
-#endif
+UIImage* INXIcon(NSString* iconDescription, INXIconOption iconOption);
 
-	bool INXIsSpringBoard();
-	mach_port_t INXPort();
-	
-#if TARGET_IPHONE_SIMULATOR
-#define INXRoot "/Users/kennytm/XCodeProjects/iKeyEx/svn/trunk/hk.kennytm.iNotifyEx3/xcode/iNotifyEx"
-#else
-#define INXRoot "/Library/iNotifyEx"
-#endif
+/* iconDescription:
+ 
+ com.yourcompany.displayID
+ /Path/to/yourIcon.png
+ contact:recordID (in decimal)
+ <89504E47 0D0A1A0A 12345678 ABCDEF01 ... >
+ 
+ */
 
-	CFPropertyListRef INXCreateDictionaryWithString(CFStringRef s) __attribute__((deprecated));
-	void INXEscape(CFMutableStringRef s);
-	void INXUnescape(CFMutableStringRef s);
-	CFStringRef INXLocalizedCancel();
-	
-	CFIndex INXRetrieveStrings(CFArrayRef argv, CFIndex maxArguments, CFStringRef* storage);
-#define INXRetrieveArguments(argv, strarr) (INXRetrieveStrings((CFArrayRef)(argv), sizeof(strarr)/sizeof((strarr)[0]), (CFStringRef*)(strarr)))
-	
-#if __cplusplus
-}
-#endif
-
-#endif

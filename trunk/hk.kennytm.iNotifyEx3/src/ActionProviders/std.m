@@ -40,6 +40,24 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "INXCommon.h"
 #include <objc/runtime.h>
 #import "INXWindow.h"
+#import "INXIcon.h"
+#include <pthread.h>
+
+static Ivar SBRemoteNotificationServer_bundleIdentifiersToClients;
+static Class _SBApplicationController, _SBRemoteNotificationServer, _SBAlertDisplay, _SBUIController;
+//static pthread_once_t std_init_once = PTHREAD_ONCE_INIT;
+
+__attribute__((constructor))
+static void std_init () {
+#define CLS(x) _##x = objc_getClass(#x)
+	CLS(SBApplicationController);
+	CLS(SBRemoteNotificationServer);
+	CLS(SBAlertDisplay);
+	CLS(SBUIController);
+#undef CLS
+	SBRemoteNotificationServer_bundleIdentifiersToClients = class_getInstanceVariable(_SBRemoteNotificationServer, "_bundleIdentifiersToClients");
+	
+}
 
 // std::open_url <URL>
 extern void open_url(NSArray* argv) {
@@ -48,12 +66,13 @@ extern void open_url(NSArray* argv) {
 #if TARGET_IPHONE_SIMULATOR
 		[[UIApplication sharedApplication] openURL:url];
 #else
-		SBAlertDisplay* disp = [[objc_getClass("SBAlertDisplay") alloc] init];
+		SBAlertDisplay* disp = [[_SBAlertDisplay alloc] init];
 		[disp launchURL:url];
 		[disp release];
 #endif
 	}
 }
+
 
 // std::launch <DisplayID> [<RemoteNotification>]
 extern void launch(NSArray* argv) {
@@ -65,50 +84,50 @@ extern void launch(NSArray* argv) {
 #else
 		NSArray* parentalControl = [(SpringBoard*)[UIApplication sharedApplication] parentalControlsDisabledApplications];
 		if (![parentalControl containsObject:displayID]) {
-			SBApplication* app = [[objc_getClass("SBApplicationController") sharedInstance] applicationWithDisplayIdentifier:displayID];
+			SBApplication* app = [[_SBApplicationController sharedInstance] applicationWithDisplayIdentifier:displayID];
 			if (count > 2) {
 				[app setActivationSetting:8 flag:YES];	// 8 = remoteNotification.
-				SBRemoteNotificationServer* server = [objc_getClass("SBRemoteNotificationServer") sharedInstance];
-				NSDictionary* clientDict = [server valueForKey:@"bundleIdentifiersToClients"];
+				SBRemoteNotificationServer* server = [_SBRemoteNotificationServer sharedInstance];
+				NSDictionary* clientDict = object_getIvar(server, SBRemoteNotificationServer_bundleIdentifiersToClients);
 				SBRemoteNotificationClient* client = [clientDict objectForKey:displayID];
 				id userInfo = [[argv objectAtIndex:2] propertyList];
 				[client setLastUserInfo:userInfo];
 			}
-			[[objc_getClass("SBUIController") sharedInstance] activateApplicationAnimated:app];
+			[[_SBUIController sharedInstance] activateApplicationAnimated:app];
 		}
 #endif
 	}
 }
 
-// std::darwin_notification <NotificationName>
+// std::darwin_notification <NotificationName> [<NewState>]
 extern void darwin_notification(NSArray* argv) {
-	if ([argv count] > 1)
-		notify_post([[argv objectAtIndex:1] UTF8String]);
+	NSString* s[2];
+	if (INXRetrieveArguments(argv, s) >= 1) {
+		const char* notif = [s[0] UTF8String];
+		if (s[1]) {
+			int token;
+			notify_register_check(notif, &token);
+			notify_set_state(token, [s[1] longLongValue]);
+			notify_cancel(token);
+		}
+		notify_post(notif);
+	}
 }
 
 // std::distributed_message <CenterName> <MessageName> [<UserInfo>]
 extern void distributed_message(NSArray* argv) {
-	size_t len = [argv count];
-	if (len >= 3) {
-		NSString* s[3];
-		s[2] = nil;
-		[argv getObjects:s range:NSMakeRange(1, len<=3?2:3)];
-		
+	NSString* s[3];
+	if (INXRetrieveArguments(argv, s) >= 2) {
 		CPDistributedMessagingCenter* center = [CPDistributedMessagingCenter centerNamed:s[0]];
-		if (center != nil) {
+		if (center != nil)
 			[center sendMessageName:s[1] userInfo:[s[2] propertyList]];
-		}
 	}
 }
 
 // std::notification <MessageName> [<UserInfo>] [<ObjectPointer>]
 extern void notification(NSArray* argv) {
-	NSUInteger len = [argv count];
-	if (len >= 2) {
-		NSString* s[3];
-		s[1] = s[2] = nil;
-		[argv getObjects:s range:NSMakeRange(1, len>=4?3:len-1)];
-		
+	NSString* s[3];
+	if (INXRetrieveArguments(argv, s) >= 1) {
 		id objPtr = (id)(void*)(intptr_t)[s[2] intValue];
 		[[NSNotificationCenter defaultCenter] postNotificationName:s[0] object:objPtr userInfo:[s[1] propertyList]];
 	}
@@ -158,7 +177,7 @@ __attribute__((visibility("hidden")))
 		[mr insertString:@"\"" atIndex:0];
 		[mr appendString:@"\""];
 	} else
-		mr = @"\"\"";
+		mr = (NSMutableString*)@"\"\"";
 	NSString* actual = [_action stringByReplacingOccurrencesOfString:@"%@" withString:mr];
 	if (resp)
 		[mr release];
@@ -167,19 +186,11 @@ __attribute__((visibility("hidden")))
 }
 @end
 
-
-
-
-
 // std.confirm (action) confirmTitle [message] [normal|destructive]
 extern void confirm(NSArray* argv) {
-	NSUInteger len = [argv count];
-	if (len >= 3) {
-		NSString* s[4];
-		s[2] = s[3] = nil;
-		[argv getObjects:s range:NSMakeRange(1, len>=5?4:len-1)];
+	NSString* s[4];
+	if (INXRetrieveArguments(argv, s) >= 2) {
 		BOOL notDestructive = [s[3] isEqualToString:@"normal"];
-		
 		OMGWTFBBQDelegate* del = [[OMGWTFBBQDelegate alloc] initWithAction:s[0]];
 		UIActionSheet* sheet = [[UIActionSheet alloc] initWithTitle:s[2]
 														   delegate:del
@@ -192,16 +203,13 @@ extern void confirm(NSArray* argv) {
 }
 
 // 1 line prompt
-// std.prompt (action with %@ as placeholder) [message] [subject]
+// std.prompt (action with %@ as placeholder) [message] [subject] [pic]
 extern void prompt(NSArray* argv) {
-	NSUInteger len = [argv count];
-	if (len >= 2) {
-		NSString* s[3];
-		s[1] = s[2] = nil;
-		[argv getObjects:s range:NSMakeRange(1, len>=4?3:len-1)];
-				
+	NSString* s[4];
+	if (INXRetrieveArguments(argv, s) >= 1) {
 		OMGWTFBBQDelegate* del = [[OMGWTFBBQDelegate alloc] initWithAction:s[0]];
-		[[INXSuperiorWindow sharedSuperiorWindow] showsKeyboardWithPromptMessage:s[1] subject:s[2] target:del selector:@selector(omg:)];
+		UIImage* pic = INXIcon(s[3], INXIconOption_Balloon59x59);
+		[[INXSuperiorWindow sharedSuperiorWindow] showsKeyboardWithPromptMessage:s[1] subject:s[2] pic:pic target:del selector:@selector(omg:)];
 	}
 }
 
