@@ -35,10 +35,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 @class UIKeyboard, UIView, UITextInputTraits;
 
 @interface INXWindow : UIWindow {
-	int _orientation;
+	UIInterfaceOrientation _orientation;
 	CGRect _fullScreenRect;
 }
-@property(assign,nonatomic) int orientation;
+@property(assign,nonatomic) UIInterfaceOrientation orientation;
 +(INXWindow*)sharedWindow;
 @end
 
@@ -57,8 +57,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 @end
 
 @interface INXSuperiorWindow ()
++(void)setAccelerometerState:(BOOL)on;
 -(void)showsKeyboardWithPromptMessage:(NSString*)message
 							  subject:(NSString*)subject
+								  pic:(UIImage*)pic
 							   target:(id)target selector:(SEL)selector;
 @end
 
