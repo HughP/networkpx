@@ -116,21 +116,21 @@ function $encode(ss, dontKeepClassName) {
  function _encode(s) {
   s = s.replace(/\s{2,}/g, " ").replace(/^\s|\s$/g, "").replace(/(\W)\s|\s(\W)/g, "$1$2")
   var m;
-  if ((m = /\((\*+)\)\[(\d*)\]/.exec(s))) {
+  if ((m = /\((\*+)\)\[(\d*)\]/(s))) {
     var left = s.substr(0, m.index), right = s.substr(m.index + m[0].length);
     var t = _encode(left+right), px = m[1].replace(/\*/g, "^");
     if (m[2]) return px + "[" + m[2] + t + "]";
     else      return px + "^" + t;
-  } else if ((m = /\[(\d*)\]$/.exec(s))) {
+  } else if ((m = /\[(\d*)\]$/(s))) {
     var t = _encode(s.substr(0, m.index));
     if (m[1]) return "[" + m[1] + t + "]";
     else      return "^" + t;
-  } else if ((m = /\*+$/.exec(s))) {
+  } else if ((m = /\*+$/(s))) {
     var t = _encode(s.substr(0, m.index));
     var px = m[0].replace(/\*/g, "^");
     if (t[0] == '1') { px = px.substr(1); t = t.substr(1); }
     return px+t;
-  } else if ((m = /:(\d+)$/.exec(s))) {
+  } else if ((m = /:(\d+)$/(s))) {
     return "b" + m[1];
   } else {
     var prefix = "", longcount = 0, isunsigned = null, theType = "";
@@ -163,7 +163,24 @@ function $encode(ss, dontKeepClassName) {
  return ss instanceof Type ? ss : new Type(_encode(ss).replace(/\^c/g, "*"));
 }
  
- 
+
+function _analyzeDecl(decl) {
+	decl = decl.substr(decl.indexOf('('));
+	var typeMatcher = /\(([^)]+)\)/g, selMatcher = /[\s\)]([^:\s]+)\s*:/g
+	var typestr = "", typecount = 0, selname = "", m;
+	while ((m = typeMatcher(decl))) {
+		typestr += $encode(m[1], true).toString();
+		if (++typecount == 1) typestr += "@:";
+	}
+	if (typecount == 1)
+		selname = /\)(.+)$/(decl)[0];
+	else {
+		while ((m = selMatcher(decl))) selname += m[1] + ":";
+	}
+	selname = selname.replace(/\s/g, "");
+	return {type:typestr, selector:new Selector(selname)};
+}
+
 /* 
 Usage:
  
@@ -174,22 +191,142 @@ Bug: [super xxx] doesn't work by default. You need to call
 yourself.
 */
 function addMethod(cls, decl, func) {
-  if (/^\s*\+/.test(decl)) cls = cls->isa;
-  var typeMatcher = /\(([^)]+)\)/g, selMatcher = /[\s\)]([^:\s]+)\s*:/g
-  var typestr = "", typecount = 0;
-  var selname = "";
-  var m;
-  while ((m = typeMatcher.exec(decl))) {
-    typestr += $encode(m[1], true).toString();
-    if (++typecount == 1) typestr += "@:";
-  }
-  if (typecount == 1) selname = /\)(.+)$/.exec(decl)[0];
-  else {
-    while ((m = selMatcher.exec(decl))) selname += m[1] + ":";
-  }
-  selname = selname.replace(/\s/g, "");
-  return class_addMethod(cls, new Selector(selname), new Functor(function(self,_cmd){
-    return func.apply(self,Array.prototype.slice.call(arguments,2));
-  }, typestr), typestr);
+	if (/^\s*\+/.test(decl))
+		cls = cls->isa;
+	var res = _analyzeDecl(decl);
+	return class_addMethod(cls, res.selector, new Functor(function(self,_cmd){
+		return func.apply(self, Array.prototype.slice.call(arguments, 2));
+	}, res.type), res.type);
 }
+
+function _formatToType(s, forScanf) {
+	var cache = _formatToType[forScanf ? "s" : "p"];
+	if (cache[s])
+		return cache[s];
+
+	s = s.replace(/%%/g, "");
+	var crazyRegExp = forScanf ?
+		/%(?:(\d+)\$)?[*\d]*()()([hl]{1,2}|[Ljtzq]|I\d+)?([diouxXaAeEfFgGsScCp\[])/g :
+		/%(?:(\d+)\$)?[-+#0 \x27]*[,;:_]?(?:\d+|(\*)(?:\d+\$)?)?(?:\.(?:\d+|(\*)(?:\d+\$)?))?([hl]{1,2}|[Lzjtq]|I\d+)?([dDiuUfFeEgGxXoOsScCpn@LaAztjv])/g;
+	var m;
+	var encs = [];
+	var p = 0;
+	while ((m = crazyRegExp(s))) {
+		// m[1] -> position
+		// m[2] -> "*" if needs 1 extra input
+		// m[3] -> "*" if needs 1 extra input
+		// m[4] -> width
+		// m[5] -> type.
+		var type = _formatToType.f[m[5]][_formatToType.t[m[4]] || 0];
+		if (type) {
+			if (!forScanf)
+				type += (m[2]?"^i":"") + (m[3]?"^i":"");
+			else if (!(m[5] in {s:null,S:null,n:null}))
+				type = "^" + type;
+		}
+		if (m[1])
+			p = m[1]-1;
+		encs[p++] = type;
+	}
+	for (var i = encs.length-1; i >= 0; -- i)
+		if (!encs[i])
+			encs[i] = "^v";
+	return (cache[s] = encs.join(""));
+}
+_formatToType.p = {};
+_formatToType.s = {};
+_formatToType.t = {hh:1, h:2, l:3, ll:4, j:4, t:0, z:0, q:4, L:4, I32:3, I64:4};
+__fTTeF = {
+	d: ['i', 'c', 's', 'l', 'q'],
+	u: ['I', 'C', 'S', 'L', 'Q'],
+	D: ['l', 'c', 's', 'l', 'q'],
+	U: ['L', 'C', 'S', 'L', 'Q'],
+	n: ['^i', '^c', '^s', '^l', '^q'],
+	f: ['f', 'f', 'f', 'd', 'd'],
+	c: ['c', 'c', 'c', 'i', 'i'],
+	C: ['i', 'i', 'i', 'i', 'i'],
+	s: ['*', '*', '*', '^i', '^i'],
+	S: ['^i', '^i', '^i', '^i', '^i'],
+	v: ['[16C]', '[16C]', '[8S]', '[4I]', '[2Q]'],
+	p: ['^v', '^v', '^v', '^v', '^v'],
+	'@': ['@', '@', '@', '@', '@']
+};
+__fTTeF.i = __fTTeF.d;
+__fTTeF.o = __fTTeF.x = __fTTeF.X = __fTTeF.u;
+__fTTeF.O = __fTTeF.U;
+__fTTeF.e = __fTTeF.E = __fTTeF.g = __fTTeF.G = __fTTeF.a = __fTTeF.A = __fTTeF.F = __fTTeF.f;
+__fTTeF['['] = __fTTeF.s;
+_formatToType.f = __fTTeF;
+delete __fTTeF;
+
+/** Split a string by balanced substring, e.g.
+ f("abcde") = ["a", "bcde"]
+ f("(abc)de") = ["(abc)", "de"]
+ f("'ab(c'd)e") = ["'ab(c'", "d)e"]
+ */
+function splitBalancedSubstring(s) {
+	var l = s.length;
+	var balance = 0;
+	var escmode = false, qmode = 0;
+	for (var i = 0; i < l; ++ i) {
+		var step = -1;
+		switch (s[i]) {
+			case '[': case '{': case '(': case '<':
+				step = 1;
+				// fallthrough
+			case ']': case '}': case ')': case '>':
+				if (!qmode) balance += step;
+				else escmode = false;
+				break;
+				
+			case '"': case "'":
+				var contra = s[i] == '"' ? 1 : 2;
+				if (qmode === contra || escmode) escmode = false;
+				else {
+					if ((qmode = qmode ? 0 : 3-contra)) ++ balance;
+					else -- balance;
+				}
+				break;
+				
+			case '\\':
+				if (qmode) escmode = !escmode;
+				break;
+				
+			default:
+				if (qmode) escmode = false;
+				break;
+		}
+		if (balance <= 0)
+			return [s.substr(0, i+1), s.substr(i+1)];
+	}
+	return [s, ""];
+}
+
+
+function countEncodedTypes(type) {
+	type = type.replace(/[NORVjnor^\d]/g, "");
+	var res = 1;
+	while ((type = splitBalancedSubstring(type)[1])) ++ res;
+	return res;
+}
+
+/*
+e.g.
+ dlprintf("NSLog", "v@");
+ dlprintf("CFStringCreateWithFormat", "@@@@");
+ dlprintf("fprintf", "i^{FILE=}*");
+ */
+function dlprintf(sym, enc, altname, isScanf) {
+	var lastArgPos = countEncodedTypes(enc)-2;
+	var x = dlsym(-2, sym);
+	if (!x)
+		return null;
+	else {
+		return (this[sym || altname] = function() {
+			return new Functor(x, enc + _formatToType(arguments[lastArgPos], isScanf)).apply(null, arguments);
+		});
+	} 
+}
+
+function dlscanf(sym, enc, altname) { return dlprintf(sym, enc, altname, true); }
 
