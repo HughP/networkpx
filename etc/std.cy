@@ -70,7 +70,19 @@ function CGSizeMake(w, h) { return {width:w, height:h}; }
 function CGRectMake(x, y, w, h) { return {origin:CGPointMake(x,y), size:CGSizeMake(w, h)}; }
 function NSMakeRange(loc, len) { return {location:loc, length:len}; }
 CFRangeMake = NSMakeRange;
- 
+
+// A Python range function.
+function range(a, b, c) {
+	if (arguments.length == 1) { b = a; a = 0; }
+	if (!c) c = 1;
+	var r = [], i = a;
+	if (c > 0)
+		for (; i < b; i += c) r.push(i);
+	else
+		for (; i > b; i += c) r.push(i);
+	return r;
+}
+
 // Standard C types
 IMP = new Type("^?"), SEL = new Type(":"), unsigned = new Type("I");
 int8_t = char, int16_t = short, int32_t = long, int64_t = new Type("q");
@@ -85,6 +97,21 @@ CGRect = new Type("{CGRect}"), CGSize = new Type("{CGSize}"), CGPoint = new Type
 NSRange = new Type("{NSRange}"), CFRange = new Type("{CFRange}");
 CGAffineTransform = new Type("{CGAffineTransform}"), UIEdgeInsets = new Type("{UIEdgeInsets}");
  
+// Declare an enum
+// e.g. defEnum("kType", "A", 3, "B", "C") -> kTypeA = 0; kTypeB = 3; kTypeC = 4;
+function defEnum(prefix) {
+	var l = arguments.length;
+	var v = 0;
+	for (var i = 1; i < l; ++ i) {
+		var a = arguments[i];
+		if (typeof(a) === "number")
+			v = a;
+		else
+			this[prefix + a] = v++;
+	}
+	return v;
+}
+
 // Standard enum values
 UIControlStateNormal = 0, UIControlStateHighlighted = 1 << 0, UIControlStateDisabled = 1 << 1,
 UIControlStateSelected = 1 << 2, UIControlStateApplication = 0x00FF0000, UIControlStateReserved = 0xFF000000;
@@ -128,7 +155,7 @@ function $encode(ss, dontKeepClassName) {
   } else if ((m = /\*+$/(s))) {
     var t = _encode(s.substr(0, m.index));
     var px = m[0].replace(/\*/g, "^");
-    if (t[0] == '1') { px = px.substr(1); t = t.substr(1); }
+    if (t[0] === '1') { px = px.substr(1); t = t.substr(1); }
     return px+t;
   } else if ((m = /:(\d+)$/(s))) {
     return "b" + m[1];
@@ -136,19 +163,19 @@ function $encode(ss, dontKeepClassName) {
     var prefix = "", longcount = 0, isunsigned = null, theType = "";
     for each (comp in s.split(/\s/)) {
       if ((mod = _encode.modifiers[comp])) prefix += mod;
-      else if (comp == "unsigned") isunsigned = true;
-      else if (comp == "signed")   isunsigned = false;
-      else if (comp == "long")  ++ longcount;
-      else if (comp == "short") -- longcount;
-      else if (comp == "void") theType = "v";
+      else if (comp === "unsigned") isunsigned = true;
+      else if (comp === "signed")   isunsigned = false;
+      else if (comp === "long")  ++ longcount;
+      else if (comp === "short") -- longcount;
+      else if (comp === "void") theType = "v";
       else if ((typ = this[comp])) {
         if (typ instanceof Type) theType = typ.toString();
         else theType = dontKeepClassName ? "1@" : "1@\"" + typ.toString() + "\"";
       } else theType = "{" + comp + "}";
     }
-    if (theType == "" || theType == "i") {
+    if (theType === "" || theType === "i") {
       if (longcount < 0) theType = "s";
-      else if (longcount == 1) theType = "l";
+      else if (longcount === 1) theType = "l";
       else if (longcount >= 2) theType = "q";
     }
     if (isunsigned !== null && theType[0] !== '1' && theType[0] !== '{')
@@ -170,9 +197,9 @@ function _analyzeDecl(decl) {
 	var typestr = "", typecount = 0, selname = "", m;
 	while ((m = typeMatcher(decl))) {
 		typestr += $encode(m[1], true).toString();
-		if (++typecount == 1) typestr += "@:";
+		if (++typecount === 1) typestr += "@:";
 	}
-	if (typecount == 1)
+	if (typecount === 1)
 		selname = /\)(.+)$/(decl)[0];
 	else {
 		while ((m = selMatcher(decl))) selname += m[1] + ":";
@@ -280,7 +307,7 @@ function splitBalancedSubstring(s) {
 				break;
 				
 			case '"': case "'":
-				var contra = s[i] == '"' ? 1 : 2;
+				var contra = s[i] === '"' ? 1 : 2;
 				if (qmode === contra || escmode) escmode = false;
 				else {
 					if ((qmode = qmode ? 0 : 3-contra)) ++ balance;
@@ -330,3 +357,7 @@ function dlprintf(sym, enc, altname, isScanf) {
 
 function dlscanf(sym, enc, altname) { return dlprintf(sym, enc, altname, true); }
 
+dlprintf("NSLog", "v@");
+dlprintf("printf", "i*");
+dlprintf("CFLog", "vi@");
+defEnum("kCFLogLevel", "Emergency", "Alert", "Critical", "Error", "Warning", "Notice", "Info", "Debug");
