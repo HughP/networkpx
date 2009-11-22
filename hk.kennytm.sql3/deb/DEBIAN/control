@@ -8,6 +8,6 @@ Maintainer: KennyTM~ <kennytm+sql3@gmail.com>
 Author: KennyTM~ <kennytm+sql3@gmail.com>
 Section: Data Storage
 Pre-Depends: firmware (>=3.0)
-Installed-Size: 160
+Installed-Size: 56
 Recommends: eu.heinelt.ifile (>=1.2.0-beta8)
 dev: kennytm
