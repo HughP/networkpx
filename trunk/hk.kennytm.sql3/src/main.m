@@ -81,6 +81,7 @@ static NSString* createEscapeHTML(const char* s) {
 	resView = [[UIWebView alloc] initWithFrame:CGRectMake(0, sbH, 100, 100-sbH)];
 	resView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
 	resView.dataDetectorTypes = UIDataDetectorTypeNone;
+	resView.scalesPageToFit = YES;
 	[view addSubview:resView];
 	[resView release];
 	
@@ -113,7 +114,7 @@ static NSString* createEscapeHTML(const char* s) {
 					for (i = 0; i < colcount; ++ i) {
 						NSString* s = createEscapeHTML(sqlite3_column_name(stmt, i));
 						[tableContent appendString:@"<th>"];
-						[tableContent appendString:s];
+						[tableContent appendString:(s ?: @"")];
 						[tableContent appendString:@"</th>"];
 						[s release];
 					}
@@ -123,7 +124,7 @@ static NSString* createEscapeHTML(const char* s) {
 				for (int i = 0; i < colcount; ++ i) {
 					NSString* s = createEscapeHTML((const char*)sqlite3_column_text(stmt, i));
 					[tableContent appendString:@"<td>"];
-					[tableContent appendString:s];
+					[tableContent appendString:(s ?: @"")];
 					[tableContent appendString:@"</td>"];
 					[s release];
 				}
@@ -142,6 +143,7 @@ static NSString* createEscapeHTML(const char* s) {
 								 @"table{border-collapse:collapse;}</style></head>"
 								 @"<body><p>Fetched %d row%s</p>%@</body></html>",
 								 rowcount, rowcount==0?"":"s", tableContent] baseURL:nil];
+		[tableContent release];
 	}
 	sqlite3_finalize(stmt);
 }
