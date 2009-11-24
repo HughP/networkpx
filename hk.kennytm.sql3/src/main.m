@@ -351,6 +351,7 @@ static NSString* createEscapeHTML(const char* s) {
 	if (!url) return NO;
 	if (![[url scheme] isEqualToString:@"sqlite3"]) return NO;
 	if ([navCtrler topViewController] != fcc) return NO;
+	[startingPath release];
 	startingPath = [[url path] retain];
 	[fcc openURL:startingPath];
 	return YES;
