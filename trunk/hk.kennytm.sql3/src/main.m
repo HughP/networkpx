@@ -259,6 +259,22 @@ static NSString* createEscapeHTML(const char* s) {
 	[view addSubview:textField];
 	[textField release];
 	
+	BOOL hasiFile = [[NSFileManager defaultManager] fileExistsAtPath:@"/Applications/iFile.app"];
+	if (!hasiFile) {
+		UIButton* iFileButton = [[UIButton alloc] initWithFrame:CGRectMake(10, 150, 80, 30)];
+		iFileButton.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleTopMargin;
+		[iFileButton setTitle:@"SQLite3 Viewer is designed to be an external viewer of iFile. Tap here to install iFile" forState:UIControlStateNormal];
+		UILabel* titleLabel = iFileButton.titleLabel;
+		titleLabel.font = [UIFont systemFontOfSize:[UIFont smallSystemFontSize]];
+		titleLabel.numberOfLines = 0;
+		titleLabel.lineBreakMode = UILineBreakModeWordWrap;
+		[iFileButton setTitleColor:[UIColor blackColor] forState:UIControlStateNormal];
+		[iFileButton setTitleColor:[UIColor redColor] forState:UIControlStateHighlighted];
+		[iFileButton addTarget:self action:@selector(installiFile) forControlEvents:UIControlEventTouchUpInside];
+		[view addSubview:iFileButton];
+		[iFileButton release];
+	}
+	
 	UIButton* button = [UIButton buttonWithType:UIButtonTypeRoundedRect];
 	button.frame = CGRectMake(30, 60, 40, 30);
 	button.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleBottomMargin;
@@ -295,6 +311,9 @@ static NSString* createEscapeHTML(const char* s) {
 	}
 }
 -(void)open { [self openURL:textField.text]; }
+-(void)installiFile {
+	[[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"cydia://package/eu.heinelt.ifile"]];
+}
 @end
 
 #pragma mark -
@@ -303,6 +322,7 @@ static NSString* createEscapeHTML(const char* s) {
 	UIWindow* window;
 	UINavigationController* navCtrler;
 	FileChooserController* fcc;
+	NSString* startingPath;
 }
 @end
 @implementation Del
@@ -318,6 +338,12 @@ static NSString* createEscapeHTML(const char* s) {
 	[fcc release];
 }
 -(void)applicationWillTerminate:(UIApplication*)application {
+	if (startingPath) {
+		NSURL* iFileURL = [NSURL URLWithString:[@"ifile://" stringByAppendingString:[startingPath stringByDeletingLastPathComponent]]];
+		if ([application canOpenURL:iFileURL])
+			[application openURL:iFileURL];
+		[startingPath release];
+	}
 	[window release];
 	[navCtrler release];
 }
@@ -325,7 +351,8 @@ static NSString* createEscapeHTML(const char* s) {
 	if (!url) return NO;
 	if (![[url scheme] isEqualToString:@"sqlite3"]) return NO;
 	if ([navCtrler topViewController] != fcc) return NO;
-	[fcc openURL:[url path]];
+	startingPath = [[url path] retain];
+	[fcc openURL:startingPath];
 	return YES;
 }
 @end

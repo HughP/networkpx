@@ -1,6 +1,6 @@
 Package: hk.kennytm.sql3
 Name: SQLite3 Viewer
-Version: 0.2
+Version: 0.2a
 Architecture: iphoneos-arm
 Description: Minimalistic viewer for SQLite3 databases.
 Homepage: http://code.google.com/p/networkpx/
@@ -8,6 +8,6 @@ Maintainer: KennyTM~ <kennytm+sql3@gmail.com>
 Author: KennyTM~ <kennytm+sql3@gmail.com>
 Section: Data Storage
 Pre-Depends: firmware (>=3.0)
-Installed-Size: 56
-Recommends: eu.heinelt.ifile (>=1.2.0-beta8)
+Installed-Size: 52
+Recommends: eu.heinelt.ifile (>=1.2.0-beta9)
 dev: kennytm
