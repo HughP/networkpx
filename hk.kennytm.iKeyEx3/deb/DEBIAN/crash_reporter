@@ -1,0 +1,5 @@
+include as "iKeyEx Configuration" plist /var/mobile/Library/Keyboard/iKeyEx::config.plist
+include as "Active keyboard list" plist /var/mobile/Library/Preferences/.GlobalPreferences.plist
+include as "Keyboard state" plist /var/mobile/Library/Preferences/com.apple.Preferences.plist
+deny "Email developer"
+link as "Report issue" url http://code.google.com/p/networkpx/issues/entry
