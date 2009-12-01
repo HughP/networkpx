@@ -43,6 +43,8 @@ if (!this.include) {
 // Usage: dlfun("notify_post", "I*")
 function dlfun(fn, encoding, altname) { var f = new Functor(dlsym(RTLD_DEFAULT, fn), encoding); if (f) this[altname || fn] = f; return f; }
 
+function dlstr(sym, altname) { var f = dlsym(RTLD_DEFAULT, sym); if (f) { return (this[altname || sym] = *new Pointer(f, "@")); } else return nil; }
+
 dlfun("nlist", "i*^{nlist=^cCCsI}");
 dlfun("memset", "^v^viI");
 
@@ -70,6 +72,10 @@ function CGSizeMake(w, h) { return {width:w, height:h}; }
 function CGRectMake(x, y, w, h) { return {origin:CGPointMake(x,y), size:CGSizeMake(w, h)}; }
 function NSMakeRange(loc, len) { return {location:loc, length:len}; }
 CFRangeMake = NSMakeRange;
+
+CGPointZero = CGPointMake(0,0);
+CGSizeZero = CGSizeMake(0,0);
+CGRectZero = CGRectMake(0,0,0,0);
 
 // A Python range function.
 function range(a, b, c) {
