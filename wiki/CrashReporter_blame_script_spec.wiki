@@ -1,4 +1,7 @@
 #summary CrashReporter "Blame Script" Specification
+#labels Phase-Implementation
+
+<wiki:toc/>
 
 = Overview =
 
@@ -17,8 +20,23 @@ Each Cydia package or !AppStore application can provide exactly 1 Blame Script. 
  * `/DEBIAN/crash_reporter` (for Cydia packages)
  * _yourApp.app_`/crash_reporter` (for !AppStore apps)
 
-= Commands =
+= Instructions =
 == include ==
  * `include [as `_"Title"_`] file `_"filename"_
  * `include [as `_"Title"_`] plist `_"filename"_
  * `include [as `_"Title"_`] command `_shell-command arg1 arg2..._
+These will add an extra file to attach in the crash report. `file` is for ordinary text file, `plist` for property lists and `command` for the output of a shell command.
+
+== link ==
+ * `link [as `_"Title"_`] url `_url_
+ * `link [as `_"Title"_`] email `_email_
+These will create a hyperlink that the user can follow and paste the crash report. 
+
+== deny ==
+ * `deny `_"Title"_
+Remove a file included or a link with title _"Title"_. By default, these links will exist:
+ * Find package in Cydia
+ * Report to !AppStore
+and these inclusion will exist:
+ * Crash log
+ * syslog
