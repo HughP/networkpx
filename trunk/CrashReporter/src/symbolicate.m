@@ -211,7 +211,7 @@ finish:
 	int last_percent = 0;
 	
 	for (BacktraceInfo* bti in extraInfoArr) {
-		int this_percent = 100*i / total_lines;
+		int this_percent = MIN(100, 200*i / total_lines);
 		if (this_percent != last_percent) {
 			last_percent = this_percent;
 			[hudReply setText:[NSString stringWithFormat:symbolicating, this_percent]];

@@ -338,11 +338,13 @@ static NSCalendar* cal;
 		}
 	} else {
 		// is a dpkg.
+		/*
 		if (pkg.author) {
 			ReporterLine* emailLink = [ReporterLine reporterWithLine:[NSString stringWithFormat:@"link email \"%@\" as \"Email developer\"", pkg.author]];
 			[res addObject:emailLink];
 		}
-		ReporterLine* uninstallLink = [ReporterLine reporterWithLine:[NSString stringWithFormat:@"link url \"cydia://package/%@\" as \"Remove package\"", pkg.identifier]];
+		 */
+		ReporterLine* uninstallLink = [ReporterLine reporterWithLine:[NSString stringWithFormat:@"link url \"cydia://package/%@\" as \"Find package in Cydia\"", pkg.identifier]];
 		[res addObject:uninstallLink];
 	}
 	

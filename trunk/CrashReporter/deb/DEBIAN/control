@@ -4,7 +4,7 @@ Depends: dpkg, grep, coreutils
 Recommends: cydia, syslogd
 Name: Crash Reporter
 Description: Send useful crash info to developers.
-Version: 0.2b
+Version: 0.2c
 Homepage: http://code.google.com/p/networkpx/wiki/Using_CrashReporter
 Author: KennyTM~ <kennytm+CrashReporter@gmail.com>
 Section: System
