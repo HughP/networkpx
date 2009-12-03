@@ -12,7 +12,6 @@
 		288765FD0DF74451002DB57D /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 288765FC0DF74451002DB57D /* CoreGraphics.framework */; };
 		9C0E53FB106E8C5C00ED8CCC /* symbolicate.m in Sources */ = {isa = PBXBuildFile; fileRef = 9C4B624A106E1137006560F3 /* symbolicate.m */; };
 		9C0E552E106FD8FA00ED8CCC /* whitelist.plist in Resources */ = {isa = PBXBuildFile; fileRef = 9C0E552D106FD8FA00ED8CCC /* whitelist.plist */; };
-		9C0E55D1106FEFB000ED8CCC /* Symbolication.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9C0E541D106E8D2600ED8CCC /* Symbolication.framework */; };
 		9C0E561C106FFBB800ED8CCC /* SuspectsViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 9C0E561B106FFBB800ED8CCC /* SuspectsViewController.m */; };
 		9C0E56211070C44E00ED8CCC /* BlameController.m in Sources */ = {isa = PBXBuildFile; fileRef = 9C0E56201070C44E00ED8CCC /* BlameController.m */; };
 		9C0E56231070CB5100ED8CCC /* Message.txt in Resources */ = {isa = PBXBuildFile; fileRef = 9C0E56221070CB5100ED8CCC /* Message.txt */; };
@@ -34,10 +33,12 @@
 		9C7CA29F107675EF00B0671D /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 9C7CA29E107675EF00B0671D /* InfoPlist.strings */; };
 		9C7CA2F61076839B00B0671D /* move_as_root in Resources */ = {isa = PBXBuildFile; fileRef = 9C7CA2F51076839B00B0671D /* move_as_root */; };
 		9C7CA31210768D9C00B0671D /* Default.png in Resources */ = {isa = PBXBuildFile; fileRef = 9C7CA31110768D9C00B0671D /* Default.png */; };
+		9CB552E010C7C65D00B4BDB7 /* ModalActionSheet.m in Sources */ = {isa = PBXBuildFile; fileRef = 9CB552DF10C7C65D00B4BDB7 /* ModalActionSheet.m */; };
 		9CBB4DE9106CBD2800022387 /* CrashReporterDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 9CBB4DE7106CBD2800022387 /* CrashReporterDelegate.m */; };
 		9CBB4DEA106CBD2800022387 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 9CBB4DE8106CBD2800022387 /* main.m */; };
 		9CBB4DEC106CBE3B00022387 /* CrashLogsTableController.m in Sources */ = {isa = PBXBuildFile; fileRef = 9CBB4DEB106CBE3B00022387 /* CrashLogsTableController.m */; };
 		9CBB4DF3106CC06900022387 /* CrashLogsFolderReader.m in Sources */ = {isa = PBXBuildFile; fileRef = 9CBB4DF2106CC06900022387 /* CrashLogsFolderReader.m */; };
+		9CDDF25110C7F2E00026EDA2 /* Symbolication.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9C0E541D106E8D2600ED8CCC /* Symbolication.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -85,6 +86,8 @@
 		9C7CA2A11076760600B0671D /* zh_CN */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = zh_CN; path = zh_CN.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		9C7CA2F51076839B00B0671D /* move_as_root */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.executable"; name = move_as_root; path = ../../src/move_as_root; sourceTree = SOURCE_ROOT; };
 		9C7CA31110768D9C00B0671D /* Default.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Default.png; sourceTree = "<group>"; };
+		9CB552DE10C7C65D00B4BDB7 /* ModalActionSheet.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ModalActionSheet.h; path = ../../src/ModalActionSheet.h; sourceTree = SOURCE_ROOT; };
+		9CB552DF10C7C65D00B4BDB7 /* ModalActionSheet.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = ModalActionSheet.m; path = ../../src/ModalActionSheet.m; sourceTree = SOURCE_ROOT; };
 		9CBB4DE7106CBD2800022387 /* CrashReporterDelegate.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = CrashReporterDelegate.m; path = ../../src/CrashReporterDelegate.m; sourceTree = SOURCE_ROOT; };
 		9CBB4DE8106CBD2800022387 /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = main.m; path = ../../src/main.m; sourceTree = SOURCE_ROOT; };
 		9CBB4DEB106CBE3B00022387 /* CrashLogsTableController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = CrashLogsTableController.m; path = ../../src/CrashLogsTableController.m; sourceTree = SOURCE_ROOT; };
@@ -102,9 +105,9 @@
 				1DF5F4E00D08C38300B7A737 /* UIKit.framework in Frameworks */,
 				288765FD0DF74451002DB57D /* CoreGraphics.framework in Frameworks */,
 				9C4B6281106E587E006560F3 /* libicucore.dylib in Frameworks */,
-				9C0E55D1106FEFB000ED8CCC /* Symbolication.framework in Frameworks */,
 				9C0E573A10728E0200ED8CCC /* SystemConfiguration.framework in Frameworks */,
 				9C7C9F4010748B0400B0671D /* MessageUI.framework in Frameworks */,
+				9CDDF25110C7F2E00026EDA2 /* Symbolication.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -122,6 +125,8 @@
 		29B97314FDCFA39411CA2CEA /* CustomTemplate */ = {
 			isa = PBXGroup;
 			children = (
+				9CB552DE10C7C65D00B4BDB7 /* ModalActionSheet.h */,
+				9CB552DF10C7C65D00B4BDB7 /* ModalActionSheet.m */,
 				9C2026581072A0C10095A940 /* find_dpkg.h */,
 				9C20265510729B5A0095A940 /* find_dpkg.m */,
 				9C0E5721107258F000ED8CCC /* pastie.h */,
@@ -298,6 +303,7 @@
 				9C7C9C0F10736C3200B0671D /* pastie.m in Sources */,
 				9C20265610729B5A0095A940 /* find_dpkg.m in Sources */,
 				9C7CA0F61075239400B0671D /* CustomBlameController.m in Sources */,
+				9CB552E010C7C65D00B4BDB7 /* ModalActionSheet.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
