@@ -1,4 +1,18 @@
 {
+	"ReverseFunctionFilters" = (
+		"__kill",
+	);
+	FunctionFilters = (
+		"mach_msg_trap",
+		"semaphore_wait_signal_trap",
+		"semaphore_timedwait_signal_trap",
+		"__semwait_signal",
+		"select$DARWIN_EXTSN",
+		accept,
+		recvfrom,
+		read,
+		kevent,
+	);
 	Filters = (
 		"/Applications/AppStore.app/AppStore",
 		"/Applications/Calculator.app/Calculator",
@@ -64,6 +78,7 @@
 		"/usr/lib/libcycript.dylib",
 		"/usr/lib/libffi.dylib",
 		"/Library/MobileSubstrate/DynamicLibraries/CydgetLoader.dylib",
+		"/Library/MobileSubstrate/DynamicLibraries/Cyntact.dylib",
 	);
 	PrefixFilters = (
 		"/System/Library/Frameworks/",
