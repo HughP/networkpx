@@ -92,4 +92,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 	[ctrler release];
 }
 
+-(void)tableView:(UITableView*)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath*)indexPath {
+	DeleteCrashLogs(indexPath.section, indexPath.row);
+	[tableView deleteRowsAtIndexPaths:[NSArray arrayWithObject:indexPath] withRowAnimation:UITableViewRowAnimationLeft];
+}
+
+
+
 @end

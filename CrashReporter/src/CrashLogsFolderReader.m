@@ -21,6 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #import "CrashLogsFolderReader.h"
 #import "RegexKitLite.h"
 #include "common.h"
+#import "symbolicate.h"
 
 static NSArray* crashPaths;
 
@@ -60,7 +61,7 @@ static NSArray* crashPaths;
 
 static NSArray* getCrashLogInDir(NSString* dir, NSFileManager* fman, NSCalendar* cal, NSDateComponents* dc) {
 	[fman changeCurrentDirectoryPath:dir];
-	NSMutableDictionary* res = [NSMutableDictionary dictionary];
+	NSMutableDictionary* res = [[NSMutableDictionary alloc] init];
 	
 	for (NSString* path in [fman contentsOfDirectoryAtPath:@"." error:NULL]) {
 		NSArray* capture = [path captureComponentsMatchedByRegex:@"(.+)_(\\d{4})-(\\d{2})-(\\d{2})-(\\d{2})(\\d{2})(\\d{2})_[^_]+\\.plist"];
@@ -98,6 +99,8 @@ static NSArray* getCrashLogInDir(NSString* dir, NSFileManager* fman, NSCalendar*
 		[actualRes addObject:group];
 	}
 	
+	[res release];
+	
 	return actualRes;
 }
 
@@ -121,4 +124,19 @@ NSArray* GetCrashLogs() {
 	}
 	
 	return crashPaths;
+}
+
+void DeleteCrashLogs(int user, int idx) {
+	NSMutableArray* r = [crashPaths objectAtIndex:user];
+	CrashLogGroup* g = [r objectAtIndex:idx];
+	if (g != nil) {
+		NSFileManager* fman = [NSFileManager defaultManager];
+		for (NSString* f in g->files) {
+			NSString* fn = [g->folder stringByAppendingPathComponent:f];
+			if (![fman removeItemAtPath:fn error:NULL])
+				// oh no, extremely inefficient!
+				exec_move_as_root("!", "!", [fn UTF8String]);
+		}
+	}
+	[r removeObjectAtIndex:idx];
 }
