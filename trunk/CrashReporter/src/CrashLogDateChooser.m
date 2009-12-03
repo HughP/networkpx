@@ -102,9 +102,8 @@ static inline NSUInteger index_of(NSUInteger sect, NSUInteger row, BOOL deleted_
 	NSUInteger sect = indexPath.section;
 	NSUInteger idx = index_of(sect, indexPath.row, deleted_row_0);
 	NSString* file = [group->files objectAtIndex:idx];
-	NSError* error = nil;
 	NSString* filename = [group->folder stringByAppendingPathComponent:file];
-	if (![[NSFileManager defaultManager] removeItemAtPath:filename error:&error]) {
+	if (![[NSFileManager defaultManager] removeItemAtPath:filename error:NULL]) {
 		// Try to delete as root.
 		exec_move_as_root("!", "!", [filename UTF8String]);
 	}

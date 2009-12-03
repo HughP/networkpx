@@ -21,6 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #import <Foundation/Foundation.h>
 
 NSArray* GetCrashLogs();
+void DeleteCrashLogs(int user, int index);
 
 @interface CrashLogGroup : NSObject {
 @package
