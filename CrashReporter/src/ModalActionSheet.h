@@ -1,6 +1,6 @@
 /*
 
-main.m ... Main for CrashReporter
+ModalActionSheet.h ... Modal UIActionSheet for progress report.
 Copyright (C) 2009  KennyTM~ <kennytm@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
@@ -18,27 +18,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
 
-#import <UIKit/UIKit.h>
-#import "symbolicate.h"
-#include <string.h>
+#import <UIKit/UIKit2.h>
 
-int main (int argc, char* argv[]) {
-	NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
-
-	int rv = 0;
-	
-#if !TARGET_IPHONE_SIMULATOR
-	if (argc > 2 && strcmp(argv[1], "-s") == 0) {
-		
-		NSString* file = [NSString stringWithUTF8String:argv[2]];
-		NSString* res = symbolicate(file, nil);
-		
-		printf("Result written to %s.\n", [res UTF8String]);
-		
-	} else
-#endif
-		rv = UIApplicationMain(argc, argv, nil, @"CrashReporterDelegate");
-	
-	[pool drain];
-	return rv;
+@interface ModalActionSheet : NSObject {
+	UIWindow* hudWindow;
+	UIProgressHUD* hud;
 }
+-(id)init2;
+-(void)show;
+-(void)updateText:(NSString*)newText;
+-(void)hide;
+@end
+

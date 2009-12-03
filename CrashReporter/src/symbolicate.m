@@ -27,6 +27,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#import "ModalActionSheet.h"
+#include <objc/runtime.h>
+#include <mach-o/loader.h>
 
 #if !TARGET_IPHONE_SIMULATOR
 
@@ -68,6 +71,7 @@ static CFComparisonResult CompareObjCInfos(ObjCInfo* a, ObjCInfo* b) {
 	NSArray* objcArray;
 	NSString* path;
 	NSUInteger line;
+	BOOL encrypted;
 }
 @end
 @implementation BinaryInfo
@@ -98,7 +102,7 @@ static const char* move_as_root_path() {
 }
 
 
-NSString* symbolicate(NSString* file, UIProgressHUD* hudReply) {
+NSString* symbolicate(NSString* file, ModalActionSheet* hudReply) {
 	NSAutoreleasePool* localPool = [[NSAutoreleasePool alloc] init];
 	NSBundle* mainBundle = [NSBundle mainBundle];	// 0
 	NSString* curPath = [[NSFileManager defaultManager] currentDirectoryPath];
@@ -138,8 +142,7 @@ NSString* symbolicate(NSString* file, UIProgressHUD* hudReply) {
 	[file_content release];
 	NSString* symbolicating = [mainBundle localizedStringForKey:@"Symbolicating (%d%%)" value:nil table:nil];	// 0
 	
-	[hudReply setText:[NSString stringWithFormat:symbolicating, 0]];
-	CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.01, false);
+	[hudReply updateText:[NSString stringWithFormat:symbolicating, 0]];
 	
 	enum SymbolicationMode mode = SM_CheckingMode;
 	
@@ -149,6 +152,11 @@ NSString* symbolicate(NSString* file, UIProgressHUD* hudReply) {
 	for (NSString* line in file_lines) {
 		BOOL isBinImg = [line isEqualToString:@"Binary Images:"];
 		id extraInfo = [NSNull null];
+		// extraInfo:
+		//   - true = start of crashing thread.
+		//   - false = start of non-crashing thread.
+		//   - BacktraceInfo = backtrace info :)
+		//   - null = irrelevant.
 		
 		switch (mode) {
 			case SM_CheckingMode:
@@ -206,16 +214,19 @@ finish:
 	NSDictionary* whiteListFile = [[NSDictionary alloc] initWithContentsOfFile:[mainBundle pathForResource:@"whitelist" ofType:@"plist"]];
 	NSSet* filters = [[NSSet alloc] initWithArray:[whiteListFile objectForKey:@"Filters"]];
 	NSArray* prefixFilters = [[whiteListFile objectForKey:@"PrefixFilters"] retain];
+	NSSet* funcFilters = [[NSSet alloc] initWithArray:[whiteListFile objectForKey:@"FunctionFilters"]];
+	NSSet* reverseFuncFilters = [[NSSet alloc] initWithArray:[whiteListFile objectForKey:@"ReverseFunctionFilters"]];
 	[whiteListFile release];
 	Class bicls = [BinaryInfo class];
 	int last_percent = 0;
+	
+	Ivar _command_ivar = class_getInstanceVariable([VMULoadCommand class], "_command");
 	
 	for (BacktraceInfo* bti in extraInfoArr) {
 		int this_percent = MIN(100, 200*i / total_lines);
 		if (this_percent != last_percent) {
 			last_percent = this_percent;
-			[hudReply setText:[NSString stringWithFormat:symbolicating, this_percent]];
-			CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.01, false);
+			[hudReply updateText:[NSString stringWithFormat:symbolicating, this_percent]];
 		}
 		
 		if (bti == (id)kCFBooleanTrue)
@@ -245,6 +256,12 @@ finish:
 						bi->header = header;
 						bi->path = matches[2];
 						bi->line = 0;
+						for (VMULoadCommand* lc in [header loadCommands]) {
+							if ((int)object_getIvar(lc, _command_ivar) == LC_ENCRYPTION_INFO) {
+								bi->encrypted = YES;
+								break;
+							}
+						}
 						
 						[binaryImages setObject:bi forKey:bti->start_address];
 						[bi release];
@@ -288,9 +305,19 @@ finish:
 					extra_string = [NSString stringWithFormat:@"\t// %@:%u", escapeHTML([srcInfo path], escSet), [srcInfo lineNumber]];
 				} else {
 					VMUSymbol* sym = [bi->owner symbolForAddress:addr];
-					if (sym != nil)
-						extra_string = [NSString stringWithFormat:@"\t// %@ + 0x%llx", escapeHTML([sym name], escSet), addr - [sym addressRange].location];
-					else {
+					if (sym != nil) {
+						NSString* symname = [sym name];
+						// check if this function should never cause crash (only hang). 
+						if (isCrashing) {
+							if ([bi->path isEqualToString:@"/usr/lib/libSystem.B.dylib"] && [funcFilters containsObject:symname])
+								isCrashing = NO;
+						// check if this function is actually causing crash.
+						} else if (!isCrashing) {
+							if ([bi->path isEqualToString:@"/usr/lib/libSystem.B.dylib"] && [reverseFuncFilters containsObject:symname])
+								isCrashing = YES;
+						}
+						extra_string = [NSString stringWithFormat:@"\t// %@ + 0x%llx", escapeHTML(symname, escSet), addr - [sym addressRange].location];
+					} else if (!bi->encrypted) {
 						// Try to extract some ObjC info.
 						// (Copied from MachO_File of the Peace project.)
 						if (bi->objcArray == nil) {
@@ -303,6 +330,8 @@ finish:
 							long long vmdiff_text = [textSeg fileoff] - [textSeg vmaddr];
 							
 							VMUSection* clsListSect = [dataSeg sectionNamed:@"__objc_classlist"];
+							
+							// @try {
 							
 							[mem setCursor:[clsListSect offset]];
 							unsigned size = (unsigned) [clsListSect size];
@@ -344,6 +373,10 @@ finish:
 								
 								[mem setCursor:old_location];
 							}
+								
+							// } @catch (NSException* exception) {
+							//	NSLog(@"CrashReporter: Warning: Exception '%@' generated when extracting Objective-C info for %@.", exception, bi->path);
+							// }
 							
 							[objcArr sortUsingFunction:(void*)CompareObjCInfos context:NULL];
 							bi->objcArray = objcArr;
@@ -384,6 +417,8 @@ finish:
 	}
 	[filters release];
 	[prefixFilters release];
+	[funcFilters release];
+	[reverseFuncFilters release];
 	
 	// Write down blame info.
 	NSMutableString* blameInfo = [NSMutableString stringWithString:@"<key>blame</key><array>\n"];
@@ -431,23 +466,9 @@ void exec_move_as_root(const char* from, const char* to, const char* rem) {
 	}
 }
 
-#if TEST_SYMBOLICATION
+#else
 
-int main (int argc, const char* argv[]) {
-	if (argc == 1) {
-		printf("Usage: symbolicate <file-name>\n");
-	} else {
-		NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
-		NSString* file = [NSString stringWithUTF8String:argv[1]];
-		NSString* res = symbolicate(file, nil);
-		
-		printf("Result written to %s.\n", [res UTF8String]);
-		
-		[pool drain];
-	}
-	return 0;
-}
+void exec_move_as_root(const char* from, const char* to, const char* rem) {}
 
 #endif
 
-#endif

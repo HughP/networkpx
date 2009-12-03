@@ -19,10 +19,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #import <UIKit/UIKit.h>
+#import <UIKit/UIAlertView.h>
 #import "CrashLogsTableController.h"
 #import "reporter.h"
 
-@interface CrashReporterDelegate : NSObject<UIApplicationDelegate> {
+@interface CrashReporterDelegate : NSObject<UIApplicationDelegate, UIAlertViewDelegate> {
 	UIWindow* _win;
 	UINavigationController* _navCtrler;
 }
@@ -43,7 +44,29 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 	[firstCtrler release];
 	
 	[_win addSubview:_navCtrler.view];
+	
+	// Check if syslog is present. Alert the user if not.
+	if (![[NSFileManager defaultManager] fileExistsAtPath:@"/etc/syslog.conf"]) {
+		NSBundle* selfBundle = [NSBundle mainBundle];
+		NSString* title = [selfBundle localizedStringForKey:@"syslog not found!" value:nil table:nil];
+		NSString* message = [selfBundle localizedStringForKey:@"SYSLOG_NOT_FOUND_DETAIL" value:@"Crash reports without syslog is often useless. Please install “Syslog Toggle” or “syslogd”, and reproduce a new crash report." table:nil];
+		NSString* installSyslogToggleButton = [selfBundle localizedStringForKey:@"Install Syslog Toggle" value:nil table:nil];
+		NSString* installSyslogdButton = [selfBundle localizedStringForKey:@"Install syslogd" value:nil table:nil];
+		NSString* ignoreOnceButton = [selfBundle localizedStringForKey:@"Ignore once" value:nil table:nil];
+		
+		UIAlertView* alert = [[UIAlertView alloc] initWithTitle:title message:message delegate:self cancelButtonTitle:ignoreOnceButton otherButtonTitles:installSyslogToggleButton, installSyslogdButton, nil];
+		[alert setNumberOfRows:3];
+		[alert show];
+		[alert release];
+	}
 }
+-(void)alertView:(UIAlertView*)alertView clickedButtonAtIndex:(NSInteger)buttonIndex {
+	if (buttonIndex != 0) {
+		NSString* url = buttonIndex == 1 ? @"cydia://package/sbsettingssyslogd" : @"cydia://package/syslogd";
+		[[UIApplication sharedApplication] openURL:[NSURL URLWithString:url]];
+	}
+}
+
 -(void)applicationWillTerminate:(UIApplication*)application {
 	[_win release];
 	[_navCtrler release];

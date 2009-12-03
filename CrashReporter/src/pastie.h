@@ -18,7 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
 
-@class NSArray, UIProgressHUD;
+@class NSArray, ModalActionSheet;
 
 /// Send an array of strings to pastie, and return the URLs.
-NSArray* pastie(NSArray* strings, UIProgressHUD* hud);
+NSArray* pastie(NSArray* strings, ModalActionSheet* hud);
