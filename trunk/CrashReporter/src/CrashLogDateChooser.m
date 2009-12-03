@@ -23,6 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #import "SuspectsViewController.h"
 #import <UIKit/UIKit2.h>
 #import "symbolicate.h"
+#import "ModalActionSheet.h"
 
 static inline NSUInteger index_of(NSUInteger sect, NSUInteger row, BOOL deleted_row_0) {
 	return sect + row - (deleted_row_0?1:0);
@@ -81,14 +82,14 @@ static inline NSUInteger index_of(NSUInteger sect, NSUInteger row, BOOL deleted_
 	NSString* file = [group->files objectAtIndex:idx];
 	if (![file hasSuffix:@".symbolicated.plist"]) {
 		// Symbolicate.
-		UIProgressHUD* hud = [[UIProgressHUD alloc] init];
-		[hud showInView:self.view];
+		ModalActionSheet* sheet = [[ModalActionSheet alloc] init2];
+		[sheet show];
 #if !TARGET_IPHONE_SIMULATOR
-		file = symbolicate(file, hud);
+		file = symbolicate(file, sheet);
 #endif
 		[group->files replaceObjectAtIndex:idx withObject:file];
-		[hud removeFromSuperview];
-		[hud release];
+		[sheet hide];
+		[sheet release];
 	}
 	[ctrler readSuspects:file date:[group->dates objectAtIndex:idx]];
 	[self.navigationController pushViewController:ctrler animated:YES];

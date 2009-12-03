@@ -21,10 +21,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #import <Foundation/Foundation.h>
 #include <stdlib.h>
 #if DEBUG_PASTIE
-@class UIProgressHUD;
+@class ModalActionSheet;
 #else
 #import <UIKit/UIKit2.h>
 #import <SystemConfiguration/SCNetworkReachability.h>
+#import "ModalActionSheet.h"
 #endif
 
 struct lengthIndexPair {
@@ -145,7 +146,7 @@ static NSURLRequest* multipartRequest(NSURL* url, NSDictionary* form) {
 	return req;
 }
 
-static NSURL* pastieOne(NSString* str, UIProgressHUD* hud) {
+static NSURL* pastieOne(NSString* str, ModalActionSheet* hud) {
 	NSUInteger firstLineBreak = [str rangeOfString:@"\n"].location;
 	NSString* firstLine = [str substringWithRange:NSMakeRange(3, firstLineBreak-3)];
 	NSBundle* mainBundle = [NSBundle mainBundle];
@@ -162,8 +163,7 @@ static NSURL* pastieOne(NSString* str, UIProgressHUD* hud) {
 	NSURLRequest* req = multipartRequest([NSURL URLWithString:@"http://pastie.org/pastes"], dict);
 	[dict release];
 	
-	[hud setText:[NSString stringWithFormat:[mainBundle localizedStringForKey:@"Uploading %@" value:nil table:nil], firstLine]];
-	CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.01, false);
+	[hud updateText:[NSString stringWithFormat:[mainBundle localizedStringForKey:@"Uploading %@" value:nil table:nil], firstLine]];
 	
 	NSURLResponse* resp = nil;
 	NSError* err = nil;
@@ -182,7 +182,7 @@ static NSURL* pastieOne(NSString* str, UIProgressHUD* hud) {
 	}
 }
 
-NSArray* pastie(NSArray* strings, UIProgressHUD* hud) {
+NSArray* pastie(NSArray* strings, ModalActionSheet* hud) {
 #if !DEBUG_PASTIE
 	SCNetworkReachabilityFlags flags = 0;
 	SCNetworkReachabilityRef reachability = SCNetworkReachabilityCreateWithName(NULL, "pastie.org");

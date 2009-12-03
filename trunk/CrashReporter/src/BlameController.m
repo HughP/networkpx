@@ -26,6 +26,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #import "CrashLogViewController.h"
 #import "pastie.h"
 #import "RegexKitLite.h"
+#import "ModalActionSheet.h"
 
 @implementation BlameController
 -(id)initWithReporters:(NSArray*)reporters
@@ -148,8 +149,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 		[stuffToSend release];
 		stuffToSend = nil;
 	
-		UIProgressHUD* hud = [[UIProgressHUD alloc] init];
-		[hud showInView:self.view];
+		ModalActionSheet* hud = [[ModalActionSheet alloc] init2];
+		[hud show];
 		
 		NSArray* theStrings = [[includeReporters valueForKey:@"content"] objectsAtIndexes:previouslySelectedRows];
 		if ([theStrings count] > 0) {
@@ -191,7 +192,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 				[togetherURLs release];
 			}
 		}
-		[hud removeFromSuperview];
+		[hud hide];
 		[hud release];
 	}
 	[currentlySelectedIndexSet release];
