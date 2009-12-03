@@ -135,6 +135,7 @@ NSString* symbolicate(NSString* file, ModalActionSheet* hudReply) {
 		}		
 	}
 	if ([file_content length] == 0) {
+		[file_content release];
 		return file;
 	}
 	
@@ -389,6 +390,7 @@ finish:
 							obj_to_search->impAddr = addr;
 							
 							CFIndex objcMatch = CFArrayBSearchValues((CFArrayRef)bi->objcArray, CFRangeMake(0, count), obj_to_search, (CFComparatorFunction)CompareObjCInfos, NULL);
+							[obj_to_search release];
 							if (objcMatch >= count)
 								objcMatch = count-1;
 							ObjCInfo* o = [bi->objcArray objectAtIndex:objcMatch];
