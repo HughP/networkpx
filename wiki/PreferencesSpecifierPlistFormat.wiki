@@ -1,6 +1,10 @@
 #summary (Technical Document) Preferences Specifier .plist Format
 #labels Phase-Implementation
 
+<font color="red">*Deprecated page.* Please bookmark http://www.iphonedevwiki.net/index.php?title=Preferences_specifier_plist instead, thank you.</font>
+
+----
+
 <wiki:toc />
 
 = Introduction =
