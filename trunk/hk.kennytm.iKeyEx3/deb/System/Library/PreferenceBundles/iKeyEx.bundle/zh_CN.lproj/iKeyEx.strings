@@ -26,3 +26,4 @@ Tap = "轻按";
 "Associated phrases" = "联想词";
 Customize = "自订";
 "Nothing to customize." = "没有需自订的东西。";
+"Stop bad composition" = "组字错误时停止字根输入";

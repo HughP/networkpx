@@ -212,7 +212,7 @@ extern NSString* IKXLocalizedString(NSString* key) {
 extern UIProgressHUD* IKXShowLoadingHUD() {
 	UIWindow* topLevelWindow = [[UIWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
 	topLevelWindow.windowLevel = UIWindowLevelAlert;
-	topLevelWindow.backgroundColor = [UIColor clearColor];
+	topLevelWindow.backgroundColor = [UIColor colorWithWhite:0 alpha:0.5];
 	UIProgressHUD* hud = [[UIProgressHUD alloc] init];
 	[hud setText:IKXLocalizedString(@"Loading...")];	
 	[hud showInView:topLevelWindow];
