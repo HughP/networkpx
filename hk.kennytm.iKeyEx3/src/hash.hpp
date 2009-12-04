@@ -178,6 +178,8 @@ namespace IKX {
 		size_t capacity() const { return _capacity; }
 		
 		ReadonlyHashTable(const char* filename) {
+			this->_valid = false;
+			
 			fildes = open(filename, O_RDONLY);
 			if (fildes < 0) {
 				syslog(LOG_WARNING, "iKeyEx failed to open '%s'.", filename);
@@ -210,6 +212,7 @@ namespace IKX {
 			_capacity = *reinterpret_cast<const size_t*>(_xmap);
 			_xmap += sizeof(size_t);
 			_buckets = reinterpret_cast<const Bucket*>(_xmap);
+			this->_valid = true;
 		}
 		
 		~ReadonlyHashTable() {

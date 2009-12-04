@@ -53,6 +53,9 @@ using namespace IKX;
 -(void)getCharacters:(unichar*)buffer range:(NSRange)range { [[self word] getCharacters:buffer range:range]; }
 -(const char*)UTF8String { return [self wordUTF8String]; }
 -(BOOL)isEqualToString:(CandWord*)another { return [[self word] isEqualToString:[another word]]; }
+#if TARGET_IPHONE_SIMULATOR
+-(NSString*)description { return [self word]; }
+#endif
 @end
 
 
@@ -124,9 +127,10 @@ __attribute__((visibility("hidden")))
 		std::FILE* f = std::fopen([expectedKeysPath UTF8String], "rb");
 		if (f != NULL) {
 			while (!std::feof(f)) {
-				uint8_t c;
+				int c = std::fgetc(f);
+				if (c == EOF)
+					break;
 				size_t l;
-				std::fread(&c, 1, 1, f);
 				std::fread(&l, 1, sizeof(size_t), f);
 				unichar buffer[l];
 				std::fread(buffer, l, sizeof(unichar), f);
@@ -270,7 +274,8 @@ __attribute__((visibility("hidden")))
 		candidate_computer = [IKXCandidateComputer new];
 		[candidate_computer startThreadDispatchQueue];
 		shown_completion = NO;
-		disallow_completion = [[IKXConfigDictionary() objectForKey:@"disallowCompletion"] boolValue];
+		disallow_completion = IKXConfigGetBool(@"disallowCompletion", NO);
+		bypass_composition_failure = IKXConfigGetBool(@"bypassCompositionFailure", NO);
 	}
 	return self;
 }
@@ -310,6 +315,8 @@ __attribute__((visibility("hidden")))
 		if (still_valid) {
 			[candidate_computer prepareCompute];
 			[[candidate_computer send] computeWithInputString:[input_string substringToIndex:valid_input_string_length] lastAcceptedCandidate:nil];
+		} else if (!bypass_composition_failure) {
+			[input_string deleteCharactersInRange:NSMakeRange(valid_input_string_length, input_length)];
 		}
 	}
 	
@@ -396,7 +403,7 @@ __attribute__((visibility("hidden")))
 		} else {
 			NSString* confirmKey, *nextKey;
 			
-			if (IKXConfirmWithSpacePreference()) {
+			if (IKXConfigGetBool(@"confirmWithSpace", YES)) {
 				confirmKey = UIKeyboardKeySpace;
 				nextKey = UIKeyboardKeyReturn;
 			} else {

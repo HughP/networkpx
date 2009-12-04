@@ -110,7 +110,7 @@ extern "C" void IKXConvertCinToPat(const char* cin_path, const char* pat_path, c
 	std::FILE* keys_files = std::fopen(keys_path, "wb");
 	if (keys_files != NULL) {
 		for (std::vector<std::pair<uint8_t, std::vector<uint16_t> > >::const_iterator cit = keynames.begin(); cit != keynames.end(); ++ cit) {
-			std::fwrite(&(cit->first), 1, 1, keys_files);
+			std::fputc(cit->first, keys_files);
 			size_t sz = cit->second.size();
 			std::fwrite(&sz, 1, sizeof(size_t), keys_files);
 			std::fwrite(&(cit->second.front()), sz, sizeof(uint16_t), keys_files);

@@ -40,8 +40,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define LS(key) ([selfBundle localizedStringForKey:(key) value:nil table:@"iKeyEx"])
 
 static NSArray* allSupportedModesSorted = nil;
-static NSMutableDictionary* configDict = nil;
-static BOOL configMutated = NO;
 
 static NSComparisonResult sortByMovingIKXKeyboardsToFront(NSString* a, NSString* b, NSString* priortyLang) {
 	BOOL ai = IKXIsiKeyExMode(a), bi = IKXIsiKeyExMode(b);
@@ -67,25 +65,9 @@ static NSUInteger setKeyboards(UIKeyboardImpl* impl, NSArray* keyboards) {
 }
 
 static void saveConfig() {
-	if (configMutated) {
-		if ([configDict writeToFile:IKX_CONFIG_PATH atomically:YES]) {
-			configMutated = NO;
-			const char* configSysPath = [IKX_CONFIG_PATH fileSystemRepresentation];
-			chmod(configSysPath, 0666);
-			chown(configSysPath, 501, 501);
-			IKXFlushConfigDictionary();
-			notify_post("hk.kennytm.iKeyEx3.FlushConfigDictionary");
-		} else {
-			NSString* errorMsg = @"iKeyEx: Warning: Failed to save '"IKX_CONFIG_PATH@"'. All configs will be lost.\n\nPlease make sure the file and the containing folder is owned by mobile:mobile and have permission ≥644.";
-			UIAlertView* errAlert = [[UIAlertView alloc] initWithTitle:nil message:errorMsg delegate:nil cancelButtonTitle:@"OK" otherButtonTitles:nil];
-			[errAlert show];
-			[errAlert release];
-		}
-	}
-}
-static NSMutableDictionary* mutableConfigDict() {
-	configMutated = YES;
-	return configDict;
+	IKXFlushConfigDictionary();
+	notify_post("hk.kennytm.iKeyEx3.FlushConfigDictionary");
+	notify_post("AppleKeyboardsPreferencesChangedNotification");
 }
 
 static void recomputeAllModes() {
@@ -155,8 +137,11 @@ static void recomputeAllModes() {
 	return self;
 }
 -(void)suspend {
+	NSDictionary* modesDict = IKXConfigCopy(@"modes");
+	NSMutableDictionary* mmd = [modesDict mutableCopy];
+	[modesDict release];
 	if ([[subConfigDict objectForKey:@"name"] length] == 0) {
-		[[mutableConfigDict() objectForKey:@"modes"] removeObjectForKey:modeName];
+		[mmd removeObjectForKey:modeName];
 		NSArray* activeModes = UIKeyboardGetActiveInputModes();
 		NSUInteger curModeLoc = [activeModes indexOfObject:modeName];
 		if (curModeLoc != NSNotFound) {
@@ -165,7 +150,11 @@ static void recomputeAllModes() {
 			setKeyboards([UIKeyboardImpl sharedInstance], newActiveModes);
 			[newActiveModes release];
 		}
+	} else {
+		[mmd setObject:subConfigDict forKey:modeName];
 	}
+	IKXConfigSet(@"modes", mmd);
+	[mmd release];
 	[self.specifier->target performSelector:@selector(reloadSpecifiers)];
 	[super suspend];
 }
@@ -175,14 +164,15 @@ static void recomputeAllModes() {
 	[imeRefs release];
 	[imeTitles release];
 	[modeName release];
+	[subConfigDict release];
 	[super dealloc];
 }
 -(NSString*)ime { return [subConfigDict objectForKey:@"manager"]; }
--(void)setIme:(NSString*)x { configMutated = YES; [subConfigDict setObject:(x?:@"=en_US") forKey:@"manager"]; }
+-(void)setIme:(NSString*)x { [subConfigDict setObject:(x?:@"=en_US") forKey:@"manager"]; }
 -(NSString*)layout { return [subConfigDict objectForKey:@"layout"]; }
--(void)setLayout:(NSString*)x { configMutated = YES; [subConfigDict setObject:(x?:@"=en_US") forKey:@"layout"]; }
+-(void)setLayout:(NSString*)x { [subConfigDict setObject:(x?:@"=en_US") forKey:@"layout"]; }
 -(NSString*)displayName { return [subConfigDict objectForKey:@"name"]; }
--(void)setDisplayName:(NSString*)x { if ([x length] > 0) { configMutated = YES; [subConfigDict setObject:x forKey:@"name"]; } }
+-(void)setDisplayName:(NSString*)x { if ([x length] > 0) { [subConfigDict setObject:x forKey:@"name"]; } }
 
 -(void)deleteMode {
 	// This will indirectly tell -suspend to delete this mode.
@@ -195,17 +185,22 @@ static void recomputeAllModes() {
 		PSSpecifier* selfSpec = self.specifier;
 		modeName = [[selfSpec propertyForKey:@"modeName"] retain];
 		BOOL modeNameWasNil = (modeName == nil);
+		NSDictionary* modesDict = IKXConfigCopy(@"modes");
 		if (modeNameWasNil) {
 			CFUUIDRef uuid = CFUUIDCreate(NULL);
 			CFStringRef uuidString = CFUUIDCreateString(NULL, uuid);
 			modeName = [[@"iKeyEx:" stringByAppendingString:(NSString*)uuidString] retain];
-			subConfigDict = [NSMutableDictionary dictionaryWithObjectsAndKeys:@"=en_US", @"layout", @"=en_US", @"manager", @"", @"name", nil];
-			[[mutableConfigDict() objectForKey:@"modes"] setObject:subConfigDict forKey:modeName];
+			subConfigDict = [[NSMutableDictionary alloc] initWithObjectsAndKeys:@"=en_US", @"layout", @"=en_US", @"manager", @"", @"name", nil];
+			NSMutableDictionary* mmd = [modesDict mutableCopy];
+			[mmd setObject:subConfigDict forKey:modeName];
+			IKXConfigSet(@"modes", mmd);
+			[mmd release];
 			CFRelease(uuidString);
 			CFRelease(uuid);
 		} else {
-			subConfigDict = [[configDict objectForKey:@"modes"] objectForKey:modeName];
+			subConfigDict = [[modesDict objectForKey:modeName] mutableCopy];
 		}
+		[modesDict release];
 		
 		NSMutableArray* specs = [NSMutableArray arrayWithObject:[PSSpecifier emptyGroupSpecifier]];
 		
@@ -252,7 +247,7 @@ static void recomputeAllModes() {
 	if (_specifiers == nil) {
 		NSMutableArray* specs = [NSMutableArray new];
 		
-		NSDictionary* modesDict = [configDict objectForKey:@"modes"];
+		NSDictionary* modesDict = IKXConfigCopy(@"modes");
 		for (NSString* modeName in modesDict) {
 			if (!IKXIsInternalMode(modeName)) {
 				PSSpecifier* linker = [PSSpecifier preferenceSpecifierNamed:[[modesDict objectForKey:modeName] objectForKey:@"name"] target:self set:NULL get:NULL detail:[iKeyExEditKeyboardController class] cell:PSLinkCell edit:Nil];
@@ -260,6 +255,7 @@ static void recomputeAllModes() {
 				[specs addObject:linker];
 			}
 		}
+		[modesDict release];
 		
 		[specs sortUsingSelector:@selector(titleCompare:)];
 		
@@ -592,7 +588,11 @@ static void prepareLinks(iKeyExCustomizeController* self, NSString* suffix, NSMu
 			size = [NSString stringWithFormat:@"%d.%d GiB", gib/10, gib%10];
 		}
 		
-		cell.detailTextLabel.text = size;
+		UILabel* dtl = cell.detailTextLabel;
+		dtl.text = size;
+		dtl.adjustsFontSizeToFitWidth = YES;
+//		dtl.minimumFontSize = [UIFont smallSystemFontSize];
+		dtl.lineBreakMode = UILineBreakModeClip;
 		return cell;
 	}
 }
@@ -713,12 +713,22 @@ static void prepareLinks(iKeyExCustomizeController* self, NSString* suffix, NSMu
 	return [self list:spec internalName:LS(@"Built-in")];
 }
 -(NSString*)get:(PSSpecifier*)spec {
-	return [[[configDict objectForKey:@"phrase"] objectForKey:[spec propertyForKey:@"lang"]]
-			objectAtIndex:([@"chrs" isEqualToString:[spec propertyForKey:@"type"]] ? 1 : 0)] ?: @"__Internal";
+	NSDictionary* phrase = IKXConfigCopy(@"phrase");
+	NSString* retval = [[phrase objectForKey:[spec propertyForKey:@"lang"]] objectAtIndex:([@"chrs" isEqualToString:[spec propertyForKey:@"type"]] ? 1 : 0)] ?: @"__Internal";
+	[phrase release];
+	return retval;
 }
 -(void)set:(NSString*)val :(PSSpecifier*)spec {
-	[[[mutableConfigDict() objectForKey:@"phrase"] objectForKey:[spec propertyForKey:@"lang"]]
-	 replaceObjectAtIndex:([@"chrs" isEqualToString:[spec propertyForKey:@"type"]] ? 1 : 0) withObject:val];
+	NSDictionary* phrase = IKXConfigCopy(@"phrase");
+	NSMutableDictionary* phm = [phrase mutableCopy];
+	NSString* lang = [spec propertyForKey:@"lang"];
+	NSMutableArray* pharr = [[phrase objectForKey:lang] mutableCopy];
+	[pharr replaceObjectAtIndex:([@"chrs" isEqualToString:[spec propertyForKey:@"type"]] ? 1 : 0) withObject:val];
+	[phm setObject:pharr forKey:lang];
+	IKXConfigSet(@"phrase", phm);
+	[phrase release];
+	[phm release];
+	[pharr release];
 }
 @end
 
@@ -732,19 +742,22 @@ static void prepareLinks(iKeyExCustomizeController* self, NSString* suffix, NSMu
 @implementation iKeyExPrefListController
 -(id)initForContentSize:(CGSize)size {
 	if ((self = [super initForContentSize:size])) {
-		configDict = [[NSMutableDictionary alloc] initWithContentsOfFile:IKX_CONFIG_PATH];
-		if (configDict == nil) {
-			// Generate an initial miminum structure.
-			configDict = [[NSMutableDictionary alloc] initWithObjectsAndKeys:
-						  [NSMutableDictionary dictionary], @"modes",
-						  [NSMutableDictionary dictionaryWithObjectsAndKeys:
-						   [NSArray arrayWithObjects:@"__Internal", @"__Internal", nil], @"zh-Hant",
-						   [NSArray arrayWithObjects:@"__Internal", @"__Internal", nil], @"zh-Hans",
-						  nil], @"phrase",
-						  @"1", @"kbChooser",
-						  nil];
-			configMutated = YES;
-		}
+		// initialize.
+		NSDictionary* d = IKXConfigCopy(@"modes");
+		if (d == nil)
+			IKXConfigSet(@"modes", [NSDictionary dictionary]);
+		else
+			[d release];
+		
+		d = IKXConfigCopy(@"phrase");
+		if (d == nil)
+			IKXConfigSet(@"phrase", [NSDictionary dictionaryWithObjectsAndKeys:
+									 [NSArray arrayWithObjects:@"__Internal", @"__Internal", nil], @"zh-Hant",
+									 [NSArray arrayWithObjects:@"__Internal", @"__Internal", nil], @"zh-Hans",
+									 nil]);
+		else
+			[d release];
+		
 		impl = [UIKeyboardImpl sharedInstance];
 		recomputeAllModes();
 	}
@@ -761,14 +774,19 @@ static void prepareLinks(iKeyExCustomizeController* self, NSString* suffix, NSMu
 -(NSString*)keyboardCount { return [NSString stringWithFormat:@"%u", modesCount]; }
 -(void)setKeyboards:(NSArray*)keyboards { modesCount = setKeyboards(impl, keyboards); }
 
--(NSString*)kbChooser { return [configDict objectForKey:@"kbChooser"] ?: @"2"; }
--(void)setKbChooser:(NSString*)chsr { [mutableConfigDict() setObject:chsr forKey:@"kbChooser"]; }
+/*
+-(NSString*)kbChooser {
+	unichar c = IKXConfigGetInt(@"kbChooser", 2) + '0';
+	return [NSString stringWithCharacters:&c length:1];
+}
+-(void)setKbChooser:(NSString*)chsr { IKXConfigSetInt(@"kbChooser", [chsr intValue]); }
 
--(NSNumber*)confirmWithSpace { return [configDict objectForKey:@"confirmWithSpace"] ?: (id)kCFBooleanTrue; }
--(void)setConfirmWithSpace:(NSNumber*)val { [mutableConfigDict() setObject:val forKey:@"confirmWithSpace"]; }
+-(NSNumber*)confirmWithSpace { return (NSNumber*)( IKXConfigGetBool(@"confirmWithSpace", YES) ? kCFBooleanTrue : kCFBooleanFalse ); }
+-(void)setConfirmWithSpace:(NSNumber*)val { IKXConfigSetBool(@"confirmWithSpace", [val boolValue]); }
 
--(NSNumber*)disallowCompletion { return (NSNumber*)([[configDict objectForKey:@"disallowCompletion"] boolValue] ? kCFBooleanFalse : kCFBooleanTrue); }
--(void)setDisallowCompletion:(NSNumber*)val { [mutableConfigDict() setObject:(NSNumber*)([val boolValue]?kCFBooleanFalse:kCFBooleanTrue) forKey:@"disallowCompletion"]; }
+-(NSNumber*)disallowCompletion { return (NSNumber*)( IKXConfigGetBool(@"disallowCompletion", NO) ? kCFBooleanTrue : kCFBooleanFalse ); }
+-(void)setDisallowCompletion:(NSNumber*)val { IKXConfigSetBool(@"disallowCompletion", [val boolValue]); }
+*/
 
 -(void)suspend {
 	saveConfig();

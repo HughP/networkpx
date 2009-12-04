@@ -37,8 +37,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-
-#define GLOBALS_PREFS_PATH @"/var/mobile/Library/Preferences/.GlobalPreferences.plist"
+#import <AppSupport/AppSupport.h>
 
 static void print_usage () {
 	fprintf(stderr,
@@ -79,7 +78,10 @@ static void print_usage () {
 			"    - Clear automatically generated cache for the specified phrase\n"
 			"      table.\n"
 			"   purge-all\n"
-			"    - Clear all automatically generated cache.\n\n"
+			"    - Clear all automatically generated cache.\n"
+			"	sync\n"
+			"	 - Synchronize preferences from .GlobalPreferences.plist.\n"
+			"\n"
 	);
 }
 
@@ -95,14 +97,9 @@ static BOOL check_internal (const char* x) {
 		return YES;
 }
 
-static void SaveConfig(NSDictionary* configDict) {
-	if ([configDict writeToFile:IKX_CONFIG_PATH atomically:YES]) {
-		const char* utfPath = [IKX_CONFIG_PATH UTF8String];
-		chmod(utfPath, 0666);
-		chown(utfPath, 501, 501);
-		notify_post("hk.kennytm.iKeyEx3.FlushConfigDictionary");
-	} else
-		fprintf(stderr, "Error: Cannot save config. All changes will be lost.\n");
+static void SaveConfig() {
+	IKXFlushConfigDictionary();
+	notify_post("hk.kennytm.iKeyEx3.FlushConfigDictionary");
 }
 
 static NSString* modeStringOf (const char* mode) {
@@ -124,58 +121,129 @@ static void Register(NSString* modeString, const char* name, const char* layout,
 	if (!check_internal(layout) || !check_internal(ime))
 		return;
 	
-	NSMutableDictionary* configDict = [NSMutableDictionary dictionaryWithContentsOfFile:IKX_CONFIG_PATH];
-	NSMutableDictionary* modesDict = [configDict objectForKey:@"modes"];
-	if (modesDict == nil) {
-		modesDict = [NSMutableDictionary dictionary];
-		[configDict setObject:modesDict forKey:@"modes"];
-	}
+	NSDictionary* immModesDict = IKXConfigCopy(@"modes");
+	NSMutableDictionary* modesDict = [immModesDict mutableCopy];
+	[immModesDict release];
+	if (modesDict == nil)
+		modesDict = [[NSMutableDictionary alloc] init];
+	
 	if ([modesDict objectForKey:modeString] != nil)
 		fprintf(stderr, "Warning: Input mode '%s' was already registered. Re-registering.\n\n", [modeString UTF8String]);
+	
 	NSDictionary* regDict = [NSDictionary dictionaryWithObjectsAndKeys:
 							 [NSString stringWithUTF8String:name], @"name", 
 							 [NSString stringWithUTF8String:layout], @"layout",
 							 [NSString stringWithUTF8String:ime], @"manager",
 							 nil];
 	[modesDict setObject:regDict forKey:modeString];
-	SaveConfig(configDict);
+	
+	IKXConfigSet(@"modes", modesDict);
+	[modesDict release];
+	
+	SaveConfig();
+}
+
+static NSArray* Sync() {
+	CFStringRef globalPrefsDomain = CPCopySharedResourcesPreferencesDomainForDomain(CFSTR(".GlobalPreferences"));
+	CFArrayRef AppleKeyboards = CFPreferencesCopyAppValue(CFSTR("AppleKeyboards"), globalPrefsDomain);
+	if (AppleKeyboards == NULL)
+		AppleKeyboards = CFArrayCreate(NULL, NULL, 0, &kCFTypeArrayCallBacks);
+		
+	IKXConfigSet(@"AppleKeyboards", (NSArray*)AppleKeyboards);
+	CFRelease(globalPrefsDomain);
+	
+	return (NSArray*)AppleKeyboards;
+}
+static void ReverseSync(NSArray* arr) {
+	CFStringRef globalPrefsDomain = CPCopySharedResourcesPreferencesDomainForDomain(CFSTR(".GlobalPreferences"));
+	CFPreferencesSetAppValue(CFSTR("AppleKeyboards"), arr, globalPrefsDomain);
+	CFPreferencesAppSynchronize(globalPrefsDomain);
+	notify_post("AppleKeyboardsPreferencesChangedNotification");
+	CFRelease(globalPrefsDomain);
 }
 
 static void Activate(NSString* modeString) {
-	NSMutableDictionary* globalsDict = [NSMutableDictionary dictionaryWithContentsOfFile:GLOBALS_PREFS_PATH];
-	[[globalsDict objectForKey:@"AppleKeyboards"] addObject:modeString];
-	[globalsDict writeToFile:GLOBALS_PREFS_PATH atomically:NO];
+	NSArray* arr = IKXConfigCopy(@"AppleKeyboards");
+	if (arr == nil)
+		arr = Sync();
+	
+	if (![arr containsObject:modeString]) {
+		NSArray* arr2 = [arr arrayByAddingObject:modeString];
+		IKXConfigSet(@"AppleKeyboards", arr2);
+		SaveConfig();
+		ReverseSync(arr2);
+	}
+	
+	[arr release];
 }
 
 static void Deactivate(NSString* modeString) {
-	NSMutableDictionary* globalsDict = [NSMutableDictionary dictionaryWithContentsOfFile:GLOBALS_PREFS_PATH];
-	[[globalsDict objectForKey:@"AppleKeyboards"] removeObject:modeString];
-	[globalsDict writeToFile:GLOBALS_PREFS_PATH atomically:NO];	
+	NSArray* arr = IKXConfigCopy(@"AppleKeyboards");
+	if (arr == nil)
+		arr = Sync();
+
+	NSUInteger i = [arr indexOfObject:modeString];
+	if (i != NSNotFound) {
+		NSMutableArray* arr2 = [arr mutableCopy];
+		[arr2 removeObjectAtIndex:i];
+		IKXConfigSet(@"AppleKeyboards", arr2);
+		SaveConfig();
+		ReverseSync(arr2);
+		[arr2 release];
+	}
+	
+	[arr release];
 }
 
 static void Unregister(NSString* modeString) {
 	Deactivate(modeString);
-	NSMutableDictionary* configDict = [NSMutableDictionary dictionaryWithContentsOfFile:IKX_CONFIG_PATH];
-	[[configDict objectForKey:@"modes"] removeObjectForKey:modeString];
-	SaveConfig(configDict);
+	
+	NSDictionary* dict = IKXConfigCopy(@"modes");
+	if ([dict objectForKey:modeString]) {
+		NSMutableDictionary* md = [dict mutableCopy];
+		[md removeObjectForKey:modeString];
+		IKXConfigSet(@"modes", dict);
+		SaveConfig();
+		[md release];
+	}
+	[dict release];
 }
 
 static void UnregisterWhere(NSString* key, const char* matching) {
 	NSString* test = [NSString stringWithUTF8String:matching];
-	NSMutableDictionary* configDict = [NSMutableDictionary dictionaryWithContentsOfFile:IKX_CONFIG_PATH];
-	NSMutableDictionary* modesDict = [configDict objectForKey:@"modes"];
-	NSMutableArray* modesToRemove = [NSMutableArray array];
-	for (NSString* mode in modesDict) {
-		NSDictionary* subConfigDict = [modesDict objectForKey:mode];
+	
+	NSDictionary* dict = IKXConfigCopy(@"modes");
+	NSMutableArray* modesToRemove = [[NSMutableArray alloc] init];
+	for (NSString* mode in dict) {
+		NSDictionary* subConfigDict = [dict objectForKey:mode];
 		if ([[subConfigDict objectForKey:key] isEqualToString:test])
 			[modesToRemove addObject:mode];
 	}
-	[modesDict removeObjectsForKeys:modesToRemove];
-	SaveConfig(configDict);
+	if ([modesToRemove count] == 0) {
+		[dict release];
+		[modesToRemove release];
+		return;
+	}
 	
-	NSMutableDictionary* globalsDict = [NSMutableDictionary dictionaryWithContentsOfFile:GLOBALS_PREFS_PATH];
-	[[globalsDict objectForKey:@"AppleKeyboards"] removeObjectsInArray:modesToRemove];
-	[globalsDict writeToFile:GLOBALS_PREFS_PATH atomically:NO];
+	NSMutableDictionary* md = [dict mutableCopy];
+	[dict release];
+	[md removeObjectsForKeys:modesToRemove];
+	IKXConfigSet(@"modes", md);
+	[md release];
+	
+	NSArray* arr = IKXConfigCopy(@"AppleKeyboards");
+	if (arr == nil)
+		arr = Sync();
+	NSMutableArray* ma = [arr mutableCopy];
+	[arr release];
+	[ma removeObjectsInArray:modesToRemove];
+	[modesToRemove release];
+	IKXConfigSet(@"AppleKeyboards", ma);
+	ReverseSync(ma);
+	[ma release];
+	[arr release];
+	
+	SaveConfig();
 }
 
 static void PurgeWithPrefix(NSString* prefix) {
@@ -217,26 +285,34 @@ static void CachePhrase(const char* lang, const char* phrase) {
 }
 
 static void SelectPhrase(const char* lang, const char* phrase, unsigned index) {
-	NSMutableDictionary* configDict = [NSMutableDictionary dictionaryWithContentsOfFile:IKX_CONFIG_PATH];
-	NSMutableDictionary* phraseDict = [configDict objectForKey:@"phrase"];
-	if (phraseDict == nil) {
-		phraseDict = [NSMutableDictionary dictionary];
-		[configDict setObject:phraseDict forKey:@"phrase"];
-	}
+	NSDictionary* phraseDict0 = IKXConfigCopy(@"phrase");
+	NSMutableDictionary* phraseDict;
+	
+	if (phraseDict0 == nil)
+		phraseDict = [[NSMutableDictionary alloc] init];
+	else
+		phraseDict = [phraseDict0 mutableCopy];
+	[phraseDict0 release];
+	
 	NSString* langStr = [NSString stringWithUTF8String:lang];
 	NSMutableArray* langArr = [phraseDict objectForKey:langStr];
-	if (langArr == nil) {
-		langArr = [NSMutableArray arrayWithObjects:@"__Internal", @"__Internal", nil];
-		[phraseDict setObject:langArr forKey:langStr];
-	}
+	if (langArr == nil)
+		langArr = [[NSMutableArray alloc] initWithObjects:@"__Internal", @"__Internal", nil];
+	else
+		langArr = [langArr mutableCopy];
 	[langArr replaceObjectAtIndex:index withObject:[NSString stringWithUTF8String:phrase]];
-	SaveConfig(configDict);
+	[phraseDict setObject:langArr forKey:langStr];
+	IKXConfigSet(@"phrase", phraseDict);
+	[phraseDict release];
+	
+	SaveConfig();
 }
 static void DeselectPhrase(const char* lang, const char* phrase, unsigned index) {
-	const char* curPhrase = [[[[[NSDictionary dictionaryWithContentsOfFile:IKX_CONFIG_PATH] objectForKey:@"phrase"]
-							   objectForKey:[NSString stringWithUTF8String:lang]] objectAtIndex:index] UTF8String];
+	NSDictionary* phd = IKXConfigCopy(@"phrase");
+	const char* curPhrase = [[[phd objectForKey:[NSString stringWithUTF8String:lang]] objectAtIndex:index] UTF8String];
 	if (curPhrase != NULL && strcmp(curPhrase, phrase) == 0)
 		SelectPhrase(lang, "__Internal", index);
+	[phd release];
 }
 
 int main (int argc, const char* argv[]) {
@@ -361,6 +437,8 @@ deprecated_purge:
 				print_arg_error("deselect-chars", 2);
 			else
 				DeselectPhrase(argv[2], argv[3], 1);
+		} else if (strcmp(command, "sync") == 0) {
+			Sync();
 		} else
 			fprintf(stderr, "Error: Unrecognized command '%s'.\n\n", argv[1]);
 		
