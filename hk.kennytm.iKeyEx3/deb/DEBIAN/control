@@ -1,6 +1,6 @@
 Package: hk.kennytm.ikeyex
 Name: iKeyEx 3
-Version: 0.1-99k
+Version: 0.2~rc1
 Architecture: iphoneos-arm
 Description: iKeyEx is a MobileSubstrate-based keyboard extension framework for the iPhoneOS 3.x.
 Homepage: http://code.google.com/p/networkpx/
@@ -10,6 +10,6 @@ Section: Keyboards
 Depends: mobilesubstrate (>=0.9-3069), preferenceloader (>=1.1)
 Pre-Depends: firmware (>=3.0)
 Conflicts: hk.kennytm.hclipboard (<< 0.1-99), hk.kennytm.5rowqwerty (<< 0.1-99), hk.kennytm.l33ttyper (<< 0.1-99)
-Installed-Size: 340
+Installed-Size: 344
 Support: http://code.google.com/p/networkpx/wiki/FAQ
 dev: kennytm

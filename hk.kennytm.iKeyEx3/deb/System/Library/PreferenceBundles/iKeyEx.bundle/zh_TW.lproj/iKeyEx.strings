@@ -27,3 +27,5 @@ Tap = "點一下";
 "Associated phrases" = "相關字詞";
 Customize = "自訂";
 "Nothing to customize." = "沒有需自訂的東西。";
+"Stop bad composition" = "組字錯誤時停止字根輸入";
+
