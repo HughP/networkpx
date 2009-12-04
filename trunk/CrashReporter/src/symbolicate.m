@@ -150,6 +150,10 @@ NSString* symbolicate(NSString* file, ModalActionSheet* hudReply) {
 	NSMutableArray* extraInfoArr = [[NSMutableArray alloc] init];	// 1
 	NSMutableDictionary* binaryImages = [[NSMutableDictionary alloc] init];	// 1
 	
+	NSDictionary* whiteListFile = [[NSDictionary alloc] initWithContentsOfFile:[mainBundle pathForResource:@"whitelist" ofType:@"plist"]];
+	NSArray* sigFilters = [whiteListFile objectForKey:@"SignalFilters"];
+	BOOL isFilteredSignal = NO;
+	
 	for (NSString* line in file_lines) {
 		BOOL isBinImg = [line isEqualToString:@"Binary Images:"];
 		id extraInfo = [NSNull null];
@@ -165,7 +169,17 @@ NSString* symbolicate(NSString* file, ModalActionSheet* hudReply) {
 					mode = SM_BacktraceMode;
 				else if (isBinImg)
 					goto finish;
-				else
+				else if ([line hasPrefix:@"Exception Type:"]) {
+					NSUInteger lastCloseParenthesis = [line rangeOfString:@")" options:NSBackwardsSearch].location;
+					if (lastCloseParenthesis != NSNotFound) {
+						NSUInteger lastOpenParenthesis = [line rangeOfString:@"(" options:NSBackwardsSearch range:NSMakeRange(0, lastCloseParenthesis)].location;
+						if (lastOpenParenthesis < lastCloseParenthesis) {
+							NSString* signalStr = [line substringWithRange:NSMakeRange(lastOpenParenthesis+1, lastCloseParenthesis-lastOpenParenthesis-1)];
+							isFilteredSignal = isFilteredSignal || [sigFilters containsObject:signalStr];
+						}
+					}
+					break;
+				} else
 					break;
 				
 			case SM_BacktraceMode:
@@ -212,7 +226,6 @@ finish:
 	NSUInteger i = 0, total_lines = [extraInfoArr count];
 	BOOL isCrashing = NO;
 	BOOL hasHeaderFromSharedCacheWithPath = [VMUMemory_File respondsToSelector:@selector(headerFromSharedCacheWithPath:)];
-	NSDictionary* whiteListFile = [[NSDictionary alloc] initWithContentsOfFile:[mainBundle pathForResource:@"whitelist" ofType:@"plist"]];
 	NSSet* filters = [[NSSet alloc] initWithArray:[whiteListFile objectForKey:@"Filters"]];
 	NSArray* prefixFilters = [[whiteListFile objectForKey:@"PrefixFilters"] retain];
 	NSSet* funcFilters = [[NSSet alloc] initWithArray:[whiteListFile objectForKey:@"FunctionFilters"]];
@@ -332,7 +345,7 @@ finish:
 							
 							VMUSection* clsListSect = [dataSeg sectionNamed:@"__objc_classlist"];
 							
-							// @try {
+							@try {
 							
 							[mem setCursor:[clsListSect offset]];
 							unsigned size = (unsigned) [clsListSect size];
@@ -375,9 +388,9 @@ finish:
 								[mem setCursor:old_location];
 							}
 								
-							// } @catch (NSException* exception) {
-							//	NSLog(@"CrashReporter: Warning: Exception '%@' generated when extracting Objective-C info for %@.", exception, bi->path);
-							// }
+							} @catch (NSException* exception) {
+								NSLog(@"CrashReporter: Warning: Exception '%@' generated when extracting Objective-C info for %@.", exception, bi->path);
+							}
 							
 							[objcArr sortUsingFunction:(void*)CompareObjCInfos context:NULL];
 							bi->objcArray = objcArr;
@@ -422,12 +435,26 @@ finish:
 	[funcFilters release];
 	[reverseFuncFilters release];
 	
+	/*
+	if (isFilteredSignal) {
+		for (NSString* name in binaryImages) {
+			BinaryInfo* bi = [binaryImages objectForKey:name];
+			if ([bi isKindOfClass:bicls] && (bi->line & 0x80000000)) {
+				isFilteredSignal = NO;
+				break;
+			}
+		}
+	}
+	 */
+	
 	// Write down blame info.
 	NSMutableString* blameInfo = [NSMutableString stringWithString:@"<key>blame</key><array>\n"];
+	if (!isFilteredSignal) {
 	for (NSString* name in binaryImages) {
 		BinaryInfo* bi = [binaryImages objectForKey:name];
 		if ([bi isKindOfClass:bicls] && bi->line != ~0u)
 			[blameInfo appendFormat:@"<array><string>%@</string><integer>%d</integer></array>\n", escapeHTML(bi->path, escSet), bi->line];
+	}
 	}
 	[blameInfo appendString:@"</array>"];
 	[file_lines insertObject:blameInfo atIndex:[file_lines count]-3];

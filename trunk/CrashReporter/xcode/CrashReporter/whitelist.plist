@@ -1,4 +1,9 @@
 {
+	SignalFilters = (
+		SIGQUIT,
+		SIGEMT,
+		SIGTRAP,
+	);
 	"ReverseFunctionFilters" = (
 		"__kill",
 	);
