@@ -48,7 +48,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // This ought to be one of the craziest template function I've written :p
 template <typename S, NSUInteger tableIndex, NSString*& extension, NSString*& cacheExt, NSString*& pinyinOrSinglechars, void(*conversionFunction)(const char* from, const char* to)>
 static inline S* PhraseTableCreate(NSString* language) {
-	NSString* tableName = [[[IKXConfigDictionary() objectForKey:@"phrase"] objectForKey:language] objectAtIndex:tableIndex] ?: @"__Internal";
+	NSDictionary* d = IKXConfigCopy(@"phrase");
+	NSString* tableName = [[d objectForKey:language] objectAtIndex:tableIndex] ?: @"__Internal";
+	[d release];
 	
 	NSString* tableFn = [tableName stringByAppendingPathExtension:extension];
 	NSFileManager* fman = [NSFileManager defaultManager];

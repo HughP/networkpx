@@ -35,6 +35,7 @@
 #import "libiKeyEx.h"
 #include <libkern/OSAtomic.h>
 #include <pthread.h>
+#import <AppSupport/AppSupport.h>
 
 extern BOOL IKXIsiKeyExMode(NSString* modeString) {
 	return [modeString hasPrefix:@"iKeyEx:"];
@@ -43,58 +44,73 @@ extern BOOL IKXIsInternalMode(NSString* modeString) {
 	return [modeString hasPrefix:@"iKeyEx:__"];
 }
 
-static NSDictionary* _IKXConfigDictionary = nil;
-static int _IKXKeyboardChooserPref = 3, _IKXConfirmWithSpacePref = 2;
 static IKXAppType _IKXCurrentAppType = IKXAppTypeError;
-extern NSDictionary* IKXConfigDictionary() {
-	if (_IKXConfigDictionary == nil) {
-		NSDictionary* temp_IKXConfigDictionary = [[NSDictionary alloc] initWithContentsOfFile:IKX_CONFIG_PATH];
-		if (!OSAtomicCompareAndSwapPtrBarrier(nil, temp_IKXConfigDictionary, (void*volatile*)&_IKXConfigDictionary))
-			[temp_IKXConfigDictionary release];
+
+static const CFStringRef _IKXPreferenceDomain;
+
+extern CFStringRef IKXPreferenceDomain() {
+	if (_IKXPreferenceDomain == NULL) {
+		CFStringRef tmp = CPCopySharedResourcesPreferencesDomainForDomain(CFSTR("hk.kennytm.iKeyEx3"));
+		if (!OSAtomicCompareAndSwapPtrBarrier(NULL, (void*)tmp, (void*volatile*)&_IKXPreferenceDomain)) {
+			if (tmp)
+				CFRelease(tmp);
+		}
 	}
-	return _IKXConfigDictionary;
+	return _IKXPreferenceDomain;
 }
 
 extern void IKXFlushConfigDictionary() {
-	if (_IKXConfigDictionary != nil) {
-		NSDictionary* temp_IKXConfigDictionary = _IKXConfigDictionary;
-		if (OSAtomicCompareAndSwapPtrBarrier(temp_IKXConfigDictionary, nil, (void*volatile*)&_IKXConfigDictionary)) {
-			_IKXKeyboardChooserPref = 3;
-			_IKXConfirmWithSpacePref = 2;
-			_IKXCurrentAppType = IKXAppTypeError;
-			[temp_IKXConfigDictionary release];
-		}
+	_IKXCurrentAppType = IKXAppTypeError;
+	CFStringRef domain = IKXPreferenceDomain();
+	CFPreferencesAppSynchronize(domain);
+	CFArrayRef kbs = CFPreferencesCopyAppValue(CFSTR("AppleKeyboards"), domain);
+	if (kbs) {
+		UIKeyboardSetActiveInputModes((NSArray*)kbs);
+		// Reverse sync.
+		CFStringRef globalDomain = CPCopySharedResourcesPreferencesDomainForDomain(CFSTR(".GlobalPreferences"));
+		CFPreferencesSetAppValue(CFSTR("AppleKeyboards"), kbs, globalDomain);
+		CFRelease(globalDomain);
+		CFRelease(kbs);
 	}
 }
-extern int IKXKeyboardChooserPreference() { 
-	while (_IKXKeyboardChooserPref >= 3) {
-		NSString* kbChooser = [IKXConfigDictionary() objectForKey:@"kbChooser"];
-		_IKXKeyboardChooserPref = kbChooser ? [kbChooser integerValue] : 1;
-	}
-	return _IKXKeyboardChooserPref;
+
+extern id IKXConfigCopy(NSString* key) { return (id)CFPreferencesCopyAppValue((CFStringRef)key, IKXPreferenceDomain()); }
+extern BOOL IKXConfigGetBool(NSString* key, BOOL defaultValue) {
+	Boolean valid;
+	BOOL retval = CFPreferencesGetAppBooleanValue((CFStringRef)key, IKXPreferenceDomain(), &valid);
+	return valid ? retval : defaultValue;
 }
-extern BOOL IKXConfirmWithSpacePreference() {
-	while (_IKXConfirmWithSpacePref >= 2) {
-		NSNumber* confWithSpace = [IKXConfigDictionary() objectForKey:@"confirmWithSpace"];
-		_IKXConfirmWithSpacePref = confWithSpace ? [confWithSpace boolValue] : 1;
-	}
-	return _IKXConfirmWithSpacePref;
+extern int IKXConfigGetInt(NSString* key, int defaultValue) {
+	Boolean valid;
+	int retval = CFPreferencesGetAppIntegerValue((CFStringRef)key, IKXPreferenceDomain(), &valid);
+	return valid ? retval : defaultValue;
 }
+extern void IKXConfigSet(NSString* key, id value) { CFPreferencesSetAppValue((CFStringRef)key, value, IKXPreferenceDomain()); }
+extern void IKXConfigSetBool(NSString* key, BOOL value) { IKXConfigSet(key, (id)(value ? kCFBooleanTrue : kCFBooleanFalse)); }
+extern void IKXConfigSetInt(NSString* key, int value) { IKXConfigSet(key, [NSNumber numberWithInt:value]); }
 
 //------------------------------------------------------------------------------
 
 extern NSString* IKXLayoutReference(NSString* modeString) {
 	if ([modeString isEqualToString:@"iKeyEx:__KeyboardChooser"])
 		return @"__KeyboardChooser";
-	else
-		return [[[IKXConfigDictionary() objectForKey:@"modes"] objectForKey:modeString] objectForKey:@"layout"];
+	else {
+		NSDictionary* modes = IKXConfigCopy(@"modes");
+		NSString* rv = [[modes objectForKey:modeString] objectForKey:@"layout"];
+		[modes release];
+		return rv;		
+	}
 }
 
 extern NSString* IKXInputManagerReference(NSString* modeString) {
 	if ([modeString isEqualToString:@"iKeyEx:__KeyboardChooser"])
 		return @"=en_US";
-	else
-		return [[[IKXConfigDictionary() objectForKey:@"modes"] objectForKey:modeString] objectForKey:@"manager"];
+	else {
+		NSDictionary* modes = IKXConfigCopy(@"modes");
+		NSString* rv = [[modes objectForKey:modeString] objectForKey:@"manager"];
+		[modes release];
+		return rv;
+	}
 }
 
 extern NSBundle* IKXLayoutBundle(NSString* layoutReference) {
@@ -112,9 +128,12 @@ extern void IKXPlaySound() {
 }
 
 extern NSString* IKXNameOfMode(NSString* modeString) {
-	if (IKXIsiKeyExMode(modeString))
-		return [[[IKXConfigDictionary() objectForKey:@"modes"] objectForKey:modeString] objectForKey:@"name"];
-	else {
+	if (IKXIsiKeyExMode(modeString)) {
+		NSDictionary* modes = IKXConfigCopy(@"modes");
+		NSString* rv = [[modes objectForKey:modeString] objectForKey:@"name"];
+		[modes release];
+		return rv;
+	} else {
 		if ([modeString isEqualToString:@"emoji"])
 			return @"Emoji";
 		else if ([modeString isEqualToString:@"intl"])
@@ -145,7 +164,7 @@ extern IKXAppType IKXAppTypeOfCurrentApplication() {
 	// Make sure Error is not returned if a flush happened during calculation.
 	while (_IKXCurrentAppType == IKXAppTypeError) {
 		NSString* appID = [[[NSBundle mainBundle] bundleIdentifier] lowercaseString];
-		NSDictionary* appTypes = [IKXConfigDictionary() objectForKey:@"appTypes"];
+		NSDictionary* appTypes = IKXConfigCopy(@"appTypes");
 		NSSet* ansiApps = [NSSet setWithArray:[appTypes objectForKey:@"ANSI"]];
 		if (![ansiApps count])
 			ansiApps = [NSSet setWithObject:@"com.googlecode.mobileterminal"];
@@ -171,6 +190,7 @@ extern IKXAppType IKXAppTypeOfCurrentApplication() {
 			else
 				_IKXCurrentAppType = IKXAppTypeNormal;
 		}
+		[appTypes release];
 	}
 	return _IKXCurrentAppType;
 }
@@ -190,15 +210,22 @@ extern NSString* IKXLocalizedString(NSString* key) {
 //------------------------------------------------------------------------------
 
 extern UIProgressHUD* IKXShowLoadingHUD() {
-	UIProgressHUD* hud = [UIProgressHUD new];
+	UIWindow* topLevelWindow = [[UIWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
+	topLevelWindow.windowLevel = UIWindowLevelAlert;
+	topLevelWindow.backgroundColor = [UIColor clearColor];
+	UIProgressHUD* hud = [[UIProgressHUD alloc] init];
 	[hud setText:IKXLocalizedString(@"Loading...")];	
-	[hud showInView:[UITextEffectsWindow sharedTextEffectsWindow]];
+	[hud showInView:topLevelWindow];
+	topLevelWindow.hidden = NO;
 	return hud;
 }
 
 extern void IKXHideLoadingHUD(UIProgressHUD* hud) {
+	UIWindow* hudWin = hud.window;
 	[hud hide];
 	[hud release];
+	hudWin.hidden = YES;
+	[hudWin release];
 }
 
 extern void IKXRefreshLoadingHUDWithPercentage(int percentage, UIProgressHUD* hud) {

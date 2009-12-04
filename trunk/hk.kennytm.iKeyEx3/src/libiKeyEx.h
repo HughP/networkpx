@@ -32,14 +32,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #if TARGET_IPHONE_SIMULATOR
 #define IKX_SCRAP_PATH @"/Users/kennytm/Library/Application Support/iPhone Simulator/User/Library/Keyboard"
-#define IKX_LIB_PATH @"/Users/kennytm/XCodeProjects/iKeyEx/svn/trunk/hk.kennytm.iKeyEx3/deb/Library/iKeyEx"
+#define IKX_LIB_PATH IKX_SCRAP_PATH@"/iKeyEx"
 #define IKX_PREFS_PATH @"/Users/kennytm/XCodeProjects/iKeyEx/svn/trunk/hk.kennytm.iKeyEx3/deb/System/Library/PreferenceBundles/iKeyEx.bundle"
 #else
 #define IKX_SCRAP_PATH @"/var/mobile/Library/Keyboard"
 #define IKX_LIB_PATH @"/Library/iKeyEx"
 #define IKX_PREFS_PATH @"/System/Library/PreferenceBundles/iKeyEx.bundle"
 #endif
-#define IKX_CONFIG_PATH IKX_SCRAP_PATH@"/iKeyEx::config.plist"
+//#define IKX_CONFIG_PATH IKX_SCRAP_PATH@"/iKeyEx::config.plist"
 
 #if __cplusplus
 extern "C" {
@@ -61,12 +61,19 @@ BOOL IKXIsiKeyExMode(NSString* modeString);
 BOOL IKXIsInternalMode(NSString* modeString);
 
 /// Get the iKeyEx configuration dictionary.
-NSDictionary* IKXConfigDictionary();
+	CFStringRef IKXPreferenceDomain();
+	id   IKXConfigCopy(NSString* key);
+	BOOL IKXConfigGetBool(NSString* key, BOOL defaultValue);
+	int  IKXConfigGetInt(NSString* key, int defaultValue);
+	void IKXConfigSet(NSString* key, id value);
+	void IKXConfigSetBool(NSString* key, BOOL value);
+	void IKXConfigSetInt(NSString* key, int value);
+	
 /// Reload the config dictionary from disk.
 void IKXFlushConfigDictionary();
 	
-	int IKXKeyboardChooserPreference();
-	BOOL IKXConfirmWithSpacePreference();
+//	int IKXKeyboardChooserPreference();
+//	BOOL IKXConfirmWithSpacePreference();
 
 /// Get the layout reference of an iKeyEx input mode.
 NSString* IKXLayoutReference(NSString* modeString);

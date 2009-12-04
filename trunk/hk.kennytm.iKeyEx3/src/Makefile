@@ -68,7 +68,7 @@ libiKeyEx_InstallNamePrefix=`pwd`/$(LibPath)
 else
 libiKeyEx_InstallNamePrefix=/usr/lib
 endif
-libiKeyEx_Options=-framework Foundation -framework UIKit -framework TextInput -lstdc++ -dynamiclib -install_name $(libiKeyEx_InstallNamePrefix)/libiKeyEx.dylib
+libiKeyEx_Options=-framework Foundation -framework UIKit -framework TextInput -framework AppSupport -lstdc++ -dynamiclib -install_name $(libiKeyEx_InstallNamePrefix)/libiKeyEx.dylib
 
 KeyboardChooser_Sources=KeyboardChooserLayout.o
 KeyboardChooser_Target=$(iKeyExPath)/Keyboards/__KeyboardChooser.keyboard/__KeyboardChooser
@@ -84,7 +84,7 @@ PrefBundle_Options=-framework Foundation -framework UIKit -framework Preferences
 
 iKeyExKBMan_Sources=iKeyEx-KBMan.o
 iKeyExKBMan_Target=../deb/usr/bin/iKeyEx-KBMan
-iKeyExKBMan_Options=-framework Foundation -liKeyEx
+iKeyExKBMan_Options=-framework Foundation -framework AppSupport -liKeyEx
 
 #-----------------------------------------------------------------------------------------------------------------
 #-----------------------------------------------------------------------------------------------------------------

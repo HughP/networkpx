@@ -415,7 +415,7 @@ DefineObjCHook(void, UIKeyboardLayoutRoman_longPressAction, UIKeyboardLayoutRoma
 }
 
 DefineObjCHook(void, UIKeyboardImpl_setInputModeToNextInPreferredList, UIKeyboardImpl* self, SEL _cmd) {
-	if (longPressedInternationalKey == IKXKeyboardChooserPreference()) {
+	if (longPressedInternationalKey == IKXConfigGetInt(@"kbChooser", 1)) {
 		[self setInputModeLastChosenPreference];
 		[self setInputMode:@"iKeyEx:__KeyboardChooser"];
 	} else
@@ -465,7 +465,10 @@ DefineHiddenHook(id, LookupLocalizedObject, NSString* key, NSString* mode, id un
 //------------------------------------------------------------------------------
 
 DefineHook(NSArray*, UIKeyboardGetSupportedInputModes) {
-	return [Original(UIKeyboardGetSupportedInputModes)() arrayByAddingObjectsFromArray:[[IKXConfigDictionary() objectForKey:@"modes"] allKeys]];
+	NSDictionary* d = IKXConfigCopy(@"modes");
+	NSArray* res = [Original(UIKeyboardGetSupportedInputModes)() arrayByAddingObjectsFromArray:[d allKeys]];
+	[d release];
+	return res;
 }
 
 //------------------------------------------------------------------------------
@@ -818,9 +821,9 @@ static void fixInputMode () {
 }
 
 void initialize () {
-	NSAutoreleasePool* pool = [NSAutoreleasePool new];
+	NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
 	
-#if TARGET_IPHONE_SIMULATOR && defined(__IPHONE_3_1)
+#if TARGET_IPHONE_SIMULATOR && __IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_3_1
 	intptr_t ref = (intptr_t)UIGraphicsBeginImageContext;
 	
 	GetKeyboardDataFromBundle = (void*)(ref + 0x21162c);
@@ -864,6 +867,7 @@ void initialize () {
 	InstallObjCInstanceHook(UIKeyboardLayoutStar_class, @selector(longPressAction), UIKeyboardLayoutStar_longPressAction);
 	InstallObjCInstanceHook(UIKeyboardLayoutRoman_class, @selector(longPressAction), UIKeyboardLayoutRoman_longPressAction);
 	InstallObjCInstanceHook(UIKeyboardImpl_class, @selector(setInputModeToNextInPreferredList), UIKeyboardImpl_setInputModeToNextInPreferredList);
+//	InstallObjCInstanceHook(UIKeyboardImpl_class, @selector(inputModePreference), UIKeyboardImpl_inputModePreference);
 	
 	InstallObjCInstanceHook(UIKeyboardLayoutStar_class, @selector(sendStringAction:forKey:), UIKeyboardLayoutStar_sendStringAction_forKey_);
 		
@@ -875,6 +879,8 @@ void initialize () {
 									(CFNotificationCallback)fixInputMode,
 									CFSTR("UIApplicationWillTerminateNotification"),
 									NULL, CFNotificationSuspensionBehaviorDeliverImmediately);
+	
+	IKXFlushConfigDictionary();
 	
 	[pool drain];
 }
