@@ -3,11 +3,12 @@
 
 = Requirement =
 
-The networkpx projects are developed on an 64-bit Intel Mac OS X 10.5.6 with the official iPhone SDK 2.2. Other platforms may be unsupported.
+The networkpx projects are developed on an 64-bit Intel Mac OS X 10.6.2 with the official iPhone SDK 3.0 or above. Other platforms may be unsupported. You also need to have my [http://github.com/kennytm/iphone-private-frameworks iPhone private frameworks] for the unofficial headers.
 
- * Install the official iPhone SDK 2.2 from [http://developer.apple.com/iphone/ [apple]]. You will need a (free) ADC account. 
+ * Install the official iPhone SDK 3.1.2 from [http://developer.apple.com/iphone/ [apple]]. You will need a (free) ADC account. 
  * Download _ldid_ from [http://code.google.com/p/networkpx/downloads/detail?name=ldid.zip [networkpx]], or compile it from source in [http://svn.telesphoreo.org/trunk/data/ldid/ [telesphoreo]]. Put the binary into `/usr/local/bin/`.
  * Install svn, e.g. from [http://homepage.mac.com/martinott/ [martinott]].
+ * Install git and clone `git://github.com/kennytm/iphone-private-frameworks.git`.
 
 = Compiling =
 
