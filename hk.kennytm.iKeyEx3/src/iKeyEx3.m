@@ -471,6 +471,8 @@ DefineHook(NSArray*, UIKeyboardGetSupportedInputModes) {
 	return res;
 }
 
+DefineHook(BOOL, UIKeyboardEmojiPermittedEverywhere) { return YES; }
+
 //------------------------------------------------------------------------------
 
 static CFMutableDictionaryRef cachedColors = NULL;
@@ -857,6 +859,7 @@ void initialize () {
 	InstallHook(LookupLocalizedObject);
 	InstallHook(UIKeyboardGetSupportedInputModes);
 	InstallHook(UIKBThemeCreate);
+	InstallHook(UIKeyboardEmojiPermittedEverywhere);
 	
 	Class UIKeyboardLayoutStar_class = objc_getClass("UIKeyboardLayoutStar");
 	Class UIKeyboardLayoutRoman_class = [UIKeyboardLayoutRoman class];
