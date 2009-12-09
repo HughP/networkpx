@@ -60,18 +60,8 @@ extern CFStringRef IKXPreferenceDomain() {
 }
 
 extern void IKXFlushConfigDictionary() {
-	_IKXCurrentAppType = IKXAppTypeError;
 	CFStringRef domain = IKXPreferenceDomain();
 	CFPreferencesAppSynchronize(domain);
-	CFArrayRef kbs = CFPreferencesCopyAppValue(CFSTR("AppleKeyboards"), domain);
-	if (kbs) {
-		UIKeyboardSetActiveInputModes((NSArray*)kbs);
-		// Reverse sync.
-		CFStringRef globalDomain = CPCopySharedResourcesPreferencesDomainForDomain(CFSTR(".GlobalPreferences"));
-		CFPreferencesSetAppValue(CFSTR("AppleKeyboards"), kbs, globalDomain);
-		CFRelease(globalDomain);
-		CFRelease(kbs);
-	}
 }
 
 extern id IKXConfigCopy(NSString* key) { return (id)CFPreferencesCopyAppValue((CFStringRef)key, IKXPreferenceDomain()); }
@@ -85,9 +75,24 @@ extern int IKXConfigGetInt(NSString* key, int defaultValue) {
 	int retval = CFPreferencesGetAppIntegerValue((CFStringRef)key, IKXPreferenceDomain(), &valid);
 	return valid ? retval : defaultValue;
 }
-extern void IKXConfigSet(NSString* key, id value) { CFPreferencesSetAppValue((CFStringRef)key, value, IKXPreferenceDomain()); }
+extern void IKXConfigSet(NSString* key, id value) {
+	CFPreferencesSetAppValue((CFStringRef)key, value, IKXPreferenceDomain());
+	if ([key isEqualToString:@"AppleKeyboards"])
+		IKXConfigReverseSyncAppleKeyboards(value);
+}
 extern void IKXConfigSetBool(NSString* key, BOOL value) { IKXConfigSet(key, (id)(value ? kCFBooleanTrue : kCFBooleanFalse)); }
 extern void IKXConfigSetInt(NSString* key, int value) { IKXConfigSet(key, [NSNumber numberWithInt:value]); }
+
+extern void IKXConfigReverseSyncAppleKeyboards(NSArray* value) {
+	UIKeyboardImpl* impl = [UIKeyboardImpl sharedInstance];
+	NSArray* currentActiveModes = UIKeyboardGetActiveInputModes();
+	if (![currentActiveModes isEqualToArray:value]) {
+		UIKeyboardSetActiveInputModes(value);
+		[impl setInputModePreference];
+		if (![value containsObject:UIKeyboardGetCurrentInputMode()])
+			[impl setInputMode:[value objectAtIndex:0]];
+	}
+}
 
 //------------------------------------------------------------------------------
 
@@ -213,11 +218,20 @@ extern UIProgressHUD* IKXShowLoadingHUD() {
 	UIWindow* topLevelWindow = [[UIWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
 	topLevelWindow.windowLevel = UIWindowLevelAlert;
 	topLevelWindow.backgroundColor = [UIColor colorWithWhite:0 alpha:0.5];
+	
 	UIProgressHUD* hud = [[UIProgressHUD alloc] init];
-	[hud setText:IKXLocalizedString(@"Loading...")];	
-	[hud showInView:topLevelWindow];
+	[hud setText:IKXLocalizedString(@"Loading iKeyEx")];	
+	[hud showInView:topLevelWindow];	
+/*
+	UIProgressView* pv = [[UIProgressView alloc] initWithProgressViewStyle:UIProgressViewStyleDefault];
+	pv.tag = 193;
+	[hud addSubview:pv];
+	[pv release];
+*/
 	topLevelWindow.hidden = NO;
+	
 	return hud;
+	// intentional retainCount +1 for topLevelWindow.
 }
 
 extern void IKXHideLoadingHUD(UIProgressHUD* hud) {
@@ -229,8 +243,10 @@ extern void IKXHideLoadingHUD(UIProgressHUD* hud) {
 }
 
 extern void IKXRefreshLoadingHUDWithPercentage(int percentage, UIProgressHUD* hud) {
-	[hud setText:[NSString stringWithFormat:@"%@ %d%%", IKXLocalizedString(@"Loading..."), percentage]];
-	CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.01, YES);
+//	[[hud viewWithTag:193] setProgress:percentage*0.01f];
+	[hud setText:[NSString stringWithFormat:@"%@ (%d%%)", IKXLocalizedString(@"Loading iKeyEx"), percentage]];
+	CFRunLoopRunInMode(CFSTR("UITrackingRunLoopMode"), 0, YES);
+
 }
 
 // 1 <hide>

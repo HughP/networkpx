@@ -154,6 +154,7 @@ static NSArray* Sync() {
 	
 	return (NSArray*)AppleKeyboards;
 }
+/*
 static void ReverseSync(NSArray* arr) {
 	CFStringRef globalPrefsDomain = CPCopySharedResourcesPreferencesDomainForDomain(CFSTR(".GlobalPreferences"));
 	CFPreferencesSetAppValue(CFSTR("AppleKeyboards"), arr, globalPrefsDomain);
@@ -161,7 +162,7 @@ static void ReverseSync(NSArray* arr) {
 	notify_post("AppleKeyboardsPreferencesChangedNotification");
 	CFRelease(globalPrefsDomain);
 }
-
+*/
 static void Activate(NSString* modeString) {
 	NSArray* arr = IKXConfigCopy(@"AppleKeyboards");
 	if (arr == nil)
@@ -171,7 +172,7 @@ static void Activate(NSString* modeString) {
 		NSArray* arr2 = [arr arrayByAddingObject:modeString];
 		IKXConfigSet(@"AppleKeyboards", arr2);
 		SaveConfig();
-		ReverseSync(arr2);
+//		ReverseSync(arr2);
 	}
 	
 	[arr release];
@@ -188,7 +189,7 @@ static void Deactivate(NSString* modeString) {
 		[arr2 removeObjectAtIndex:i];
 		IKXConfigSet(@"AppleKeyboards", arr2);
 		SaveConfig();
-		ReverseSync(arr2);
+//		ReverseSync(arr2);
 		[arr2 release];
 	}
 	
@@ -239,7 +240,7 @@ static void UnregisterWhere(NSString* key, const char* matching) {
 	[ma removeObjectsInArray:modesToRemove];
 	[modesToRemove release];
 	IKXConfigSet(@"AppleKeyboards", ma);
-	ReverseSync(ma);
+//	ReverseSync(ma);
 	[ma release];
 	[arr release];
 	
