@@ -68,6 +68,7 @@ BOOL IKXIsInternalMode(NSString* modeString);
 	void IKXConfigSet(NSString* key, id value);
 	void IKXConfigSetBool(NSString* key, BOOL value);
 	void IKXConfigSetInt(NSString* key, int value);
+	void IKXConfigReverseSyncAppleKeyboards(NSArray* value);
 	
 /// Reload the config dictionary from disk.
 void IKXFlushConfigDictionary();

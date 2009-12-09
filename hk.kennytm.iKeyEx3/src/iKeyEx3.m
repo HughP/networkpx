@@ -870,7 +870,12 @@ void initialize () {
 //	InstallObjCInstanceHook(UIKeyboardImpl_class, @selector(inputModePreference), UIKeyboardImpl_inputModePreference);
 	
 	InstallObjCInstanceHook(UIKeyboardLayoutStar_class, @selector(sendStringAction:forKey:), UIKeyboardLayoutStar_sendStringAction_forKey_);
-		
+
+	IKXFlushConfigDictionary();
+	NSArray* appleKeyboards = IKXConfigCopy(@"AppleKeyboards");
+	IKXConfigReverseSyncAppleKeyboards(appleKeyboards);
+	[appleKeyboards release];
+	
 	CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL,
 									(CFNotificationCallback)IKXFlushConfigDictionary,
 									CFSTR("hk.kennytm.iKeyEx3.FlushConfigDictionary"),
@@ -879,8 +884,7 @@ void initialize () {
 									(CFNotificationCallback)fixInputMode,
 									CFSTR("UIApplicationWillTerminateNotification"),
 									NULL, CFNotificationSuspensionBehaviorDeliverImmediately);
-	
-	IKXFlushConfigDictionary();
+
 	
 	[pool drain];
 }

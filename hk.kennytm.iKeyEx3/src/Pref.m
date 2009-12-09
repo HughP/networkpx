@@ -58,9 +58,9 @@ static NSComparisonResult sortByMovingIKXKeyboardsToFront(NSString* a, NSString*
 static NSUInteger setKeyboards(UIKeyboardImpl* impl, NSArray* keyboards) {
 	if ([keyboards count] == 0)
 		keyboards = [NSArray arrayWithObject:@"en_US"];
-	UIKeyboardSetActiveInputModes(keyboards);
-	[impl setInputModePreference];
-	[impl setInputMode:[keyboards lastObject]];
+	
+	IKXConfigSet(@"AppleKeyboards", keyboards);
+	IKXFlushConfigDictionary();
 	return [keyboards count];
 }
 
