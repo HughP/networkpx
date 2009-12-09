@@ -11,23 +11,16 @@
 
 = Screenshots =
 
-http://xf0.xanga.com/aeef32fac0633233807805/w184535482.png
-
-http://x21.xanga.com/735f0662c0633233807801/w184535478.png
-
-http://x03.xanga.com/3f2f05f007433233807802/w184535479.png
-
+http://web10.twitpic.com/img/48416110-337d354e27c150490d6d2cf9a7b22974.4b1ffc36-full.png
 = Functional keys =
-
-All functional keys are depicted with ISO-9995:7 symbols which are also used in Mac OS X. If you are unfamiliar with the symbols you can tap on it to see the textual description.
 
 The keys available in 5-Row QWERTY are:
  * ←, ↑, →, ↓: *Directional keys*. Move the cursor left, up, right and downwards. Hold the key to move repeatedly.
- * ⇥: *Tab*. Inserts a tab (\t) character.
- * ⎋: *Escape*. Causes the current input field to lose the focus, and usually hides the keyboard as a result.
- * ⌦: *Forward delete*, otherwise known as Delete. Remove the character immediately after the cursor. Hold the key to keep deleteing.
- * ↖, ↘: *Home*, *End*. Move the cursor to the beginning or end of text field.
- * ⇞, ⇟: *Page up*, *Page down*. Move the cursor one page up or down.
+ * *Tab*: Inserts a tab (\t) character.
+ * *Esc*: Causes the current input field to lose the focus, and usually hides the keyboard as a result.
+ * *Del*: also known as *Forward delete*. Remove the character immediately after the cursor. Hold the key to keep deleteing.
+ * *Home*, *End*: Move the cursor to the beginning or end of text field.
+ * *PgUp*, *PgDn*: Move the cursor one page up or down.
 
 = Known issues =
- * The ↑, ↓, ⇞ and ⇟ keys does not work in UIWebView (Safari) (issue 58).
+ * The up, down, page up and page down keys does not work in UIWebView (Safari) (issue 58).
