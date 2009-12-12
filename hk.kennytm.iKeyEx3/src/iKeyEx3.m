@@ -475,6 +475,41 @@ DefineHook(BOOL, UIKeyboardEmojiPermittedEverywhere) { return YES; }
 
 //------------------------------------------------------------------------------
 
+DefineHook(BOOL, UIKeyboardInputModeIsDefaultRightToLeft, NSString* mode) {
+	if (!IKXIsiKeyExMode(mode))
+		return Original(UIKeyboardInputModeIsDefaultRightToLeft)(mode);
+	
+	BOOL needRTL = NO;
+	NSString* imeRef = IKXInputManagerReference(mode);
+	if ([imeRef characterAtIndex:0] == '=')
+		needRTL = Original(UIKeyboardInputModeIsDefaultRightToLeft)([imeRef substringFromIndex:1]);
+	else {
+		NSBundle* imeBundle = IKXInputManagerBundle(imeRef);
+		NSString* imeClass = [imeBundle objectForInfoDictionaryKey:@"UIKeyboardInputManagerClass"];
+		if ([imeClass characterAtIndex:0] == '=')	// Refered IME.
+			needRTL = Original(UIKeyboardInputModeIsDefaultRightToLeft)([imeClass substringFromIndex:1]);
+		needRTL |= [[imeBundle objectForInfoDictionaryKey:@"RightToLeft"] boolValue];
+	}
+	
+	if (needRTL)
+		return YES;
+	
+	NSString* layoutRef = IKXLayoutReference(mode);
+	if ([layoutRef characterAtIndex:0] == '=')
+		needRTL = Original(UIKeyboardInputModeIsDefaultRightToLeft)([layoutRef substringFromIndex:1]);
+	else {
+		NSBundle* layoutBundle = IKXLayoutBundle(layoutRef);
+		NSString* layoutClass = [layoutBundle objectForInfoDictionaryKey:@"UIKeyboardLayoutClass"];
+		if ([layoutClass characterAtIndex:0] == '=')	// Refered layout.
+			needRTL = Original(UIKeyboardInputModeIsDefaultRightToLeft)([layoutClass substringFromIndex:1]);
+		needRTL |= [[layoutBundle objectForInfoDictionaryKey:@"RightToLeft"] boolValue];
+	}
+	
+	return needRTL;
+}
+
+//------------------------------------------------------------------------------
+
 static CFMutableDictionaryRef cachedColors = NULL;
 
 DefineHook(UIKBThemeRef, UIKBThemeCreate, UIKBKeyboard* keyboard, UIKBKey* key, int x) {
@@ -675,6 +710,7 @@ SS3@"p", SS3@"q", SS3@"r", SS3@"s", SS3@"t", SS3@"u", SS3@"v", SS3@"w", SS3@"x",
 #undef CSI
 #undef SS3
 
+// Ref: http://www.cl.cam.ac.uk/~mgk25/ucs/keysymdef.h
 static NSString* const keyX11[] = {
 @"\uFF1B",
 @"\uFF52", @"\uFF54", @"\uFF51", @"\uFF53",
@@ -860,6 +896,7 @@ void initialize () {
 	InstallHook(UIKeyboardGetSupportedInputModes);
 	InstallHook(UIKBThemeCreate);
 	InstallHook(UIKeyboardEmojiPermittedEverywhere);
+	InstallHook(UIKeyboardInputModeIsDefaultRightToLeft);
 	
 	Class UIKeyboardLayoutStar_class = objc_getClass("UIKeyboardLayoutStar");
 	Class UIKeyboardLayoutRoman_class = [UIKeyboardLayoutRoman class];

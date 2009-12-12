@@ -173,7 +173,6 @@ extern NSString* IKXNameOfMode(NSString* modeString) {
 				return [NSString stringWithFormat:@"%@ (%@)", localeStr, UIKeyboardLocalizedString(type, modeString, nil)];
 			}
 		}
-		
 	}
 }
 
