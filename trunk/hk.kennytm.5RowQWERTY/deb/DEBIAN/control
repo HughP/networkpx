@@ -1,6 +1,6 @@
 Package: hk.kennytm.5rowqwerty
 Name: 5-Row QWERTY Keyboard
-Version: 0.1-99h
+Version: 0.2
 Architecture: iphoneos-arm
 Description: 5-Row QWERTY keyboard layout.
 Homepage: http://code.google.com/p/networkpx/wiki/Using_5RowQWERTY

@@ -1,13 +1,12 @@
 #!/bin/bash
 
+iKeyEx-KBMan register "iKeyEx:5RowQWERTY" "5-Row QWERTY" 5RowQWERTY "=en_US"
 if [[ $1 == install ]]; then
-	iKeyEx-KBMan register "iKeyEx:5RowQWERTY" "5-Row QWERTY" 5RowQWERTY "=en_US"
-	iKeyEx-KBMan activate "iKeyEx:5RowQWERTY"
-	exit 0
+	iKeyEx-KBMan activate "iKeyEx:5RowQWERTY";
 elif [[ $1 == upgrade ]]; then
 	# Preserve the config.
 	cd /Library/iKeyEx/Keyboards/5RowQWERTY.keyboard/;
 	cp layout.plist ~layout.plist;
 	cp Info.plist ~Info.plist;
-	exit 0;
-fi
+fi;
+exit 0;
