@@ -28,3 +28,4 @@ Tap = Pulsar;
 Customize = Personalizar;
 "Nothing to customize." = "Nada que personalizar.";
 "Stop bad composition" = "Cerrar compos'n mala";
+IKEYEX_INFO_TEXT = "Cuando se instala iKeyEx, se puede cambiar la lista de teclado a Ajustes → iKeyEx → Teclados.";

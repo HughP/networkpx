@@ -43,12 +43,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #import <WebCore/wak/WebCoreThread.h>
 #include <pthread.h>
 #import <GraphicsServices/GSEvent.h>
+#import <Preferences/Preferences.h>
 
 extern NSString* UIKeyboardDynamicDictionaryFile(NSString* mode);
 
 UIKBKeyboard* (*UIKBGetKeyboardByName)(NSString* name);
 
 //------------------------------------------------------------------------------
+#pragma mark UIKeyboardInputModeUsesKBStar
 
 static BOOL layoutUsesStar(NSString* layoutClass);
 
@@ -79,6 +81,7 @@ static BOOL layoutUsesStar(NSString* layoutClass) {
 
 					
 //------------------------------------------------------------------------------
+#pragma mark UIKeyboardLayoutClassForInputModeInOrientation
 
 DefineHook(Class, UIKeyboardLayoutClassForInputModeInOrientation, NSString* modeString, NSString* orientation) {
 	if (!IKXIsiKeyExMode(modeString))
@@ -116,6 +119,7 @@ DefineHook(Class, UIKeyboardLayoutClassForInputModeInOrientation, NSString* mode
 }
 
 //------------------------------------------------------------------------------
+#pragma mark UIKeyboardGetKBStarKeyboardName
 
 DefineHook(NSString*, UIKeyboardGetKBStarKeyboardName, NSString* mode, NSString* orientation, UIKeyboardType type, UIKeyboardAppearance appearance) {
 	if (type == UIKeyboardTypeNumberPad || type == UIKeyboardTypePhonePad || !IKXIsiKeyExMode(mode))
@@ -152,6 +156,7 @@ DefineHook(NSString*, UIKeyboardGetKBStarKeyboardName, NSString* mode, NSString*
 }
 
 //------------------------------------------------------------------------------
+#pragma mark UIKeyboardBundleForInputMode
 
 // Note: this function is also cross-refed by UIKeyboardInputManagerClassForInputMode & UIKeyboardStaticUnigramsFilePathForInputModeAndFileExtension
 // Let's hope no other input managers use this function...
@@ -168,6 +173,7 @@ DefineHook(NSBundle*, UIKeyboardBundleForInputMode, NSString* mode) {
 }
 
 //------------------------------------------------------------------------------
+#pragma mark GetKeyboardDataFromBundle
 
 static NSString* extractOrientation (NSString* keyboardName, unsigned lastDash) {
 	unsigned secondLastDash = [keyboardName rangeOfString:@"-" options:NSBackwardsSearch range:NSMakeRange(0, lastDash)].location;
@@ -234,6 +240,7 @@ DefineHiddenHook(NSData*, GetKeyboardDataFromBundle, NSString* keyboardName, NSB
 }
 
 //------------------------------------------------------------------------------
+#pragma mark UIKeyboardInputManagerClassForInputMode
 
 DefineHook(Class, UIKeyboardInputManagerClassForInputMode, NSString* mode) {
 	if (!IKXIsiKeyExMode(mode))
@@ -256,6 +263,7 @@ DefineHook(Class, UIKeyboardInputManagerClassForInputMode, NSString* mode) {
 }
 
 //------------------------------------------------------------------------------
+#pragma mark UIKeyboardDynamicDictionaryFile
 
 NSString* UIKeyboardUserDirectory();
 DefineHook(NSString*, UIKeyboardDynamicDictionaryFile, NSString* mode) {
@@ -276,6 +284,7 @@ DefineHook(NSString*, UIKeyboardDynamicDictionaryFile, NSString* mode) {
 }
 
 //------------------------------------------------------------------------------
+#pragma mark UIKeyboardStaticUnigramsFilePathForInputModeAndFileExtension
 
 DefineHook(NSString*, UIKeyboardStaticUnigramsFilePathForInputModeAndFileExtension, NSString* mode, NSString* ext) {
 	if (!IKXIsiKeyExMode(mode))
@@ -295,6 +304,7 @@ DefineHook(NSString*, UIKeyboardStaticUnigramsFilePathForInputModeAndFileExtensi
 }
 
 //------------------------------------------------------------------------------
+#pragma mark UIKeyboardRomanAccentVariants
 
 static CFDictionaryRef GetOriginalVariants(NSString* str);
 
@@ -369,6 +379,7 @@ static CFDictionaryRef GetOriginalVariants(NSString* str) {
 }
 
 //------------------------------------------------------------------------------
+#pragma mark UIKeyboardLocalizedInputModeName
 
 DefineHook(NSString*, UIKeyboardLocalizedInputModeName, NSString* mode) {
 	if (!IKXIsiKeyExMode(mode))
@@ -378,6 +389,7 @@ DefineHook(NSString*, UIKeyboardLocalizedInputModeName, NSString* mode) {
 }
 
 //------------------------------------------------------------------------------
+#pragma mark UIKeyboardLayoutDefaultTypeForInputModeIsASCIICapable
 
 DefineHook(BOOL, UIKeyboardLayoutDefaultTypeForInputModeIsASCIICapable, NSString* mode) {
 	if (!IKXIsiKeyExMode(mode))
@@ -387,6 +399,7 @@ DefineHook(BOOL, UIKeyboardLayoutDefaultTypeForInputModeIsASCIICapable, NSString
 }
 
 //------------------------------------------------------------------------------
+#pragma mark (Keyboard chooser)
 
 DefineObjCHook(unsigned, UIKeyboardLayoutStar_downActionFlagsForKey_, UIKeyboardLayoutStar* self, SEL _cmd, UIKBKey* key) {
 	BOOL hasLongAction = [@"International" isEqualToString:key.interactionType];
@@ -424,6 +437,7 @@ DefineObjCHook(void, UIKeyboardImpl_setInputModeToNextInPreferredList, UIKeyboar
 }
 
 //------------------------------------------------------------------------------
+#pragma mark LookupLocalizedObject
 
 DefineHiddenHook(id, LookupLocalizedObject, NSString* key, NSString* mode, id unknown, id unknown2) {
 	if (key == nil)
@@ -463,6 +477,7 @@ DefineHiddenHook(id, LookupLocalizedObject, NSString* key, NSString* mode, id un
 }
 
 //------------------------------------------------------------------------------
+#pragma mark UIKeyboardGetSupportedInputModes, UIKeyboardEmojiPermittedEverywhere, UIKeyboardInputModeIsDefaultRightToLeft
 
 DefineHook(NSArray*, UIKeyboardGetSupportedInputModes) {
 	NSDictionary* d = IKXConfigCopy(@"modes");
@@ -472,8 +487,6 @@ DefineHook(NSArray*, UIKeyboardGetSupportedInputModes) {
 }
 
 DefineHook(BOOL, UIKeyboardEmojiPermittedEverywhere) { return YES; }
-
-//------------------------------------------------------------------------------
 
 DefineHook(BOOL, UIKeyboardInputModeIsDefaultRightToLeft, NSString* mode) {
 	if (!IKXIsiKeyExMode(mode))
@@ -509,6 +522,7 @@ DefineHook(BOOL, UIKeyboardInputModeIsDefaultRightToLeft, NSString* mode) {
 }
 
 //------------------------------------------------------------------------------
+#pragma mark UIKBThemeCreate
 
 static CFMutableDictionaryRef cachedColors = NULL;
 
@@ -571,6 +585,7 @@ DefineHook(UIKBThemeRef, UIKBThemeCreate, UIKBKeyboard* keyboard, UIKBKey* key, 
 }
 
 //------------------------------------------------------------------------------
+#pragma mark Control actions
 
 typedef NSString* (*ControlAction) (id<UIKeyboardInput> delegate, UIKeyboardImpl* impl, NSString* input);
 
@@ -846,6 +861,34 @@ DefineObjCHook(void, UIKeyboardLayoutStar_longPressAction, UIKeyboardLayoutStar*
 }
 
 //------------------------------------------------------------------------------
+#pragma mark Hook that international keyboard list for clueless users.
+
+DefineObjCHook(NSArray*, InternationalKeyboardController_specifiers, PSListController* self, SEL _cmd) {
+	Ivar specIvar = class_getInstanceVariable([PSListController class], "_specifiers");
+	if (object_getIvar(self, specIvar) == nil) {
+		PSSpecifier* pg[4];
+		static NSString* const bundlePath = @"/System/Library/PreferenceBundles/iKeyEx.bundle";
+		NSBundle* bundle = [NSBundle bundleWithPath:bundlePath];
+		
+		pg[2] = [PSSpecifier emptyGroupSpecifier];
+		[pg[2] setProperty:(id)kCFBooleanTrue forKey:@"isStaticText"];
+		
+		NSString* IKEYEX_INFO_TEXT = [bundle localizedStringForKey:@"IKEYEX_INFO_TEXT" value:@"When iKeyEx is installed, the keyboard list can be changed via Settings → iKeyEx → Keyboards." table:@"iKeyEx"];
+		
+		pg[3] = [PSSpecifier preferenceSpecifierNamed:IKEYEX_INFO_TEXT target:nil set:NULL get:NULL detail:Nil cell:PSStaticTextCell edit:Nil];
+		pg[0] = [PSSpecifier emptyGroupSpecifier];
+		pg[1] = [PSSpecifier preferenceSpecifierNamed:@"iKeyEx" target:self set:NULL get:NULL detail:Nil cell:PSLinkCell edit:Nil];
+		[pg[1] setProperty:bundlePath forKey:@"lazy-bundle"];
+		[pg[1] setProperty:[UIImage imageWithContentsOfFile:[bundle pathForResource:@"icon" ofType:@"png"]] forKey:@"iconImage"];
+		[pg[1] setProperty:(id)kCFBooleanTrue forKey:@"isController"];
+		pg[1]->action = @selector(lazyLoadBundle:);
+		
+		object_setIvar(self, specIvar, [[NSArray alloc] initWithObjects:pg count:sizeof(pg)/sizeof(pg[0])]);
+	}
+	return object_getIvar(self, specIvar);
+}
+
+//------------------------------------------------------------------------------
 
 #ifndef N_ARM_THUMB_DEF
 #define N_ARM_THUMB_DEF 0
@@ -858,7 +901,8 @@ static void fixInputMode () {
 	}
 }
 
-void initialize () {
+__attribute__((constructor))
+static void initialize () {
 	NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
 	
 #if TARGET_IPHONE_SIMULATOR && __IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_3_1
@@ -925,6 +969,12 @@ void initialize () {
 									CFSTR("UIApplicationWillTerminateNotification"),
 									NULL, CFNotificationSuspensionBehaviorDeliverImmediately);
 
+	// Hook the keyboard list of the regular keyboard.
+	Class InternationalKeyboardController = objc_getClass("InternationalKeyboardController");
+	if (InternationalKeyboardController) {
+		InstallObjCInstanceHook(InternationalKeyboardController, @selector(specifiers), InternationalKeyboardController_specifiers);
+	}
+	
 	
 	[pool drain];
 }

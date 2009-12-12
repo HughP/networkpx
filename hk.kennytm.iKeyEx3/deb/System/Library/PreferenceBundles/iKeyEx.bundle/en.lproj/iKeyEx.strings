@@ -28,3 +28,4 @@ Tap = Tap;
 Customize = Customize;
 "Nothing to customize." = "Nothing to customize.";
 "Stop bad composition" = "Stop bad composition";
+IKEYEX_INFO_TEXT = "When iKeyEx is installed, the keyboard list can be changed via Settings → iKeyEx → Keyboards.";

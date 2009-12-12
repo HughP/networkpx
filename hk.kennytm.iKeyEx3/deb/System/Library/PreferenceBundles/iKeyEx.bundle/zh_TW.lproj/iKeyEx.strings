@@ -28,4 +28,5 @@ Tap = "點一下";
 Customize = "自訂";
 "Nothing to customize." = "沒有需自訂的東西。";
 "Stop bad composition" = "組字錯誤時停止字根輸入";
+IKEYEX_INFO_TEXT = "若安裝了 iKeyEx，請以「設定 → iKeyEx → 鍵盤」來選擇國際鍵盤。";
 
