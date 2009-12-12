@@ -36,6 +36,8 @@
 #include <libkern/OSAtomic.h>
 #include <pthread.h>
 #import <AppSupport/AppSupport.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 extern BOOL IKXIsiKeyExMode(NSString* modeString) {
 	return [modeString hasPrefix:@"iKeyEx:"];
@@ -46,9 +48,12 @@ extern BOOL IKXIsInternalMode(NSString* modeString) {
 
 static IKXAppType _IKXCurrentAppType = IKXAppTypeError;
 
+#if TARGET_IPHONE_SIMULATOR
 static const CFStringRef _IKXPreferenceDomain;
+#endif
 
 extern CFStringRef IKXPreferenceDomain() {
+#if TARGET_IPHONE_SIMULATOR
 	if (_IKXPreferenceDomain == NULL) {
 		CFStringRef tmp = CPCopySharedResourcesPreferencesDomainForDomain(CFSTR("hk.kennytm.iKeyEx3"));
 		if (!OSAtomicCompareAndSwapPtrBarrier(NULL, (void*)tmp, (void*volatile*)&_IKXPreferenceDomain)) {
@@ -57,11 +62,20 @@ extern CFStringRef IKXPreferenceDomain() {
 		}
 	}
 	return _IKXPreferenceDomain;
+#else
+	return CFSTR("/var/mobile/Library/Preferences/hk.kennytm.iKeyEx3");
+#endif
 }
 
 extern void IKXFlushConfigDictionary() {
 	CFStringRef domain = IKXPreferenceDomain();
 	CFPreferencesAppSynchronize(domain);
+	if (geteuid() == 0) {
+		// force the prefs file to be owned by mobile:mobile and world-read/writable. damnit.
+		const char* filename = [[(NSString*)domain stringByAppendingPathExtension:@"plist"] UTF8String];
+		chmod(filename, 0666);
+		chown(filename, 501, 501);	// hack: assumes mobile:mobile == 501:501.
+	}
 }
 
 extern id IKXConfigCopy(NSString* key) { return (id)CFPreferencesCopyAppValue((CFStringRef)key, IKXPreferenceDomain()); }
