@@ -79,8 +79,8 @@ static void print_usage () {
 			"      table.\n"
 			"   purge-all\n"
 			"    - Clear all automatically generated cache.\n"
-			"	sync\n"
-			"	 - Synchronize preferences from .GlobalPreferences.plist.\n"
+			"   sync\n"
+			"    - Synchronize preferences from .GlobalPreferences.plist.\n"
 			"\n"
 	);
 }
@@ -124,8 +124,10 @@ static void Register(NSString* modeString, const char* name, const char* layout,
 	NSDictionary* immModesDict = IKXConfigCopy(@"modes");
 	NSMutableDictionary* modesDict = [immModesDict mutableCopy];
 	[immModesDict release];
-	if (modesDict == nil)
+	if (modesDict == nil) {
+		fprintf(stderr, "Notice: Initializing modes.\n");
 		modesDict = [[NSMutableDictionary alloc] init];
+	}
 	
 	if ([modesDict objectForKey:modeString] != nil)
 		fprintf(stderr, "Warning: Input mode '%s' was already registered. Re-registering.\n\n", [modeString UTF8String]);
@@ -242,7 +244,6 @@ static void UnregisterWhere(NSString* key, const char* matching) {
 	IKXConfigSet(@"AppleKeyboards", ma);
 //	ReverseSync(ma);
 	[ma release];
-	[arr release];
 	
 	SaveConfig();
 }
@@ -303,6 +304,7 @@ static void SelectPhrase(const char* lang, const char* phrase, unsigned index) {
 		langArr = [langArr mutableCopy];
 	[langArr replaceObjectAtIndex:index withObject:[NSString stringWithUTF8String:phrase]];
 	[phraseDict setObject:langArr forKey:langStr];
+	[langArr release];
 	IKXConfigSet(@"phrase", phraseDict);
 	[phraseDict release];
 	
@@ -314,6 +316,13 @@ static void DeselectPhrase(const char* lang, const char* phrase, unsigned index)
 	if (curPhrase != NULL && strcmp(curPhrase, phrase) == 0)
 		SelectPhrase(lang, "__Internal", index);
 	[phd release];
+}
+static void Debug() {
+	NSString* domain = (NSString*)IKXPreferenceDomain();
+	printf("domain = %s\n", [domain UTF8String]);
+	id modes = IKXConfigCopy(@"modes");
+	printf("modes = %s\n", [[modes description] UTF8String]);
+	[modes release];
 }
 
 int main (int argc, const char* argv[]) {
@@ -440,6 +449,8 @@ deprecated_purge:
 				DeselectPhrase(argv[2], argv[3], 1);
 		} else if (strcmp(command, "sync") == 0) {
 			Sync();
+		} else if (strcmp(command, "debug") == 0) {
+			Debug();
 		} else
 			fprintf(stderr, "Error: Unrecognized command '%s'.\n\n", argv[1]);
 		
