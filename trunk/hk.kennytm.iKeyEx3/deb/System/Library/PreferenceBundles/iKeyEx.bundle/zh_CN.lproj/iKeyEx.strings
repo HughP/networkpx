@@ -27,3 +27,4 @@ Tap = "轻按";
 Customize = "自订";
 "Nothing to customize." = "没有需自订的东西。";
 "Stop bad composition" = "组字错误时停止字根输入";
+IKEYEX_INFO_TEXT = "若安装了 iKeyEx，请以「设定 → iKeyEx → 键盘」来选择国际键盘。";
