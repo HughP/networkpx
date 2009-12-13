@@ -68,7 +68,7 @@ static NSString* const defaultSymbols[] = {
 
 	@"`" , @"", @"-" , @"=" , @"",
 	@"\t", @"", @"[" , @"]" , @"\\",
-	@"", @"?" , @";" , @"\"", @"",
+	@"", @"?" , @";" , @"'", @"",
 		  @"," , @"." , @"/" , @"",
 
 	@"~" , @"", @"_" , @"+" , @"",
@@ -287,7 +287,7 @@ typedef union UTF16Character {
 void clearCache () {
 	pid_t pid = fork();
 	if (pid == 0) {
-		execl("/usr/bin/iKeyEx-KBMan", "/usr/bin/iKeyEx-KBMan", "purge-layout", "5RowQWERTY");
+		execl("/usr/bin/iKeyEx-KBMan", "/usr/bin/iKeyEx-KBMan", "purge-layout", "5RowQWERTY", 0);
 		_exit(0);
 	}
 }
@@ -914,6 +914,7 @@ void clearCache () {
 	[self saveLayout];	
 }
 
+/*
 -(NSString*)inputManager { return [[infoPlist objectForKey:@"UIKeyboardInputManagerClass"] substringFromIndex:1] ?: @""; }
 -(void)setInputManager:(NSString*)man {
 	if ([man length] == 0)
@@ -922,6 +923,6 @@ void clearCache () {
 		[infoPlist setObject:[@"=" stringByAppendingString:man] forKey:@"UIKeyboardInputManagerClass"];
 	[infoPlist writeToFile:INFO_PATH atomically:NO];
 }
-
+*/
 @end
 
