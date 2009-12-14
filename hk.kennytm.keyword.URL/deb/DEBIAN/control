@@ -1,0 +1,14 @@
+Package: hk.kennytm.KeywordURL
+Name: keyword.URL
+Version: 0.2
+Architecture: iphoneos-arm
+Description: Adds keyword search and "I'm Feeling Lucky" function to MobileSafari's address bar.
+Homepage: http://code.google.com/p/networkpx/
+Maintainer: KennyTM~ <kennytm@gmail.com>
+Author: KennyTM~ <kennytm@gmail.com>
+Section: Tweaks
+Depends: mobilesubstrate (>=0.9-3069), preferenceloader (>=1.1)
+Pre-Depends: firmware (>=3.0)
+Installed-Size: 340
+Support: http://code.google.com/p/networkpx/wiki/FAQ
+dev: kennytm
