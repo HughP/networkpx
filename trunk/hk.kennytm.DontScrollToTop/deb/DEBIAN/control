@@ -1,0 +1,13 @@
+Package: hk.kennytm.DontScrollToTop
+Name: Don't Scroll to Top
+Version: 0.2
+Architecture: iphoneos-arm
+Description: Toggles whether hitting the status bar will scroll to top.
+Homepage: http://code.google.com/p/networkpx/
+Maintainer: KennyTM~ <kennytm@gmail.com>
+Author: KennyTM~ <kennytm@gmail.com>
+Section: Tweaks
+Depends: sbsettings
+Installed-Size: 84
+Support: http://code.google.com/p/networkpx/wiki/FAQ
+dev: kennytm
