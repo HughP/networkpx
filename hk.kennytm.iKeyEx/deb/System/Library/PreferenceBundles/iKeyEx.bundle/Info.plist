@@ -1,5 +1,0 @@
-{
-	CFBundleDisplayName = iKeyEx;
-	CFBundleExecutable = iKeyEx;
-	PHAddToSettings = YES;
-}
