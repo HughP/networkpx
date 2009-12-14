@@ -83,7 +83,6 @@
 		"/usr/lib/libcycript.dylib",
 		"/usr/lib/libffi.dylib",
 		"/Library/MobileSubstrate/DynamicLibraries/CydgetLoader.dylib",
-		"/Library/MobileSubstrate/DynamicLibraries/Cyntact.dylib",
 	);
 	PrefixFilters = (
 		"/System/Library/Frameworks/",

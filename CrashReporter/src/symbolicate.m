@@ -152,7 +152,7 @@ NSString* symbolicate(NSString* file, ModalActionSheet* hudReply) {
 	
 	NSDictionary* whiteListFile = [[NSDictionary alloc] initWithContentsOfFile:[mainBundle pathForResource:@"whitelist" ofType:@"plist"]];
 	NSArray* sigFilters = [whiteListFile objectForKey:@"SignalFilters"];
-	BOOL isFilteredSignal = NO;
+	BOOL isFilteredSignal = YES;
 	
 	for (NSString* line in file_lines) {
 		BOOL isBinImg = [line isEqualToString:@"Binary Images:"];
@@ -175,7 +175,7 @@ NSString* symbolicate(NSString* file, ModalActionSheet* hudReply) {
 						NSUInteger lastOpenParenthesis = [line rangeOfString:@"(" options:NSBackwardsSearch range:NSMakeRange(0, lastCloseParenthesis)].location;
 						if (lastOpenParenthesis < lastCloseParenthesis) {
 							NSString* signalStr = [line substringWithRange:NSMakeRange(lastOpenParenthesis+1, lastCloseParenthesis-lastOpenParenthesis-1)];
-							isFilteredSignal = isFilteredSignal || [sigFilters containsObject:signalStr];
+							isFilteredSignal = isFilteredSignal && ![sigFilters containsObject:signalStr];
 						}
 					}
 					break;

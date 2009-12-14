@@ -1,13 +1,13 @@
 Package: hk.kennytm.cangjie
-Name: iKeyEx 倉頡輸入法
-Version: 0.2-2
+Name: Cangjie
+Version: 0.2-3
 Architecture: iphoneos-arm
-Description: 倉頡輸入法（三代及五代）
-Homepage: http://code.google.com/p/networkpx/
-Maintainer: KennyTM~ <kennytm+iKeyEx3@gmail.com>
-Author: KennyTM~ <kennytm+iKeyEx3@gmail.com>
+Description: "Cangjie" (倉頡) is a popular IME for traditional Chinese. This packages include the 3rd and 5th version of Cangjie.
+Homepage: http://code.google.com/p/networkpx/wiki/Using_Cangjie
+Maintainer: KennyTM~ <kennytm+Cangjie@gmail.com>
+Author: KennyTM~ <kennytm+Cangjie@gmail.com>
 Section: Keyboards
-Depends: hk.kennytm.ikeyex (>=0.1-99d)
-Installed-Size: 336
+Depends: hk.kennytm.ikeyex (>=0.2)
+Installed-Size: 340
 Support: http://code.google.com/p/networkpx/wiki/FAQ
 dev: kennytm

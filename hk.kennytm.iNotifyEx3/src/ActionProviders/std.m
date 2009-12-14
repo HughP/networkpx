@@ -149,11 +149,11 @@ extern void sequence(NSArray* argv) {
 __attribute__((visibility("hidden")))
 @interface OMGWTFBBQDelegate : NSObject<UIActionSheetDelegate> {
 	NSString* _action;
+	NSString* _placeholder;
 }
--(id)initWithAction:(NSString*)action;
 @end
 @implementation OMGWTFBBQDelegate
--(id)initWithAction:(NSString*)action {
+-(id)initWithAction:(NSString*)action placeholder:(NSString*)placeholder {
 	if ((self = [super init])) {
 		_action = [action retain];
 	}
@@ -203,7 +203,7 @@ extern void confirm(NSArray* argv) {
 }
 
 // 1 line prompt
-// std.prompt (action with %@ as placeholder) [message] [subject] [pic]
+// std.prompt <placeholder> (action with $<placeholder> as that placeholder) [message] [subject] [pic]
 extern void prompt(NSArray* argv) {
 	NSString* s[4];
 	if (INXRetrieveArguments(argv, s) >= 1) {
