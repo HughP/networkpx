@@ -31,12 +31,15 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #import <Message/Message.h>
-
+#include "INXCommon.h"
+#import <MessageUI/MessageUI2.h>
+#import "INXWindow.h"
 
 static LibraryMessage* lookupMailMessage(NSString* messageID) {
 	return [[MailMessageLibrary defaultInstance] messageWithMessageID:messageID];
 }
 
+// mail.mark [viewed | not-viewed | replied | forwarded] <msgID>
 void mark(NSArray* argv) {
 	if ([argv count] >= 3) {
 		NSString* args[2];
@@ -55,5 +58,94 @@ void mark(NSArray* argv) {
 	}
 }
 
-void reply(NSArray* argv) {
+__attribute__((visibility("hidden")))
+@interface INXMailComposer : UIView {
+	INXSuperiorWindow* _window;
+	MailComposeController* _ctrler;
+}
+@end
+@implementation INXMailComposer
+-(id)initWithContext:(MailCompositionContext*)context {
+	if ((self = [super initWithFrame:CGRectZero])) {
+		_window = [INXSuperiorWindow sharedSuperiorWindow];
+		CGRect f = _window.bounds;
+		f.origin.y += 20;
+		f.size.height -= 20;
+		self.frame = f;
+		self.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+		self.autoresizesSubviews = YES;
+		[_window addSubview:self];
+		_window.interacting = YES;
+		
+		f.origin.y = 0;
+		UINavigationBar* bar = [[UINavigationBar alloc] initWithFrame:f];
+		bar.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleBottomMargin;
+		[bar sizeToFit];
+		[self addSubview:bar];
+		[bar release];
+		CGFloat barHeight = bar.frame.size.height;
+		f.origin.y += barHeight;
+		f.size.height -= barHeight;
+				
+		UINavigationItem* item = [[UINavigationItem alloc] initWithTitle:@""];
+		_ctrler = [[MailComposeController alloc] initForContentSize:f.size navigationItem:item showKeyboardImmediately:NO];
+		[_ctrler setCompositionContext:context];
+		[bar pushNavigationItem:item animated:NO];
+		[item release];
+		UIView* view = [_ctrler view];
+		view.frame = f;
+		view.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+		[self addSubview:view];
+	}
+	return self;
+}
+-(void)dealloc {
+	[_ctrler release];
+	[super dealloc];
+}
+@end
+
+
+
+// mail.to [<mailtoURL>]
+void to(NSArray* argv) {
+	NSString* s[1];
+	if (INXRetrieveArguments(argv, s) >= 0) {
+		NSURL* url = NULL;
+		if (s[0]) {
+			if (![s[0] hasPrefix:@"mailto:"])
+				url = [NSURL URLWithString:[@"mailto:" stringByAppendingString:s[0]]];
+			else
+				url = [NSURL URLWithString:s[0]];
+		}
+			
+		MailCompositionContext* context = [MailCompositionContext alloc];
+		if (url)
+			context = [context initWithURL:url];
+		else
+			context = [context initWithComposeType:MailCompositionContextType_NewMessage];
+
+		INXMailComposer* composer = [[INXMailComposer alloc] initWithContext:context];
+		[context release];
+		[composer release];
+	}
+}
+
+// mail.compose (reply|reply-all|forward) <msgID>
+void compose(NSArray* argv) {
+	NSString* s[2];
+	if (INXRetrieveArguments(argv, s) >= 2) {
+		MailCompositionContextType type = MailCompositionContextType_Draft;
+		if ([s[0] isEqualToString:@"reply"])
+			type = MailCompositionContextType_Reply;
+		else if ([s[0] isEqualToString:@"reply-all"])
+			type = MailCompositionContextType_ReplyAll;
+		else if ([s[0] isEqualToString:@"forward"])
+			type = MailCompositionContextType_Forward;
+		
+		MailCompositionContext* context = [[MailCompositionContext alloc] initWithComposeType:type originalMessage:lookupMailMessage(s[1])];
+		INXMailComposer* composer = [[INXMailComposer alloc] initWithContext:context];
+		[context release];
+		[composer release];
+	}
 }

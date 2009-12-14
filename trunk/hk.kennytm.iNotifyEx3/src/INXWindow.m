@@ -191,7 +191,6 @@ static void _INXBalloonViewDestroyBalloons() {
 		[self setAccessibilityLabel:[[subject stringByAppendingString:@"\n"] stringByAppendingString:str]];
 		[self setAccessibilityTraits:UIAccessibilityTraitStaticText];
 		[self setIsAccessibilityElement:YES];
-		
 		/*
 		UITapGestureRecognizer* gr = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(singleTap)];
 		gr.numberOfTaps = gr.numberOfFingers = 1;
@@ -234,8 +233,6 @@ static void _INXBalloonViewDestroyBalloons() {
 }
 */
 @end
-
-
 
 @implementation INXWindow
 @synthesize orientation = _orientation;
