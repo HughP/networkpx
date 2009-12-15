@@ -78,6 +78,9 @@ Currently only 1 function is needed.
 
 Should be a bundle as $INXROOT/Themes/myTheme.theme.
 
+=== Activation ===
+Depends on libactivator to avoid reinventing the wheel :)
+
 <!--
 === Simple theme ===
 
