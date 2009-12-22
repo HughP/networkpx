@@ -513,7 +513,7 @@ DefineHook(BOOL, UIKeyboardInputModeIsDefaultRightToLeft, NSString* mode) {
 	else {
 		NSBundle* layoutBundle = IKXLayoutBundle(layoutRef);
 		NSString* layoutClass = [layoutBundle objectForInfoDictionaryKey:@"UIKeyboardLayoutClass"];
-		if ([layoutClass characterAtIndex:0] == '=')	// Refered layout.
+		if ([layoutClass isKindOfClass:[NSString class]] && [layoutClass characterAtIndex:0] == '=')	// Refered layout.
 			needRTL = Original(UIKeyboardInputModeIsDefaultRightToLeft)([layoutClass substringFromIndex:1]);
 		needRTL |= [[layoutBundle objectForInfoDictionaryKey:@"RightToLeft"] boolValue];
 	}
