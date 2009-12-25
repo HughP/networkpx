@@ -48,7 +48,7 @@ void setSelection(id<UIKeyboardInput> del, NSRange newRange) {
 		return;
 	} else if ([del isKindOfClass:[UIWebDocumentView class]]) {
 		UIView* mySuperview = [(UIWebDocumentView*)del superview];
-		if ([mySuperview isKindOfClass:[UITextView class]] || [mySuperview isKindOfClass:objc_getClass("UITextViewLegacy")]) {
+		if ([mySuperview respondsToSelector:@selector(setSelectedRange:)]) {
 			((UITextView*)mySuperview).selectedRange = newRange;
 			return;
 		}
