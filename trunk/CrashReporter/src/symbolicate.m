@@ -259,6 +259,8 @@ finish:
 						header = [VMUMemory_File headerFromSharedCacheWithPath:matches[2]];
 					if (header == nil)
 						header = [VMUMemory_File headerWithPath:matches[2]];
+					if ([header isKindOfClass:[VMUFatHeader class]])
+						header = [(VMUFatHeader*)header fatArchMatchingArchitecture:[VMUArchitecture currentArchitecture]];
 					
 					if (header != nil) {
 						bi = [[BinaryInfo alloc] init];
