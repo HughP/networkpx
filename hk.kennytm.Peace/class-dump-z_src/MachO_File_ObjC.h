@@ -32,6 +32,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "string_util.h"
 #include <cstdlib>
 #include <pcre.h>
+#include "TSVParser.h"
 
 class MachO_File_ObjC : public MachO_File {
 private:
@@ -122,6 +123,7 @@ private:
 		bool is_private;
 	};
 	
+	struct ClassType;
 	struct Method : public ReducedMethod {
 		unsigned vm_address;
 		HiddenMethodType propertize_status;
@@ -139,7 +141,7 @@ private:
 		
 		Method() : vm_address(0), propertize_status(PS_None), components(3) {}
 		
-		std::string format(const ObjCTypeRecord& record, const MachO_File_ObjC& self, bool print_method_addresses, int print_comments) const throw();
+		std::string format(const ObjCTypeRecord& record, const MachO_File_ObjC& self, bool print_method_addresses, int print_comments, const ClassType& cls) const throw();
 	};
 	
 	struct ClassType {
@@ -227,6 +229,15 @@ private:
 	bool m_has_whitespace, m_hide_cats, m_hide_dogs;
 	
 //-------------------------------------------------------------------------------------------------------------------------------------------
+
+	TSVFile* m_hints_file;
+	TSVFile::TableID m_hints_method_table;
+
+public:
+	static std::string reconstruct_raw_name(const ClassType& cls, const ReducedMethod& method);
+	std::string format_type_with_hints(const ObjCTypeRecord& record, const std::string& reconstructed_raw_name, const ReducedMethod& method, int index) const;
+	
+//-------------------------------------------------------------------------------------------------------------------------------------------
 	
 public:	
 	MachO_File_ObjC(const char* path, bool perform_reduced_analysis = false, const char* arch = "any");
@@ -237,6 +248,7 @@ public:
 		if (m_method_filter_extra != NULL) pcre_free(m_method_filter_extra);
 		for (std::tr1::unordered_map<const char*, MachO_File_ObjC*>::iterator it = ma_loaded_libraries.begin(); it != ma_loaded_libraries.end(); ++ it)
 			delete it->second;
+		delete m_hints_file;
 	}
 	
 	unsigned total_class_type_count() const throw() { return ma_classes.size(); }
@@ -253,6 +265,9 @@ public:
 	void set_kill_prefix(const std::vector<std::string>& kill_prefix) { m_kill_prefix = kill_prefix; }
 	void set_method_has_whitespace(bool has_whitespace = true) throw() { m_has_whitespace = has_whitespace; }
 	void set_hide_cats_and_dogs(bool hide_cats, bool hide_dogs) throw() { m_hide_cats = hide_cats; m_hide_dogs = hide_dogs; }
+	
+	void set_hints_file(const char* filename);
+	void write_hints_file(const char* filename) const;
 	
 	void propertize() throw() {
 		for (std::vector<ClassType>::iterator it = ma_classes.begin(); it != ma_classes.end(); ++ it)
