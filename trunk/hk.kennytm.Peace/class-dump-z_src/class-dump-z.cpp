@@ -50,6 +50,7 @@ void print_usage () {
 			"    -R         Show pointer declarations as int *a instead of int* a.\n"
 			"    -N         Keep the raw struct names (e.g. do no replace __CFArray* with CFArrayRef).\n"
 			"    -b         Put a space after the +/- sign (i.e. + (void)... instead of +(void)...).\n"
+			"    -i <file>  Read and update signature hints file.\n"
 			"\n  Filtering:\n"
 			"    -C <regex> Only display types with (original) name matching the RegExp (in PCRE syntax).\n"
 			"    -f <regex> Only display methods with (original) name matching the RegExp.\n"
@@ -88,6 +89,7 @@ int main (int argc, char* argv[]) {
 		vector<const char*> filenames;
 		vector<string> kill_prefix;
 		const char* arch = "any";
+		const char* hints_file = NULL;
 		
 		// search for a suitable sysroot.
 #if !_MSC_VER
@@ -119,7 +121,7 @@ int main (int argc, char* argv[]) {
 		
 		// const char* regexp_string = NULL;
 		while (argc > 1) {
-			switch (c = getopt(argc, argv, "aAkC:ISsD:Rf:gpHo:X:Nh:y:u:bz")) {
+			switch (c = getopt(argc, argv, "aAkC:ISsD:Rf:gpHo:X:Nh:y:u:bzi:")) {
 				case 'a': print_ivar_offsets = true; break;
 				case 'A': print_method_addresses = true; break;
 				case 'k': ++ print_comments; break;
@@ -179,6 +181,9 @@ int main (int argc, char* argv[]) {
 				case 'b':
 					has_blank = true;
 					break;
+				case 'i':
+					hints_file = optarg;
+					break;
 #if EOF != -1
 				case EOF:
 #endif
@@ -228,6 +233,7 @@ int main (int argc, char* argv[]) {
 				mf.set_pointers_right_aligned(pointers_right_align);
 				mf.set_method_has_whitespace(has_blank);
 				mf.set_hide_cats_and_dogs(hide_cats, hide_dogs);
+				mf.set_hints_file(hints_file);
 				
 				if (type_regexp != NULL)
 					mf.set_class_filter(type_regexp);
@@ -257,6 +263,7 @@ int main (int argc, char* argv[]) {
 					mf.print_class_type(sort_by, print_method_addresses, print_comments, print_ivar_offsets, sort_methods_by, show_only_exported_classes);
 				}
 				
+				mf.write_hints_file(hints_file);
 			}
 			
 		} catch (const TRException& e) {

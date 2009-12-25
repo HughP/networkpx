@@ -197,7 +197,22 @@ string MachO_File_ObjC::Property::format(const ObjCTypeRecord& record, const Mac
 	return res;
 }
 
-string MachO_File_ObjC::Method::format(const ObjCTypeRecord& record, const MachO_File_ObjC& self, bool print_method_addresses, int print_comments) const throw() {
+std::string MachO_File_ObjC::format_type_with_hints(const ObjCTypeRecord& record, const std::string& reconstructed_raw_name, const ReducedMethod& method, int index) const {
+	if (m_hints_file != NULL) {
+		TSVFile::RowID row = m_hints_file->find_row_for_table(m_hints_method_table, reconstructed_raw_name);
+		if (row != TSVFile::invalid_row) {
+			const std::vector<std::string>& row_content = m_hints_file->get_row_for_table(m_hints_method_table, row);
+			if (index == 0)
+				++ index;
+			else
+				-- index;
+			return row_content[index];
+		}
+	}
+	return record.format(method.types[index], "");
+}
+
+string MachO_File_ObjC::Method::format(const ObjCTypeRecord& record, const MachO_File_ObjC& self, bool print_method_addresses, int print_comments, const ClassType& cls) const throw() {
 	if (propertize_status != PS_None && (print_comments == 0 || (print_comments == 1 && propertize_status != PS_AdoptingProtocol && propertize_status != PS_Inherited)))
 		return "";
 	
@@ -217,6 +232,8 @@ string MachO_File_ObjC::Method::format(const ObjCTypeRecord& record, const MachO
 			break;
 	}
 	
+	string rrname = MachO_File_ObjC::reconstruct_raw_name(cls, *this);
+	
 	if (is_class_method)
 		res.push_back('+');
 	else
@@ -225,7 +242,7 @@ string MachO_File_ObjC::Method::format(const ObjCTypeRecord& record, const MachO
 		res.push_back(' ');
 	res.push_back('(');
 	
-	res += record.format(types[0], "");
+	res += self.format_type_with_hints(record, rrname, *this, 0);
 	res.push_back(')');
 	
 	if (components.size() == 3) {
@@ -238,7 +255,7 @@ string MachO_File_ObjC::Method::format(const ObjCTypeRecord& record, const MachO
 				res.push_back(' ');
 			res += components[i];
 			res += ":(";
-			res += record.format(types[i], "");
+			res += self.format_type_with_hints(record, rrname, *this, i);
 			res.push_back(')');
 			res += argname[i];
 		}
@@ -376,7 +393,7 @@ string MachO_File_ObjC::ClassType::format(const ObjCTypeRecord& record, const Ma
 	
 	for (vector<unsigned>::const_iterator cit = method_index_remap.begin(); cit != method_index_remap.end(); ++ cit) {
 		const Method& method = methods[*cit];
-		string formatted_method = method.format(record, self, print_method_addresses, print_comments);
+		string formatted_method = method.format(record, self, print_method_addresses, print_comments, *this);
 		if (!formatted_method.empty()) {
 			if (method.optional != is_optional) {
 				is_optional = method.optional;
@@ -575,3 +592,133 @@ void MachO_File_ObjC::write_header_files(const char* filename, bool print_method
 		fclose(f);
 	}
 }
+
+std::string MachO_File_ObjC::reconstruct_raw_name(const ClassType& cls, const ReducedMethod& method) {
+	std::string reconstructed_raw_name = method.is_class_method ? "+[" : "-[";
+	
+	if (cls.type == ClassType::CT_Protocol) {
+		reconstructed_raw_name += "id<";
+		reconstructed_raw_name += cls.name;
+		reconstructed_raw_name += ">";
+	} else if (cls.type == ClassType::CT_Category)
+		reconstructed_raw_name += cls.superclass_name;
+	else 
+		reconstructed_raw_name += cls.name;
+
+	reconstructed_raw_name.push_back(' ');
+	reconstructed_raw_name += method.raw_name;
+	if (reconstructed_raw_name[reconstructed_raw_name.size()-1] != ']')
+		reconstructed_raw_name.push_back(']');
+	
+	return reconstructed_raw_name;
+}
+
+/*
+ 
+ if (has_raw_name && m_hints_file) {
+ // try to read types from hints file.
+ TSVFile::RowID row = m_hints_file->add_row_for_table(m_hints_method_table, reconstruct_raw_name(cls, method));
+ vector<string>& hinted_types = m_hints_file->get_row_for_table(m_hints_method_table, row);
+ if (hinted_types.size() + 1 != method.types.size()) {
+ hinted_types.resize(1);
+ hinted_types.push_back(m_record.format(method.types.front(), ""));
+ for (size_t j = 3; j < method.types.size(); ++ j)
+ hinted_types.push_back(m_record.format(method.types[j], ""));
+ }
+ size_t j_hints = 1, j_types = 0;
+ for (; j_hints < hinted_types.size(); ++ j_hints) {
+ // build weak link on ID reference.
+ if (m_record.is_id_type(method.types[j_types]) && hinted_types[j_hints] != "id") {
+ // OMG<WTF, BBQ>* --> @"OMG<WTF,BBQ>"
+ // id<WTF, BBQ> --> @"<WTF,BBQ>"
+ // OMG* --> @"OMG"
+ 
+ string s = hinted_types[j_hints];
+ // strip spaces.
+ for (size_t k = s.size(); k != 0; --k) {
+ if (s[k-1] == '$' || s[k-1] == '_' || s[k-1] == '<' || s[k-1] == '>' || s[k-1] == ',')
+ continue;
+ if (s[k-1] >= '0' && s[k-1] <= '9')
+ continue;
+ if (s[k-1] >= 'a' && s[k-1] <= 'z')
+ continue;
+ if (s[k-1] >= 'A' && s[k-1] <= 'Z')
+ continue;
+ s.erase(k-1);
+ }
+ 
+ if (s.substr(0, 2) == "id")
+ s.erase(0, 2);
+ if (!s.empty()) {
+ s.insert(0, "@\"");
+ s.push_back('"');
+ m_record.add_strong_link(cls.type_index, m_record.parse(s, false));
+ }
+ }
+ }
+ }
+*/ 
+ 
+
+void MachO_File_ObjC::set_hints_file(const char* filename) {
+	delete m_hints_file;
+	m_hints_file = filename ? new TSVFile(filename) : NULL;
+	if (m_hints_file) {
+		bool already_exists = false;
+		m_hints_method_table = m_hints_file->add_table("methods", &already_exists);
+		if (!already_exists) {
+			m_hints_file->add_table_comment(m_hints_method_table, "This section contains customized type signature for Objective-C methods.");
+			m_hints_file->add_table_comment(m_hints_method_table, "You can replace \"id\" with more specific type to improve the headers.");
+			m_hints_file->add_table_comment(m_hints_method_table, "");
+			m_hints_file->add_table_comment(m_hints_method_table, "Method\tAttributes\tReturn type\tArg2\tArg3\t...");
+		}
+		
+		for (vector<ClassType>::const_iterator cit = ma_classes.begin(); cit != ma_classes.end(); ++ cit) {
+			for (vector<Method>::const_iterator mit = cit->methods.begin(); mit != cit->methods.end(); ++ mit) {
+				TSVFile::RowID row = m_hints_file->add_row_for_table(m_hints_method_table, reconstruct_raw_name(*cit, *mit));
+				vector<string>& hinted_types = m_hints_file->get_row_for_table(m_hints_method_table, row);
+				if (hinted_types.size() + 1 < mit->types.size()) {
+					hinted_types.resize(1);
+					hinted_types.push_back(m_record.format(mit->types.front(), ""));
+					for (size_t j = 3; j < mit->types.size(); ++ j)
+						hinted_types.push_back(m_record.format(mit->types[j], ""));
+				}
+				for (size_t j_hints = 1, j_types = 0; j_types < mit->types.size(); ++ j_types, ++ j_hints) {
+					// build weak link on ID reference.
+					if (m_record.is_id_type(mit->types[j_types]) && hinted_types[j_hints] != "id") {
+						// OMG<WTF, BBQ>* --> @"OMG<WTF,BBQ>"
+						// id<WTF, BBQ> --> @"<WTF,BBQ>"
+						// OMG* --> @"OMG"
+						
+						string s = hinted_types[j_hints];
+						// strip spaces.
+						for (size_t k = s.size(); k != 0; --k) {
+							if (s[k-1] == '$' || s[k-1] == '_') continue;
+							if (s[k-1] == '<' || s[k-1] == '>' || s[k-1] == ',') continue;
+							if (s[k-1] >= '0' && s[k-1] <= '9') continue;
+							if (s[k-1] >= 'a' && s[k-1] <= 'z') continue;
+							if (s[k-1] >= 'A' && s[k-1] <= 'Z') continue;
+							s.erase(k-1);
+						}
+						
+						if (s.substr(0, 2) == "id")
+							s.erase(0, 2);
+						if (!s.empty()) {
+							s.insert(0, "@\"");
+							s.push_back('"');
+							m_record.add_strong_link(cit->type_index, m_record.parse(s, false));
+						}
+					}
+					if (j_types == 0)
+						j_types = 2;
+				}
+			}
+		}
+	}
+}
+
+void MachO_File_ObjC::write_hints_file(const char* filename) const {
+	if (m_hints_file && filename)
+		m_hints_file->write(filename);
+}
+
