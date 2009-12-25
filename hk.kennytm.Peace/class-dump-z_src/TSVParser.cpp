@@ -94,7 +94,6 @@ void TSVFile::write(std::FILE* f) const {
 			}
 			std::fputc('\n', f);
 		}
-		std::fclose(f);		
 	}
 }
 
