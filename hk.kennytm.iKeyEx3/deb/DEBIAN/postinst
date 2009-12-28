@@ -10,5 +10,7 @@ if [[ $1 == configure ]]; then
 	chown mobile:mobile /var/mobile/Library/Preferences/hk.kennytm.iKeyEx3.plist;
 	chmod a+rw /var/mobile/Library/Preferences/hk.kennytm.iKeyEx3.plist;
 	/usr/bin/iKeyEx-KBMan sync;
+elif [[ $1 == triggered ]]; then
+	/usr/bin/iKeyEx-KBMan refresh;
 fi
 exit 0;
