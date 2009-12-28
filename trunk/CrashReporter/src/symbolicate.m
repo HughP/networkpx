@@ -451,7 +451,7 @@ finish:
 	
 	// Write down blame info.
 	NSMutableString* blameInfo = [NSMutableString stringWithString:@"<key>blame</key><array>\n"];
-	if (!isFilteredSignal) {
+	if (isFilteredSignal) {
 	for (NSString* name in binaryImages) {
 		BinaryInfo* bi = [binaryImages objectForKey:name];
 		if ([bi isKindOfClass:bicls] && bi->line != ~0u)
