@@ -81,6 +81,8 @@ static void print_usage () {
 			"    - Clear all automatically generated cache.\n"
 			"   sync\n"
 			"    - Synchronize preferences from .GlobalPreferences.plist.\n"
+			"   refresh\n"
+			"    - Automatically detect changes and update the registrations.\n"
 			"\n"
 	);
 }
@@ -324,8 +326,117 @@ static void Debug() {
 	printf("modes = %s\n", [[modes description] UTF8String]);
 	[modes release];
 }
+static void Refresh() {
+	NSFileManager* fman = [NSFileManager defaultManager];
+	NSMutableSet* layoutNames = [[NSMutableSet alloc] init];
+	NSMutableSet* imeNames = [[NSMutableSet alloc] init];
+	
+	for (NSString* name in [fman contentsOfDirectoryAtPath:IKX_LIB_PATH@"/Keyboards" error:NULL]) {
+		if (![name hasPrefix:@"__"])
+			[layoutNames addObject:[name stringByDeletingPathExtension]];
+	}
+	for (NSString* name in [fman contentsOfDirectoryAtPath:IKX_LIB_PATH@"/InputManagers" error:NULL]) {
+		if (![name hasPrefix:@"__"])
+			[imeNames addObject:[name stringByDeletingPathExtension]];
+	}
+	
+	NSDictionary* modes = IKXConfigCopy(@"modes");
+	NSMutableDictionary* md = [modes mutableCopy];
+	
+	NSMutableSet* deactivations = [[NSMutableSet alloc] init];
+	NSMutableArray* activations = [[NSMutableArray alloc] init];
+	NSMutableSet* removableLayouts = [[NSMutableSet alloc] init];
+	NSMutableSet* removableImes = [[NSMutableSet alloc] init];	
+	
+	BOOL modified = NO;
+	for (NSString* key in modes) {
+		NSDictionary* entry = [modes objectForKey:key];
+		NSString* layout = [entry objectForKey:@"layout"];
+		if (![layout hasPrefix:@"="]) {
+			if (![layoutNames containsObject:layout]) {
+				[md removeObjectForKey:key];
+				[deactivations addObject:key];
+				printf("Info: Removing mode '%s' for layout '%s'.\n", [key UTF8String], [layout UTF8String]);
+				modified = YES;
+			} else
+				[removableLayouts addObject:layout];
+		}
+		
+		NSString* ime = [entry objectForKey:@"manager"];
+		if (![ime hasPrefix:@"="]) {
+			if (![imeNames containsObject:ime]) {
+				[md removeObjectForKey:key];
+				[deactivations addObject:key];
+				printf("Info: Removing mode '%s' for input manager '%s'.\n", [key UTF8String], [ime UTF8String]);
+				modified = YES;
+			} else
+				[removableImes addObject:ime];
+		}
+	}
+	[layoutNames minusSet:removableLayouts];
+	[imeNames minusSet:removableImes];
+	[removableLayouts release];
+	[removableImes release];
+	[modes release];
+
+	CFUUIDRef uuid = CFUUIDCreate(NULL);
+	CFStringRef uuidString = CFUUIDCreateString(NULL, uuid);
+	int x = 0;	
+	
+	if ([layoutNames count] != 0) {
+		modified = YES;
+		for (NSString* layout in layoutNames) {
+			NSBundle* layoutBundle = IKXLayoutBundle(layout);
+			NSString* preferredIme = [layoutBundle objectForInfoDictionaryKey:@"UIKeyboardInputManagerClass"] ?: @"=en_US";
+			NSString* layoutName = [layoutBundle objectForInfoDictionaryKey:@"CFBundleDisplayName"] ?: layout;
+			NSString* modeName = [NSString stringWithFormat:@"iKeyEx:%@-%d", uuidString, x];
+			
+			printf("Info: Registering mode '%s' for layout '%s' with input manager '%s'.\n", [modeName UTF8String], [layout UTF8String], [preferredIme UTF8String]);
+			[activations addObject:modeName];
+			[md setObject:[NSDictionary dictionaryWithObjectsAndKeys:layout, @"layout", preferredIme, @"manager", layoutName, @"name", nil] forKey:modeName];
+			++ x;
+		}
+	}
+	[layoutNames release];
+	
+	if ([imeNames count] != 0) {
+		modified = YES;
+		for (NSString* ime in imeNames) {
+			NSBundle* imeBundle = IKXInputManagerBundle(ime);
+			NSString* imeName = [imeBundle objectForInfoDictionaryKey:@"CFBundleDisplayName"] ?: ime;
+			NSString* modeName = [NSString stringWithFormat:@"iKeyEx:%@-%d", uuidString, x];
+			
+			printf("Info: Registering mode '%s' for input manager '%s' with layout '=en_US'.\n", [modeName UTF8String], [ime UTF8String]);
+			[activations addObject:modeName];
+			[md setObject:[NSDictionary dictionaryWithObjectsAndKeys:@"=en_US", @"layout", ime, @"manager", imeName, @"name", nil] forKey:modeName];
+			++ x;
+		}
+	}
+	[imeNames release];
+	
+	CFRelease(uuidString);
+	CFRelease(uuid);
+	
+	if (modified) {
+		IKXConfigSet(@"modes", md);
+		NSArray* appleKeyboards = IKXConfigCopy(@"AppleKeyboards");
+		NSMutableArray* mak = [appleKeyboards mutableCopy];
+		[appleKeyboards release];
+		[mak removeObjectsInArray:[deactivations allObjects]];
+		[mak addObjectsFromArray:activations];
+		IKXConfigSet(@"AppleKeyboards", mak);
+		[mak release];
+		SaveConfig();
+	}
+	
+	[deactivations release];
+	[activations release];
+	[md release];
+}
 
 int main (int argc, const char* argv[]) {
+	int retval = 0;
+	
 	if (argc >= 2) {
 		NSAutoreleasePool* pool = [NSAutoreleasePool new];
 		
@@ -451,6 +562,8 @@ deprecated_purge:
 			Sync();
 		} else if (strcmp(command, "debug") == 0) {
 			Debug();
+		} else if (strcmp(command, "refresh") == 0) {
+			Refresh();
 		} else
 			fprintf(stderr, "Error: Unrecognized command '%s'.\n\n", argv[1]);
 		
@@ -458,5 +571,5 @@ deprecated_purge:
 	} else	
 		print_usage();
 	
-	return 0;
+	return retval;
 }
