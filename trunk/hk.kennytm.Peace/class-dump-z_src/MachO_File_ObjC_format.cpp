@@ -492,7 +492,7 @@ void MachO_File_ObjC::write_header_files(const char* filename, bool print_method
 	
 	const char* cached_self_path = self_path();
 	const char* self_filename = OR(cached_self_path, filename);
-	const char* last_component = strrchr(self_filename, '/') ?: self_filename;
+	const char* last_component = OR(strrchr(self_filename, '/'), self_filename);
 	if (*last_component == '/') ++ last_component;
 	const char* dot_position = strrchr(last_component, '.');
 	string aggr_filename = dot_position == NULL ? last_component : string(last_component, dot_position);	

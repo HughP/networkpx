@@ -13,7 +13,7 @@ CFLAGS=$(CFLAGS_COMMON)
 
 all:	../output/win_x86/class-dump-z.exe
 
-../output/win_x86/class-dump-z.exe: class-dump-z.obj ../src/XGetopt.obj ../src/DataFile.obj ../src/MachO_File.obj MachO_File_ObjC.obj MachO_File_ObjC_retrieval.obj MachO_File_ObjC_format.obj balanced_substr.obj crc32.obj pseudo_base64.obj objc_type.obj ../src/string_util.obj MachO_File_ObjC_debug.obj ../src/get_arch_from_flag.obj
+../output/win_x86/class-dump-z.exe: class-dump-z.obj ../src/XGetopt.obj ../src/DataFile.obj ../src/MachO_File.obj MachO_File_ObjC.obj MachO_File_ObjC_retrieval.obj MachO_File_ObjC_format.obj balanced_substr.obj crc32.obj pseudo_base64.obj objc_type.obj ../src/string_util.obj MachO_File_ObjC_debug.obj ../src/get_arch_from_flag.obj TSVParser.obj
 	$(LD) $** pcre.lib /LTCG /NOLOGO /OUT:$@
 
 clean:

@@ -64,8 +64,11 @@ static const char* map314[] = {
 };
 
 #if _TR1_FUNCTIONAL || _MSC_VER
-namespace std { 
+namespace std 
+#if !_MSC_VER
+{ 
 	namespace tr1
+#endif
 #else
 namespace boost
 #endif
@@ -79,7 +82,7 @@ namespace boost
 				return retval;
 			}
 		};
-#if _TR1_FUNCTIONAL || _MSC_VER
+#if _TR1_FUNCTIONAL
 	}
 #endif
 }
