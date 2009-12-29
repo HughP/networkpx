@@ -43,8 +43,11 @@ static inline size_t string_hasher(const char* str) {
 }
 
 #if _TR1_FUNCTIONAL || _MSC_VER
-namespace std { 
+namespace std 
+#ifndef _MSC_VER
+{
 	namespace tr1
+#endif
 #else
 	namespace boost
 #endif
@@ -74,7 +77,7 @@ namespace std {
 				return retval;
 			}
 		};
-#if _TR1_FUNCTIONAL || _MSC_VER
+#if _TR1_FUNCTIONAL
 	}
 #endif
 }
