@@ -70,7 +70,7 @@ static IMEContent makeIMEContent(NSString* prefix) {
 }
 
 __attribute__((visibility("hidden")))
-@interface IKXCandidateComputer : NSObject {
+@interface IKXCandidateComputer : NSObject<IKXAbstractCandidateComputer> {
 @private
 	NSMutableArray* current_candidates;
 	NSString* valid_keys[256];
@@ -267,11 +267,11 @@ __attribute__((visibility("hidden")))
 
 
 
-@implementation IKXCinInputManager
--(id)init {
+@implementation IKXInputManager
+-(id)initWithCandidateComputer:(id<IKXAbstractCandidateComputer>)candidateComputer; {
 	if ((self = [super init])) {
 		input_string = [NSMutableString new];
-		candidate_computer = [IKXCandidateComputer new];
+		candidate_computer = [candidateComputer retain];
 		[candidate_computer startThreadDispatchQueue];
 		shown_completion = NO;
 		disallow_completion = IKXConfigGetBool(@"disallowCompletion", NO);
@@ -422,9 +422,11 @@ __attribute__((visibility("hidden")))
 	}
 }
 
+-(NSString*)fullstop { return @"。"; }
+
 -(NSString*)stringForDoubleKey:(NSString*)key {
 	if ([@" " isEqualToString:key])
-		return @"。";
+		return [self fullstop];
 	else
 		return [super stringForDoubleKey:key];
 }
@@ -449,4 +451,15 @@ __attribute__((visibility("hidden")))
 		return ![candidate_computer isValidDisplayString:str];
 }
 @end
+
+
+@implementation IKXCinInputManager
+-(id)init {
+	IKXCandidateComputer* candComp = [[IKXCandidateComputer alloc] init];
+	self = [super initWithCandidateComputer:candComp];
+	[candComp release];
+	return self;
+}
+@end
+
 

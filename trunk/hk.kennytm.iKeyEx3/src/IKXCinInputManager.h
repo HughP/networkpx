@@ -37,12 +37,27 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #import <UIKit/UIKeyboardInputManager.h>
 #import "libiKeyEx.h"
 
-@class IKXCandidateComputer;
+@class NSString;
 
-@interface IKXCinInputManager : UIKeyboardInputManager {
+@protocol IKXAbstractCandidateComputer <NSObject>
+-(id)send;
+-(void)startThreadDispatchQueue;
+
+-(void)prepareCompute;
+-(oneway void)computeWithInputString:(NSString*)inputString lastAcceptedCandidate:(NSString*)lastAcceptedCandidate;
+-(BOOL)isValidKey:(unichar)c;
+-(BOOL)isValidDisplayString:(NSString*)dispStr;
+-(BOOL)containsPrefix:(NSString*)prefix;
+-(NSArray*)commit;
+-(NSString*)displayedInputStringOf:(NSString*)s;
+@end
+
+
+
+@interface IKXInputManager : UIKeyboardInputManager {
 @private
 	// Immutable stuff.
-	IKXCandidateComputer* candidate_computer;
+	id<IKXAbstractCandidateComputer> candidate_computer;
 	
 	// Mutable stuff.
 	NSMutableString* input_string;
@@ -52,6 +67,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	BOOL bypass_composition_failure;
 	unsigned valid_input_string_length;
 }
+-(NSString*)fullstop;
+-(id)initWithCandidateComputer:(id<IKXAbstractCandidateComputer>)candidateComputer;
 @end
+
+
+@interface IKXCinInputManager : IKXInputManager {
+}
+@end
+
 
 #endif
