@@ -158,6 +158,7 @@ private:
 		
 		const char* name;
 		uint32_t attributes;
+		size_t superclass_size;	// = instanceStart
 		const char* superclass_name;		// category name if isCategory.
 		
 		std::vector<Ivar> ivars;
@@ -226,7 +227,7 @@ private:
 	std::vector<Property> ma_property_store;
 	
 	const char* m_arch;
-	bool m_has_whitespace, m_hide_cats, m_hide_dogs;
+	bool m_has_whitespace, m_hide_cats, m_hide_dogs, m_dont_typedef, m_ida_pro_mode;
 	
 //-------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -265,6 +266,8 @@ public:
 	void set_kill_prefix(const std::vector<std::string>& kill_prefix) { m_kill_prefix = kill_prefix; }
 	void set_method_has_whitespace(bool has_whitespace = true) throw() { m_has_whitespace = has_whitespace; }
 	void set_hide_cats_and_dogs(bool hide_cats, bool hide_dogs) throw() { m_hide_cats = hide_cats; m_hide_dogs = hide_dogs; }
+	void set_dont_typedef(bool dont_typedef) throw() { m_dont_typedef = dont_typedef; }
+	void set_ida_pro_mode(bool ida_pro_mode) throw() { m_ida_pro_mode = ida_pro_mode; }
 	
 	void set_hints_file(const char* filename);
 	void write_hints_file(const char* filename) const;

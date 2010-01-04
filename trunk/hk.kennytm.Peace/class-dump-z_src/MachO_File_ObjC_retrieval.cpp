@@ -454,6 +454,7 @@ void MachO_File_ObjC::retrieve_class_info() throw() {
 		all_class_data_ptr.push_back(class_data_ptr);
 		
 		cls.attributes = class_data_ptr->flags;
+		cls.superclass_size = class_data_ptr->instanceStart;
 		cls.name = this->get_cstring(class_data_ptr->name, &m_guess_text_segment, cls.vm_address, strlen("_OBJC_CLASS_$_"), NULL);
 		if (cls.name == NULL) {
 			ma_string_store.push_back(numeric_format("XXEncryptedClass_%04x", cls.vm_address));

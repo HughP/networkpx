@@ -156,7 +156,7 @@ string MachO_File_ObjC::Property::format(const ObjCTypeRecord& record, const Mac
 		res += "__strong ";
 	else if (gc_strength == GC_Weak)
 		res += "__weak ";
-	res += record.format(type, name);
+	res += record.format(type, name, 0, false, self.m_dont_typedef);
 	res.push_back(';');
 	
 	bool printed_double_slash = false;
@@ -209,7 +209,7 @@ std::string MachO_File_ObjC::format_type_with_hints(const ObjCTypeRecord& record
 			return row_content[index];
 		}
 	}
-	return record.format(method.types[index], "");
+	return record.format(method.types[index], "", 0, false, m_dont_typedef);
 }
 
 string MachO_File_ObjC::Method::format(const ObjCTypeRecord& record, const MachO_File_ObjC& self, bool print_method_addresses, int print_comments, const ClassType& cls) const throw() {
@@ -279,9 +279,37 @@ string MachO_File_ObjC::ClassType::format(const ObjCTypeRecord& record, const Ma
 			return "";
 	}
 	
+	
 	bool all_methods_filtered = true;
 	
 	string res;
+	
+	if (self.m_ida_pro_mode) {
+		res = "struct ";
+		res += name;
+		res += " {\n";
+		if (superclass_name != NULL) {
+			if (self.ma_classes_typeindex_index.find(superclass_index) == self.ma_classes_typeindex_index.end()) {
+				res += numeric_format("\tuint8_t $super[%u];\n", superclass_size);
+			} else {
+				res += "\tstruct ";
+				res += superclass_name;
+				res += " $super;\n";
+			}
+		}
+		for (vector<Ivar>::const_iterator cit = ivars.begin(); cit != ivars.end(); ++ cit) {
+			res += record.format(cit->type, cit->name, 1, false, self.m_dont_typedef, true);
+			res.push_back(';');
+			if (print_ivar_offsets) {
+				char offset_string[32];
+				snprintf(offset_string, 32, "\t// %u = 0x%x", cit->offset, cit->offset);
+				res += offset_string;
+			}
+			res.push_back('\n');			
+		}
+		res += "};\n\n";
+		return res;
+	}
 	
 	if (attributes & RO_HIDDEN) {
 		if (show_only_exported_classes)
@@ -352,7 +380,7 @@ string MachO_File_ObjC::ClassType::format(const ObjCTypeRecord& record, const Ma
 		res.push_back('>');
 	}
 	
-	if (type == CT_Class && self.m_method_filter == NULL) {
+	if (type == CT_Class && (self.m_method_filter == NULL || self.m_ida_pro_mode)) {
 		res += " {\n";
 		bool is_private = false;
 		for (vector<Ivar>::const_iterator cit = ivars.begin(); cit != ivars.end(); ++ cit) {
@@ -363,7 +391,7 @@ string MachO_File_ObjC::ClassType::format(const ObjCTypeRecord& record, const Ma
 					res += "@protected\n";
 				is_private = cit->is_private;
 			}
-			res += record.format(cit->type, cit->name, 1);
+			res += record.format(cit->type, cit->name, 1, false, self.m_dont_typedef);
 			res.push_back(';');
 			if (print_ivar_offsets) {
 				char offset_string[32];
@@ -495,7 +523,7 @@ void MachO_File_ObjC::print_struct_declaration(SortBy sort_by) const throw() {
 	for (vector<ObjCTypeRecord::TypeIndex>::const_iterator cit = public_struct_types.begin(); cit != public_struct_types.end(); ++ cit) {
 		const string& name = m_record.name_of_type(*cit);
 		if (!name_killable(name.c_str(), name.size(), true))		
-			printf("%s;\n\n", m_record.format(*cit, "", 0, true).c_str());
+			printf("%s;\n\n", m_record.format(*cit, "", 0, true, m_dont_typedef, m_ida_pro_mode).c_str());
 	}
 }
 
@@ -701,9 +729,9 @@ void MachO_File_ObjC::set_hints_file(const char* filename) {
 				vector<string>& hinted_types = m_hints_file->get_row_for_table(m_hints_method_table, row);
 				if (hinted_types.size() + 1 < mit->types.size()) {
 					hinted_types.resize(1);
-					hinted_types.push_back(m_record.format(mit->types.front(), ""));
+					hinted_types.push_back(m_record.format(mit->types.front(), "", 0, false, m_dont_typedef));
 					for (size_t j = 3; j < mit->types.size(); ++ j)
-						hinted_types.push_back(m_record.format(mit->types[j], ""));
+						hinted_types.push_back(m_record.format(mit->types[j], "", 0, false, m_dont_typedef));
 				}
 				for (size_t j_hints = 1, j_types = 0; j_types < mit->types.size(); ++ j_types, ++ j_hints) {
 					// build weak link on ID reference.
