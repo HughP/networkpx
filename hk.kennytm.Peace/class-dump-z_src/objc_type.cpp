@@ -109,6 +109,7 @@ ObjCTypeRecord::TypeIndex ObjCTypeRecord::parse(const string& type_to_parse, boo
 	Type t = Type(*this, type_to_parse, is_struct_used_locally);
 	
 	TypeIndex ret_index = ma_type_store.size();
+	t.type_index = ret_index;
 	
 	// merge struct with the same name, typesignature etc. 
 	if (t.type != '@' && (!t.subtypes.empty() || !t.name.empty())) {
@@ -121,9 +122,10 @@ ObjCTypeRecord::TypeIndex ObjCTypeRecord::parse(const string& type_to_parse, boo
 				} else
 					cit->refcount = Type::used_globally;
 				ma_indexed_types.insert(pair<string,unsigned>(type_to_parse, ret_index));
-				if (t.is_more_complete_than(*cit))
+				if (t.is_more_complete_than(*cit)) {
+					t.type_index = cit->type_index;
 					*cit = t;
-				else
+				} else
 					t = *cit;
 				goto combined;
 			}
@@ -166,9 +168,10 @@ string ObjCTypeRecord::format_forward_declaration(const vector<TypeIndex>& type_
 				break;
 			case '(':
 			case '{':
-				if (type.name.empty() || type.subtypes.empty())
-					struct_refs += type.format(*this, "", 0, true, true, pointers_right_aligned);
-				else {
+				if (type.name.empty() || type.subtypes.empty()) {
+					std::vector<TypeIndex> dummy;
+					struct_refs += type.format(*this, "", 0, true, true, pointers_right_aligned, false, &dummy);
+				} else {
 					// doesn't matter template<> or not. You can't forward reference a template class. It must be converted to a strong link.
 					struct_refs += "typedef ";
 					struct_refs += (type.type == '(') ? "union " : "struct ";
@@ -618,7 +621,7 @@ ObjCTypeRecord::Type::Type(ObjCTypeRecord& record, const string& type_to_parse, 
 }
 
 // as_declaration = true: present struct as typedef struct ABC { ... } ABC; = false: present as ABC.
-string ObjCTypeRecord::Type::format (const ObjCTypeRecord& record, const string& argname, unsigned tabs, bool treat_char_as_bool, bool as_declaration, bool pointers_right_aligned, bool dont_typedef) const throw() {
+string ObjCTypeRecord::Type::format (const ObjCTypeRecord& record, const string& argname, unsigned tabs, bool treat_char_as_bool, bool as_declaration, bool pointers_right_aligned, bool dont_typedef, std::vector<TypeIndex>* append_struct_if_matching) const throw() {
 	string retval = string(tabs, '\t');
 	switch (type) {
 		case '*':
@@ -635,7 +638,7 @@ string ObjCTypeRecord::Type::format (const ObjCTypeRecord& record, const string&
 				retval += map_type;
 				if (subtypes.size() == 1) {
 					retval.push_back(' ');
-					retval += record.ma_type_store[subtypes[0]].format(record, argname, 0, false, false, pointers_right_aligned);
+					retval += record.ma_type_store[subtypes[0]].format(record, argname, 0, false, false, pointers_right_aligned, false, append_struct_if_matching);
 					return retval;
 				}
 			} else {
@@ -658,7 +661,7 @@ string ObjCTypeRecord::Type::format (const ObjCTypeRecord& record, const string&
 				string pseudo_argname = "(*";
 				pseudo_argname += argname;
 				pseudo_argname.push_back(')');
-				retval += subtype.format(record, pseudo_argname, 0, true, false, pointers_right_aligned);
+				retval += subtype.format(record, pseudo_argname, 0, true, false, pointers_right_aligned, false, append_struct_if_matching);
 				return retval;
 			} else if (record.prettify_struct_names && subtype.type == '{' && subtype.subtypes.empty() && !subtype.name.empty() && subtype.name.find('<') == string::npos && name_Refable(subtype.pretty_name)) {
 				retval += subtype.pretty_name;
@@ -666,7 +669,7 @@ string ObjCTypeRecord::Type::format (const ObjCTypeRecord& record, const string&
 			} else {
 				string pseudo_argname = "*";
 				pseudo_argname += argname;
-				retval += subtype.format(record, pseudo_argname, 0, true, false, pointers_right_aligned);	// if it's char* it will be encoded as ^* instead of ^^c, so it's OK to treat_char_as_bool.
+				retval += subtype.format(record, pseudo_argname, 0, true, false, pointers_right_aligned, false, append_struct_if_matching);	// if it's char* it will be encoded as ^* instead of ^^c, so it's OK to treat_char_as_bool.
 				// change all int ***c to int*** c.
 				if (!pointers_right_aligned) {
 					size_t string_length_1 = retval.size()-1;
@@ -697,7 +700,7 @@ string ObjCTypeRecord::Type::format (const ObjCTypeRecord& record, const string&
 			pseudo_argname.push_back('[');
 			pseudo_argname += value;
 			pseudo_argname.push_back(']');
-			retval = subtype.format(record, pseudo_argname, tabs, true, as_declaration, pointers_right_aligned);
+			retval = subtype.format(record, pseudo_argname, tabs, true, as_declaration, pointers_right_aligned, false, append_struct_if_matching);
 			return retval;
 		}
 			
@@ -737,6 +740,17 @@ string ObjCTypeRecord::Type::format (const ObjCTypeRecord& record, const string&
 				retval += type == '(' ? "union {}" : "struct {}";
 				
 			} else if (!as_declaration && (!name.empty() || refcount > 1)) {
+				bool do_append_struct = (append_struct_if_matching == NULL);
+				if (!do_append_struct) {
+					for (std::vector<TypeIndex>::const_iterator cit = append_struct_if_matching->begin(); cit != append_struct_if_matching->end(); ++ cit)
+						if (type_index == *cit) {
+							do_append_struct = true;
+							break;
+						}
+				}
+				
+				if (do_append_struct)
+					retval += (type == '(') ? "union " : "struct ";
 				retval += get_pretty_name(record.prettify_struct_names);
 				
 			} else {
@@ -768,15 +782,18 @@ string ObjCTypeRecord::Type::format (const ObjCTypeRecord& record, const string&
 				if (!subtypes.empty()) {
 					retval += " {\n";
 					string field_name;
+					if (append_struct_if_matching)
+						append_struct_if_matching->push_back(type_index);
 					for (unsigned i = 0; i < subtypes.size(); ++ i) {
 						if (field_names.size() > 0)
 							field_name = field_names[i];
 						else
 							field_name = numeric_format("_field%u", i+1);
-						
-						retval += record.ma_type_store[subtypes[i]].format(record, field_name, tabs+1, true, false, pointers_right_aligned);
+						retval += record.ma_type_store[subtypes[i]].format(record, field_name, tabs+1, true, false, pointers_right_aligned, false, append_struct_if_matching);
 						retval += ";\n";
 					}
+					if (append_struct_if_matching)
+						append_struct_if_matching->pop_back();
 					
 					retval += tab_string;
 					retval.push_back('}');
@@ -883,33 +900,45 @@ public:
 	}
 };
 
-struct octr_StrongLinkSorter {
-private:
-	const ObjCTypeRecord& record;
-public:
-	octr_StrongLinkSorter(const ObjCTypeRecord& record_) : record(record_) {}
-	
-	bool operator() (ObjCTypeRecord::TypeIndex a, ObjCTypeRecord::TypeIndex b) const throw() {
-		bool strong_ab = record.link_strength(a, b) >= ObjCTypeRecord::ES_StrongIndirect;
-		bool strong_ba = record.link_strength(b, a) >= ObjCTypeRecord::ES_StrongIndirect;
-		if (strong_ab == strong_ba)
-			return a < b;
-		else 
-			return strong_ba;
-	}
-};
-
-void ObjCTypeRecord::sort_alphabetically(vector<TypeIndex>& type_indices) const throw() {
-	sort(type_indices.begin(), type_indices.end(), octr_AlphabeticSorter(*this));
+void ObjCTypeRecord::sort_alphabetically(vector<TypeIndex>::iterator type_indices_begin, vector<TypeIndex>::iterator type_indices_end) const throw() {
+	sort(type_indices_begin, type_indices_end, octr_AlphabeticSorter(*this));
 }
 
-void ObjCTypeRecord::sort_by_strong_links(vector<TypeIndex>& type_indices) const throw() {
-	sort(type_indices.begin(), type_indices.end(), octr_StrongLinkSorter(*this));
+// Basically an uglified topological sort.
+static void octr_visit(const tr1::unordered_map<ObjCTypeRecord::TypeIndex, tr1::unordered_map<ObjCTypeRecord::TypeIndex, ObjCTypeRecord::EdgeStrength> >& adjlist, tr1::unordered_map<ObjCTypeRecord::TypeIndex, bool>& visited, vector<ObjCTypeRecord::TypeIndex>& result, ObjCTypeRecord::TypeIndex ti) {
+	tr1::unordered_map<ObjCTypeRecord::TypeIndex, bool>::iterator vit = visited.find(ti);
+	if (vit != visited.end() && !vit->second) {
+		vit->second = true;
+		tr1::unordered_map<ObjCTypeRecord::TypeIndex, tr1::unordered_map<ObjCTypeRecord::TypeIndex, ObjCTypeRecord::EdgeStrength> >::const_iterator cit = adjlist.find(ti);
+		if (cit != adjlist.end()) {
+			for (tr1::unordered_map<ObjCTypeRecord::TypeIndex, ObjCTypeRecord::EdgeStrength>::const_iterator nit = cit->second.begin(); nit != cit->second.end(); ++ nit) {
+				if (nit->second >= ObjCTypeRecord::ES_StrongIndirect)
+					octr_visit(adjlist, visited, result, nit->first);
+			}
+			result.push_back(ti);
+		}
+	}
+}
+
+void ObjCTypeRecord::sort_by_strong_links(vector<TypeIndex>::iterator type_indices_begin, vector<TypeIndex>::iterator type_indices_end) const throw() {
+	// sort(type_indices_begin, type_indices_end, octr_StrongLinkSorter(*this));
+	tr1::unordered_map<TypeIndex, bool> visited;
+	for (vector<TypeIndex>::iterator it = type_indices_begin; it != type_indices_end; ++ it)
+		visited.insert(std::pair<TypeIndex, bool>(*it, false));
+	
+	size_t length = type_indices_end - type_indices_begin;
+	vector<TypeIndex> result;
+	result.reserve(length);
+	
+	for (vector<TypeIndex>::iterator it = type_indices_begin; it != type_indices_end; ++ it)
+		octr_visit(ma_adjlist, visited, result, *it);
+	
+	copy(result.begin(), result.end(), type_indices_begin);
 }
 
 string ObjCTypeRecord::format_structs_with_forward_declarations(const vector<TypeIndex>& type_indices) const throw() {
 	vector<TypeIndex> indices = type_indices;
-	sort_by_strong_links(indices);
+	sort_by_strong_links(indices.begin(), indices.end());
 	string res;
 	tr1::unordered_set<TypeIndex> forward_declared; //, index_set (indices.begin(), indices.end());
 	

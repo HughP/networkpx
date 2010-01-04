@@ -51,6 +51,7 @@ void print_usage () {
 			"    -N         Keep the raw struct names (e.g. do no replace __CFArray* with CFArrayRef).\n"
 			"    -b         Put a space after the +/- sign (i.e. + (void)... instead of +(void)...).\n"
 			"    -i <file>  Read and update signature hints file.\n"
+			"    -T         Print Objective-C classes as structs.\n"
 			"\n  Filtering:\n"
 			"    -C <regex> Only display types with (original) name matching the RegExp (in PCRE syntax).\n"
 			"    -f <regex> Only display methods with (original) name matching the RegExp.\n"
@@ -60,6 +61,7 @@ void print_usage () {
 			"    -h dogs    Hide protocols.\n"
 			"\n  Sorting:\n"
 			"    -S         Sort types in alphabetical order.\n" 
+			"    -I         Sort types in inheritance order.\n"
 			"    -s         Sort methods in alphabetical order.\n"
 			"    -z         Sort methods alphabetically but put class methods and -init... first.\n"
 			"\n  Output:\n"
@@ -79,6 +81,7 @@ int main (int argc, char* argv[]) {
 		bool hide_protocols = false, hide_super = false; //, hide_underscore = true;
 		bool delete_sysroot_on_quit = false, has_blank = false;
 		bool hide_cats = false, hide_dogs = false;
+//		bool ida_pro_mode = false;
 		MachO_File_ObjC::SortBy sort_by = MachO_File_ObjC::SB_None, sort_methods_by = MachO_File_ObjC::SB_None;
 		int print_comments = 0;
 		char diagnosis_option = '\0';
@@ -121,7 +124,7 @@ int main (int argc, char* argv[]) {
 		
 		// const char* regexp_string = NULL;
 		while (argc > 1) {
-			switch (c = getopt(argc, argv, "aAkC:ISsD:Rf:gpHo:X:Nh:y:u:bzi:")) {
+			switch (c = getopt(argc, argv, "aAkC:ISsD:Rf:gpHo:X:Nh:y:u:bzi:T")) {
 				case 'a': print_ivar_offsets = true; break;
 				case 'A': print_method_addresses = true; break;
 				case 'k': ++ print_comments; break;
@@ -134,9 +137,7 @@ int main (int argc, char* argv[]) {
 				case 'g': show_only_exported_classes = true; break;
 				case 'p': propertize = true; break;
 				case 'S': sort_by = MachO_File_ObjC::SB_Alphabetic; break;
-				case 'I':
-					fprintf(stderr, "Warning: Sort by inheritance is not implemented yet.\n");
-					break;
+				case 'I': sort_by = MachO_File_ObjC::SB_Inherit; break;
 				case 'o': output_directory = optarg;  break;
 				case 'H': generate_headers = true; break;
 				case 'X': {
@@ -155,7 +156,10 @@ int main (int argc, char* argv[]) {
 					}
 					break;
 				}
-				case 'N': prettify_struct_names = false; break;
+				case 'N': 
+					if (prettify_struct_names)
+						prettify_struct_names = false;
+					break;
 				case 'h':
 					if (strncmp(optarg, "proto", 5) == 0)
 						hide_protocols = true;
