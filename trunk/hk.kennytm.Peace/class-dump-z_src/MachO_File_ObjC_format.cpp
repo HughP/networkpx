@@ -460,6 +460,26 @@ void MachO_File_ObjC::print_class_type(SortBy sort_by, bool print_method_address
 				printf("%s", (*cit)->format(m_record, *this, print_method_addresses, print_comments, print_ivar_offsets, sort_methods_by, show_only_exported_classes).c_str());
 			break;
 		}
+		case SB_Inherit: {
+			vector<ObjCTypeRecord::TypeIndex> remap;
+			remap.reserve(ma_classes.size());
+			for (vector<ClassType>::const_iterator cit = ma_classes.begin(); cit != ma_classes.end(); ++ cit)
+				remap.push_back(cit->type_index);
+			
+			m_record.sort_by_strong_links(remap.begin(), remap.begin() + m_protocol_count);
+			m_record.sort_by_strong_links(remap.begin() + m_protocol_count, remap.begin() + m_protocol_count + m_class_count);
+
+			for (vector<ObjCTypeRecord::TypeIndex>::const_iterator cit = remap.begin(); cit != remap.end(); ++ cit) {
+				tr1::unordered_map<ObjCTypeRecord::TypeIndex, unsigned>::const_iterator iit = ma_classes_typeindex_index.find(*cit);
+				if (iit != ma_classes_typeindex_index.end())
+					printf("%s", ma_classes[iit->second].format(m_record, *this, print_method_addresses, print_comments, print_ivar_offsets, sort_methods_by, show_only_exported_classes).c_str());
+				else {
+					printf("Not found %d\n",*cit);
+				}
+
+			}
+			break;
+		}
 	}
 }
 
@@ -468,7 +488,9 @@ void MachO_File_ObjC::print_struct_declaration(SortBy sort_by) const throw() {
 	
 	vector<ObjCTypeRecord::TypeIndex> public_struct_types = m_record.all_public_struct_types();
 	if (sort_by == SB_Alphabetic)
-		m_record.sort_alphabetically(public_struct_types);
+		m_record.sort_alphabetically(public_struct_types.begin(), public_struct_types.end());
+	else if (sort_by == SB_Inherit)
+		m_record.sort_by_strong_links(public_struct_types.begin(), public_struct_types.end());
 	
 	for (vector<ObjCTypeRecord::TypeIndex>::const_iterator cit = public_struct_types.begin(); cit != public_struct_types.end(); ++ cit) {
 		const string& name = m_record.name_of_type(*cit);

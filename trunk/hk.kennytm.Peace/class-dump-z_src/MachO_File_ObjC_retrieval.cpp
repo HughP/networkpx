@@ -390,6 +390,7 @@ void MachO_File_ObjC::retrieve_protocol_info() throw() {
 		
 		all_protocols.push_back(proto);
 		
+		ma_classes_typeindex_index.insert( pair<ObjCTypeRecord::TypeIndex,unsigned>(cls.type_index, ma_classes.size()) );
 		ma_classes_vm_address_index.insert(pair<unsigned,unsigned>(cls.vm_address, ma_classes.size()));
 		ma_classes.push_back(cls);
 		
@@ -674,6 +675,7 @@ void MachO_File_ObjC::retrieve_category_info() throw() {
 			if (cat->instanceMethods != NULL)
 				add_methods(cls, PEEK_VM_ADDR(cat->instanceMethods, method_list_t, data), false, false);
 			
+			ma_classes_typeindex_index.insert( pair<ObjCTypeRecord::TypeIndex,unsigned>(cls.type_index, ma_classes.size()) );
 			ma_classes_vm_address_index.insert(pair<unsigned,unsigned>(cls.vm_address, ma_classes.size()));
 			ma_classes.push_back(cls);
 			

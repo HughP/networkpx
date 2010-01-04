@@ -70,12 +70,12 @@ private:
 		std::vector<unsigned> subtypes;
 		std::vector<std::string> field_names;
 		
-		std::vector<std::string> namespaces;	// C++ only. containts the namespace from outer to inner. (e.g. [std, tr1])
+		unsigned type_index;
 		
 		//----
 		
 		Type(ObjCTypeRecord& record, const std::string& type_to_parse, bool is_struct_used_locally);
-		std::string format(const ObjCTypeRecord& record, const std::string& argname, unsigned tabs, bool treat_char_as_bool, bool as_declaration, bool pointers_right_aligned, bool dont_typedef = false) const throw();
+		std::string format(const ObjCTypeRecord& record, const std::string& argname, unsigned tabs, bool treat_char_as_bool, bool as_declaration, bool pointers_right_aligned, bool dont_typedef, std::vector<TypeIndex>* append_struct_if_matching) const throw();
 		
 		bool is_compatible_with(const Type& another, const ObjCTypeRecord& record, std::tr1::unordered_set<TypePointerPair>& banned_pairs) const throw();
 		bool is_more_complete_than(const Type& another) const throw();
@@ -116,8 +116,9 @@ public:
 	void add_weak_link(TypeIndex from, TypeIndex to) { add_link_with_strength(from, to, ES_Weak); }
 	
 	TypeIndex parse(const std::string& type_to_parse, bool is_struct_used_locally);
-	std::string format(TypeIndex type_index, const std::string& argname, unsigned tabs = 0, bool as_declaration = false, bool dont_typedef = false) const throw() {
-		return ma_type_store[type_index].format(*this, argname, tabs, true, as_declaration, pointers_right_aligned, dont_typedef);
+	std::string format(TypeIndex type_index, const std::string& argname, unsigned tabs = 0, bool as_declaration = false, bool dont_typedef = false, bool always_append_struct = false) const throw() {
+		std::vector<TypeIndex> ti;
+		return ma_type_store[type_index].format(*this, argname, tabs, true, as_declaration, pointers_right_aligned, dont_typedef, always_append_struct ? NULL : &ti);
 	}
 	
 	std::string format_forward_declaration(const std::vector<TypeIndex>& type_indices) const throw();
@@ -161,8 +162,8 @@ public:
 public:
 	// ignores those structs with refcount = 1.
 	std::vector<TypeIndex> all_public_struct_types() const throw();
-	void sort_alphabetically(std::vector<TypeIndex>& type_indices) const throw();
-	void sort_by_strong_links(std::vector<TypeIndex>& type_indices) const throw();
+	void sort_alphabetically(std::vector<TypeIndex>::iterator type_indices_begin, std::vector<TypeIndex>::iterator type_indices_end) const throw();
+	void sort_by_strong_links(std::vector<TypeIndex>::iterator type_indices_begin, std::vector<TypeIndex>::iterator type_indices_end) const throw();
 	std::string format_structs_with_forward_declarations(const std::vector<TypeIndex>& type_indices) const throw();
 	
 	const std::tr1::unordered_map<TypeIndex, EdgeStrength>* dependencies(TypeIndex type_index) const throw() { 
