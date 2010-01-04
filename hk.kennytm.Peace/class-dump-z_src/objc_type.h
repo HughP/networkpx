@@ -75,7 +75,7 @@ private:
 		//----
 		
 		Type(ObjCTypeRecord& record, const std::string& type_to_parse, bool is_struct_used_locally);
-		std::string format(const ObjCTypeRecord& record, const std::string& argname, unsigned tabs, bool treat_char_as_bool, bool as_declaration, bool pointers_right_aligned, bool dont_typedef, std::vector<TypeIndex>* append_struct_if_matching) const throw();
+		std::string format(const ObjCTypeRecord& record, const std::string& argname, unsigned tabs, bool treat_char_as_bool, bool as_declaration, bool pointers_right_aligned, bool dont_typedef, std::vector<TypeIndex>* append_struct_if_matching, bool treat_objcls_as_struct) const throw();
 		
 		bool is_compatible_with(const Type& another, const ObjCTypeRecord& record, std::tr1::unordered_set<TypePointerPair>& banned_pairs) const throw();
 		bool is_more_complete_than(const Type& another) const throw();
@@ -116,9 +116,9 @@ public:
 	void add_weak_link(TypeIndex from, TypeIndex to) { add_link_with_strength(from, to, ES_Weak); }
 	
 	TypeIndex parse(const std::string& type_to_parse, bool is_struct_used_locally);
-	std::string format(TypeIndex type_index, const std::string& argname, unsigned tabs = 0, bool as_declaration = false, bool dont_typedef = false, bool always_append_struct = false) const throw() {
+	std::string format(TypeIndex type_index, const std::string& argname, unsigned tabs, bool as_declaration, bool dont_typedef, bool treat_objcls_as_struct = false) const throw() {
 		std::vector<TypeIndex> ti;
-		return ma_type_store[type_index].format(*this, argname, tabs, true, as_declaration, pointers_right_aligned, dont_typedef, always_append_struct ? NULL : &ti);
+		return ma_type_store[type_index].format(*this, argname, tabs, true, as_declaration, pointers_right_aligned, dont_typedef, dont_typedef ? NULL : &ti, treat_objcls_as_struct);
 	}
 	
 	std::string format_forward_declaration(const std::vector<TypeIndex>& type_indices) const throw();

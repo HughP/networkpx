@@ -28,7 +28,7 @@ void MachO_File_ObjC::print_all_types() const throw() {
 	printf("// Parsed %lu types.\n\n", static_cast<unsigned long>(m_record.types_count()));
 	
 	for (unsigned i = 0; i < m_record.types_count(); ++ i) {
-		printf("%s;\n", m_record.format(i, "", 0, true).c_str());
+		printf("%s;\n", m_record.format(i, "", 0, true, m_dont_typedef).c_str());
 	}
 	printf("\n");
 }

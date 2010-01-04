@@ -170,7 +170,7 @@ string ObjCTypeRecord::format_forward_declaration(const vector<TypeIndex>& type_
 			case '{':
 				if (type.name.empty() || type.subtypes.empty()) {
 					std::vector<TypeIndex> dummy;
-					struct_refs += type.format(*this, "", 0, true, true, pointers_right_aligned, false, &dummy);
+					struct_refs += type.format(*this, "", 0, true, true, pointers_right_aligned, false, &dummy, false);
 				} else {
 					// doesn't matter template<> or not. You can't forward reference a template class. It must be converted to a strong link.
 					struct_refs += "typedef ";
@@ -621,7 +621,7 @@ ObjCTypeRecord::Type::Type(ObjCTypeRecord& record, const string& type_to_parse, 
 }
 
 // as_declaration = true: present struct as typedef struct ABC { ... } ABC; = false: present as ABC.
-string ObjCTypeRecord::Type::format (const ObjCTypeRecord& record, const string& argname, unsigned tabs, bool treat_char_as_bool, bool as_declaration, bool pointers_right_aligned, bool dont_typedef, std::vector<TypeIndex>* append_struct_if_matching) const throw() {
+string ObjCTypeRecord::Type::format (const ObjCTypeRecord& record, const string& argname, unsigned tabs, bool treat_char_as_bool, bool as_declaration, bool pointers_right_aligned, bool dont_typedef, std::vector<TypeIndex>* append_struct_if_matching, bool treat_objcls_as_struct) const throw() {
 	string retval = string(tabs, '\t');
 	switch (type) {
 		case '*':
@@ -638,7 +638,7 @@ string ObjCTypeRecord::Type::format (const ObjCTypeRecord& record, const string&
 				retval += map_type;
 				if (subtypes.size() == 1) {
 					retval.push_back(' ');
-					retval += record.ma_type_store[subtypes[0]].format(record, argname, 0, false, false, pointers_right_aligned, false, append_struct_if_matching);
+					retval += record.ma_type_store[subtypes[0]].format(record, argname, 0, false, false, pointers_right_aligned, false, append_struct_if_matching, treat_objcls_as_struct);
 					return retval;
 				}
 			} else {
@@ -661,7 +661,7 @@ string ObjCTypeRecord::Type::format (const ObjCTypeRecord& record, const string&
 				string pseudo_argname = "(*";
 				pseudo_argname += argname;
 				pseudo_argname.push_back(')');
-				retval += subtype.format(record, pseudo_argname, 0, true, false, pointers_right_aligned, false, append_struct_if_matching);
+				retval += subtype.format(record, pseudo_argname, 0, true, false, pointers_right_aligned, false, append_struct_if_matching, treat_objcls_as_struct);
 				return retval;
 			} else if (record.prettify_struct_names && subtype.type == '{' && subtype.subtypes.empty() && !subtype.name.empty() && subtype.name.find('<') == string::npos && name_Refable(subtype.pretty_name)) {
 				retval += subtype.pretty_name;
@@ -669,7 +669,8 @@ string ObjCTypeRecord::Type::format (const ObjCTypeRecord& record, const string&
 			} else {
 				string pseudo_argname = "*";
 				pseudo_argname += argname;
-				retval += subtype.format(record, pseudo_argname, 0, true, false, pointers_right_aligned, false, append_struct_if_matching);	// if it's char* it will be encoded as ^* instead of ^^c, so it's OK to treat_char_as_bool.
+				// if it's char* it will be encoded as ^* instead of ^^c, so it's OK to treat_char_as_bool.
+				retval += subtype.format(record, pseudo_argname, 0, true, false, pointers_right_aligned, false, append_struct_if_matching, treat_objcls_as_struct);
 				// change all int ***c to int*** c.
 				if (!pointers_right_aligned) {
 					size_t string_length_1 = retval.size()-1;
@@ -700,30 +701,20 @@ string ObjCTypeRecord::Type::format (const ObjCTypeRecord& record, const string&
 			pseudo_argname.push_back('[');
 			pseudo_argname += value;
 			pseudo_argname.push_back(']');
-			retval = subtype.format(record, pseudo_argname, tabs, true, as_declaration, pointers_right_aligned, false, append_struct_if_matching);
+			retval = subtype.format(record, pseudo_argname, tabs, true, as_declaration, pointers_right_aligned, false, append_struct_if_matching, treat_objcls_as_struct);
 			return retval;
 		}
 			
 		case '@':
 			if (name.empty())
 				retval += "id";
-			else
+			else {
+				if (treat_objcls_as_struct)
+					retval += "struct ";
 				retval += name;
-			/*
-			if (!subtypes.empty()) {
-				retval.push_back('<');
-				bool is_first = true;
-				for (vector<unsigned>::const_iterator cit = subtypes.begin(); cit != subtypes.end(); ++ cit) {
-					if (is_first)
-						is_first = false;
-					else
-						retval += ", ";
-					retval += record.ma_type_store[*cit].name;
-				}
-				retval.push_back('>');
 			}
-			 */
-			retval += value;
+			if (!treat_objcls_as_struct)
+				retval += value;
 			if (!name.empty()) {
 				if (pointers_right_aligned) {
 					retval += " *";
@@ -767,7 +758,7 @@ string ObjCTypeRecord::Type::format (const ObjCTypeRecord& record, const string&
 				if (!name.empty()) {
 					retval.push_back(' ');
 					retval += name;
-					if (subtypes.empty() && name.find('<') == string::npos) {
+					if (!dont_typedef && subtypes.empty() && name.find('<') == string::npos) {
 						if (record.prettify_struct_names && type == '{' && name_Refable(pretty_name)) {
 							retval += pointers_right_aligned ? " *" : "* ";
 							retval += get_pretty_name(record.prettify_struct_names);
@@ -777,6 +768,9 @@ string ObjCTypeRecord::Type::format (const ObjCTypeRecord& record, const string&
 							retval += get_pretty_name(record.prettify_struct_names);
 						}
 					}
+				} else if (dont_typedef && !subtypes.empty()) {
+					retval.push_back(' ');
+					retval += get_pretty_name(record.prettify_struct_names);
 				}
 				
 				if (!subtypes.empty()) {
@@ -789,7 +783,7 @@ string ObjCTypeRecord::Type::format (const ObjCTypeRecord& record, const string&
 							field_name = field_names[i];
 						else
 							field_name = numeric_format("_field%u", i+1);
-						retval += record.ma_type_store[subtypes[i]].format(record, field_name, tabs+1, true, false, pointers_right_aligned, false, append_struct_if_matching);
+						retval += record.ma_type_store[subtypes[i]].format(record, field_name, tabs+1, true, false, pointers_right_aligned, false, append_struct_if_matching, treat_objcls_as_struct);
 						retval += ";\n";
 					}
 					if (append_struct_if_matching)

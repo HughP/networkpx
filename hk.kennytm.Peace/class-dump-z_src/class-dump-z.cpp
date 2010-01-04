@@ -49,9 +49,10 @@ void print_usage () {
 			"    -k -k      Show even more comments.\n"
 			"    -R         Show pointer declarations as int *a instead of int* a.\n"
 			"    -N         Keep the raw struct names (e.g. do no replace __CFArray* with CFArrayRef).\n"
+			"    -N -N      Do not typedef (doesn't work with -H).\n"
 			"    -b         Put a space after the +/- sign (i.e. + (void)... instead of +(void)...).\n"
 			"    -i <file>  Read and update signature hints file.\n"
-			"    -T         Print Objective-C classes as structs.\n"
+			"    -T         Print Objective-C classes as structs (doesn't work with -H).\n"
 			"\n  Filtering:\n"
 			"    -C <regex> Only display types with (original) name matching the RegExp (in PCRE syntax).\n"
 			"    -f <regex> Only display methods with (original) name matching the RegExp.\n"
@@ -81,7 +82,8 @@ int main (int argc, char* argv[]) {
 		bool hide_protocols = false, hide_super = false; //, hide_underscore = true;
 		bool delete_sysroot_on_quit = false, has_blank = false;
 		bool hide_cats = false, hide_dogs = false;
-//		bool ida_pro_mode = false;
+		bool dont_typedef = false;
+		bool ida_pro_mode = false;
 		MachO_File_ObjC::SortBy sort_by = MachO_File_ObjC::SB_None, sort_methods_by = MachO_File_ObjC::SB_None;
 		int print_comments = 0;
 		char diagnosis_option = '\0';
@@ -159,6 +161,8 @@ int main (int argc, char* argv[]) {
 				case 'N': 
 					if (prettify_struct_names)
 						prettify_struct_names = false;
+					else if (!dont_typedef)
+						dont_typedef = true;
 					break;
 				case 'h':
 					if (strncmp(optarg, "proto", 5) == 0)
@@ -187,6 +191,10 @@ int main (int argc, char* argv[]) {
 					break;
 				case 'i':
 					hints_file = optarg;
+					break;
+				case 'T':
+					ida_pro_mode = true;
+					hide_cats = hide_dogs = true;
 					break;
 #if EOF != -1
 				case EOF:
@@ -238,6 +246,8 @@ int main (int argc, char* argv[]) {
 				mf.set_method_has_whitespace(has_blank);
 				mf.set_hide_cats_and_dogs(hide_cats, hide_dogs);
 				mf.set_hints_file(hints_file);
+				mf.set_dont_typedef(dont_typedef);
+				mf.set_ida_pro_mode(ida_pro_mode);
 				
 				if (type_regexp != NULL)
 					mf.set_class_filter(type_regexp);
