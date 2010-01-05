@@ -41,6 +41,7 @@ def main(argv=None):
 					sym_searcher[int(match.group(1), 16) & ~1] = match.group(2)
 				
 		call_matcher = re.compile("(-> 0x|proc_)([0-9a-fA-F]{0,8})(:?)$")
+		call_matcher_2 = re.compile("; ([0-9a-fA-F]{8}) =")
 
 		tempfn = None
 		with open(argv[1]) as dec:
@@ -51,6 +52,12 @@ def main(argv=None):
 					addr = int(match.group(2), 16) & ~1
 					if addr in sym_searcher:
 						line = line[:match.start()] + match.group(1) + match.group(2) + " " + sym_searcher[addr] + match.group(3) + "\n"
+				else:
+					match = call_matcher_2.search(line)
+					if match is not None:
+						addr = int(match.group(1), 16) & ~1
+						if addr in sym_searcher:
+							line = line[:match.start()] + match.group() + " " + sym_searcher[addr] + "\n"
 				os.write(fout, line)
 			os.close(fout)
 			

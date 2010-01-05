@@ -29,7 +29,7 @@ def main(argv=None):
 	if argv is None:
 		argv = sys.argv
 	if len(argv) < 3:
-		print ("Usage: libkeraddr.py [ravel-armed-file] [result-of-nm-kernelcache]")
+		print ("Usage: addresser.py [ravel-armed-file] [result-of-list-symbol]")
 	else:
 		sym_matcher = re.compile("^([0-9a-f]+) \\w (.+)$")
 		sym_searcher = {}
@@ -38,10 +38,10 @@ def main(argv=None):
 			for line in syms:
 				match = sym_matcher.match(line)
 				if match is not None:
-					sym_searcher[match.group(1)] = match.group(2)
-					sym_searcher[thumb_last_digit(match.group(1))] = match.group(2)
+					sym_searcher[int(match.group(1), 16) & ~1] = match.group(2)
 				
-		call_matcher = re.compile("(?:0x)(c0[01][0-9a-f]{5})")
+		call_matcher = re.compile("(-> 0x|proc_)([0-9a-fA-F]{0,8})(:?)$")
+		call_matcher_2 = re.compile("; ([0-9a-fA-F]{8}) =")
 
 		tempfn = None
 		with open(argv[1]) as dec:
@@ -49,7 +49,15 @@ def main(argv=None):
 			for line in dec:
 				match = call_matcher.search(line)
 				if match is not None:
-					line = line[:match.start()] + sym_searcher[match.group(1)] + line[match.end():]
+					addr = int(match.group(2), 16) & ~1
+					if addr in sym_searcher:
+						line = line[:match.start()] + match.group(1) + match.group(2) + " " + sym_searcher[addr] + match.group(3) + "\n"
+				else:
+					match = call_matcher_2.search(line)
+					if match is not None:
+						addr = int(match.group(1), 16) & ~1
+						if addr in sym_searcher:
+							line = line[:match.start()] + match.group() + " " + sym_searcher[addr] + "\n"
 				os.write(fout, line)
 			os.close(fout)
 			
