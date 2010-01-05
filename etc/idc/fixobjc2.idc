@@ -48,8 +48,27 @@ static functionize (ea, is_meta, cls, sel) {
 	SetFunctionCmt(ea, (is_meta ? "+" : "-") + "[" + cls + " " + sel + "]", 1);
 }
 
+static methodize (m_ea, is_meta, cl_name) {
+	auto m_size, m_count, m_i, m_sname, m_cname;
+
+	if (m_ea <= 0)
+		return;
+
+	m_size = Dword(m_ea);
+	m_count = Dword(m_ea + 4);
+	MakeStruct(m_ea, "method_list_t");
+	MakeName(m_ea, cl_name + (is_meta ? "_$classMethods" : "_$methods"));
+	m_ea = m_ea + 8;
+	for (m_i = 0; m_i < m_count; m_i = m_i + 1) {
+		MakeStruct(m_ea, "method_t");
+		m_sname = GetString(Dword(m_ea), -1, ASCSTR_C);
+		functionize(Dword(m_ea + 8), is_meta, cl_name, m_sname);
+		m_ea = m_ea + m_size;
+	}
+}
+
 static classize (c_ea, is_meta) {
-	auto cd_ea, cl_name, c_name, m_ea, m_count, m_size, m_i, m_sname, m_cname, m_imp, i_ea, i_count, i_size, i_i, i_sname;
+	auto cd_ea, cl_name, c_name, i_ea, i_count, i_size, i_i, i_sname;
 	
 	MakeStruct(c_ea, "class_t");
 	cd_ea = Dword(c_ea + 16);
@@ -59,20 +78,7 @@ static classize (c_ea, is_meta) {
 	MakeName(cd_ea, cl_name + (is_meta ? "_$metaData" : "_$classData"));
 	
 	// methods
-	m_ea = Dword(cd_ea + 20);
-	if (m_ea > 0) {
-		m_size = Dword(m_ea);
-		m_count = Dword(m_ea + 4);
-		MakeStruct(m_ea, "method_list_t");
-		MakeName(m_ea, cl_name + (is_meta ? "_$classMethods" : "_$methods"));
-		m_ea = m_ea + 8;
-		for (m_i = 0; m_i < m_count; m_i = m_i + 1) {
-			MakeStruct(m_ea, "method_t");
-			m_sname = GetString(Dword(m_ea), -1, ASCSTR_C);
-			functionize(Dword(m_ea + 8), is_meta, cl_name, m_sname);
-			m_ea = m_ea + m_size;
-		}
-	}
+	methodize(Dword(cd_ea + 20), is_meta, cl_name);
 	
 	// ivars
 	i_ea = Dword(cd_ea + 28);
@@ -92,8 +98,18 @@ static classize (c_ea, is_meta) {
 	}
 }
 
+static categorize(c_ea) {
+	auto cat_name, cl_name, s_name;
+	cat_name = GetString(Dword(c_ea), -1, ASCSTR_C);
+	s_name = substr(Name(Dword(c_ea + 4)), 14, -1);
+	cl_name = s_name + "(" + cat_name + ")";
+	methodize(Dword(c_ea + 8), 0, cl_name);
+	methodize(Dword(c_ea + 12), 1, cl_name);
+}
+
 static main () {
 	auto cl_ea, cl_base, c_ea, s_base, s_ea, s_name, cr_base, cr_ea, cr_target;
+	auto cat_base, cat_ea;
 	
 	if (GetLongPrm(INF_FILETYPE) != 25 || (GetLongPrm(INF_PROCNAME) & 0xffffff) != 0x4d5241) {
 		Warning("fixobjc2.idc only works for Mach-O binaries with ARM processors.");
@@ -111,7 +127,6 @@ static main () {
 	cl_base = SegByBase(SegByName("__objc_classlist"));
 	if (cl_base >= 0) {
 		for (cl_ea = SegStart(cl_base); cl_ea != SegEnd(cl_base); cl_ea = cl_ea + 4) {
-			// class.
 			c_ea = Dword(cl_ea);
 			classize(c_ea, 0);
 			classize(Dword(c_ea), 1);
@@ -135,6 +150,14 @@ static main () {
 			if (cr_target > 0) {
 				MakeRptCmt(cr_ea, Name(cr_target));
 			}
+		}
+	}
+	
+	// categories.
+	cat_base = SegByBase(SegByName("__objc_catlist"));
+	if (cat_base >= 0) {
+		for (cat_ea = SegStart(cat_base); cat_ea != SegEnd(cat_base); cat_ea = cat_ea + 4) {
+			categorize(Dword(cat_ea));
 		}
 	}
 }
