@@ -11,8 +11,8 @@ struct WordTrieVersion {
   char      collator_uca_version; // ( 8) must be 5.
   char      collator_version;     // ( 9) must be 0x31.
   be_short  dict_subversion;      // ( a) must be >4. (currently is 5).
-  char x0c[0x0c];
-}; // sizeof = 24 (0x18)
+  char x0c[0x10];
+}; // sizeof = 28 (0x1c)
 
 struct WordTrieDataFile {
   be_int    word_count;           // (1c) number of words in the data file.
@@ -58,5 +58,19 @@ Format of `PackedTrieSiblings`:
     * & 0x40: `has_freq`. If this bit is set, read a byte, increase 1, and store as the `compacted_freq`.
     * & 0x20: `has_unigram_list_offset`. If this bit is set, read a 24-bit big-endian integer and store as the `word_offset`.
     * & 0x10: `has_word_termination_prob`. If this bit is set, read a byte, increase 1, and store as the `word_offset`. Assumes `has_unigram_list_offset` is cleared.
-    * & 0x80: `more_sibling`. The trie terminates here is this bit is cleared.
+    * & 0x80: `more_sibling`. The node has no more siblings if this bit is cleared.
+
+If the trie node has the `has_unigram_list_offset` bit set, we parse the following structure from the .dat file:
+  * Read 1 byte as the offset bit, which indicates the bytes to skip (including this byte) for the next word.
+  * Read 1 byte as the `'h'` bitfield, in which:
+    * & 0x04: `has_probability`. Read 1 byte as the probability of this word. If the `compilation_flags` of the index file as bit 0x200 (`normalize_probability`) set, the probability will be rescaled by 1/255.
+    * & 0x20: Read 1 byte as the `'c'` bitfield. If the `'c'` bitfield has bit 0x01 set, the `capitalization_mask` is set to 0x01.
+    * & 0x01: `has_capitalization_mask`. Read a big-endian 32-bit integer as the `capitalization_mask`.
+    * & 0x40: `has_d`. Read a big-endian 32-integer as the `'d'` field.
+    * & 0x08: `has_string_length`. If this bit is set, and any of bit 0x30 of the `'c'` flag is set; or bit 0x800 (`dont_force_read_string_length`) of the compilation flag is cleared regardless the value of `'h'` is: Read a big-endian 16-integer as the (length(6)/reserved(5)/sort-key-length(5)) packed triplet.
+    * & 0x10: `has_string`. 
+       * If this bit is set, read a null-terminated C string as the content of this word.
+       * Otherwise, convert the input sort key back as the content of this word. If bit 0x08 of `'h'` is also set, parse a substitution list at the current cursor so far:
+           # Read 1 byte as the flags.
+           # Read a null-terminated string (resstr).
 
