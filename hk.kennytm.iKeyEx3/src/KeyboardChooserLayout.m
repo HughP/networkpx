@@ -101,7 +101,16 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 -(void)tableView:(UITableView*)view didSelectRowAtIndexPath:(NSIndexPath*)path {
 	IKXPlaySound();
-	[impl setInputMode:[inputModes objectAtIndex:path.row]];
+	NSUInteger row = path.row;
+	NSString* mode = [inputModes objectAtIndex:row];
+	if (row == checkedMode) {
+		// Fix issue 499.
+		NSString* fixup_mode = @"fr";
+		if ([mode isEqualToString:fixup_mode])
+			fixup_mode = @"en_US";
+		[impl setInputMode:fixup_mode];
+	}
+	[impl setInputMode:mode];
 	[impl showInputModeIndicator];
 	[impl setInputModeLastChosenPreference];
 }

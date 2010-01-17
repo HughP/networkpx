@@ -62,6 +62,10 @@ DefineHook(BOOL, UIKeyboardInputModeUsesKBStar, NSString* modeString) {
 		if ([layoutRef characterAtIndex:0] == '=')	// Refered layout.
 			return Original(UIKeyboardInputModeUsesKBStar)([layoutRef substringFromIndex:1]);
 		else {
+#if TARGET_IPHONE_SIMULATOR
+			if ([layoutRef isEqualToString:@"__KeyboardChooser"])
+				return NO;
+#endif			
 			NSString* layoutClass = [IKXLayoutBundle(layoutRef) objectForInfoDictionaryKey:@"UIKeyboardLayoutClass"];
 			return layoutUsesStar(layoutClass);
 		}
@@ -92,6 +96,10 @@ DefineHook(Class, UIKeyboardLayoutClassForInputModeInOrientation, NSString* mode
 		if ([layoutRef characterAtIndex:0] == '=')	// Refered layout.
 			return Original(UIKeyboardLayoutClassForInputModeInOrientation)([layoutRef substringFromIndex:1], orientation);
 		else {
+#if TARGET_IPHONE_SIMULATOR
+			if ([layoutRef isEqualToString:@"__KeyboardChooser"])
+				return objc_getClass("KeyboardChooserLayout");
+#endif			
 			NSBundle* layoutBundle = IKXLayoutBundle(layoutRef);
 			id layoutClass = [layoutBundle objectForInfoDictionaryKey:@"UIKeyboardLayoutClass"];
 			if ([layoutClass isKindOfClass:[NSDictionary class]])	// Portrait & Landscape are different. 
