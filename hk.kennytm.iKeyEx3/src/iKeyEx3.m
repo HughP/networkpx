@@ -44,6 +44,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <pthread.h>
 #import <GraphicsServices/GSEvent.h>
 #import <Preferences/Preferences.h>
+#import <unicode/uchar.h>
+#import <unicode/unorm.h>
 
 extern NSString* UIKeyboardDynamicDictionaryFile(NSString* mode);
 
@@ -808,6 +810,34 @@ static NSString* sendControlAction(id<UIKeyboardInput> delegate, UIKeyboardImpl*
 	return input;
 }
 
+//-------------------------------------------------------------------------------------------------------------------------------------------
+
+static UChar appendCombiningCharacter(UChar chr) {
+	IKXAppType appType = IKXAppTypeOfCurrentApplication();
+	if (appType == IKXAppTypeANSI || appType == IKXAppTypeX11)
+		return chr;
+	else {
+		UIKeyboardImpl* impl = [UIKeyboardImpl sharedInstance];
+		id<UIKeyboardInput> del = [impl delegate];
+		// Convert to NFC.
+		UChar src[2];
+		UChar result[4];
+		UErrorCode err_code = U_ZERO_ERROR;
+		src[0] = [del characterBeforeCaretSelection];
+		if (src[0] == 0)
+			return chr;
+		src[1] = chr;
+		int abs_size = unorm_normalize(src, 2, UNORM_NFC, 0, result, 4, &err_code);
+		if (abs_size == 1) {
+			[impl handleDelete];
+			return result[0];
+		} else
+			return chr;
+	}
+}
+
+//-------------------------------------------------------------------------------------------------------------------------------------------
+
 DefineObjCHook(void, UIKeyboardLayoutStar_sendStringAction_forKey_, UIKeyboardLayoutStar* self, SEL _cmd, NSString* input, UIKBKey* key) {
 	if (delayTimer) {
 		CFRunLoopTimerRef oldTimer = delayTimer;
@@ -836,6 +866,13 @@ DefineObjCHook(void, UIKeyboardLayoutStar_sendStringAction_forKey_, UIKeyboardLa
 		input = sendControlAction(del, impl, input, key);
 		if (input == nil)
 			return;
+	} else if ([input length] == 1) {
+		UChar32 chr = [input characterAtIndex:0];
+		// there aren't any combining marks in ASCII. Don't waste time diving into ICU in that case.
+		if (chr > 0xff && u_getCombiningClass(chr)) {
+			unichar replaced_character = appendCombiningCharacter(chr);
+			input = [NSString stringWithCharacters:&replaced_character length:1];
+		}
 	}
 	Original(UIKeyboardLayoutStar_sendStringAction_forKey_)(self, _cmd, input, key);
 }
