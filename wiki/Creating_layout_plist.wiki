@@ -417,7 +417,15 @@ The complete spec:
 	<td>variantType</td>
 	<td colspan="2">string</td>
 	<td>Variants type. Currently must be one of `{"accents", "currency", "URL", "email", "immediate-accents"}`. Use the `variants.plist` file to define the content of variants.</td>
-	<td>`"accents"`</td>
+	<td>"`accents`"</td>
+	<td>--</td>
+</tr>
+<tr>
+	<td>after</td>
+	<td>string</td>
+	<td>{"`none`", "`shift`", "`alt`"}</td>
+	<td>If this set to "`shift`", after pressing this key the shift key will be switched to. Similarly for "`alt`" for the alternate plane. Pass "`none`" to forcefully turn it off.</td>
+	<td>"`alt`" if _text_ == "`'`" *and* _current plane is alternate_, "`none`" otherwise</td>
 	<td>--</td>
 </tr>
 </table>
