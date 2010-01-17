@@ -415,13 +415,23 @@ static UIKBKeyplane* constructUIKBKeyplaneFromSublayout(NSMutableDictionary* lay
 					traits = (NSDictionary*)str;
 					str = [traits objectForKey:@"text"];
 				}
+				int plane_after = (alted && [@"'" isEqualToString:str]) ? 2 : 0;
 				
 				key.name = str;
 				key.representedString = str;
 				
 				NSString* lbl = [labelArr objectAtIndex:j];
+				NSString* varType = nil;
 				if ([lbl isKindOfClass:[NSDictionary class]]) {
 					traits = (NSDictionary*)lbl;
+					varType = [traits objectForKey:@"variantType"];
+					NSString* after = [traits objectForKey:@"after"];
+					if ([after isKindOfClass:[NSString class]]) {
+						if ([@"shift" isEqualToString:after]) plane_after = 1;
+						else if ([@"alt" isEqualToString:after]) plane_after = 2;
+						else if ([@"alt-shift" isEqualToString:after]) plane_after = 3;
+						else plane_after = 0;
+					}
 					lbl = [traits objectForKey:@"text"];
 				}
 				key.displayString = lbl;
@@ -441,19 +451,22 @@ static UIKBKeyplane* constructUIKBKeyplaneFromSublayout(NSMutableDictionary* lay
 				} else if ([@".com" isEqualToString:str]) {
 					key.displayType = @"Top-Level-Domain";
 					key.interactionType = @"String-Popup";
-					key.variantType = @"URL";
+					key.variantType = varType ?: @"URL";
 				} else if ([@"." isEqualToString:str] && [sublayoutKey hasPrefix:@"EmailAddress"]) {
 					key.displayType = @"Top-Level-Domain";
 					key.interactionType = @"String-Popup";
-					key.variantType = @"email";
+					key.variantType = varType ?: @"email";
 				} else {
 					key.displayType = @"String";
 					key.interactionType = @"String-Popup";
 					key.name = str;
-					BOOL is_prime = alted && [@"'" isEqualToString:str];
-					if (is_prime || traits != nil) {
+					if (varType)
+						key.variantType = varType;
+					if (plane_after != 0 || traits != nil) {
 						UIKBAttributeList* attribs = [[UIKBAttributeList alloc] init];
-						if (is_prime)
+						if (plane_after & 1)
+							[attribs setValue:@"yes" forName:@"shift-after"];
+						if (plane_after & 2)
 							[attribs setValue:@"yes" forName:@"more-after"];
 						if (traits != nil)
 							[attribs setValue:traits forName:@"iKeyEx:traits"];
