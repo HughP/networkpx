@@ -240,6 +240,11 @@ You can provide an array to split label and actual output, e.g.
 </tr>
 </table>
 
+== strings.plist ==
+This is an optional file that specify the *localized strings* of some common words, e.g. Return, Space, etc.
+
+The format is the same as `/System/Library/Frameworks/UIKit.framework/Keyboard-***.plist`. 
+
 = Localization =
 Since in essence keyboard bundles are just regular bundles, the resources can be localized like a regular bundle. 
 
