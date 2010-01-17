@@ -36,7 +36,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string>
 #include <TextInput/KBWordTrie.hpp>
 #include <cstdio>
-#include "ConvertUTF.h"
+#include <unicode/ustring.h>
 #include "hash.hpp"
 
 
@@ -45,7 +45,7 @@ extern "C" void IKXConvertCinToPat(const char* cin_path, const char* pat_path, c
 	std::string s;
 	IKX::WritablePatTrie<IKX::IMEContent> pat;
 	
-	std::vector<uint16_t> utf16_small_buffer;
+	std::vector<UChar> utf16_small_buffer;
 	std::vector<std::pair<uint8_t, std::vector<uint16_t> > > keynames;
 	
 	fin.seekg(0, std::ios_base::end);
@@ -65,26 +65,25 @@ extern "C" void IKXConvertCinToPat(const char* cin_path, const char* pat_path, c
 				continue;
 			}
 			
-			const uint8_t* cstr = reinterpret_cast<const uint8_t*>(s.c_str());
-			const uint8_t* keystr = cstr;
+			const char* cstr = s.c_str();
+			const uint8_t* keystr = reinterpret_cast<const uint8_t*>(cstr);
 			
 			size_t first_space_character = s.find_first_of(" \t");
 			size_t first_nonspace_character = s.find_first_not_of(" \t", first_space_character+1);
 						
 			utf16_small_buffer.resize(s.length()*2);
-			uint16_t* small_buffer_begin = &(utf16_small_buffer.front());
-			uint16_t* small_buffer_abs_begin = small_buffer_begin;
-			uint16_t* small_buffer_end = small_buffer_begin+utf16_small_buffer.size();
-			const uint8_t* cstr_end = cstr + s.length();
-			cstr += first_nonspace_character;
-			ConvertUTF8toUTF16(&cstr, cstr_end, &small_buffer_begin, small_buffer_end, lenientConversion);
+			UChar* small_buffer_abs_begin = &(utf16_small_buffer.front());
+			int32_t abs_size = 0;
+			UErrorCode err_code = U_ZERO_ERROR;
+			u_strFromUTF8Lenient(small_buffer_abs_begin, utf16_small_buffer.size(), &abs_size,
+								 cstr + first_nonspace_character, s.length() - first_nonspace_character, &err_code);
 			
 			if (mode == CharDef) {
-				IKX::IMEContent cont (keystr, first_space_character, small_buffer_abs_begin, small_buffer_begin - small_buffer_abs_begin);
+				IKX::IMEContent cont (keystr, first_space_character, small_buffer_abs_begin, abs_size);
 				pat.insert(cont);
 			} else if (mode == KeyDef) {
-				std::vector<uint16_t> bufcpy(small_buffer_abs_begin, small_buffer_begin);
-				keynames.push_back(std::pair<uint8_t, std::vector<uint16_t> >(keystr[0], bufcpy));
+				utf16_small_buffer.resize(abs_size);
+				keynames.push_back(std::pair<uint8_t, std::vector<UChar> >(keystr[0], utf16_small_buffer));
 			}
 			
 			if (progress_reporter != NULL) {
@@ -134,13 +133,12 @@ extern "C" void IKXConvertPhraseToPat(const char* txt_path, const char* pat_path
 		
 		utf16_small_buffer.resize(s.length()*2);
 		uint16_t* small_buffer_begin = &(utf16_small_buffer.front());
-		uint16_t* small_buffer_end = small_buffer_begin+utf16_small_buffer.size();
-		const uint8_t* cstr = reinterpret_cast<const uint8_t*>(s.c_str());
-		const uint8_t* cstr_end = cstr + s.length();
-		ConvertUTF8toUTF16(&cstr, cstr_end, &small_buffer_begin, small_buffer_end, lenientConversion);
+		int32_t abs_size = 0;
+		UErrorCode err_code = U_ZERO_ERROR;
+		u_strFromUTF8Lenient(small_buffer_begin, utf16_small_buffer.size(), &abs_size, s.c_str(), s.length(), &err_code);
 		
-		cont.phrase.pointer = &(utf16_small_buffer.front());
-		cont.len = small_buffer_begin - cont.phrase.pointer;
+		cont.phrase.pointer = small_buffer_begin;
+		cont.len = abs_size;
 		pat.insert(cont);
 	}
 	
@@ -160,11 +158,18 @@ extern "C" void IKXConvertPhraseToHash(const char* txt_path, const char* hash_pa
 		if (s.empty())
 			continue;
 		
-		std::memset(bucket.chars, 0, sizeof(bucket.chars));
-		uint16_t* buffer = bucket.chars;
-		const uint8_t* cstr = reinterpret_cast<const uint8_t*>(s.c_str());
+		UChar buffer[8];
+		int32_t abs_size = 0;
+		UErrorCode err_code = U_ZERO_ERROR;
+		u_strFromUTF8Lenient(buffer, sizeof(buffer)/sizeof(buffer[0]), &abs_size, s.c_str(), s.length(), &err_code);
 		
-		ConvertUTF8toUTF16(&cstr, cstr + s.length(), &buffer, buffer+sizeof(bucket.chars)/sizeof(uint16_t), lenientConversion);
+		if (abs_size <= 1) {
+			bucket.chars[0] = buffer[0];
+			bucket.chars[1] = 0;
+		} else {
+			bucket.chars[0] = buffer[0];
+			bucket.chars[1] = buffer[1];
+		}
 		
 		buckets.push_back(bucket);
 		

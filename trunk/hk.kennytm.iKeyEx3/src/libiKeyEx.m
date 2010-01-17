@@ -228,6 +228,10 @@ extern NSString* IKXLocalizedString(NSString* key) {
 //------------------------------------------------------------------------------
 
 extern UIProgressHUD* IKXShowLoadingHUD() {
+	// Avoid crash by showing a view when the application isn't even there.
+	if ([UIApplication sharedApplication] == nil)
+		return nil;
+	
 	UIWindow* topLevelWindow = [[UIWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
 	topLevelWindow.windowLevel = UIWindowLevelAlert;
 	topLevelWindow.backgroundColor = [UIColor colorWithWhite:0 alpha:0.5];
