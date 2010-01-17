@@ -383,14 +383,6 @@ The complete spec:
 	<th>default</th>
 	<th>depends</th>
 </tr>
-<!-- <tr>
-	<td>image</td>
-	<td>string</td>
-	<td>absolute file path</td>
-	<td>Show an image instead of a string. Note that the image will be scaled disproportionally.</td>
-	<td>""</td>
-	<td>--</td>
-</tr> -->
 <tr>
 	<td>text</td>
 	<td colspan="2">string</td>
