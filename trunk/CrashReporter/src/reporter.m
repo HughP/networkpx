@@ -23,6 +23,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <stdio.h>
 #import "find_dpkg.h"
 
+extern int canEmailAuthor;
+
 static NSString* stripQuotes(NSString* str) {
 	NSUInteger str_len = [str length];
 	if (str_len >= 2) {
@@ -338,12 +340,12 @@ static NSCalendar* cal;
 		}
 	} else {
 		// is a dpkg.
-		/*
-		if (pkg.author) {
+
+		if (canEmailAuthor && pkg.author) {
 			ReporterLine* emailLink = [ReporterLine reporterWithLine:[NSString stringWithFormat:@"link email \"%@\" as \"Email developer\"", pkg.author]];
 			[res addObject:emailLink];
 		}
-		 */
+
 		ReporterLine* uninstallLink = [ReporterLine reporterWithLine:[NSString stringWithFormat:@"link url \"cydia://package/%@\" as \"Find package in Cydia\"", pkg.identifier]];
 		[res addObject:uninstallLink];
 	}

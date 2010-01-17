@@ -27,6 +27,7 @@ int main (int argc, char* argv[]) {
 
 	int rv = 0;
 	
+	
 #if !TARGET_IPHONE_SIMULATOR
 	if (argc > 2 && strcmp(argv[1], "-s") == 0) {
 		
