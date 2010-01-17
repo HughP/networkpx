@@ -61,14 +61,14 @@ Platform=arm
 
 AllTargets=libiKeyEx KeyboardChooser PrefBundle iKeyExKBMan UIHook
 
-libiKeyEx_Sources=libiKeyEx.o libiKeyEx2.o cin2pat.o ConvertUTF.o
+libiKeyEx_Sources=libiKeyEx.o libiKeyEx2.o cin2pat.o
 libiKeyEx_Target=$(LibPath)/libiKeyEx.dylib
 ifeq ($(Platform),x86)
 libiKeyEx_InstallNamePrefix=`pwd`/$(LibPath)
 else
 libiKeyEx_InstallNamePrefix=/usr/lib
 endif
-libiKeyEx_Options=-framework Foundation -framework UIKit -framework TextInput -framework AppSupport -lstdc++ -dynamiclib -install_name $(libiKeyEx_InstallNamePrefix)/libiKeyEx.dylib
+libiKeyEx_Options=-framework Foundation -framework UIKit -framework TextInput -framework AppSupport -lstdc++ -licucore -dynamiclib -install_name $(libiKeyEx_InstallNamePrefix)/libiKeyEx.dylib
 
 KeyboardChooser_Sources=KeyboardChooserLayout.o
 KeyboardChooser_Target=$(iKeyExPath)/Keyboards/__KeyboardChooser.keyboard/__KeyboardChooser
