@@ -29,6 +29,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 }
 @end
 
+int canEmailAuthor = 0;
+
 @implementation CrashReporterDelegate
 -(void)applicationDidFinishLaunching:(UIApplication*)app {
 	_win = [[UIWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
@@ -59,6 +61,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 		[alert show];
 		[alert release];
 	}
+	
+	canEmailAuthor = [[NSUserDefaults standardUserDefaults] boolForKey:@"canEmailAuthor"];
 }
 -(void)alertView:(UIAlertView*)alertView clickedButtonAtIndex:(NSInteger)buttonIndex {
 	if (buttonIndex != 0) {

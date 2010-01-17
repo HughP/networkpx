@@ -82,6 +82,10 @@ static NSArray* pack(NSArray* strings, NSUInteger maxBinSize) {
 		if (![stringToPack isKindOfClass:NSString_class])
 			stringToPack = @"";
 		int bin = lengths[i].bin;
+		if (bin < 0) {
+			NSLog(@"CrashReporter: Bin index of object %d is negative. The string to pack into should be '%@'.", i, stringToPack);
+			continue;
+		}
 		if (packed[bin])
 			packed[bin] = [packed[bin] stringByAppendingString:stringToPack];
 		else
