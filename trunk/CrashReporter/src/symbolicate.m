@@ -125,14 +125,14 @@ NSString* symbolicate(NSString* file, ModalActionSheet* hudReply) {
 		} else if (pid != -1) {
 			close(fds[1]);
 			char buf[1024];
-			size_t actual_size;
+			int actual_size;
 			NSMutableData* data = [[NSMutableData alloc] init];
 			while ((actual_size = read(fds[0], buf, 1024)) > 0)
 				[data appendBytes:buf length:actual_size];
 			close(fds[0]);
 			file_content = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
 			[data release];
-		}		
+		}
 	}
 	if ([file_content length] == 0) {
 		[file_content release];
@@ -249,7 +249,7 @@ finish:
 			isCrashing = NO;
 		else if (bti != (id)kCFNull) {
 			BinaryInfo* bi = [binaryImages objectForKey:bti->start_address];
-			if (bi != nil) {					
+			if (bi != nil) {
 				if (![bi isKindOfClass:bicls]) {
 					NSString* matches[3];
 					[(NSArray*)bi getObjects:matches range:NSMakeRange(1, 3)];
