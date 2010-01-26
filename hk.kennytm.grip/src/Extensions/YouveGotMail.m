@@ -268,6 +268,9 @@ static void YGMConstructDescription(void* index, Message* message, CFMutableStri
 		if (message.messageFlags & 1)
 			continue;
 		CFDictionaryAddValue(messages, (const void*)(msgid++), message);
+		// issue 466.
+		if (!CFDictionaryContainsValue(messages, message))
+			continue;
 		MailAccount* acct = message.account;
 		[dirtyAccounts addObject:(acct.fullUserName ?: [acct.emailAddresses objectAtIndex:0])];
 	}
@@ -292,6 +295,8 @@ static void YGMConstructDescription(void* index, Message* message, CFMutableStri
 	else
 		title = [[NSString stringWithFormat:manyNewMails, msgCount] stringByAppendingString:accountString];
 	
+	// issue 465
+	if (msgCount > 0)
 	[bridge notifyWithTitle:title
 				description:(NSString*)descr
 		   notificationName:@"You've Got Mail"
