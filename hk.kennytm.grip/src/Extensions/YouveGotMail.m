@@ -267,10 +267,10 @@ static void YGMConstructDescription(void* index, Message* message, CFMutableStri
 		// ignore read mails.
 		if (message.messageFlags & 1)
 			continue;
-		CFDictionaryAddValue(messages, (const void*)(msgid++), message);
 		// issue 466.
 		if (!CFDictionaryContainsValue(messages, message))
 			continue;
+		CFDictionaryAddValue(messages, (const void*)(msgid++), message);
 		MailAccount* acct = message.account;
 		[dirtyAccounts addObject:(acct.fullUserName ?: [acct.emailAddresses objectAtIndex:0])];
 	}
