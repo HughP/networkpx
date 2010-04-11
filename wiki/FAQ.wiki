@@ -1,8 +1,25 @@
 #summary Frequently asked questions
 #labels Phase-Support,Featured
 
-= I have installed !IntelliScreen and iKeyEx does not work. =
-By default !IntelliScreen disabled any !MobileSubstrate extensions. To enable iKeyEx, please go to the Performance option in !IntelliScreen, then enable !UIKit-iKeyEx.
+= The comma (,) and period (.) are switched in 5-Row QWERTY keyboard =
 
-= _«some keyboard»_ does not work! Pressing the Globe brings me nothing new. =
-Please go to Settings → iKeyEx → Keyboards, and add _«some keyboard»_.
+This problem has actually been fixed in the recent version, but to preserve possible customization, upgraded users will not see this change. You can swap the punctuations back by going to Settings -> iKeyEx -> Customize -> 5RowQWERTY -> Special characters, then tap Reset.
+
+= I can't find a keyboard =
+
+You can go to Settings -> iKeyEx -> Keyboards, then add (tap "+") the desired keyboard to make it usable.
+
+If you can't find it in Keyboards, probably you need to "make" one yourself. Please follow these steps:
+
+  # Go to Settings -> iKeyEx -> Mix and match
+  # Tap "Make".
+  # In "Layout", select your desired keyboard layout.
+  # If you like, in "Input manager", select the language you need. (You can just use English (US) in most cases).
+  # In "Name", give it a name you want.
+  # Now go back to the iKeyEx page, then tap Keyboards. You should be able to see the newly made keyboard. Add that to enable it.
+
+= How is the progress of _«project»_? Is _«project»_ dead? =
+
+I do have a full day job, which makes my time on iPhoneOS programming less. But trust me, they are not dead.
+
+(If you can't wait, I encourage you to fork the project.)
