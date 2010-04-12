@@ -18,6 +18,9 @@ If you can't find it in Keyboards, probably you need to "make" one yourself. Ple
   # In "Name", give it a name you want.
   # Now go back to the iKeyEx page, then tap Keyboards. You should be able to see the newly made keyboard. Add that to enable it.
 
+= I can't install via RockApp/Icy =
+Installing via RockApp or Icy is not supported, since they are not fully <tt>apt</tt> compliant (in particular, they do not handle <tt>Depends:</tt> and <tt>Pre-Depends:</tt> correctly). Please reinstall using Cydia, apt-get or aptitude. 
+
 = How is the progress of _«project»_? Is _«project»_ dead? =
 
 I do have a full day job, which makes my time on iPhoneOS programming less. But trust me, they are not dead.
