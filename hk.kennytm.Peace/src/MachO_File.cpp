@@ -100,20 +100,20 @@ off_t MachO_File_Simple::to_file_offset (unsigned vm_address, int* p_guess_segme
 	if (vm_address == 0)
 		return 0;
 	
-	const segment_command* seg;
+	const section* seg;
 	if (p_guess_segment != NULL) {
-		seg = ma_segments[*p_guess_segment];
-		if (seg->vmaddr <= vm_address && seg->vmaddr + seg->vmsize > vm_address)
-			return m_origin + vm_address - seg->vmaddr + seg->fileoff;
+		seg = ma_sections[*p_guess_segment];
+		if (seg->addr <= vm_address && seg->addr + seg->size > vm_address)
+			return m_origin + vm_address - seg->addr + seg->offset;
 	}
 	
 	unsigned i = 0;
-	for (vector<const segment_command*>::const_iterator cit = ma_segments.begin(); cit != ma_segments.end(); ++ cit) {
+	for (vector<const section*>::const_iterator cit = ma_sections.begin(); cit != ma_sections.end(); ++ cit) {
 		seg = *cit;
-		if (seg->vmaddr <= vm_address && seg->vmaddr + seg->vmsize > vm_address) {
+		if (seg->addr <= vm_address && seg->addr + seg->size > vm_address) {
 			if (p_guess_segment != NULL)
 				*p_guess_segment = i;
-			return m_origin + vm_address - seg->vmaddr + seg->fileoff;
+			return m_origin + vm_address - seg->addr + seg->offset;
 		}
 		++ i;
 	}
@@ -126,20 +126,20 @@ unsigned MachO_File_Simple::to_vm_address (off_t file_offset, int* p_guess_segme
 	
 	file_offset -= m_origin;
 	
-	const segment_command* seg;
+	const section* seg;
 	if (p_guess_segment != NULL) {
-		seg = ma_segments[*p_guess_segment];
-		if (seg->fileoff <= static_cast<size_t>(file_offset) && seg->fileoff + seg->filesize > static_cast<size_t>(file_offset))
-			return static_cast<unsigned>(file_offset + seg->vmaddr - seg->fileoff);
+		seg = ma_sections[*p_guess_segment];
+		if (seg->offset <= static_cast<size_t>(file_offset) && seg->offset + seg->size > static_cast<size_t>(file_offset))
+			return static_cast<unsigned>(file_offset + seg->addr - seg->offset);
 	}
 	
 	unsigned i = 0;
-	for (vector<const segment_command*>::const_iterator cit = ma_segments.begin(); cit != ma_segments.end(); ++ cit) {
+	for (vector<const section*>::const_iterator cit = ma_sections.begin(); cit != ma_sections.end(); ++ cit) {
 		seg = *cit;
-		if (seg->fileoff <= static_cast<size_t>(file_offset) && seg->fileoff + seg->filesize > static_cast<size_t>(file_offset)) {
+		if (seg->offset <= static_cast<size_t>(file_offset) && seg->offset + seg->size > static_cast<size_t>(file_offset)) {
 			if (p_guess_segment != NULL)
 				*p_guess_segment = i;
-			return static_cast<unsigned>(file_offset + seg->vmaddr - seg->fileoff);
+			return static_cast<unsigned>(file_offset + seg->addr - seg->offset);
 		}
 		++ i;
 	}
@@ -301,7 +301,7 @@ void MachO_File::bind(uint32_t size) throw() {
 				
 				// seems to do nothing?
 			case BIND_OPCODE_SET_ADDEND_SLEB:	// 6x.
-				this->read_uleb128<unsigned>();
+				this->read_sleb128<int>();
 				PRINT_BIND_OPCODE("SetAddend(...).\n");
 				break;
 				
